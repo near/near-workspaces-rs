@@ -22,6 +22,3 @@ near-crypto = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5
 near-primitives = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5638d4aaca2ddaf08d048e0920" }
 near-jsonrpc-primitives = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5638d4aaca2ddaf08d048e0920" }
 near-jsonrpc-client = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5638d4aaca2ddaf08d048e0920" }
-
-[dev-dependencies]
-lazy_static = "1.4.0"
