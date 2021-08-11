@@ -239,9 +239,11 @@ pub async fn dev_deploy(contract_file: &Path) -> Result<(AccountId, InMemorySign
 mod tests {
     use super::*;
     use tokio::runtime::Runtime;
+    use sandbox_test_macros::sandbox;
 
     const NFT_WASM_FILEPATH: &'static str = "./res/non_fungible_token.wasm";
 
+    #[sandbox]
     #[test]
     fn test_nft_example() {
         let mut rt = Runtime::new().unwrap();
@@ -290,6 +292,19 @@ mod tests {
             .await
             .unwrap();
             println!("nft_mint outcome: {:#?}", outcome);
+
+            let call_result = view(
+                contract_id.clone(),
+                "nft_metadata".to_string(),
+                b"".to_vec().into(),
+            )
+            .await
+            .unwrap();
+
+            println!(
+                "--------------\n{}",
+                serde_json::to_string_pretty(&call_result).unwrap()
+            );
 
             println!("Dev Account ID: {}", contract_id);
         });
