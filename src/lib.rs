@@ -160,8 +160,8 @@ pub async fn create_tla_account(
 }
 
 async fn create_account_and_deploy(
-    new_account_id: &str,
-    new_account_pk: &PublicKey,
+    new_account_id: AccountId,
+    new_account_pk: PublicKey,
     code_filepath: &Path,
 ) -> Result<FinalExecutionOutcomeView, String> {
     let root_signer = tool::root_account();
@@ -181,7 +181,7 @@ async fn create_account_and_deploy(
         new_account_id.to_string(),
         code,
         100 * NEAR_BASE,
-        new_account_pk.clone(),
+        new_account_pk,
         &root_signer,
         block_hash,
     );
@@ -192,9 +192,9 @@ async fn create_account_and_deploy(
 }
 
 pub async fn delete_account(
-    account_id: String,
+    account_id: AccountId,
     signer: &dyn Signer,
-    beneficiary_id: String,
+    beneficiary_id: AccountId,
 ) -> Result<FinalExecutionOutcomeView, String> {
     let (access_key, _, block_hash) =
         tool::access_key(account_id.clone(), signer.public_key()).await?;
@@ -230,7 +230,8 @@ pub async fn dev_create() -> Result<(AccountId, InMemorySigner), String> {
 
 pub async fn dev_deploy(contract_file: &Path) -> Result<(AccountId, InMemorySigner), String> {
     let (account_id, signer) = dev_generate();
-    let outcome = create_account_and_deploy(&account_id, &signer.public_key, contract_file).await?;
+    let outcome =
+        create_account_and_deploy(account_id.clone(), signer.public_key(), contract_file).await?;
     dbg!(outcome);
     Ok((account_id, signer))
 }
@@ -238,8 +239,8 @@ pub async fn dev_deploy(contract_file: &Path) -> Result<(AccountId, InMemorySign
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::runtime::Runtime;
     use sandbox_test_macros::sandbox;
+    use tokio::runtime::Runtime;
 
     const NFT_WASM_FILEPATH: &'static str = "./res/non_fungible_token.wasm";
 

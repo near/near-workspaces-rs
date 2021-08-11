@@ -1,10 +1,7 @@
-use std::process::{Command, Child};
+use std::process::{Child, Command};
 use std::sync::Once;
 
-use once_cell::sync::OnceCell;
-
 static INIT_ONCE_SANDBOX: Once = Once::new();
-static SANDBOX_CLEANUP: OnceCell<SandboxCleanup> = OnceCell::new();
 
 fn sandbox_start() -> Child {
     // TODO: stdout/stderr to file instead
@@ -27,10 +24,7 @@ fn sandbox_start() -> Child {
 // #[allow(dead_code)]
 pub fn sandbox_setup() {
     INIT_ONCE_SANDBOX.call_once(|| {
-        let child = sandbox_start();
-        let child_id = child.id();
-        SANDBOX_CLEANUP.set(SandboxCleanup { child_process: child })
-            .expect(&format!("failed to set SandboxCleanup with child pid: {}", child_id));
+        sandbox_start();
 
         // Let the sandbox startup for a bit before running anything else.
         // TODO: ping the sandbox instead
@@ -38,17 +32,3 @@ pub fn sandbox_setup() {
         thread::sleep(Duration::from_secs(3));
     });
 }
-
-#[derive(Debug)]
-pub struct SandboxCleanup {
-    child_process: Child,
-}
-
-impl core::ops::Drop for SandboxCleanup {
-    fn drop(&mut self) {
-        self.child_process.kill()
-            .map_err(|e| format!("Could not cleanup sandbox due to: {:?}", e))
-            .unwrap();
-    }
-}
-
