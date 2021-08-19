@@ -100,8 +100,8 @@ fn parse_knobs(
     // }
     let rt = match flavor.unwrap() {
         Flavor::Sandbox => quote_spanned! {last_stmt_start_span=>
-            let mut rt = crate::SandboxRuntime::new_default();
-            rt.run().unwrap();
+            let mut rt = runner::SandboxRuntime::new_default();
+            let _ = rt.run().unwrap();
         },
         _ => unimplemented!()
     };
@@ -152,4 +152,19 @@ pub(crate) fn test(args: TokenStream, item: TokenStream, rt_multi_thread: bool) 
     }
 
     parse_knobs(input, args, true, rt_multi_thread).unwrap_or_else(|e| e.to_compile_error().into())
+}
+
+#[cfg(not(test))] // Work around for rust-lang/rust#62127
+pub(crate) fn main(args: TokenStream, item: TokenStream, rt_multi_thread: bool) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::ItemFn);
+    let args = syn::parse_macro_input!(args as syn::AttributeArgs);
+
+    // if input.sig.ident == "main" && !input.sig.inputs.is_empty() {
+    //     let msg = "the main function cannot accept arguments";
+    //     return syn::Error::new_spanned(&input.sig.ident, msg)
+    //         .to_compile_error()
+    //         .into();
+    // }
+
+    parse_knobs(input, args, false, rt_multi_thread).unwrap_or_else(|e| e.to_compile_error().into())
 }

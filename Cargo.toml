@@ -2,4 +2,5 @@
 members = [
     "runner",
     "runner-macros",
+    "examples",
 ]
