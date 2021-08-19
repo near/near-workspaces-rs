@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 use portpicker::pick_unused_port;
 
 use super::context;
+use super::RuntimeFlavor;
+
 
 fn local_rpc_addr(port: u16) -> String {
     format!("0.0.0.0:{}", port)
@@ -121,7 +123,7 @@ impl SandboxRuntime {
 
         Self {
             server,
-            _guard: context::enter(port),
+            _guard: context::enter(RuntimeFlavor::Sandbox(port)),
         }
     }
 

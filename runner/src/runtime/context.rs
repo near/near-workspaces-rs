@@ -1,17 +1,18 @@
 use std::cell::RefCell;
+use super::RuntimeFlavor;
+
 
 thread_local! {
-    pub static CURRENT_SANDBOX_PORT: RefCell<u16> = RefCell::new(3030);
+    static RT_CONTEXT: RefCell<Option<RuntimeFlavor>> = RefCell::new(None);
 }
 
-pub(crate) fn current() -> u16 {
-    CURRENT_SANDBOX_PORT.with(|ctx| *ctx.borrow())
+pub(crate) fn current() -> Option<RuntimeFlavor> {
+    RT_CONTEXT.with(|ctx| ctx.borrow().clone())
 }
 
-pub(crate) fn enter(port: u16) -> EnterGuard {
-    CURRENT_SANDBOX_PORT.with(|ctx| {
-        let old = *ctx.borrow();
-        *ctx.borrow_mut() = port;
+pub(crate) fn enter(flavor: RuntimeFlavor) -> EnterGuard {
+    RT_CONTEXT.with(|ctx| {
+        let old = ctx.borrow_mut().replace(flavor);
         EnterGuard(old)
     })
 }
@@ -21,12 +22,12 @@ pub(crate) fn enter(port: u16) -> EnterGuard {
 // runtime context. Used for multi-threading too when a new thread is
 // spun up, but currently near Runtimes are single threaded only.
 #[derive(Debug)]
-pub(crate) struct EnterGuard(u16);
+pub(crate) struct EnterGuard(Option<RuntimeFlavor>);
 
 impl Drop for EnterGuard {
     fn drop(&mut self) {
-        CURRENT_SANDBOX_PORT.with(|ctx| {
-            *ctx.borrow_mut() = self.0;
+        RT_CONTEXT.with(|ctx| {
+            *ctx.borrow_mut() = self.0.take();
         });
     }
 }

@@ -18,7 +18,7 @@ const DEV_ACCOUNT_SEED: &str = "testificate";
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 
 pub async fn display_account_info(account_id: String) -> Result<AccountInfo, String> {
-    let query_resp = tool::sandbox_client()
+    let query_resp = tool::json_client()
         .query(RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccount {
@@ -95,7 +95,7 @@ pub async fn view(
     method_name: String,
     args: FunctionArgs,
 ) -> Result<serde_json::Value, String> {
-    let query_resp = tool::sandbox_client()
+    let query_resp = tool::json_client()
         .query(RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::CallFunction {
