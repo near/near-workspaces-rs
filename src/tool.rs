@@ -9,17 +9,33 @@ use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{AccountId, BlockHeight, Finality};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
-const SANDBOX_ADDR: &str = "http://localhost:3030";
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
 
+
+fn home_dir(port: u16) -> PathBuf {
+    let mut path = std::env::temp_dir();
+    path.push(format!("sandbox-{}", port));
+    path
+}
+
+use std::cell::RefCell;
+
+thread_local! {
+    pub static CURRENT_SANDBOX_PORT: RefCell<u16> = RefCell::new(3030);
+}
+
 pub(crate) fn sandbox_client() -> JsonRpcClient {
-    near_jsonrpc_client::new_client(SANDBOX_ADDR)
+    CURRENT_SANDBOX_PORT.with(|port| {
+        near_jsonrpc_client::new_client(&format!("http://localhost:{}", *port.borrow()))
+    })
 }
 
 pub(crate) fn root_account() -> InMemorySigner {
-    let home_dir = dirs::home_dir().expect("Could not get HOME_DIR");
-    let mut path = PathBuf::from(&home_dir);
-    path.push(".near/validator_key.json");
+    let port = CURRENT_SANDBOX_PORT.with(|port| {
+        *port.borrow()
+    });
+    let mut path = home_dir(port);
+    path.push("validator_key.json");
 
     let root_signer = InMemorySigner::from_file(&path);
     root_signer
