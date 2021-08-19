@@ -12,7 +12,6 @@ fn parse_knobs(
     mut input: syn::ItemFn,
     args: syn::AttributeArgs,
     is_test: bool,
-    rt_multi_thread: bool,
 ) -> Result<TokenStream, syn::Error> {
     if input.sig.asyncness.take().is_none() {
         let msg = "the `async` keyword is missing from the function declaration";
@@ -84,20 +83,6 @@ fn parse_knobs(
         (start, end)
     };
 
-    // let mut rt = match config.flavor {
-    //     RuntimeFlavor::CurrentThread => quote_spanned! {last_stmt_start_span=>
-    //         tokio::runtime::Builder::new_current_thread()
-    //     },
-    //     RuntimeFlavor::Threaded => quote_spanned! {last_stmt_start_span=>
-    //         tokio::runtime::Builder::new_multi_thread()
-    //     },
-    // };
-    // if let Some(v) = config.worker_threads {
-    //     rt = quote! { #rt.worker_threads(#v) };
-    // }
-    // if let Some(v) = config.start_paused {
-    //     rt = quote! { #rt.start_paused(#v) };
-    // }
     let rt = match flavor.unwrap() {
         Flavor::Sandbox => quote_spanned! {last_stmt_start_span=>
             let mut rt = runner::SandboxRuntime::new_default();
@@ -137,7 +122,7 @@ fn parse_knobs(
 }
 
 
-pub(crate) fn test(args: TokenStream, item: TokenStream, rt_multi_thread: bool) -> TokenStream {
+pub(crate) fn test(args: TokenStream, item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as syn::ItemFn);
     let args = syn::parse_macro_input!(args as syn::AttributeArgs);
 
@@ -151,11 +136,11 @@ pub(crate) fn test(args: TokenStream, item: TokenStream, rt_multi_thread: bool) 
         }
     }
 
-    parse_knobs(input, args, true, rt_multi_thread).unwrap_or_else(|e| e.to_compile_error().into())
+    parse_knobs(input, args, true).unwrap_or_else(|e| e.to_compile_error().into())
 }
 
 #[cfg(not(test))] // Work around for rust-lang/rust#62127
-pub(crate) fn main(args: TokenStream, item: TokenStream, rt_multi_thread: bool) -> TokenStream {
+pub(crate) fn main(args: TokenStream, item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as syn::ItemFn);
     let args = syn::parse_macro_input!(args as syn::AttributeArgs);
 
@@ -166,5 +151,5 @@ pub(crate) fn main(args: TokenStream, item: TokenStream, rt_multi_thread: bool) 
     //         .into();
     // }
 
-    parse_knobs(input, args, false, rt_multi_thread).unwrap_or_else(|e| e.to_compile_error().into())
+    parse_knobs(input, args, false).unwrap_or_else(|e| e.to_compile_error().into())
 }
