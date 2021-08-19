@@ -5,6 +5,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use portpicker::pick_unused_port;
 
+use super::context;
+
 fn local_rpc_addr(port: u16) -> String {
     format!("0.0.0.0:{}", port)
 }
@@ -26,7 +28,6 @@ impl SandboxServer {
 
     pub fn new_default() -> Self {
         let port = pick_unused_port().expect("no ports free");
-        crate::runtime::context::enter(port);
         Self::new(port)
     }
 
@@ -110,12 +111,17 @@ fn init_sandbox(home_dir: &Path) -> io::Result<Child> {
 
 pub struct SandboxRuntime {
     server: SandboxServer,
+    _guard: context::EnterGuard,
 }
 
 impl SandboxRuntime {
     pub fn new_default() -> Self {
+        let server = SandboxServer::new_default();
+        let port = server.port;
+
         Self {
-            server: SandboxServer::new_default(),
+            server,
+            _guard: context::enter(port),
         }
     }
 

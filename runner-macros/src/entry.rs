@@ -145,12 +145,5 @@ pub(crate) fn main(args: TokenStream, item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as syn::ItemFn);
     let args = syn::parse_macro_input!(args as syn::AttributeArgs);
 
-    // if input.sig.ident == "main" && !input.sig.inputs.is_empty() {
-    //     let msg = "the main function cannot accept arguments";
-    //     return syn::Error::new_spanned(&input.sig.ident, msg)
-    //         .to_compile_error()
-    //         .into();
-    // }
-
     parse_knobs(input, args, false).unwrap_or_else(|e| e.to_compile_error().into())
 }
