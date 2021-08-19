@@ -5,8 +5,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use portpicker::pick_unused_port;
 
-const DEFAULT_PORT: u16 = 3030;
-
 fn local_rpc_addr(port: u16) -> String {
     format!("0.0.0.0:{}", port)
 }
@@ -17,7 +15,7 @@ fn home_dir(port: u16) -> PathBuf {
     path
 }
 pub struct SandboxServer {
-    port: u16,
+    pub(self) port: u16,
     process: Option<Child>,
 }
 
@@ -26,10 +24,10 @@ impl SandboxServer {
         Self { port, process: None }
     }
 
-    pub fn new_random() -> Self {
+    pub fn new_default() -> Self {
         let port = pick_unused_port().expect("no ports free");
         crate::runtime::context::enter(port);
-        Self { port, process: None }
+        Self::new(port)
     }
 
     pub fn start(&mut self) -> io::Result<()> {
@@ -45,17 +43,9 @@ impl SandboxServer {
         println!("Started sandbox: pid={:?}", child.id());
         self.process = Some(child);
 
+        // TODO: Get rid of this sleep, and ping sandbox is alive instead:
         thread::sleep(Duration::from_secs(3));
         Ok(())
-    }
-}
-
-impl Default for SandboxServer {
-    fn default() -> Self {
-        Self {
-            port: DEFAULT_PORT,
-            process: None,
-        }
     }
 }
 
@@ -116,4 +106,28 @@ fn init_sandbox(home_dir: &Path) -> io::Result<Child> {
         .arg(home_dir)
         .arg("init")
         .spawn()
+}
+
+pub struct SandboxRuntime {
+    server: SandboxServer,
+}
+
+impl SandboxRuntime {
+    pub fn new_default() -> Self {
+        Self {
+            server: SandboxServer::new_default(),
+        }
+    }
+
+    pub fn port(&self) -> u16 {
+        self.server.port
+    }
+
+    pub fn rpc_addr(&self) -> String {
+        format!("http://localhost:{}", self.port())
+    }
+
+    pub fn run(&mut self) -> io::Result<()> {
+        self.server.start()
+    }
 }

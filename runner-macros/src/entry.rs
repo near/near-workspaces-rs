@@ -66,8 +66,6 @@ fn parse_knobs(
         }
     }
 
-    // let config = config.build()?;
-
     // If type mismatch occurs, the current rustc points to the last statement.
     let (last_stmt_start_span, last_stmt_end_span) = {
         let mut last_stmt = input
@@ -102,8 +100,8 @@ fn parse_knobs(
     // }
     let rt = match flavor.unwrap() {
         Flavor::Sandbox => quote_spanned! {last_stmt_start_span=>
-            let mut srv = crate::SandboxServer::new_random();
-            srv.start().unwrap();
+            let mut rt = crate::SandboxRuntime::new_default();
+            rt.run().unwrap();
         },
         _ => unimplemented!()
     };
@@ -155,4 +153,3 @@ pub(crate) fn test(args: TokenStream, item: TokenStream, rt_multi_thread: bool) 
 
     parse_knobs(input, args, true, rt_multi_thread).unwrap_or_else(|e| e.to_compile_error().into())
 }
-

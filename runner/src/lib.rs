@@ -2,7 +2,7 @@
 mod rpc;
 mod runtime;
 
-pub use runtime::local::SandboxServer;
+pub use runtime::SandboxRuntime;
 pub use runner_macros::test;
 pub use rpc::api::*;
 
