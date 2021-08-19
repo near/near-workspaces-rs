@@ -18,22 +18,13 @@ fn home_dir(port: u16) -> PathBuf {
     path
 }
 
-use std::cell::RefCell;
-
-thread_local! {
-    pub static CURRENT_SANDBOX_PORT: RefCell<u16> = RefCell::new(3030);
-}
-
 pub(crate) fn sandbox_client() -> JsonRpcClient {
-    CURRENT_SANDBOX_PORT.with(|port| {
-        near_jsonrpc_client::new_client(&format!("http://localhost:{}", *port.borrow()))
-    })
+    let port = crate::runtime::context::current();
+    near_jsonrpc_client::new_client(&format!("http://localhost:{}", port))
 }
 
 pub(crate) fn root_account() -> InMemorySigner {
-    let port = CURRENT_SANDBOX_PORT.with(|port| {
-        *port.borrow()
-    });
+    let port = crate::runtime::context::current();
     let mut path = home_dir(port);
     path.push("validator_key.json");
 

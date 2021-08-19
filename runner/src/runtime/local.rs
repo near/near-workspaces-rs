@@ -1,0 +1,121 @@
+use std::{thread, time::Duration};
+use std::process::{Child, Command};
+use std::io;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+const DEFAULT_PORT: u16 = 3030;
+
+fn local_rpc_addr(port: u16) -> String {
+    format!("0.0.0.0:{}", port)
+}
+
+fn home_dir(port: u16) -> PathBuf {
+    let mut path = std::env::temp_dir();
+    path.push(format!("sandbox-{}", port));
+    path
+}
+
+fn pick_port() {}
+
+pub struct SandboxServer {
+    port: u16,
+    process: Option<Child>,
+}
+
+impl SandboxServer {
+    pub fn new(port: u16) -> Self {
+        Self { port, process: None }
+    }
+
+    pub fn new_random() -> Self {
+        let port = 4040;
+        crate::runtime::context::enter(port);
+        Self { port, process: None }
+    }
+
+    pub fn start(&mut self) -> io::Result<()> {
+        println!("Starting up sandbox at localhost:{}", self.port);
+        let home_dir = home_dir(self.port);
+
+        // Remove dir if it already exists:
+        let _ = fs::remove_dir_all(&home_dir);
+
+        init_sandbox(&home_dir)?.wait()?;
+
+        let child = start_sandbox(&home_dir, self.port)?;
+        println!("Started sandbox: pid={:?}", child.id());
+        self.process = Some(child);
+
+        thread::sleep(Duration::from_secs(3));
+        Ok(())
+    }
+}
+
+impl Default for SandboxServer {
+    fn default() -> Self {
+        Self {
+            port: DEFAULT_PORT,
+            process: None,
+        }
+    }
+}
+
+impl Drop for SandboxServer {
+    fn drop(&mut self) {
+        if self.process.is_none() {
+            return;
+        }
+
+        let child = self.process
+            .as_mut()
+            .unwrap();
+
+        println!("Cleaning up sandbox: port={}, pid={}", self.port, child.id());
+
+        child.kill()
+            .map_err(|e| format!("Could not cleanup sandbox due to: {:?}", e))
+            .unwrap();
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn start_sandbox(home_dir: &Path, port: u16) -> io::Result<Child> {
+    Command::new("near-sandbox")
+        .args(&[
+            "--home", home_dir,
+            "run",
+            "--rpc-addr", &local_rpc_addr(port)
+        ])
+        .spawn()
+}
+
+#[cfg(target_os = "windows")]
+fn init_sandbox(home_dir: &Path) -> io::Result<Child> {
+    Command::new("near-sandbox")
+        .args(&[
+            "--home", home_dir,
+            "init",
+        ])
+        .spawn()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn start_sandbox(home_dir: &Path, port: u16) -> io::Result<Child> {
+    Command::new("/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox")
+        .arg("--home")
+        .arg(home_dir)
+        .arg("run")
+        .arg("--rpc-addr")
+        .arg(&local_rpc_addr(port))
+        .spawn()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn init_sandbox(home_dir: &Path) -> io::Result<Child> {
+    Command::new("/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox")
+        .arg("--home")
+        .arg(home_dir)
+        .arg("init")
+        .spawn()
+}
