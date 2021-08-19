@@ -3,6 +3,7 @@ use std::process::{Child, Command};
 use std::io;
 use std::fs;
 use std::path::{Path, PathBuf};
+use portpicker::pick_unused_port;
 
 const DEFAULT_PORT: u16 = 3030;
 
@@ -15,9 +16,6 @@ fn home_dir(port: u16) -> PathBuf {
     path.push(format!("sandbox-{}", port));
     path
 }
-
-fn pick_port() {}
-
 pub struct SandboxServer {
     port: u16,
     process: Option<Child>,
@@ -29,7 +27,7 @@ impl SandboxServer {
     }
 
     pub fn new_random() -> Self {
-        let port = 4040;
+        let port = pick_unused_port().expect("no ports free");
         crate::runtime::context::enter(port);
         Self { port, process: None }
     }

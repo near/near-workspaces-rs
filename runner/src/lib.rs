@@ -15,8 +15,4 @@ mod tests {
     async fn test_1() {
         run_().await;
     }
-
-    #[test]
-    fn test_2() {
-    }
 }
