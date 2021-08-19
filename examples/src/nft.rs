@@ -2,7 +2,7 @@ use std::path::Path;
 
 use runner::*;
 
-const NFT_WASM_FILEPATH: &str = "./res/non_fungible_token.wasm";
+const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 
 
 #[runner::main(sandbox)]
