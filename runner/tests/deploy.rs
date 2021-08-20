@@ -2,8 +2,7 @@ use runner::*;
 use std::path::Path;
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
-const EXPECTED_NFT_METADATA: &str =
-r#"{
+const EXPECTED_NFT_METADATA: &str = r#"{
   "spec": "nft-1.0.0",
   "name": "Example NEAR non-fungible token",
   "symbol": "EXAMPLE",
@@ -12,7 +11,6 @@ r#"{
   "reference": null,
   "reference_hash": null
 }"#;
-
 
 #[runner::test(sandbox)]
 async fn test_dev_deploy() {

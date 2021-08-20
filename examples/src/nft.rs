@@ -4,7 +4,6 @@ use runner::*;
 
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 
-
 #[runner::main(sandbox)]
 async fn main() {
     let (contract_id, signer) = dev_deploy(Path::new(NFT_WASM_FILEPATH)).await.unwrap();

@@ -1,10 +1,9 @@
-pub(crate) mod local;
 pub(crate) mod context;
+pub(crate) mod local;
 
 pub use local::SandboxRuntime;
 
 use std::path::PathBuf;
-
 
 #[derive(Debug, Clone)]
 pub(crate) enum RuntimeFlavor {
@@ -28,7 +27,6 @@ impl RuntimeFlavor {
         }
     }
 }
-
 
 fn sandbox_home_dir(port: u16) -> PathBuf {
     let mut path = std::env::temp_dir();

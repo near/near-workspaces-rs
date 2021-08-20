@@ -1,5 +1,5 @@
-use super::types::{AccountInfo, NearBalance};
 use super::tool;
+use super::types::{AccountInfo, NearBalance};
 
 use chrono::Utc;
 use rand::Rng;

@@ -10,7 +10,8 @@ use near_primitives::types::{AccountId, BlockHeight, Finality};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
-const MISSING_RUNTIME_ERROR: &str = "there is no runtime running: need to be ran from a near runtime context";
+const MISSING_RUNTIME_ERROR: &str =
+    "there is no runtime running: need to be ran from a near runtime context";
 
 fn rt_current_addr() -> String {
     crate::runtime::context::current()

@@ -89,7 +89,7 @@ fn parse_knobs(
             let _ = rt.run().unwrap();
         },
         // TODO: Add further implementations for mainnet and testnet
-        _ => unimplemented!()
+        _ => unimplemented!(),
     };
 
     let header = if is_test {
@@ -121,7 +121,6 @@ fn parse_knobs(
 
     Ok(result.into())
 }
-
 
 pub(crate) fn test(args: TokenStream, item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as syn::ItemFn);

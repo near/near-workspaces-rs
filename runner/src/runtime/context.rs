@@ -1,6 +1,5 @@
-use std::cell::RefCell;
 use super::RuntimeFlavor;
-
+use std::cell::RefCell;
 
 thread_local! {
     static RT_CONTEXT: RefCell<Option<RuntimeFlavor>> = RefCell::new(None);
