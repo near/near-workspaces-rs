@@ -1,39 +1,38 @@
-# Sanbox RPC Helpers
-This repo hosts a bunch of helper functions for querying into the sandbox directly.
+# NEAR Runner or Runtime (Rust Edition)
+A runtime provided to automate workflows and write tests. This runtime provides the ability to deploy and run NEAR contracts, along with several other functions to aid in development and maintenance.
 
----
+Write once, run them on a controlled NEAR Sandbox local environment, and on NEAR Testnet and NEAR Mainnet (soon).
 
-**NOTE**
-This may be short-lived as these functions will later be incorporated into the more general `near-api-rs`.
+This software is in very early alpha (use at your own risk).
 
----
+## Testing
+```rust
+#![cfg(test)]
 
-## Showcase
-This showcase will run the [NFT example](https://github.com/near-examples/NFT) right in the sandbox.
+use runner::*;
 
-### Requirements
-Some requirements are needed first:
-- [Rust](https://rustup.rs/) installed
-- [Near Sandbox](https://github.com/near/sandbox) installed
-- [near-cli](https://github.com/near/near-cli) (optional only if we want to view results)
+#[runner::test(sandbox)]
+async fn test_deploy_and_view() {
+    let (contract_id, signer) = dev_deploy(Path::new("path/to/file.wasm"))
+        .await
+        .expect("could not dev-deploy contract");
 
-### Spinning up sandbox
-Start up the sandbox in a separate process/terminal:
-```bash
-near-sandbox init  # do this only once
-near-sandbox run
+    let result = view(
+        contract_id,
+        "function_name".to_string(),
+        r#""some_arg": "some_value"".into(),
+    ).await.expect("could not call into view function");
+
+    assert_eq!(result, OUR_EXPECTED_RESULT);
+}
+
+
 ```
 
-### Running the Demo
-The following command will deploy the NFT example contract to a dev account, initialize it, and mint a single NFT token we can play around with:
-```
-cargo test test_nft_example -- --nocapture
-```
+## Examples
+Some examples can be found `examples/src/*.rs` to run it standalone.
 
-To view our minted NFT in the sandbox:
+To run the NFT example, run:
 ```
-export NEAR_ENV=local
-near view $ID nft_metadata
+cargo run --package examples --example nft
 ```
-where `$ID` should be printed from our test
-
