@@ -226,7 +226,9 @@ pub async fn dev_create() -> Result<(AccountId, InMemorySigner), String> {
     Ok((account_id, signer))
 }
 
-pub async fn dev_deploy(contract_file: impl AsRef<Path>) -> Result<(AccountId, InMemorySigner), String> {
+pub async fn dev_deploy(
+    contract_file: impl AsRef<Path>,
+) -> Result<(AccountId, InMemorySigner), String> {
     let (account_id, signer) = dev_generate();
     let outcome =
         create_account_and_deploy(account_id.clone(), signer.public_key(), contract_file).await?;

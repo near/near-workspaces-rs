@@ -88,8 +88,7 @@ fn start_sandbox(home_dir: &Path, port: u16) -> io::Result<Child> {
                 &local_rpc_addr(port),
             ])
             .spawn()
-    }
-    else {
+    } else {
         Command::new(
             "/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox",
         )
@@ -107,8 +106,7 @@ fn init_sandbox(home_dir: &Path) -> io::Result<Child> {
         Command::new("near-sandbox")
             .args(&["--home", home_dir.to_str().unwrap(), "init"])
             .spawn()
-    }
-    else {
+    } else {
         Command::new(
             "/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox",
         )
