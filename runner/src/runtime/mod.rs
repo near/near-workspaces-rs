@@ -22,14 +22,8 @@ impl RuntimeFlavor {
 
     pub fn home_dir(&self) -> PathBuf {
         match self {
-            Self::Sandbox(port) => sandbox_home_dir(*port),
+            Self::Sandbox(port) => local::home_dir(*port),
             _ => unimplemented!(),
         }
     }
-}
-
-fn sandbox_home_dir(port: u16) -> PathBuf {
-    let mut path = std::env::temp_dir();
-    path.push(format!("sandbox-{}", port));
-    path
 }

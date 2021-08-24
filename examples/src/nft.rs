@@ -53,7 +53,7 @@ async fn main() {
     let call_result = view(
         contract_id.clone(),
         "nft_metadata".to_string(),
-        b"".to_vec().into(),
+        Vec::new().into(),
     )
     .await
     .unwrap();
