@@ -1,5 +1,6 @@
 use runner::*;
 use std::path::Path;
+use serde::{Serialize, Deserialize};
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{
@@ -11,6 +12,21 @@ const EXPECTED_NFT_METADATA: &str = r#"{
   "reference": null,
   "reference_hash": null
 }"#;
+
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+struct NftMetadata {
+    spec: String,
+    name: String,
+    symbol: String,
+    icon: String,
+    base_uri: Option<String>,
+    reference: Option<String>,
+    reference_hash: Option<String>,
+}
+
+fn expected() -> NftMetadata {
+    serde_json::from_str(EXPECTED_NFT_METADATA).unwrap()
+}
 
 #[runner::test(sandbox)]
 async fn test_dev_deploy() {
@@ -34,11 +50,11 @@ async fn test_dev_deploy() {
     let call_result = view(
         contract_id.clone(),
         "nft_metadata".to_string(),
-        b"".to_vec().into(),
+        Vec::new().into(),
     )
     .await
     .unwrap();
 
-    let actual_metadata = serde_json::to_string_pretty(&call_result).unwrap();
-    assert_eq!(&actual_metadata, EXPECTED_NFT_METADATA);
+    let actual: NftMetadata = serde_json::from_value(call_result).unwrap();
+    assert_eq!(actual, expected());
 }
