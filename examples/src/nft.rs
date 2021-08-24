@@ -1,3 +1,4 @@
+use serde_json::json;
 use std::path::Path;
 
 use runner::*;
@@ -31,19 +32,17 @@ async fn main() {
         contract_id.clone(),
         contract_id.clone(),
         "nft_mint".to_string(),
-        format!(
-            "{{
-            \"token_id\": \"0\",
-            \"token_owner_id\": \"{}\",
-            \"token_metadata\": {{
-                \"title\": \"Olympus Mons\",
-                \"description\": \"Tallest mountain in charted solar system\",
-                \"copies\": 1
-            }}
-        }}",
-            contract_id
-        )
-        .into(),
+        json!({
+            "token_id": 0,
+            "token_onwer_id": contract_id,
+            "token_metadata": {
+                "title": "Olympus Mons",
+                "dscription": "Tallest mountain in charted solar system",
+                "copies": 1,
+            },
+        })
+        .to_string()
+        .into_bytes(),
         Some(deposit),
     )
     .await
