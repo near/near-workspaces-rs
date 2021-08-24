@@ -28,8 +28,7 @@ fn parse_knobs(
                     .ok_or_else(|| {
                         syn::Error::new_spanned(&namevalue, "Must have specified ident")
                     })?
-                    .to_string()
-                    .to_lowercase();
+                    .to_string();
 
                 let msg = format!("Not expected to received a value for: {}", ident.as_str());
                 return Err(syn::Error::new_spanned(namevalue, msg));
@@ -65,6 +64,11 @@ fn parse_knobs(
         }
     }
 
+    // TODO: env flag for configuring which runtime flavor
+    if flavor.is_none() {
+        flavor = Some(Flavor::Sandbox);
+    }
+
     // If type mismatch occurs, the current rustc points to the last statement.
     let (last_stmt_start_span, last_stmt_end_span) = {
         let mut last_stmt = input
@@ -85,7 +89,7 @@ fn parse_knobs(
 
     let rt = match flavor.unwrap() {
         Flavor::Sandbox => quote_spanned! {last_stmt_start_span=>
-            let mut rt = runner::SandboxRuntime::new_default();
+            let mut rt = runner::SandboxRuntime::default();
             let _ = rt.run().unwrap();
         },
         // TODO: Add further implementations for mainnet and testnet
