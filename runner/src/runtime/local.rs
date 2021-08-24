@@ -12,7 +12,7 @@ fn local_rpc_addr(port: u16) -> String {
     format!("0.0.0.0:{}", port)
 }
 
-fn home_dir(port: u16) -> PathBuf {
+pub(crate) fn home_dir(port: u16) -> PathBuf {
     let mut path = std::env::temp_dir();
     path.push(format!("sandbox-{}", port));
     path
@@ -28,11 +28,6 @@ impl SandboxServer {
             port,
             process: None,
         }
-    }
-
-    pub fn new_default() -> Self {
-        let port = pick_unused_port().expect("no ports free");
-        Self::new(port)
     }
 
     pub fn start(&mut self) -> io::Result<()> {
@@ -51,6 +46,13 @@ impl SandboxServer {
         // TODO: Get rid of this sleep, and ping sandbox is alive instead:
         thread::sleep(Duration::from_secs(3));
         Ok(())
+    }
+}
+
+impl Default for SandboxServer {
+    fn default() -> Self {
+        let port = pick_unused_port().expect("no ports free");
+        Self::new(port)
     }
 }
 
@@ -75,48 +77,46 @@ impl Drop for SandboxServer {
     }
 }
 
-#[cfg(target_os = "windows")]
 fn start_sandbox(home_dir: &Path, port: u16) -> io::Result<Child> {
-    Command::new("near-sandbox")
-        .args(&[
-            "--home",
-            home_dir,
-            "run",
-            "--rpc-addr",
-            &local_rpc_addr(port),
-        ])
+    if cfg!(target_os = "windows") {
+        Command::new("near-sandbox")
+            .args(&[
+                "--home",
+                home_dir.to_str().unwrap(),
+                "run",
+                "--rpc-addr",
+                &local_rpc_addr(port),
+            ])
+            .spawn()
+    }
+    else {
+        Command::new(
+            "/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox",
+        )
+        .arg("--home")
+        .arg(home_dir)
+        .arg("run")
+        .arg("--rpc-addr")
+        .arg(&local_rpc_addr(port))
         .spawn()
+    }
 }
 
-#[cfg(target_os = "windows")]
 fn init_sandbox(home_dir: &Path) -> io::Result<Child> {
-    Command::new("near-sandbox")
-        .args(&["--home", home_dir, "init"])
+    if cfg!(target_os = "windows") {
+        Command::new("near-sandbox")
+            .args(&["--home", home_dir.to_str().unwrap(), "init"])
+            .spawn()
+    }
+    else {
+        Command::new(
+            "/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox",
+        )
+        .arg("--home")
+        .arg(home_dir)
+        .arg("init")
         .spawn()
-}
-
-#[cfg(not(target_os = "windows"))]
-fn start_sandbox(home_dir: &Path, port: u16) -> io::Result<Child> {
-    Command::new(
-        "/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox",
-    )
-    .arg("--home")
-    .arg(home_dir)
-    .arg("run")
-    .arg("--rpc-addr")
-    .arg(&local_rpc_addr(port))
-    .spawn()
-}
-
-#[cfg(not(target_os = "windows"))]
-fn init_sandbox(home_dir: &Path) -> io::Result<Child> {
-    Command::new(
-        "/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox",
-    )
-    .arg("--home")
-    .arg(home_dir)
-    .arg("init")
-    .spawn()
+    }
 }
 
 pub struct SandboxRuntime {
@@ -125,25 +125,19 @@ pub struct SandboxRuntime {
 }
 
 impl SandboxRuntime {
-    pub fn new_default() -> Self {
-        let server = SandboxServer::new_default();
+    pub fn run(&mut self) -> io::Result<()> {
+        self.server.start()
+    }
+}
+
+impl Default for SandboxRuntime {
+    fn default() -> Self {
+        let server = SandboxServer::default();
         let port = server.port;
 
         Self {
             server,
             _guard: context::enter(RuntimeFlavor::Sandbox(port)),
         }
-    }
-
-    pub fn port(&self) -> u16 {
-        self.server.port
-    }
-
-    pub fn rpc_addr(&self) -> String {
-        format!("http://localhost:{}", self.port())
-    }
-
-    pub fn run(&mut self) -> io::Result<()> {
-        self.server.start()
     }
 }
