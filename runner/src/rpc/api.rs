@@ -1,7 +1,5 @@
-mod tool;
-mod types;
-
-pub use crate::types::{AccountInfo, NearBalance};
+use super::tool;
+use super::types::{AccountInfo, NearBalance};
 
 use chrono::Utc;
 use rand::Rng;
@@ -20,7 +18,7 @@ const DEV_ACCOUNT_SEED: &str = "testificate";
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 
 pub async fn display_account_info(account_id: String) -> Result<AccountInfo, String> {
-    let query_resp = tool::sandbox_client()
+    let query_resp = tool::json_client()
         .query(RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccount {
@@ -97,7 +95,7 @@ pub async fn view(
     method_name: String,
     args: FunctionArgs,
 ) -> Result<serde_json::Value, String> {
-    let query_resp = tool::sandbox_client()
+    let query_resp = tool::json_client()
         .query(RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::CallFunction {
@@ -160,9 +158,9 @@ pub async fn create_tla_account(
 }
 
 async fn create_account_and_deploy(
-    new_account_id: &str,
-    new_account_pk: &PublicKey,
-    code_filepath: &Path,
+    new_account_id: AccountId,
+    new_account_pk: PublicKey,
+    code_filepath: impl AsRef<Path>,
 ) -> Result<FinalExecutionOutcomeView, String> {
     let root_signer = tool::root_account();
     let (access_key, _, block_hash) =
@@ -181,7 +179,7 @@ async fn create_account_and_deploy(
         new_account_id.to_string(),
         code,
         100 * NEAR_BASE,
-        new_account_pk.clone(),
+        new_account_pk,
         &root_signer,
         block_hash,
     );
@@ -192,9 +190,9 @@ async fn create_account_and_deploy(
 }
 
 pub async fn delete_account(
-    account_id: String,
+    account_id: AccountId,
     signer: &dyn Signer,
-    beneficiary_id: String,
+    beneficiary_id: AccountId,
 ) -> Result<FinalExecutionOutcomeView, String> {
     let (access_key, _, block_hash) =
         tool::access_key(account_id.clone(), signer.public_key()).await?;
@@ -228,70 +226,12 @@ pub async fn dev_create() -> Result<(AccountId, InMemorySigner), String> {
     Ok((account_id, signer))
 }
 
-pub async fn dev_deploy(contract_file: &Path) -> Result<(AccountId, InMemorySigner), String> {
+pub async fn dev_deploy(
+    contract_file: impl AsRef<Path>,
+) -> Result<(AccountId, InMemorySigner), String> {
     let (account_id, signer) = dev_generate();
-    let outcome = create_account_and_deploy(&account_id, &signer.public_key, contract_file).await?;
+    let outcome =
+        create_account_and_deploy(account_id.clone(), signer.public_key(), contract_file).await?;
     dbg!(outcome);
     Ok((account_id, signer))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tokio::runtime::Runtime;
-
-    const NFT_WASM_FILEPATH: &'static str = "./res/non_fungible_token.wasm";
-
-    #[test]
-    fn test_nft_example() {
-        let mut rt = Runtime::new().unwrap();
-        let local = tokio::task::LocalSet::new();
-        local.block_on(&mut rt, async {
-            let (contract_id, signer) = dev_deploy(Path::new(NFT_WASM_FILEPATH)).await.unwrap();
-
-            // Wait a few seconds for create account to finalize:
-            // TODO: exponentialBackoff to not need these explicit sleeps
-            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-
-            let outcome = call(
-                &signer,
-                contract_id.clone(),
-                contract_id.clone(),
-                "new_default_meta".to_string(),
-                format!("{{\"owner_id\": \"{}\"}}", contract_id).into(),
-                None,
-            )
-            .await
-            .unwrap();
-            println!("new_default_meta outcome: {:#?}", outcome);
-
-            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-            let deposit = 10000000000000000000000;
-            let outcome = call(
-                &signer,
-                contract_id.clone(),
-                contract_id.clone(),
-                "nft_mint".to_string(),
-                format!(
-                    "{{
-                    \"token_id\": \"0\",
-                    \"token_owner_id\": \"{}\",
-                    \"token_metadata\": {{
-                        \"title\": \"Olympus Mons\",
-                        \"description\": \"Tallest mountain in charted solar system\",
-                        \"copies\": 1
-                    }}
-                }}",
-                    contract_id
-                )
-                .into(),
-                Some(deposit),
-            )
-            .await
-            .unwrap();
-            println!("nft_mint outcome: {:#?}", outcome);
-
-            println!("Dev Account ID: {}", contract_id);
-        });
-    }
 }
