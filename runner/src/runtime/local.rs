@@ -1,45 +1,42 @@
 use portpicker::pick_unused_port;
 use std::fs;
-use std::io;
-use std::path::{Path, PathBuf};
-use std::process::{Child, Command};
+use std::path::{PathBuf};
+use std::process::{Child};
 use std::{thread, time::Duration};
 
 use super::context;
 use super::RuntimeFlavor;
-
-fn local_rpc_addr(port: u16) -> String {
-    format!("0.0.0.0:{}", port)
-}
 
 pub(crate) fn home_dir(port: u16) -> PathBuf {
     let mut path = std::env::temp_dir();
     path.push(format!("sandbox-{}", port));
     path
 }
+
 pub struct SandboxServer {
-    pub(self) port: u16,
+    pub(self) rpc_port: u16,
+    pub(self) net_port: u16,
     process: Option<Child>,
 }
 
 impl SandboxServer {
-    pub fn new(port: u16) -> Self {
+    pub fn new(rpc_port: u16, net_port: u16) -> Self {
         Self {
-            port,
+            rpc_port,
+            net_port,
             process: None,
         }
     }
 
-    pub fn start(&mut self) -> io::Result<()> {
-        println!("Starting up sandbox at localhost:{}", self.port);
-        let home_dir = home_dir(self.port);
+    pub fn start(&mut self) -> anyhow::Result<()> {
+        println!("Starting up sandbox at localhost:{}", self.rpc_port);
+        let home_dir = home_dir(self.rpc_port);
 
         // Remove dir if it already exists:
         let _ = fs::remove_dir_all(&home_dir);
+        near_sandbox_utils::init(&home_dir)?.wait()?;
 
-        init_sandbox(&home_dir)?.wait()?;
-
-        let child = start_sandbox(&home_dir, self.port)?;
+        let child = near_sandbox_utils::run(&home_dir, self.rpc_port, self.net_port)?;
         println!("Started sandbox: pid={:?}", child.id());
         self.process = Some(child);
 
@@ -51,8 +48,9 @@ impl SandboxServer {
 
 impl Default for SandboxServer {
     fn default() -> Self {
-        let port = pick_unused_port().expect("no ports free");
-        Self::new(port)
+        let rpc_port = pick_unused_port().expect("no ports free");
+        let net_port = pick_unused_port().expect("no ports free");
+        Self::new(rpc_port, net_port)
     }
 }
 
@@ -66,7 +64,7 @@ impl Drop for SandboxServer {
 
         println!(
             "Cleaning up sandbox: port={}, pid={}",
-            self.port,
+            self.rpc_port,
             child.id()
         );
 
@@ -77,53 +75,13 @@ impl Drop for SandboxServer {
     }
 }
 
-fn start_sandbox(home_dir: &Path, port: u16) -> io::Result<Child> {
-    if cfg!(target_os = "windows") {
-        Command::new("near-sandbox")
-            .args(&[
-                "--home",
-                home_dir.to_str().unwrap(),
-                "run",
-                "--rpc-addr",
-                &local_rpc_addr(port),
-            ])
-            .spawn()
-    } else {
-        Command::new(
-            "/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox",
-        )
-        .arg("--home")
-        .arg(home_dir)
-        .arg("run")
-        .arg("--rpc-addr")
-        .arg(&local_rpc_addr(port))
-        .spawn()
-    }
-}
-
-fn init_sandbox(home_dir: &Path) -> io::Result<Child> {
-    if cfg!(target_os = "windows") {
-        Command::new("near-sandbox")
-            .args(&["--home", home_dir.to_str().unwrap(), "init"])
-            .spawn()
-    } else {
-        Command::new(
-            "/usr/local/lib/node_modules/near-sandbox/node_modules/binary-install/bin/near-sandbox",
-        )
-        .arg("--home")
-        .arg(home_dir)
-        .arg("init")
-        .spawn()
-    }
-}
-
 pub struct SandboxRuntime {
     server: SandboxServer,
     _guard: context::EnterGuard,
 }
 
 impl SandboxRuntime {
-    pub fn run(&mut self) -> io::Result<()> {
+    pub fn run(&mut self) -> anyhow::Result<()> {
         self.server.start()
     }
 }
@@ -131,11 +89,11 @@ impl SandboxRuntime {
 impl Default for SandboxRuntime {
     fn default() -> Self {
         let server = SandboxServer::default();
-        let port = server.port;
+        let rpc_port = server.rpc_port;
 
         Self {
             server,
-            _guard: context::enter(RuntimeFlavor::Sandbox(port)),
+            _guard: context::enter(RuntimeFlavor::Sandbox(rpc_port)),
         }
     }
 }

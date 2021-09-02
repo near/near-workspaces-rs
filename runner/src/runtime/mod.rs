@@ -5,6 +5,8 @@ pub use local::SandboxRuntime;
 
 use std::path::PathBuf;
 
+// TODO: implement mainnet/testnet runtimes
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub(crate) enum RuntimeFlavor {
     Mainnet,
