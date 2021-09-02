@@ -62,7 +62,7 @@ impl Drop for SandboxServer {
 
         let child = self.process.as_mut().unwrap();
 
-        println!(
+        eprintln!(
             "Cleaning up sandbox: port={}, pid={}",
             self.rpc_port,
             child.id()
