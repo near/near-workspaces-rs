@@ -34,7 +34,6 @@ async fn test_dev_deploy() {
         .await
         .expect("could not dev-deploy NFT contract");
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
     call(
         &signer,
         contract_id.clone(),
@@ -46,7 +45,6 @@ async fn test_dev_deploy() {
     .await
     .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
     let call_result = view(
         contract_id.clone(),
         "nft_metadata".to_string(),

@@ -9,10 +9,6 @@ const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 async fn main() {
     let (contract_id, signer) = dev_deploy(Path::new(NFT_WASM_FILEPATH)).await.unwrap();
 
-    // Wait a few seconds for create account to finalize:
-    // TODO: exponentialBackoff to not need these explicit sleeps
-    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-
     let outcome = call(
         &signer,
         contract_id.clone(),
@@ -25,7 +21,6 @@ async fn main() {
     .unwrap();
     println!("new_default_meta outcome: {:#?}", outcome);
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
     let deposit = 10000000000000000000000;
     let outcome = call(
         &signer,

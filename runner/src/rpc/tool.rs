@@ -11,7 +11,7 @@ use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequ
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
 const MISSING_RUNTIME_ERROR: &str =
-    "there is no runtime running: need to be ran from a near runtime context";
+    "there is no runtime running: need to be ran from a NEAR runtime context";
 
 fn rt_current_addr() -> String {
     crate::runtime::context::current()
@@ -77,6 +77,9 @@ pub(crate) async fn send_tx(tx: SignedTransaction) -> Result<FinalExecutionOutco
 
         break transaction_info_result;
     };
+
+    // TODO: remove this after adding exponential backoff
+    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
     transaction_info_result.map_err(|e| format!("Error transaction: {:?}", e))
 }
