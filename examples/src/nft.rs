@@ -28,8 +28,8 @@ async fn main() {
         contract_id.clone(),
         "nft_mint".to_string(),
         json!({
-            "token_id": 0,
-            "token_onwer_id": contract_id,
+            "token_id": "0",
+            "token_owner_id": contract_id,
             "token_metadata": {
                 "title": "Olympus Mons",
                 "dscription": "Tallest mountain in charted solar system",
