@@ -1,4 +1,5 @@
 use near_primitives::hash::CryptoHash;
+use near_primitives::types::AccountId;
 
 const ONE_NEAR: u128 = 10u128.pow(24);
 
@@ -38,9 +39,9 @@ impl std::fmt::Display for NearBalance {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AccountInfo {
-    pub account_id: String,
+    pub account_id: AccountId,
     pub block_height: u64,
     pub block_hash: CryptoHash,
     pub balance: NearBalance,

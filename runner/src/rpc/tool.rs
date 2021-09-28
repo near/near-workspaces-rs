@@ -1,13 +1,17 @@
+// TODO: Remove this when near-jsonrpc-client crate no longer defaults to deprecation for
+//       warnings about unstable API.
+#![allow(deprecated)]
+
 use std::path::PathBuf;
 
 use near_crypto::{InMemorySigner, PublicKey};
-use near_jsonrpc_client::JsonRpcClient;
-use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
-use near_primitives::borsh::BorshSerialize;
+use near_jsonrpc_client::{methods, JsonRpcClient, errors::{JsonRpcError, JsonRpcServerError}};
+use near_jsonrpc_primitives::types::{transactions::RpcTransactionError, query::QueryResponseKind};
 use near_primitives::hash::CryptoHash;
 use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{AccountId, BlockHeight, Finality};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
+
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
 const MISSING_RUNTIME_ERROR: &str =
@@ -20,7 +24,7 @@ fn rt_current_addr() -> String {
 }
 
 pub(crate) fn json_client() -> JsonRpcClient {
-    near_jsonrpc_client::new_client(&rt_current_addr())
+    JsonRpcClient::connect(&rt_current_addr())
 }
 
 pub(crate) fn root_account() -> InMemorySigner {
@@ -34,19 +38,18 @@ pub(crate) fn root_account() -> InMemorySigner {
 }
 
 pub(crate) async fn access_key(
-    account_id: String,
+    account_id: AccountId,
     pk: PublicKey,
 ) -> Result<(AccessKeyView, BlockHeight, CryptoHash), String> {
-    let query_resp = json_client()
-        .query(RpcQueryRequest {
-            block_reference: Finality::Final.into(),
-            request: QueryRequest::ViewAccessKey {
-                account_id,
-                public_key: pk,
-            },
-        })
-        .await
-        .map_err(|err| format!("Failed to fetch public key info: {:?}", err))?;
+    let query_resp = json_client().call(&methods::query::RpcQueryRequest {
+        block_reference: Finality::Final.into(),
+        request: QueryRequest::ViewAccessKey {
+            account_id,
+            public_key: pk,
+        },
+    })
+    .await
+    .map_err(|err| format!("Failed to fetch public key info: {:?}", err))?;
 
     match query_resp.kind {
         QueryResponseKind::AccessKey(access_key) => {
@@ -57,21 +60,18 @@ pub(crate) async fn access_key(
 }
 
 pub(crate) async fn send_tx(tx: SignedTransaction) -> Result<FinalExecutionOutcomeView, String> {
-    let json_rpc_client = json_client();
+    let client = json_client();
     let transaction_info_result = loop {
-        let transaction_info_result = json_rpc_client
-            .broadcast_tx_commit(near_primitives::serialize::to_base64(
-                tx.try_to_vec()
-                    .expect("Transaction is not expected to fail on serialization"),
-            ))
+        let transaction_info_result = client.clone()
+            .call(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
+                signed_transaction: tx.clone()
+            })
             .await;
 
         if let Err(ref err) = transaction_info_result {
-            if let Some(serde_json::Value::String(data)) = &err.data {
-                if data.contains("Timeout") {
-                    println!("Error transaction: {:?}", err);
-                    continue;
-                }
+            if matches!(err, JsonRpcError::ServerError(JsonRpcServerError::HandlerError(RpcTransactionError::TimeoutError))) {
+                eprintln!("transaction timeout: {:?}", err);
+                continue;
             }
         }
 
