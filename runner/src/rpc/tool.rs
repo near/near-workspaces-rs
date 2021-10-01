@@ -7,8 +7,11 @@ use std::path::PathBuf;
 use std::str;
 
 use near_crypto::{InMemorySigner, PublicKey};
-use near_jsonrpc_client::{methods, JsonRpcClient, errors::{JsonRpcError, JsonRpcServerError}};
-use near_jsonrpc_primitives::types::{transactions::RpcTransactionError, query::QueryResponseKind};
+use near_jsonrpc_client::{
+    errors::{JsonRpcError, JsonRpcServerError},
+    methods, JsonRpcClient,
+};
+use near_jsonrpc_primitives::types::{query::QueryResponseKind, transactions::RpcTransactionError};
 use near_primitives::hash::CryptoHash;
 use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{AccountId, BlockHeight, Finality};
@@ -42,15 +45,16 @@ pub(crate) async fn access_key(
     account_id: AccountId,
     pk: PublicKey,
 ) -> Result<(AccessKeyView, BlockHeight, CryptoHash), String> {
-    let query_resp = json_client().call(&methods::query::RpcQueryRequest {
-        block_reference: Finality::Final.into(),
-        request: QueryRequest::ViewAccessKey {
-            account_id,
-            public_key: pk,
-        },
-    })
-    .await
-    .map_err(|err| format!("Failed to fetch public key info: {:?}", err))?;
+    let query_resp = json_client()
+        .call(&methods::query::RpcQueryRequest {
+            block_reference: Finality::Final.into(),
+            request: QueryRequest::ViewAccessKey {
+                account_id,
+                public_key: pk,
+            },
+        })
+        .await
+        .map_err(|err| format!("Failed to fetch public key info: {:?}", err))?;
 
     match query_resp.kind {
         QueryResponseKind::AccessKey(access_key) => {
@@ -63,14 +67,20 @@ pub(crate) async fn access_key(
 pub(crate) async fn send_tx(tx: SignedTransaction) -> Result<FinalExecutionOutcomeView, String> {
     let client = json_client();
     let transaction_info_result = loop {
-        let transaction_info_result = client.clone()
+        let transaction_info_result = client
+            .clone()
             .call(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
-                signed_transaction: tx.clone()
+                signed_transaction: tx.clone(),
             })
             .await;
 
         if let Err(ref err) = transaction_info_result {
-            if matches!(err, JsonRpcError::ServerError(JsonRpcServerError::HandlerError(RpcTransactionError::TimeoutError))) {
+            if matches!(
+                err,
+                JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
+                    RpcTransactionError::TimeoutError
+                ))
+            ) {
                 eprintln!("transaction timeout: {:?}", err);
                 continue;
             }
@@ -102,13 +112,13 @@ pub(crate) fn credentials_filepath(account_id: AccountId) -> Result<PathBuf, Str
 /// Assumes key and value are base64 encoded, so this also decode them.
 pub(crate) fn into_state_map(state_items: Vec<StateItem>) -> HashMap<String, Vec<u8>> {
     let decode = |s: StateItem| {
-        (str::from_utf8(&base64::decode(s.key.clone()).unwrap())
-            .unwrap_or_else(|_| &s.key).to_owned(),
-            base64::decode(s.value).unwrap()
+        (
+            str::from_utf8(&base64::decode(s.key.clone()).unwrap())
+                .unwrap_or_else(|_| &s.key)
+                .to_owned(),
+            base64::decode(s.value).unwrap(),
         )
     };
 
-    state_items.into_iter()
-        .map(decode)
-        .collect()
+    state_items.into_iter().map(decode).collect()
 }

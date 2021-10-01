@@ -3,24 +3,25 @@ use super::types::{AccountInfo, NearBalance};
 
 use chrono::Utc;
 use rand::Rng;
+use std::collections::HashMap;
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::convert::TryInto;
-use std::collections::HashMap;
 
-use near_jsonrpc_client::methods::{
-    sandbox_patch_state::{RpcSandboxPatchStateRequest, RpcSandboxPatchStateResponse},
-    self,
-};
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
+use near_jsonrpc_client::methods::{
+    self,
+    sandbox_patch_state::{RpcSandboxPatchStateRequest, RpcSandboxPatchStateResponse},
+};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
+use near_primitives::borsh::{BorshSchema, BorshSerialize};
 use near_primitives::state_record::StateRecord;
 use near_primitives::transaction::SignedTransaction;
-use near_primitives::types::{AccountId, Balance, BlockReference, Finality, FunctionArgs, Gas, StoreKey};
+use near_primitives::types::{
+    AccountId, Balance, BlockReference, Finality, FunctionArgs, Gas, StoreKey,
+};
 use near_primitives::views::{FinalExecutionOutcomeView, QueryRequest};
-use near_primitives::borsh::{BorshSchema, BorshSerialize};
-
 
 const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const DEV_ACCOUNT_SEED: &str = "testificate";
@@ -128,29 +129,34 @@ pub async fn view(
     Ok(serde_call_result)
 }
 
-pub async fn view_state(contract_id: AccountId, prefix: Option<StoreKey>) -> Result<HashMap<String, Vec<u8>>, String> {
+pub async fn view_state(
+    contract_id: AccountId,
+    prefix: Option<StoreKey>,
+) -> Result<HashMap<String, Vec<u8>>, String> {
     let query_resp = tool::json_client()
         .call(&methods::query::RpcQueryRequest {
             block_reference: BlockReference::Finality(Finality::Final),
             request: QueryRequest::ViewState {
                 account_id: contract_id,
                 prefix: prefix.unwrap_or_else(|| vec![].into()),
-            }
+            },
         })
         .await
         .map_err(|err| format!("Failed to query state: {:?}", err))?;
 
     match query_resp.kind {
-        QueryResponseKind::ViewState(state) => {
-            Ok(tool::into_state_map(state.values))
-        }
+        QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(state.values)),
         _ => Err("Could not retrieve access key".to_owned()),
     }
 }
 
-pub async fn patch_state<T>(account_id: AccountId, key: String, value: T) -> Result<RpcSandboxPatchStateResponse, String>
+pub async fn patch_state<T>(
+    account_id: AccountId,
+    key: String,
+    value: T,
+) -> Result<RpcSandboxPatchStateResponse, String>
 where
-    T: BorshSerialize + BorshSchema
+    T: BorshSerialize + BorshSchema,
 {
     // Patch state only exists within sandbox
     crate::runtime::assert_within(&["sandbox"]);
@@ -265,7 +271,8 @@ fn dev_generate() -> (AccountId, InMemorySigner) {
     let mut rng = rand::thread_rng();
     let random_num = rng.gen_range(10000000000000usize..99999999999999);
     let account_id = format!("dev-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), random_num);
-    let account_id: AccountId = account_id.try_into()
+    let account_id: AccountId = account_id
+        .try_into()
         .expect("could not convert dev account into AccountId");
 
     let signer = InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);

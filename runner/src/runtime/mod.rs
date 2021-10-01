@@ -39,7 +39,9 @@ impl RuntimeFlavor {
 }
 
 pub(crate) fn assert_within(runtimes: &[&str]) -> bool {
-    runtimes.contains(&crate::runtime::context::current()
-        .expect(crate::runtime::context::MISSING_RUNTIME_ERROR)
-        .name())
+    runtimes.contains(
+        &crate::runtime::context::current()
+            .expect(crate::runtime::context::MISSING_RUNTIME_ERROR)
+            .name(),
+    )
 }
