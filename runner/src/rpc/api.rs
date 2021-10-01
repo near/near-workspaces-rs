@@ -7,12 +7,20 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::convert::TryInto;
+use std::collections::HashMap;
 
+use near_jsonrpc_client::methods::{
+    sandbox_patch_state::{RpcSandboxPatchStateRequest, RpcSandboxPatchStateResponse},
+    self,
+};
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
+use near_primitives::state_record::StateRecord;
 use near_primitives::transaction::SignedTransaction;
-use near_primitives::types::{AccountId, Balance, Finality, FunctionArgs, Gas};
+use near_primitives::types::{AccountId, Balance, BlockReference, Finality, FunctionArgs, Gas, StoreKey};
 use near_primitives::views::{FinalExecutionOutcomeView, QueryRequest};
+use near_primitives::borsh::{BorshSchema, BorshSerialize};
+
 
 const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const DEV_ACCOUNT_SEED: &str = "testificate";
@@ -118,6 +126,46 @@ pub async fn view(
         .map_err(|err| format!("serde_json error: {:?}", err))?;
 
     Ok(serde_call_result)
+}
+
+pub async fn view_state(contract_id: AccountId, prefix: Option<StoreKey>) -> Result<HashMap<String, Vec<u8>>, String> {
+    let query_resp = tool::json_client()
+        .call(&methods::query::RpcQueryRequest {
+            block_reference: BlockReference::Finality(Finality::Final),
+            request: QueryRequest::ViewState {
+                account_id: contract_id,
+                prefix: prefix.unwrap_or_else(|| vec![].into()),
+            }
+        })
+        .await
+        .map_err(|err| format!("Failed to query state: {:?}", err))?;
+
+    match query_resp.kind {
+        QueryResponseKind::ViewState(state) => {
+            Ok(tool::into_state_map(state.values))
+        }
+        _ => Err("Could not retrieve access key".to_owned()),
+    }
+}
+
+pub async fn patch_state<T>(account_id: AccountId, key: String, value: T) -> Result<RpcSandboxPatchStateResponse, String>
+where
+    T: BorshSerialize + BorshSchema
+{
+    let value = T::try_to_vec(&value).unwrap();
+    let state = StateRecord::Data {
+        account_id,
+        data_key: key.into(),
+        value: value.into(),
+    };
+    let records = vec![state];
+
+    let query_resp = tool::json_client()
+        .call(&RpcSandboxPatchStateRequest { records })
+        .await
+        .map_err(|err| format!("Failed to patch state: {:?}", err));
+
+    query_resp
 }
 
 pub async fn create_account(

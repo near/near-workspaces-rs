@@ -2,7 +2,9 @@
 //       warnings about unstable API.
 #![allow(deprecated)]
 
+use std::collections::HashMap;
 use std::path::PathBuf;
+use std::str;
 
 use near_crypto::{InMemorySigner, PublicKey};
 use near_jsonrpc_client::{methods, JsonRpcClient, errors::{JsonRpcError, JsonRpcServerError}};
@@ -10,7 +12,7 @@ use near_jsonrpc_primitives::types::{transactions::RpcTransactionError, query::Q
 use near_primitives::hash::CryptoHash;
 use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{AccountId, BlockHeight, Finality};
-use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
+use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest, StateItem};
 
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
@@ -95,4 +97,19 @@ pub(crate) fn credentials_filepath(account_id: AccountId) -> Result<PathBuf, Str
 
     path.push(format!("{}.json", account_id));
     Ok(path)
+}
+
+/// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
+/// Assumes key and value are base64 encoded, so this also decode them.
+pub(crate) fn into_state_map(state_items: Vec<StateItem>) -> HashMap<String, Vec<u8>> {
+    let decode = |s: StateItem| {
+        (str::from_utf8(&base64::decode(s.key.clone()).unwrap())
+            .unwrap_or_else(|_| &s.key).to_owned(),
+            base64::decode(s.value).unwrap()
+        )
+    };
+
+    state_items.into_iter()
+        .map(decode)
+        .collect()
 }
