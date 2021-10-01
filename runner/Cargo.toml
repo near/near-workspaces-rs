@@ -30,3 +30,4 @@ near-sandbox-utils = { git = "https://github.com/near/sandbox" }
 [dependencies.near-jsonrpc-client]
 git = "https://github.com/near/near-jsonrpc-client-rs"
 rev = "d3c7a057792f661ba585b575012bf85d954bd327"
+features = ["sandbox"]
