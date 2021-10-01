@@ -14,10 +14,9 @@ use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{AccountId, BlockHeight, Finality};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest, StateItem};
 
+use crate::runtime::context::MISSING_RUNTIME_ERROR;
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
-const MISSING_RUNTIME_ERROR: &str =
-    "there is no runtime running: need to be ran from a NEAR runtime context";
 
 fn rt_current_addr() -> String {
     crate::runtime::context::current()

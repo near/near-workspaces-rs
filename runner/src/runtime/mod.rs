@@ -28,4 +28,18 @@ impl RuntimeFlavor {
             _ => unimplemented!(),
         }
     }
+
+    pub(crate) fn name(&self) -> &'static str {
+        match self {
+            Self::Sandbox(_) => "sandbox",
+            Self::Mainnet => "mainnet",
+            Self::Testnet => "testnet",
+        }
+    }
+}
+
+pub(crate) fn assert_within(runtimes: &[&str]) -> bool {
+    runtimes.contains(&crate::runtime::context::current()
+        .expect(crate::runtime::context::MISSING_RUNTIME_ERROR)
+        .name())
 }

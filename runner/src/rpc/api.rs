@@ -152,6 +152,9 @@ pub async fn patch_state<T>(account_id: AccountId, key: String, value: T) -> Res
 where
     T: BorshSerialize + BorshSchema
 {
+    // Patch state only exists within sandbox
+    crate::runtime::assert_within(&["sandbox"]);
+
     let value = T::try_to_vec(&value).unwrap();
     let state = StateRecord::Data {
         account_id,
