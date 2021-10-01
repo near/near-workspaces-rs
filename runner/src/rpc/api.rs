@@ -15,7 +15,7 @@ use near_jsonrpc_client::methods::{
     sandbox_patch_state::{RpcSandboxPatchStateRequest, RpcSandboxPatchStateResponse},
 };
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
-use near_primitives::borsh::{BorshSchema, BorshSerialize};
+use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
 use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{
@@ -156,7 +156,7 @@ pub async fn patch_state<T>(
     value: T,
 ) -> Result<RpcSandboxPatchStateResponse, String>
 where
-    T: BorshSerialize + BorshSchema,
+    T: BorshSerialize,
 {
     // Patch state only exists within sandbox
     crate::runtime::assert_within(&["sandbox"]);
