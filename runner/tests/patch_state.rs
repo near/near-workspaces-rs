@@ -1,27 +1,21 @@
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use std::path::Path;
 
-use near_primitives::borsh::{self, BorshDeserialize, BorshSchema, BorshSerialize};
+use near_primitives::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_primitives::types::AccountId;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
 
-#[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
+#[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize)]
 struct Record {
     k: String,
     v: String,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
+#[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize)]
 struct StatusMessage {
     records: Vec<Record>,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
-struct ViewStatus {
-    status: String,
 }
 
 async fn view_status_state() -> (AccountId, StatusMessage) {
@@ -74,7 +68,7 @@ async fn test_patch_state() {
         v: "hello world".to_string(),
     });
 
-    let _outcome = runner::patch_state(contract_id.clone(), "STATE".to_string(), status_msg)
+    let _outcome = runner::patch_state(contract_id.clone(), "STATE".to_string(), &status_msg)
         .await
         .unwrap();
 

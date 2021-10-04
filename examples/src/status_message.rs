@@ -1,13 +1,10 @@
 use serde_json::json;
-use std::path::Path;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 
 #[runner::main(sandbox)]
 async fn main() {
-    let (contract_id, signer) = runner::dev_deploy(Path::new(STATUS_MSG_WASM_FILEPATH))
-        .await
-        .unwrap();
+    let (contract_id, signer) = runner::dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
 
     runner::call(
         &signer,
@@ -28,7 +25,7 @@ async fn main() {
         contract_id.clone(),
         "get_status".into(),
         json!({
-            "account_id": contract_id.clone().to_string(),
+            "account_id": contract_id,
         })
         .to_string()
         .into_bytes()

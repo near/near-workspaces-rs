@@ -109,16 +109,16 @@ pub(crate) fn credentials_filepath(account_id: AccountId) -> Result<PathBuf, Str
 }
 
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
-/// Assumes key and value are base64 encoded, so this also decode them.
-pub(crate) fn into_state_map(state_items: Vec<StateItem>) -> HashMap<String, Vec<u8>> {
-    let decode = |s: StateItem| {
-        (
-            str::from_utf8(&base64::decode(s.key.clone()).unwrap())
-                .unwrap_or_else(|_| &s.key)
-                .to_owned(),
-            base64::decode(s.value).unwrap(),
-        )
+/// Assumes key and value are base64 encoded, so this also decodes them.
+pub(crate) fn into_state_map(
+    state_items: &Vec<StateItem>,
+) -> anyhow::Result<HashMap<String, Vec<u8>>> {
+    let decode = |s: &StateItem| {
+        Ok((
+            str::from_utf8(&base64::decode(&s.key)?)?.to_owned(),
+            base64::decode(&s.value)?,
+        ))
     };
 
-    state_items.into_iter().map(decode).collect()
+    state_items.iter().map(decode).collect()
 }

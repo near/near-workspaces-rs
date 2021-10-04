@@ -1,6 +1,7 @@
 use super::tool;
 use super::types::{AccountInfo, NearBalance};
 
+use anyhow::anyhow;
 use chrono::Utc;
 use rand::Rng;
 use std::collections::HashMap;
@@ -23,6 +24,8 @@ use near_primitives::types::{
 };
 use near_primitives::views::{FinalExecutionOutcomeView, QueryRequest};
 
+const ERR_INVALID_VARIANT: &str =
+    "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const DEV_ACCOUNT_SEED: &str = "testificate";
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
@@ -132,7 +135,7 @@ pub async fn view(
 pub async fn view_state(
     contract_id: AccountId,
     prefix: Option<StoreKey>,
-) -> Result<HashMap<String, Vec<u8>>, String> {
+) -> anyhow::Result<HashMap<String, Vec<u8>>> {
     let query_resp = tool::json_client()
         .call(&methods::query::RpcQueryRequest {
             block_reference: BlockReference::Finality(Finality::Final),
@@ -142,18 +145,18 @@ pub async fn view_state(
             },
         })
         .await
-        .map_err(|err| format!("Failed to query state: {:?}", err))?;
+        .map_err(|err| anyhow!("Failed to query state: {:?}", err))?;
 
     match query_resp.kind {
-        QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(state.values)),
-        _ => Err("Could not retrieve access key".to_owned()),
+        QueryResponseKind::ViewState(state) => tool::into_state_map(&state.values),
+        _ => Err(anyhow!(ERR_INVALID_VARIANT)),
     }
 }
 
 pub async fn patch_state<T>(
     account_id: AccountId,
     key: String,
-    value: T,
+    value: &T,
 ) -> Result<RpcSandboxPatchStateResponse, String>
 where
     T: BorshSerialize,
@@ -161,7 +164,7 @@ where
     // Patch state only exists within sandbox
     crate::runtime::assert_within(&["sandbox"]);
 
-    let value = T::try_to_vec(&value).unwrap();
+    let value = T::try_to_vec(value).unwrap();
     let state = StateRecord::Data {
         account_id,
         data_key: key.into(),
