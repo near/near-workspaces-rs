@@ -13,7 +13,7 @@ use runner::*;
 
 #[runner::test(sandbox)]
 async fn test_deploy_and_view() {
-    let (contract_id, signer) = dev_deploy(Path::new("path/to/file.wasm"))
+    let (contract_id, signer) = dev_deploy("path/to/file.wasm")
         .await
         .expect("could not dev-deploy contract");
 

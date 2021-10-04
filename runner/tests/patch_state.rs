@@ -1,7 +1,5 @@
 use serde_json::json;
 
-use std::path::Path;
-
 use near_primitives::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_primitives::types::AccountId;
 
@@ -19,7 +17,7 @@ struct StatusMessage {
 }
 
 async fn view_status_state() -> (AccountId, StatusMessage) {
-    let (contract_id, signer) = runner::dev_deploy(Path::new(STATUS_MSG_WASM_FILEPATH))
+    let (contract_id, signer) = runner::dev_deploy(STATUS_MSG_WASM_FILEPATH)
         .await
         .unwrap();
 

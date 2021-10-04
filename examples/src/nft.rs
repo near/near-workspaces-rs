@@ -1,5 +1,4 @@
 use serde_json::json;
-use std::path::Path;
 
 use runner::*;
 
@@ -7,7 +6,7 @@ const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 
 #[runner::main(sandbox)]
 async fn main() {
-    let (contract_id, signer) = dev_deploy(Path::new(NFT_WASM_FILEPATH)).await.unwrap();
+    let (contract_id, signer) = dev_deploy(NFT_WASM_FILEPATH).await.unwrap();
 
     let outcome = call(
         &signer,
