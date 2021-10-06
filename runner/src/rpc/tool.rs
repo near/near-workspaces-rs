@@ -3,8 +3,13 @@
 #![allow(deprecated)]
 
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::path::PathBuf;
 use std::str;
+
+use chrono::Utc;
+use rand::Rng;
+use url::Url;
 
 use near_crypto::{InMemorySigner, PublicKey};
 use near_jsonrpc_client::{
@@ -18,8 +23,6 @@ use near_primitives::types::{AccountId, BlockHeight, Finality};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest, StateItem};
 
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
-
-const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
 
 fn rt_current_addr() -> String {
     crate::runtime::context::current()
@@ -95,14 +98,13 @@ pub(crate) async fn send_tx(tx: SignedTransaction) -> Result<FinalExecutionOutco
     transaction_info_result.map_err(|e| format!("Error transaction: {:?}", e))
 }
 
-pub(crate) fn credentials_filepath(account_id: AccountId) -> Result<PathBuf, String> {
-    let home_dir = dirs::home_dir().ok_or_else(|| "Could not get HOME_DIR".to_string())?;
-    let mut path = PathBuf::from(&home_dir);
-    path.push(SANDBOX_CREDENTIALS_DIR);
+pub(crate) fn credentials_filepath(account_id: AccountId) -> anyhow::Result<PathBuf> {
+    let mut path = crate::runtime::context::current()
+        .expect(MISSING_RUNTIME_ERROR)
+        .keystore_path()?;
 
     // Create this path's directories if they don't exist:
-    std::fs::create_dir_all(path.clone())
-        .map_err(|e| format!("Could not create near credential directory: {}", e))?;
+    std::fs::create_dir_all(path.clone())?;
 
     path.push(format!("{}.json", account_id));
     Ok(path)
@@ -121,4 +123,56 @@ pub(crate) fn into_state_map(
     };
 
     state_items.iter().map(decode).collect()
+}
+
+pub(crate) fn random_account_id() -> AccountId {
+    let mut rng = rand::thread_rng();
+    let random_num = rng.gen_range(10000000000000usize..99999999999999);
+    let account_id = format!("dev-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), random_num);
+    let account_id: AccountId = account_id
+        .try_into()
+        .expect("could not convert dev account into AccountId");
+
+    account_id
+}
+
+pub(crate) async fn url_create_account(helper_url: Url, account_id: AccountId, pk: PublicKey) -> anyhow::Result<()> {
+    let helper_addr = helper_url.join("account")?;
+    let resp = reqwest::Client::new()
+        .post(helper_addr)
+        .header("Content-Type", "application/json")
+        .body(serde_json::to_vec(&serde_json::json!({
+            "newAccountId": account_id.to_string(),
+            "newAccountPublicKey": pk.to_string(),
+        }))?)
+        .send()
+        .await?;
+
+    println!("{:?}", resp);
+    Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use url::Url;
+    use super::AccountId;
+    use std::str::FromStr;
+    use near_crypto::{InMemorySigner, KeyType, Signer};
+
+
+    #[tokio::test]
+    async fn test_create() {
+        use crate::runtime::online as O;
+
+        // let account_id = super::random_account_id();
+        let account_id = AccountId::from_str("dev-20210806000923-48206644266866").unwrap();
+        let signer = InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, "testificate");
+        let pk = signer.public_key();
+
+        super::url_create_account(
+            Url::parse(O::HELPER_URL).unwrap(),
+            account_id,
+            pk,
+        ).await.unwrap();
+    }
 }

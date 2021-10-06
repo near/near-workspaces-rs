@@ -1,9 +1,15 @@
 pub(crate) mod context;
 pub(crate) mod local;
+pub(crate) mod online;
 
 pub use local::SandboxRuntime;
+pub use online::TestnetRuntime;
 
 use std::path::PathBuf;
+use anyhow::anyhow;
+
+const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
+const TESTNET_CREDENTIALS_DIR: &str = ".near-credentials/testnet/runner";
 
 // TODO: implement mainnet/testnet runtimes
 #[allow(dead_code)]
@@ -18,6 +24,7 @@ impl RuntimeFlavor {
     pub fn rpc_addr(&self) -> String {
         match self {
             Self::Sandbox(port) => format!("http://localhost:{}", port),
+            Self::Testnet => online::RPC_URL.to_string(),
             _ => unimplemented!(),
         }
     }
@@ -35,6 +42,19 @@ impl RuntimeFlavor {
             Self::Mainnet => "mainnet",
             Self::Testnet => "testnet",
         }
+    }
+
+    pub fn keystore_path(&self) -> anyhow::Result<PathBuf> {
+        let home_dir = dirs::home_dir()
+            .ok_or_else(|| anyhow!("Could not get HOME_DIR".to_string()))?;
+        let mut path = PathBuf::from(&home_dir);
+        path.push(match self {
+            Self::Sandbox(_) => SANDBOX_CREDENTIALS_DIR,
+            Self::Testnet => TESTNET_CREDENTIALS_DIR,
+            _ => unimplemented!(),
+        });
+
+        Ok(path)
     }
 }
 
