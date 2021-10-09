@@ -18,11 +18,12 @@ use near_jsonrpc_client::methods::{
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
-use near_primitives::transaction::SignedTransaction;
+use near_primitives::transaction::{Action, DeployContractAction, SignedTransaction};
 use near_primitives::types::{
     AccountId, Balance, BlockReference, Finality, FunctionArgs, Gas, StoreKey,
 };
 use near_primitives::views::{FinalExecutionOutcomeView, QueryRequest};
+use crate::runtime::context::MISSING_RUNTIME_ERROR;
 
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
@@ -186,9 +187,10 @@ pub async fn create_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
     deposit: Option<Balance>,
-) -> Result<FinalExecutionOutcomeView, String> {
+) -> anyhow::Result<FinalExecutionOutcomeView> {
     let (access_key, _, block_hash) =
-        tool::access_key(signer_id.clone(), signer.public_key()).await?;
+        tool::access_key(signer_id.clone(), signer.public_key()).await
+        .map_err(|e| anyhow!(e))?;
 
     let signed_tx = SignedTransaction::create_account(
         access_key.nonce + 1,
@@ -199,39 +201,51 @@ pub async fn create_account(
         signer,
         block_hash,
     );
-    let transaction_info = tool::send_tx(signed_tx).await?;
+    let transaction_info = tool::send_tx(signed_tx).await
+        .map_err(|e| anyhow!(e))?;
     Ok(transaction_info)
 }
 
+/// Creates a top level account. While in sandbox, we can grab the `ExecutionOutcomeView`, but
+/// while in Testnet or Mainnet, a helper account creator is used instead which does not
+/// provide the `ExecutionOutcomeView`.
 pub async fn create_tla_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
-) -> Result<FinalExecutionOutcomeView, String> {
-    let root_signer = tool::root_account();
-    create_account(
-        &root_signer,
-        root_signer.account_id.clone(),
-        new_account_id,
-        new_account_pk,
-        None,
-    )
-    .await
+) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
+    let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
+    if rt.name() == "sandbox" {
+        let root_signer = tool::root_account();
+        Ok(Some(create_account(
+            &root_signer,
+            root_signer.account_id.clone(),
+            new_account_id,
+            new_account_pk,
+            None,
+        )
+        .await?))
+    } else {
+        let helper_url = rt.helper_url();
+        tool::url_create_account(helper_url, new_account_id, new_account_pk).await?;
+
+        Ok(None)
+    }
+
 }
 
 async fn create_account_and_deploy(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
     code_filepath: impl AsRef<Path>,
-) -> Result<FinalExecutionOutcomeView, String> {
+) -> anyhow::Result<FinalExecutionOutcomeView> {
     let root_signer = tool::root_account();
     let (access_key, _, block_hash) =
-        tool::access_key(root_signer.account_id.clone(), root_signer.public_key()).await?;
+        tool::access_key(root_signer.account_id.clone(), root_signer.public_key()).await
+        .map_err(|e| anyhow!(e))?;
 
     let mut code = Vec::new();
-    File::open(code_filepath)
-        .map_err(|e| e.to_string())?
-        .read_to_end(&mut code)
-        .map_err(|e| e.to_string())?;
+    File::open(code_filepath)?
+        .read_to_end(&mut code)?;
 
     // This transaction creates the account too:
     let signed_tx = SignedTransaction::create_contract(
@@ -246,7 +260,39 @@ async fn create_account_and_deploy(
     );
     dbg!(&signed_tx);
 
-    let transaction_info = tool::send_tx(signed_tx).await?;
+    let transaction_info = tool::send_tx(signed_tx).await
+        .map_err(|e| anyhow!(e))?;
+    Ok(transaction_info)
+}
+
+async fn testnet_create(
+    new_account_id: AccountId,
+    new_account_pk: PublicKey,
+    signer: &dyn Signer,
+    code_filepath: impl AsRef<Path>,
+) -> anyhow::Result<FinalExecutionOutcomeView> {
+    create_tla_account(new_account_id.clone(), new_account_pk.clone()).await?;
+    let (access_key, _, block_hash) =
+        tool::access_key(new_account_id.clone(), new_account_pk).await
+        .map_err(|e| anyhow!(e))?;
+
+    let mut code = Vec::new();
+    File::open(code_filepath)?
+        .read_to_end(&mut code)?;
+
+    let signed_tx = SignedTransaction::from_actions(
+        access_key.nonce + 1,
+        new_account_id.clone(),
+        new_account_id.clone(),
+        signer,
+        vec![
+            Action::DeployContract(DeployContractAction { code })
+        ],
+        block_hash,
+    );
+
+    let transaction_info = tool::send_tx(signed_tx).await
+        .map_err(|e| anyhow!(e))?;
     Ok(transaction_info)
 }
 
@@ -283,7 +329,7 @@ fn dev_generate() -> (AccountId, InMemorySigner) {
     (account_id, signer)
 }
 
-pub async fn dev_create() -> Result<(AccountId, InMemorySigner), String> {
+pub async fn dev_create() -> anyhow::Result<(AccountId, InMemorySigner)> {
     let (account_id, signer) = dev_generate();
     let outcome = create_tla_account(account_id.clone(), signer.public_key()).await?;
     dbg!(outcome);
@@ -292,10 +338,17 @@ pub async fn dev_create() -> Result<(AccountId, InMemorySigner), String> {
 
 pub async fn dev_deploy(
     contract_file: impl AsRef<Path>,
-) -> Result<(AccountId, InMemorySigner), String> {
+) -> anyhow::Result<(AccountId, InMemorySigner)> {
     let (account_id, signer) = dev_generate();
-    let outcome =
-        create_account_and_deploy(account_id.clone(), signer.public_key(), contract_file).await?;
+    let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
+
+    let outcome = if rt.name() == "sandbox" {
+        create_account_and_deploy(account_id.clone(), signer.public_key(), contract_file)
+            .await?
+    } else {
+        testnet_create(account_id.clone(), signer.public_key(), &signer, contract_file)
+            .await?
+    };
     dbg!(outcome);
     Ok((account_id, signer))
 }

@@ -7,6 +7,7 @@ pub use online::TestnetRuntime;
 
 use std::path::PathBuf;
 use anyhow::anyhow;
+use url::Url;
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
 const TESTNET_CREDENTIALS_DIR: &str = ".near-credentials/testnet/runner";
@@ -55,6 +56,13 @@ impl RuntimeFlavor {
         });
 
         Ok(path)
+    }
+
+    pub fn helper_url(&self) -> Url {
+        match self {
+            Self::Testnet => Url::parse(online::HELPER_URL).unwrap(),
+            _ => unimplemented!(),
+        }
     }
 }
 
