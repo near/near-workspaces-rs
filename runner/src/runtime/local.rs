@@ -1,17 +1,77 @@
+use anyhow::anyhow;
 use portpicker::pick_unused_port;
-use std::fs;
-use std::path::PathBuf;
+
+use std::fs::{self, File};
+use std::io::prelude::*;
+use std::path::{Path, PathBuf};
 use std::process::Child;
 use std::{thread, time::Duration};
 
+use near_crypto::{Signer, PublicKey};
+use near_primitives::views::FinalExecutionOutcomeView;
+use near_primitives::transaction::{Action, DeployContractAction, SignedTransaction};
+use near_primitives::types::{AccountId, Balance};
+
+use crate::rpc::tool;
+use crate::NEAR_BASE;
 use super::context;
 use super::RuntimeFlavor;
+
 
 pub(crate) fn home_dir(port: u16) -> PathBuf {
     let mut path = std::env::temp_dir();
     path.push(format!("sandbox-{}", port));
     path
 }
+
+pub(crate) async fn create_tla_account(
+    new_account_id: AccountId,
+    new_account_pk: PublicKey,
+) -> anyhow::Result<FinalExecutionOutcomeView> {
+    let root_signer = tool::root_account();
+    crate::create_account(
+        &root_signer,
+        root_signer.account_id.clone(),
+        new_account_id,
+        new_account_pk,
+        None,
+    )
+    .await
+}
+
+pub(crate) async fn create_tla_and_deploy(
+    new_account_id: AccountId,
+    new_account_pk: PublicKey,
+    _signer: &dyn Signer,
+    code_filepath: impl AsRef<Path>,
+) -> anyhow::Result<FinalExecutionOutcomeView> {
+    let root_signer = tool::root_account();
+    let (access_key, _, block_hash) =
+        tool::access_key(root_signer.account_id.clone(), root_signer.public_key()).await
+        .map_err(|e| anyhow!(e))?;
+
+    let mut code = Vec::new();
+    File::open(code_filepath)?
+        .read_to_end(&mut code)?;
+
+    // This transaction creates the account too:
+    let signed_tx = SignedTransaction::create_contract(
+        access_key.nonce + 1,
+        root_signer.account_id.clone(),
+        new_account_id,
+        code,
+        100 * NEAR_BASE,
+        new_account_pk,
+        &root_signer,
+        block_hash,
+    );
+    dbg!(&signed_tx);
+
+    let transaction_info = tool::send_tx(signed_tx).await
+        .map_err(|e| anyhow!(e))?;
+    Ok(transaction_info)
+}
+
 
 pub struct SandboxServer {
     pub(self) rpc_port: u16,

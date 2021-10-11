@@ -6,8 +6,6 @@ use chrono::Utc;
 use rand::Rng;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::fs::File;
-use std::io::prelude::*;
 use std::path::Path;
 
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
@@ -18,16 +16,16 @@ use near_jsonrpc_client::methods::{
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
-use near_primitives::transaction::{Action, DeployContractAction, SignedTransaction};
+use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{
     AccountId, Balance, BlockReference, Finality, FunctionArgs, Gas, StoreKey,
 };
 use near_primitives::views::{FinalExecutionOutcomeView, QueryRequest};
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
 
+pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
-const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const DEV_ACCOUNT_SEED: &str = "testificate";
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 
@@ -215,85 +213,11 @@ pub async fn create_tla_account(
 ) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
     let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
     if rt.name() == "sandbox" {
-        let root_signer = tool::root_account();
-        Ok(Some(create_account(
-            &root_signer,
-            root_signer.account_id.clone(),
-            new_account_id,
-            new_account_pk,
-            None,
-        )
-        .await?))
+        Ok(Some(crate::runtime::local::create_tla_account(new_account_id, new_account_pk).await?))
     } else {
-        let helper_url = rt.helper_url();
-        tool::url_create_account(helper_url, new_account_id, new_account_pk).await?;
-
+        crate::runtime::online::create_tla_account(new_account_id, new_account_pk).await?;
         Ok(None)
     }
-
-}
-
-async fn create_account_and_deploy(
-    new_account_id: AccountId,
-    new_account_pk: PublicKey,
-    code_filepath: impl AsRef<Path>,
-) -> anyhow::Result<FinalExecutionOutcomeView> {
-    let root_signer = tool::root_account();
-    let (access_key, _, block_hash) =
-        tool::access_key(root_signer.account_id.clone(), root_signer.public_key()).await
-        .map_err(|e| anyhow!(e))?;
-
-    let mut code = Vec::new();
-    File::open(code_filepath)?
-        .read_to_end(&mut code)?;
-
-    // This transaction creates the account too:
-    let signed_tx = SignedTransaction::create_contract(
-        access_key.nonce + 1,
-        root_signer.account_id.clone(),
-        new_account_id,
-        code,
-        100 * NEAR_BASE,
-        new_account_pk,
-        &root_signer,
-        block_hash,
-    );
-    dbg!(&signed_tx);
-
-    let transaction_info = tool::send_tx(signed_tx).await
-        .map_err(|e| anyhow!(e))?;
-    Ok(transaction_info)
-}
-
-async fn testnet_create(
-    new_account_id: AccountId,
-    new_account_pk: PublicKey,
-    signer: &dyn Signer,
-    code_filepath: impl AsRef<Path>,
-) -> anyhow::Result<FinalExecutionOutcomeView> {
-    create_tla_account(new_account_id.clone(), new_account_pk.clone()).await?;
-    let (access_key, _, block_hash) =
-        tool::access_key(new_account_id.clone(), new_account_pk).await
-        .map_err(|e| anyhow!(e))?;
-
-    let mut code = Vec::new();
-    File::open(code_filepath)?
-        .read_to_end(&mut code)?;
-
-    let signed_tx = SignedTransaction::from_actions(
-        access_key.nonce + 1,
-        new_account_id.clone(),
-        new_account_id.clone(),
-        signer,
-        vec![
-            Action::DeployContract(DeployContractAction { code })
-        ],
-        block_hash,
-    );
-
-    let transaction_info = tool::send_tx(signed_tx).await
-        .map_err(|e| anyhow!(e))?;
-    Ok(transaction_info)
 }
 
 pub async fn delete_account(
@@ -343,10 +267,10 @@ pub async fn dev_deploy(
     let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
 
     let outcome = if rt.name() == "sandbox" {
-        create_account_and_deploy(account_id.clone(), signer.public_key(), contract_file)
+        crate::runtime::local::create_tla_and_deploy(account_id.clone(), signer.public_key(), &signer, contract_file)
             .await?
     } else {
-        testnet_create(account_id.clone(), signer.public_key(), &signer, contract_file)
+        crate::runtime::online::create_tla_and_deploy(account_id.clone(), signer.public_key(), &signer, contract_file)
             .await?
     };
     dbg!(outcome);
