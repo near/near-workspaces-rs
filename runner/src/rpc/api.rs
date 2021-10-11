@@ -241,13 +241,7 @@ pub async fn delete_account(
 }
 
 fn dev_generate() -> (AccountId, InMemorySigner) {
-    let mut rng = rand::thread_rng();
-    let random_num = rng.gen_range(10000000000000usize..99999999999999);
-    let account_id = format!("dev-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), random_num);
-    let account_id: AccountId = account_id
-        .try_into()
-        .expect("could not convert dev account into AccountId");
-
+    let account_id = tool::random_account_id();
     let signer = InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
     signer.write_to_file(&tool::credentials_filepath(account_id.clone()).unwrap());
     (account_id, signer)

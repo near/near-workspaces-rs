@@ -11,7 +11,7 @@ use chrono::Utc;
 use rand::Rng;
 use url::Url;
 
-use near_crypto::{InMemorySigner, PublicKey};
+use near_crypto::PublicKey;
 use near_jsonrpc_client::{
     errors::{JsonRpcError, JsonRpcServerError},
     methods, JsonRpcClient,
@@ -32,16 +32,6 @@ fn rt_current_addr() -> String {
 
 pub(crate) fn json_client() -> JsonRpcClient {
     JsonRpcClient::connect(&rt_current_addr())
-}
-
-pub(crate) fn root_account() -> InMemorySigner {
-    let mut path = crate::runtime::context::current()
-        .expect(MISSING_RUNTIME_ERROR)
-        .home_dir();
-    path.push("validator_key.json");
-
-    let root_signer = InMemorySigner::from_file(&path);
-    root_signer
 }
 
 pub(crate) async fn access_key(

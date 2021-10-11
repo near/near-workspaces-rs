@@ -30,13 +30,6 @@ impl RuntimeFlavor {
         }
     }
 
-    pub fn home_dir(&self) -> PathBuf {
-        match self {
-            Self::Sandbox(port) => local::home_dir(*port),
-            _ => unimplemented!(),
-        }
-    }
-
     pub(crate) fn name(&self) -> &'static str {
         match self {
             Self::Sandbox(_) => "sandbox",

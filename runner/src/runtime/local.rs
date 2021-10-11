@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 use std::process::Child;
 use std::{thread, time::Duration};
 
-use near_crypto::{Signer, PublicKey};
+use near_crypto::{InMemorySigner, Signer, PublicKey};
 use near_primitives::views::FinalExecutionOutcomeView;
-use near_primitives::transaction::{Action, DeployContractAction, SignedTransaction};
-use near_primitives::types::{AccountId, Balance};
+use near_primitives::transaction::SignedTransaction;
+use near_primitives::types::AccountId;
 
 use crate::rpc::tool;
 use crate::NEAR_BASE;
@@ -18,17 +18,32 @@ use super::context;
 use super::RuntimeFlavor;
 
 
-pub(crate) fn home_dir(port: u16) -> PathBuf {
+fn home_dir(port: u16) -> PathBuf {
     let mut path = std::env::temp_dir();
     path.push(format!("sandbox-{}", port));
     path
+}
+
+fn root_account() -> InMemorySigner {
+    let rt = crate::runtime::context::current()
+        .expect(context::MISSING_RUNTIME_ERROR);
+    let port = match rt {
+        RuntimeFlavor::Sandbox(port) => port,
+        _ => panic!("expected to be in sandbox runtime while retrieving port"),
+    };
+
+    let mut path = home_dir(port);
+    path.push("validator_key.json");
+
+    let root_signer = InMemorySigner::from_file(&path);
+    root_signer
 }
 
 pub(crate) async fn create_tla_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
-    let root_signer = tool::root_account();
+    let root_signer = root_account();
     crate::create_account(
         &root_signer,
         root_signer.account_id.clone(),
@@ -45,7 +60,7 @@ pub(crate) async fn create_tla_and_deploy(
     _signer: &dyn Signer,
     code_filepath: impl AsRef<Path>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
-    let root_signer = tool::root_account();
+    let root_signer = root_account();
     let (access_key, _, block_hash) =
         tool::access_key(root_signer.account_id.clone(), root_signer.public_key()).await
         .map_err(|e| anyhow!(e))?;
