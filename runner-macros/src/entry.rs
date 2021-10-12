@@ -96,7 +96,7 @@ fn parse_knobs(
             let mut rt = runner::TestnetRuntime::default();
             let _ = rt.run().unwrap();
         },
-        // TODO: Add further implementations for mainnet and testnet
+        // TODO: Add further implementations for mainnet
         _ => unimplemented!(),
     };
 
