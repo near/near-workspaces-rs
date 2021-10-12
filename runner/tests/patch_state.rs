@@ -17,9 +17,7 @@ struct StatusMessage {
 }
 
 async fn view_status_state() -> (AccountId, StatusMessage) {
-    let (contract_id, signer) = runner::dev_deploy(STATUS_MSG_WASM_FILEPATH)
-        .await
-        .unwrap();
+    let (contract_id, signer) = runner::dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
 
     runner::call(
         &signer,

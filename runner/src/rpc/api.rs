@@ -5,6 +5,7 @@ use anyhow::anyhow;
 use std::collections::HashMap;
 use std::path::Path;
 
+use crate::runtime::context::MISSING_RUNTIME_ERROR;
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
 use near_jsonrpc_client::methods::{
     self,
@@ -18,7 +19,6 @@ use near_primitives::types::{
     AccountId, Balance, BlockReference, Finality, FunctionArgs, Gas, StoreKey,
 };
 use near_primitives::views::{FinalExecutionOutcomeView, QueryRequest};
-use crate::runtime::context::MISSING_RUNTIME_ERROR;
 
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const ERR_INVALID_VARIANT: &str =
@@ -183,8 +183,8 @@ pub async fn create_account(
     new_account_pk: PublicKey,
     deposit: Option<Balance>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
-    let (access_key, _, block_hash) =
-        tool::access_key(signer_id.clone(), signer.public_key()).await
+    let (access_key, _, block_hash) = tool::access_key(signer_id.clone(), signer.public_key())
+        .await
         .map_err(|e| anyhow!(e))?;
 
     let signed_tx = SignedTransaction::create_account(
@@ -196,8 +196,7 @@ pub async fn create_account(
         signer,
         block_hash,
     );
-    let transaction_info = tool::send_tx(signed_tx).await
-        .map_err(|e| anyhow!(e))?;
+    let transaction_info = tool::send_tx(signed_tx).await.map_err(|e| anyhow!(e))?;
     Ok(transaction_info)
 }
 
@@ -250,8 +249,15 @@ pub async fn dev_deploy(
     contract_file: impl AsRef<Path>,
 ) -> anyhow::Result<(AccountId, InMemorySigner)> {
     let (account_id, signer) = dev_generate();
-    let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
-    let outcome = rt.create_tla_and_deploy(account_id.clone(), signer.public_key(), &signer, contract_file).await?;
+    let outcome = crate::runtime::context::current()
+        .expect(MISSING_RUNTIME_ERROR)
+        .create_tla_and_deploy(
+            account_id.clone(),
+            signer.public_key(),
+            &signer,
+            contract_file,
+        )
+        .await?;
     dbg!(outcome);
     Ok((account_id, signer))
 }

@@ -126,7 +126,11 @@ pub(crate) fn random_account_id() -> AccountId {
     account_id
 }
 
-pub(crate) async fn url_create_account(helper_url: Url, account_id: AccountId, pk: PublicKey) -> anyhow::Result<()> {
+pub(crate) async fn url_create_account(
+    helper_url: Url,
+    account_id: AccountId,
+    pk: PublicKey,
+) -> anyhow::Result<()> {
     let helper_addr = helper_url.join("account")?;
     let resp = reqwest::Client::new()
         .post(helper_addr)
@@ -140,29 +144,4 @@ pub(crate) async fn url_create_account(helper_url: Url, account_id: AccountId, p
 
     println!("{:?}", resp);
     Ok(())
-}
-
-#[cfg(test)]
-mod test {
-    use url::Url;
-    use super::AccountId;
-    use std::str::FromStr;
-    use near_crypto::{InMemorySigner, KeyType, Signer};
-
-
-    #[tokio::test]
-    async fn test_create() {
-        use crate::runtime::online as O;
-
-        // let account_id = super::random_account_id();
-        let account_id = AccountId::from_str("dev-20210806000923-48206644266866").unwrap();
-        let signer = InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, "testificate");
-        let pk = signer.public_key();
-
-        super::url_create_account(
-            Url::parse(O::HELPER_URL).unwrap(),
-            account_id,
-            pk,
-        ).await.unwrap();
-    }
 }

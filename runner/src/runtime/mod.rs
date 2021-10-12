@@ -5,8 +5,8 @@ pub(crate) mod online;
 pub use local::SandboxRuntime;
 pub use online::TestnetRuntime;
 
-use std::path::{Path, PathBuf};
 use anyhow::anyhow;
+use std::path::{Path, PathBuf};
 use url::Url;
 
 use near_crypto::{PublicKey, Signer};
@@ -29,7 +29,7 @@ impl RuntimeFlavor {
     pub fn rpc_addr(&self) -> String {
         match self {
             Self::Sandbox(port) => format!("http://localhost:{}", port),
-            Self::Testnet => online::RPC_URL.to_string(),
+            Self::Testnet => online::TestnetRuntime::RPC_URL.to_string(),
             _ => unimplemented!(),
         }
     }
@@ -43,8 +43,8 @@ impl RuntimeFlavor {
     }
 
     pub fn keystore_path(&self) -> anyhow::Result<PathBuf> {
-        let home_dir = dirs::home_dir()
-            .ok_or_else(|| anyhow!("Could not get HOME_DIR".to_string()))?;
+        let home_dir =
+            dirs::home_dir().ok_or_else(|| anyhow!("Could not get HOME_DIR".to_string()))?;
         let mut path = PathBuf::from(&home_dir);
         path.push(match self {
             Self::Sandbox(_) => SANDBOX_CREDENTIALS_DIR,
@@ -57,7 +57,7 @@ impl RuntimeFlavor {
 
     pub fn helper_url(&self) -> Url {
         match self {
-            Self::Testnet => Url::parse(online::HELPER_URL).unwrap(),
+            Self::Testnet => Url::parse(online::TestnetRuntime::HELPER_URL).unwrap(),
             _ => unimplemented!(),
         }
     }
@@ -68,7 +68,9 @@ impl RuntimeFlavor {
         new_account_pk: PublicKey,
     ) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
         match self {
-            Self::Sandbox(_) => Ok(Some(local::create_tla_account(new_account_id, new_account_pk).await?)),
+            Self::Sandbox(_) => Ok(Some(
+                local::create_tla_account(new_account_id, new_account_pk).await?,
+            )),
             Self::Testnet => {
                 online::create_tla_account(new_account_id, new_account_pk).await?;
                 Ok(None)
@@ -85,8 +87,14 @@ impl RuntimeFlavor {
         code_filepath: impl AsRef<Path>,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
         match self {
-            Self::Sandbox(_) => local::create_tla_and_deploy(new_account_id, new_account_pk, signer, code_filepath).await,
-            Self::Testnet => online::create_tla_and_deploy(new_account_id, new_account_pk, signer, code_filepath).await,
+            Self::Sandbox(_) => {
+                local::create_tla_and_deploy(new_account_id, new_account_pk, signer, code_filepath)
+                    .await
+            }
+            Self::Testnet => {
+                online::create_tla_and_deploy(new_account_id, new_account_pk, signer, code_filepath)
+                    .await
+            }
             _ => unimplemented!(),
         }
     }
