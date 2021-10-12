@@ -132,7 +132,9 @@ pub(crate) async fn url_create_account(
     pk: PublicKey,
 ) -> anyhow::Result<()> {
     let helper_addr = helper_url.join("account")?;
-    let resp = reqwest::Client::new()
+
+    // TODO(maybe): need this in near-jsonrpc-client as well:
+    let _resp = reqwest::Client::new()
         .post(helper_addr)
         .header("Content-Type", "application/json")
         .body(serde_json::to_vec(&serde_json::json!({
@@ -142,6 +144,5 @@ pub(crate) async fn url_create_account(
         .send()
         .await?;
 
-    println!("{:?}", resp);
     Ok(())
 }
