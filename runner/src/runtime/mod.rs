@@ -5,9 +5,13 @@ pub(crate) mod online;
 pub use local::SandboxRuntime;
 pub use online::TestnetRuntime;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use anyhow::anyhow;
 use url::Url;
+
+use near_crypto::{PublicKey, Signer};
+use near_primitives::types::AccountId;
+use near_primitives::views::FinalExecutionOutcomeView;
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
 const TESTNET_CREDENTIALS_DIR: &str = ".near-credentials/testnet/runner";
@@ -54,6 +58,35 @@ impl RuntimeFlavor {
     pub fn helper_url(&self) -> Url {
         match self {
             Self::Testnet => Url::parse(online::HELPER_URL).unwrap(),
+            _ => unimplemented!(),
+        }
+    }
+
+    pub async fn create_tla_account(
+        &self,
+        new_account_id: AccountId,
+        new_account_pk: PublicKey,
+    ) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
+        match self {
+            Self::Sandbox(_) => Ok(Some(local::create_tla_account(new_account_id, new_account_pk).await?)),
+            Self::Testnet => {
+                online::create_tla_account(new_account_id, new_account_pk).await?;
+                Ok(None)
+            }
+            _ => unimplemented!(),
+        }
+    }
+
+    pub async fn create_tla_and_deploy(
+        &self,
+        new_account_id: AccountId,
+        new_account_pk: PublicKey,
+        signer: &dyn Signer,
+        code_filepath: impl AsRef<Path>,
+    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+        match self {
+            Self::Sandbox(_) => local::create_tla_and_deploy(new_account_id, new_account_pk, signer, code_filepath).await,
+            Self::Testnet => online::create_tla_and_deploy(new_account_id, new_account_pk, signer, code_filepath).await,
             _ => unimplemented!(),
         }
     }

@@ -2,10 +2,7 @@ use super::tool;
 use super::types::{AccountInfo, NearBalance};
 
 use anyhow::anyhow;
-use chrono::Utc;
-use rand::Rng;
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::path::Path;
 
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
@@ -212,12 +209,7 @@ pub async fn create_tla_account(
     new_account_pk: PublicKey,
 ) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
     let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
-    if rt.name() == "sandbox" {
-        Ok(Some(crate::runtime::local::create_tla_account(new_account_id, new_account_pk).await?))
-    } else {
-        crate::runtime::online::create_tla_account(new_account_id, new_account_pk).await?;
-        Ok(None)
-    }
+    rt.create_tla_account(new_account_id, new_account_pk).await
 }
 
 pub async fn delete_account(
@@ -259,14 +251,7 @@ pub async fn dev_deploy(
 ) -> anyhow::Result<(AccountId, InMemorySigner)> {
     let (account_id, signer) = dev_generate();
     let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
-
-    let outcome = if rt.name() == "sandbox" {
-        crate::runtime::local::create_tla_and_deploy(account_id.clone(), signer.public_key(), &signer, contract_file)
-            .await?
-    } else {
-        crate::runtime::online::create_tla_and_deploy(account_id.clone(), signer.public_key(), &signer, contract_file)
-            .await?
-    };
+    let outcome = rt.create_tla_and_deploy(account_id.clone(), signer.public_key(), &signer, contract_file).await?;
     dbg!(outcome);
     Ok((account_id, signer))
 }
