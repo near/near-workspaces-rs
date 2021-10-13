@@ -1,17 +1,25 @@
+// TODO: Remove this when near-jsonrpc-client crate no longer defaults to deprecation for
+//       warnings about unstable API.
+#![allow(deprecated)]
+
+use std::collections::HashMap;
 use std::path::PathBuf;
+use std::str;
 
 use near_crypto::{InMemorySigner, PublicKey};
-use near_jsonrpc_client::JsonRpcClient;
-use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
-use near_primitives::borsh::BorshSerialize;
+use near_jsonrpc_client::{
+    errors::{JsonRpcError, JsonRpcServerError},
+    methods, JsonRpcClient,
+};
+use near_jsonrpc_primitives::types::{query::QueryResponseKind, transactions::RpcTransactionError};
 use near_primitives::hash::CryptoHash;
 use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{AccountId, BlockHeight, Finality};
-use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
+use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest, StateItem};
+
+use crate::runtime::context::MISSING_RUNTIME_ERROR;
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
-const MISSING_RUNTIME_ERROR: &str =
-    "there is no runtime running: need to be ran from a NEAR runtime context";
 
 fn rt_current_addr() -> String {
     crate::runtime::context::current()
@@ -20,7 +28,7 @@ fn rt_current_addr() -> String {
 }
 
 pub(crate) fn json_client() -> JsonRpcClient {
-    near_jsonrpc_client::new_client(&rt_current_addr())
+    JsonRpcClient::connect(&rt_current_addr())
 }
 
 pub(crate) fn root_account() -> InMemorySigner {
@@ -34,11 +42,11 @@ pub(crate) fn root_account() -> InMemorySigner {
 }
 
 pub(crate) async fn access_key(
-    account_id: String,
+    account_id: AccountId,
     pk: PublicKey,
 ) -> Result<(AccessKeyView, BlockHeight, CryptoHash), String> {
     let query_resp = json_client()
-        .query(RpcQueryRequest {
+        .call(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
                 account_id,
@@ -57,21 +65,24 @@ pub(crate) async fn access_key(
 }
 
 pub(crate) async fn send_tx(tx: SignedTransaction) -> Result<FinalExecutionOutcomeView, String> {
-    let json_rpc_client = json_client();
+    let client = json_client();
     let transaction_info_result = loop {
-        let transaction_info_result = json_rpc_client
-            .broadcast_tx_commit(near_primitives::serialize::to_base64(
-                tx.try_to_vec()
-                    .expect("Transaction is not expected to fail on serialization"),
-            ))
+        let transaction_info_result = client
+            .clone()
+            .call(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
+                signed_transaction: tx.clone(),
+            })
             .await;
 
         if let Err(ref err) = transaction_info_result {
-            if let Some(serde_json::Value::String(data)) = &err.data {
-                if data.contains("Timeout") {
-                    println!("Error transaction: {:?}", err);
-                    continue;
-                }
+            if matches!(
+                err,
+                JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
+                    RpcTransactionError::TimeoutError
+                ))
+            ) {
+                eprintln!("transaction timeout: {:?}", err);
+                continue;
             }
         }
 
@@ -95,4 +106,19 @@ pub(crate) fn credentials_filepath(account_id: AccountId) -> Result<PathBuf, Str
 
     path.push(format!("{}.json", account_id));
     Ok(path)
+}
+
+/// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
+/// Assumes key and value are base64 encoded, so this also decodes them.
+pub(crate) fn into_state_map(
+    state_items: &[StateItem],
+) -> anyhow::Result<HashMap<String, Vec<u8>>> {
+    let decode = |s: &StateItem| {
+        Ok((
+            String::from_utf8(base64::decode(&s.key)?)?,
+            base64::decode(&s.value)?,
+        ))
+    };
+
+    state_items.iter().map(decode).collect()
 }

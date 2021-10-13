@@ -1,6 +1,5 @@
 use runner::*;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{
@@ -30,7 +29,7 @@ fn expected() -> NftMetadata {
 
 #[runner::test(sandbox)]
 async fn test_dev_deploy() {
-    let (contract_id, signer) = dev_deploy(Path::new(NFT_WASM_FILEPATH))
+    let (contract_id, signer) = dev_deploy(NFT_WASM_FILEPATH)
         .await
         .expect("could not dev-deploy NFT contract");
 

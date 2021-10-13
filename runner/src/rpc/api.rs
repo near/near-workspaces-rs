@@ -1,25 +1,38 @@
 use super::tool;
 use super::types::{AccountInfo, NearBalance};
 
+use anyhow::anyhow;
 use chrono::Utc;
 use rand::Rng;
+use std::collections::HashMap;
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
+use near_jsonrpc_client::methods::{
+    self,
+    sandbox_patch_state::{RpcSandboxPatchStateRequest, RpcSandboxPatchStateResponse},
+};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
+use near_primitives::borsh::BorshSerialize;
+use near_primitives::state_record::StateRecord;
 use near_primitives::transaction::SignedTransaction;
-use near_primitives::types::{AccountId, Balance, Finality, FunctionArgs, Gas};
+use near_primitives::types::{
+    AccountId, Balance, BlockReference, Finality, FunctionArgs, Gas, StoreKey,
+};
 use near_primitives::views::{FinalExecutionOutcomeView, QueryRequest};
-use nearcore::NEAR_BASE;
 
+const ERR_INVALID_VARIANT: &str =
+    "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
+const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const DEV_ACCOUNT_SEED: &str = "testificate";
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 
-pub async fn display_account_info(account_id: String) -> Result<AccountInfo, String> {
+pub async fn display_account_info(account_id: AccountId) -> Result<AccountInfo, String> {
     let query_resp = tool::json_client()
-        .query(RpcQueryRequest {
+        .call(&RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccount {
                 account_id: account_id.clone(),
@@ -96,7 +109,7 @@ pub async fn view(
     args: FunctionArgs,
 ) -> Result<serde_json::Value, String> {
     let query_resp = tool::json_client()
-        .query(RpcQueryRequest {
+        .call(&RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::CallFunction {
                 account_id: contract_id,
@@ -117,6 +130,57 @@ pub async fn view(
         .map_err(|err| format!("serde_json error: {:?}", err))?;
 
     Ok(serde_call_result)
+}
+
+pub async fn view_state(
+    contract_id: AccountId,
+    prefix: Option<StoreKey>,
+) -> anyhow::Result<HashMap<String, Vec<u8>>> {
+    let query_resp = tool::json_client()
+        .call(&methods::query::RpcQueryRequest {
+            block_reference: BlockReference::Finality(Finality::Final),
+            request: QueryRequest::ViewState {
+                account_id: contract_id,
+                prefix: prefix.unwrap_or_else(|| vec![].into()),
+            },
+        })
+        .await
+        .map_err(|err| anyhow!("Failed to query state: {:?}", err))?;
+
+    match query_resp.kind {
+        QueryResponseKind::ViewState(state) => tool::into_state_map(&state.values),
+        _ => Err(anyhow!(ERR_INVALID_VARIANT)),
+    }
+}
+
+pub async fn patch_state<T>(
+    account_id: AccountId,
+    key: String,
+    value: &T,
+) -> Result<RpcSandboxPatchStateResponse, String>
+where
+    T: BorshSerialize,
+{
+    // Patch state only exists within sandbox
+    crate::runtime::assert_within(&["sandbox"]);
+
+    let value = T::try_to_vec(value).unwrap();
+    let state = StateRecord::Data {
+        account_id,
+        data_key: key.into(),
+        value: value.into(),
+    };
+    let records = vec![state];
+
+    let query_resp = tool::json_client()
+        .call(&RpcSandboxPatchStateRequest { records })
+        .await
+        .map_err(|err| format!("Failed to patch state: {:?}", err));
+
+    // TODO: Similar to `tool::send_tx`. Exponential Backoff required, so have this wait for state to be patched.
+    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+
+    query_resp
 }
 
 pub async fn create_account(
@@ -176,7 +240,7 @@ async fn create_account_and_deploy(
     let signed_tx = SignedTransaction::create_contract(
         access_key.nonce + 1,
         root_signer.account_id.clone(),
-        new_account_id.to_string(),
+        new_account_id,
         code,
         100 * NEAR_BASE,
         new_account_pk,
@@ -213,8 +277,11 @@ fn dev_generate() -> (AccountId, InMemorySigner) {
     let mut rng = rand::thread_rng();
     let random_num = rng.gen_range(10000000000000usize..99999999999999);
     let account_id = format!("dev-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), random_num);
+    let account_id: AccountId = account_id
+        .try_into()
+        .expect("could not convert dev account into AccountId");
 
-    let signer = InMemorySigner::from_seed(&account_id, KeyType::ED25519, DEV_ACCOUNT_SEED);
+    let signer = InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
     signer.write_to_file(&tool::credentials_filepath(account_id.clone()).unwrap());
     (account_id, signer)
 }

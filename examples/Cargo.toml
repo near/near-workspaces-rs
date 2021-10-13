@@ -13,3 +13,7 @@ serde_json = "1.0"
 [[example]]
 name = "nft"
 path = "src/nft.rs"
+
+[[example]]
+name = "status_message"
+path = "src/status_message.rs"

@@ -1,6 +1,9 @@
 use super::RuntimeFlavor;
 use std::cell::RefCell;
 
+pub const MISSING_RUNTIME_ERROR: &str =
+    "there is no runtime running: need to be ran from a NEAR runtime context";
+
 thread_local! {
     static RT_CONTEXT: RefCell<Option<RuntimeFlavor>> = RefCell::new(None);
 }
