@@ -17,9 +17,7 @@ struct StatusMessage {
 }
 
 async fn view_status_state() -> (AccountId, StatusMessage) {
-    let (contract_id, signer) = runner::dev_deploy(STATUS_MSG_WASM_FILEPATH)
-        .await
-        .unwrap();
+    let (contract_id, signer) = runner::dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
 
     runner::call(
         &signer,
@@ -69,9 +67,6 @@ async fn test_patch_state() {
     let _outcome = runner::patch_state(contract_id.clone(), "STATE".to_string(), &status_msg)
         .await
         .unwrap();
-
-    // TODO: here because patch state takes longer than most requests. backoff should help this.
-    std::thread::sleep(std::time::Duration::from_secs(5));
 
     let result = runner::view(
         contract_id.clone(),

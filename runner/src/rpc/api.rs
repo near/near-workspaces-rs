@@ -177,6 +177,9 @@ where
         .await
         .map_err(|err| format!("Failed to patch state: {:?}", err));
 
+    // TODO: Similar to `tool::send_tx`. Exponential Backoff required, so have this wait for state to be patched.
+    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+
     query_resp
 }
 
