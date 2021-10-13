@@ -1,7 +1,7 @@
 use portpicker::pick_unused_port;
 use std::fs;
-use std::path::{PathBuf};
-use std::process::{Child};
+use std::path::PathBuf;
+use std::process::Child;
 use std::{thread, time::Duration};
 
 use super::context;
