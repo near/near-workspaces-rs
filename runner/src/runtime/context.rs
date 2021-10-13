@@ -1,7 +1,6 @@
 use super::{RuntimeFlavor, SandboxRuntime, TestnetRuntime};
 use std::cell::RefCell;
 use std::str::FromStr;
-use tokio::runtime::Runtime;
 
 pub const MISSING_RUNTIME_ERROR: &str =
     "there is no runtime running: need to be ran from a NEAR runtime context";

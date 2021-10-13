@@ -52,6 +52,8 @@ async fn deploy_status_contract(msg: &str) -> (AccountId, InMemorySigner) {
 
 #[runner::basic]
 async fn main() -> anyhow::Result<()> {
+    // Grab STATE from the testnet status_message contract. This contract contains the following data:
+    //   get_status(dev-20211013002148-59466083160385) => "hello from testnet"
     let (testnet_contract_id, status_msg) = runner::within("testnet", async {
         let contract_id: AccountId = TESTNET_PREDEPLOYED_CONTRACT_ID
             .to_string()
@@ -67,9 +69,12 @@ async fn main() -> anyhow::Result<()> {
     })
     .await?;
 
+    // Patch testnet STATE into our local sandboxed status_message contract
     runner::within("sandbox", async move {
+        // Deploy with the following status_message state: sandbox_contract_id => "hello from sandbox"
         let (sandbox_contract_id, _) = deploy_status_contract("hello from sandbox").await;
 
+        // Patch our testnet STATE into our local sandbox:
         let _outcome = runner::patch_state(
             sandbox_contract_id.clone(),
             "STATE".to_string(),
@@ -81,6 +86,7 @@ async fn main() -> anyhow::Result<()> {
         // TODO: here because patch state takes longer than most requests. backoff should help this.
         std::thread::sleep(std::time::Duration::from_secs(5));
 
+        // Now grab the state to see that it has indeed been patched:
         let result = runner::view(
             sandbox_contract_id.clone(),
             "get_status".into(),
