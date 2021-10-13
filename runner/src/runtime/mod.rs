@@ -2,12 +2,15 @@ pub(crate) mod context;
 pub(crate) mod local;
 pub(crate) mod online;
 
+pub use context::within;
 pub use local::SandboxRuntime;
 pub use online::TestnetRuntime;
 
 use anyhow::anyhow;
-use std::path::{Path, PathBuf};
 use url::Url;
+
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use near_crypto::{PublicKey, Signer};
 use near_primitives::types::AccountId;
@@ -96,6 +99,19 @@ impl RuntimeFlavor {
                     .await
             }
             _ => unimplemented!(),
+        }
+    }
+}
+
+impl FromStr for RuntimeFlavor {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> anyhow::Result<RuntimeFlavor> {
+        match s {
+            "sandbox" => Ok(RuntimeFlavor::Sandbox(0)),
+            "testnet" => Ok(RuntimeFlavor::Testnet),
+            "mainnet" => Ok(RuntimeFlavor::Mainnet),
+            _ => Err(anyhow!("Invalid runtime")),
         }
     }
 }
