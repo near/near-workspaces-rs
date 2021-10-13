@@ -5,7 +5,6 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::path::PathBuf;
-use std::str;
 
 use chrono::Utc;
 use rand::Rng;
