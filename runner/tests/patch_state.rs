@@ -68,9 +68,6 @@ async fn test_patch_state() {
         .await
         .unwrap();
 
-    // TODO: here because patch state takes longer than most requests. backoff should help this.
-    std::thread::sleep(std::time::Duration::from_secs(5));
-
     let result = runner::view(
         contract_id.clone(),
         "get_status".into(),
