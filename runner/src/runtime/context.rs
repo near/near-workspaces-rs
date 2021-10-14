@@ -1,6 +1,5 @@
-use super::{RuntimeFlavor, SandboxRuntime, TestnetRuntime};
+use super::RuntimeFlavor;
 use std::cell::RefCell;
-use std::str::FromStr;
 
 pub const MISSING_RUNTIME_ERROR: &str =
     "there is no runtime running: need to be ran from a NEAR runtime context";
@@ -33,38 +32,4 @@ impl Drop for EnterGuard {
             *ctx.borrow_mut() = self.0.take();
         });
     }
-}
-
-/// Spawn this task within a new runtime context. Useful for when trying to
-/// run multiple runtimes (testnet, sandbox, ...) within the same thread.
-// NOTE: this could also be equivalent to tokio::spawn as well
-pub async fn within<T>(runtime: &str, scoped_task: T) -> anyhow::Result<T::Output>
-where
-    T: core::future::Future + Send + 'static,
-    T::Output: Send + 'static,
-{
-    let rt_flavor = RuntimeFlavor::from_str(runtime)?;
-    let task = move || {
-        // In hindsight, this look bad doing it this way, where we create {Sandbox, Testnet}Runtime
-        // to do mutable runtime context switching with `enter` function.
-        match rt_flavor {
-            RuntimeFlavor::Sandbox(_) => {
-                let mut rt = SandboxRuntime::default();
-                let _ = rt.run().unwrap();
-
-                tokio::runtime::Handle::current().block_on(scoped_task)
-            }
-            RuntimeFlavor::Testnet => {
-                let mut rt = TestnetRuntime::default();
-                let _ = rt.run().unwrap();
-
-                tokio::runtime::Handle::current().block_on(scoped_task)
-            }
-            _ => unimplemented!(),
-        }
-    };
-
-    tokio::task::spawn_blocking(task)
-        .await
-        .map_err(|e| e.into())
 }

@@ -54,7 +54,7 @@ async fn deploy_status_contract(msg: &str) -> (AccountId, InMemorySigner) {
 async fn main() -> anyhow::Result<()> {
     // Grab STATE from the testnet status_message contract. This contract contains the following data:
     //   get_status(dev-20211013002148-59466083160385) => "hello from testnet"
-    let (testnet_contract_id, status_msg) = runner::within("testnet", async {
+    let (testnet_contract_id, status_msg) = runner::scope("testnet", async {
         let contract_id: AccountId = TESTNET_PREDEPLOYED_CONTRACT_ID
             .to_string()
             .try_into()
@@ -70,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
     .await?;
 
     // Patch testnet STATE into our local sandboxed status_message contract
-    runner::within("sandbox", async move {
+    runner::scope("sandbox", async move {
         // Deploy with the following status_message state: sandbox_contract_id => "hello from sandbox"
         let (sandbox_contract_id, _) = deploy_status_contract("hello from sandbox").await;
 
@@ -82,9 +82,6 @@ async fn main() -> anyhow::Result<()> {
         )
         .await
         .unwrap();
-
-        // TODO: here because patch state takes longer than most requests. backoff should help this.
-        std::thread::sleep(std::time::Duration::from_secs(5));
 
         // Now grab the state to see that it has indeed been patched:
         let result = runner::view(
@@ -102,6 +99,21 @@ async fn main() -> anyhow::Result<()> {
 
         let status: String = serde_json::from_value(result).unwrap();
         assert_eq!(status, "hello from testnet".to_string());
+
+        // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
+        let result = runner::view(
+            sandbox_contract_id.clone(),
+            "get_status".into(),
+            serde_json::json!({
+                "account_id": sandbox_contract_id.to_string(),
+            })
+            .to_string()
+            .into_bytes()
+            .into(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(result, serde_json::Value::Null);
     })
     .await
 }
