@@ -133,8 +133,10 @@ where
 {
     let rt_flavor = RuntimeFlavor::from_str(runtime)?;
     let task = move || {
-        // In hindsight, this look bad doing it this way, where we create {Sandbox, Testnet}Runtime
-        // to do mutable runtime context switching with `enter` function.
+        // Create the relevant runtime. This is similar to how workspaces_macros
+        // sets up the runtime, except we're not setting up a second runtime here.
+        // Expects tokio to be used for the runtime. Might consider using
+        // async_compat if we want to expose choosing the runtime to the user.
         match rt_flavor {
             RuntimeFlavor::Sandbox(_) => {
                 let mut rt = SandboxRuntime::default();
