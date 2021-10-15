@@ -1,10 +1,10 @@
 use serde_json::json;
 
-use runner::*;
+use workspaces::*;
 
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 
-#[runner::main(sandbox)]
+#[workspaces::main(sandbox)]
 async fn main() {
     let (contract_id, signer) = dev_deploy(NFT_WASM_FILEPATH).await.unwrap();
 

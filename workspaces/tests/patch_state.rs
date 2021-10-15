@@ -17,9 +17,9 @@ struct StatusMessage {
 }
 
 async fn view_status_state() -> (AccountId, StatusMessage) {
-    let (contract_id, signer) = runner::dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
+    let (contract_id, signer) = workspaces::dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
 
-    runner::call(
+    workspaces::call(
         &signer,
         contract_id.clone(),
         contract_id.clone(),
@@ -34,7 +34,7 @@ async fn view_status_state() -> (AccountId, StatusMessage) {
     .await
     .unwrap();
 
-    let mut state_items = runner::view_state(contract_id.clone(), None).await.unwrap();
+    let mut state_items = workspaces::view_state(contract_id.clone(), None).await.unwrap();
     let state = state_items.remove("STATE").unwrap();
     let status_msg: StatusMessage =
         StatusMessage::try_from_slice(&state).expect("Expected to retrieve state");
@@ -42,7 +42,7 @@ async fn view_status_state() -> (AccountId, StatusMessage) {
     (contract_id, status_msg)
 }
 
-#[runner::test(sandbox)]
+#[workspaces::test(sandbox)]
 async fn test_view_state() {
     let (contract_id, status_msg) = view_status_state().await;
     assert_eq!(
@@ -56,7 +56,7 @@ async fn test_view_state() {
     );
 }
 
-#[runner::test(sandbox)]
+#[workspaces::test(sandbox)]
 async fn test_patch_state() {
     let (contract_id, mut status_msg) = view_status_state().await;
     status_msg.records.push(Record {
@@ -64,11 +64,11 @@ async fn test_patch_state() {
         v: "hello world".to_string(),
     });
 
-    let _outcome = runner::patch_state(contract_id.clone(), "STATE".to_string(), &status_msg)
+    let _outcome = workspaces::patch_state(contract_id.clone(), "STATE".to_string(), &status_msg)
         .await
         .unwrap();
 
-    let result = runner::view(
+    let result = workspaces::view(
         contract_id.clone(),
         "get_status".into(),
         json!({

@@ -9,9 +9,9 @@ This software is in very early alpha (use at your own risk).
 ```rust
 #![cfg(test)]
 
-use runner::*;
+use workspaces::*;
 
-#[runner::test(sandbox)]
+#[workspaces::test(sandbox)]
 async fn test_deploy_and_view() {
     let (contract_id, signer) = dev_deploy("path/to/file.wasm")
         .await

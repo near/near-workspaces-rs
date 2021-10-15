@@ -89,7 +89,7 @@ fn parse_knobs(
 
     let rt = match flavor.unwrap() {
         Flavor::Sandbox => quote_spanned! {last_stmt_start_span=>
-            let mut rt = runner::SandboxRuntime::default();
+            let mut rt = workspaces::SandboxRuntime::default();
             let _ = rt.run().unwrap();
         },
         // TODO: Add further implementations for mainnet and testnet

@@ -6,7 +6,7 @@ edition = "2018"
 
 [dev-dependencies]
 tokio = { version = "1.10.0", features = ["full"] }
-runner = { version = "0.1.0", path = "../runner" }
+workspaces = { version = "0.1.0", path = "../workspaces" }
 serde_json = "1.0"
 
 

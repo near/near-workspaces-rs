@@ -2,11 +2,11 @@ use serde_json::json;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 
-#[runner::main(sandbox)]
+#[workspaces::main(sandbox)]
 async fn main() {
-    let (contract_id, signer) = runner::dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
+    let (contract_id, signer) = workspaces::dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
 
-    runner::call(
+    workspaces::call(
         &signer,
         contract_id.clone(),
         contract_id.clone(),
@@ -21,7 +21,7 @@ async fn main() {
     .await
     .unwrap();
 
-    let result = runner::view(
+    let result = workspaces::view(
         contract_id.clone(),
         "get_status".into(),
         json!({

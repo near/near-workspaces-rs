@@ -1,4 +1,4 @@
-use runner::*;
+use workspaces::*;
 use serde::{Deserialize, Serialize};
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
@@ -27,7 +27,7 @@ fn expected() -> NftMetadata {
     serde_json::from_str(EXPECTED_NFT_METADATA).unwrap()
 }
 
-#[runner::test(sandbox)]
+#[workspaces::test(sandbox)]
 async fn test_dev_deploy() {
     let (contract_id, signer) = dev_deploy(NFT_WASM_FILEPATH)
         .await
