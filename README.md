@@ -1,4 +1,4 @@
-# NEAR Runner or Runtime (Rust Edition)
+# NEAR Workspaces (Rust Edition)
 A runtime provided to automate workflows and write tests. This runtime provides the ability to deploy and run NEAR contracts, along with several other functions to aid in development and maintenance.
 
 Write once, run them on a controlled NEAR Sandbox local environment, and on NEAR Testnet and NEAR Mainnet (soon).
