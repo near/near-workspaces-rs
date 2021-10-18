@@ -37,7 +37,7 @@ fn root_account() -> InMemorySigner {
     root_signer
 }
 
-pub(crate) async fn create_tla_account(
+pub(crate) async fn create_top_level_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {

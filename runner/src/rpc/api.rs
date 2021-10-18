@@ -206,12 +206,13 @@ pub async fn create_account(
 /// Creates a top level account. While in sandbox, we can grab the `ExecutionOutcomeView`, but
 /// while in Testnet or Mainnet, a helper account creator is used instead which does not
 /// provide the `ExecutionOutcomeView`.
-pub async fn create_tla_account(
+pub async fn create_top_level_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
 ) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
     let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
-    rt.create_tla_account(new_account_id, new_account_pk).await
+    rt.create_top_level_account(new_account_id, new_account_pk)
+        .await
 }
 
 pub async fn delete_account(
@@ -243,7 +244,7 @@ fn dev_generate() -> (AccountId, InMemorySigner) {
 
 pub async fn dev_create() -> anyhow::Result<(AccountId, InMemorySigner)> {
     let (account_id, signer) = dev_generate();
-    let outcome = create_tla_account(account_id.clone(), signer.public_key()).await?;
+    let outcome = create_top_level_account(account_id.clone(), signer.public_key()).await?;
     dbg!(outcome);
     Ok((account_id, signer))
 }
