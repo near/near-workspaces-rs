@@ -40,6 +40,7 @@ async fn test_dev_deploy() {
         "new_default_meta".to_string(),
         format!("{{\"owner_id\": \"{}\"}}", contract_id).into(),
         None,
+        None,
     )
     .await
     .unwrap();

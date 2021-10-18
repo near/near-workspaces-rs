@@ -90,7 +90,7 @@ pub(crate) async fn send_tx(tx: SignedTransaction) -> Result<FinalExecutionOutco
     };
 
     // TODO: remove this after adding exponential backoff
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     transaction_info_result.map_err(|e| format!("Error transaction: {:?}", e))
 }

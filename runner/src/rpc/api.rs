@@ -85,6 +85,7 @@ pub async fn call(
     method_name: String,
     args: Vec<u8>,
     deposit: Option<Balance>,
+    gas: Option<Gas>,
 ) -> Result<FinalExecutionOutcomeView, String> {
     let (access_key, _, block_hash) =
         tool::access_key(signer_id.clone(), signer.public_key()).await?;
@@ -96,7 +97,7 @@ pub async fn call(
         deposit.unwrap_or(0),
         method_name,
         args,
-        DEFAULT_CALL_FN_GAS,
+        gas.unwrap_or(DEFAULT_CALL_FN_GAS),
         block_hash,
     );
     let transaction_info = tool::send_tx(tx).await?;

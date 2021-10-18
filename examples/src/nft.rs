@@ -15,6 +15,7 @@ async fn main() {
         "new_default_meta".to_string(),
         format!("{{\"owner_id\": \"{}\"}}", contract_id).into(),
         None,
+        None,
     )
     .await
     .unwrap();
@@ -38,6 +39,7 @@ async fn main() {
         .to_string()
         .into_bytes(),
         Some(deposit),
+        None,
     )
     .await
     .unwrap();
