@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "runner",
-    "runner-macros",
+    "workspaces",
+    "workspaces-macros",
     "examples",
 ]

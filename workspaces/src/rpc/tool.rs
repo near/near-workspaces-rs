@@ -3,10 +3,14 @@
 #![allow(deprecated)]
 
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::path::PathBuf;
-use std::str;
 
-use near_crypto::{InMemorySigner, PublicKey};
+use chrono::Utc;
+use rand::Rng;
+use url::Url;
+
+use near_crypto::PublicKey;
 use near_jsonrpc_client::{
     errors::{JsonRpcError, JsonRpcServerError},
     methods, JsonRpcClient,
@@ -19,8 +23,6 @@ use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequ
 
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
 
-const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
-
 fn rt_current_addr() -> String {
     crate::runtime::context::current()
         .expect(MISSING_RUNTIME_ERROR)
@@ -29,16 +31,6 @@ fn rt_current_addr() -> String {
 
 pub(crate) fn json_client() -> JsonRpcClient {
     JsonRpcClient::connect(&rt_current_addr())
-}
-
-pub(crate) fn root_account() -> InMemorySigner {
-    let mut path = crate::runtime::context::current()
-        .expect(MISSING_RUNTIME_ERROR)
-        .home_dir();
-    path.push("validator_key.json");
-
-    let root_signer = InMemorySigner::from_file(&path);
-    root_signer
 }
 
 pub(crate) async fn access_key(
@@ -95,14 +87,13 @@ pub(crate) async fn send_tx(tx: SignedTransaction) -> Result<FinalExecutionOutco
     transaction_info_result.map_err(|e| format!("Error transaction: {:?}", e))
 }
 
-pub(crate) fn credentials_filepath(account_id: AccountId) -> Result<PathBuf, String> {
-    let home_dir = dirs::home_dir().ok_or_else(|| "Could not get HOME_DIR".to_string())?;
-    let mut path = PathBuf::from(&home_dir);
-    path.push(SANDBOX_CREDENTIALS_DIR);
+pub(crate) fn credentials_filepath(account_id: AccountId) -> anyhow::Result<PathBuf> {
+    let mut path = crate::runtime::context::current()
+        .expect(MISSING_RUNTIME_ERROR)
+        .keystore_path()?;
 
     // Create this path's directories if they don't exist:
-    std::fs::create_dir_all(path.clone())
-        .map_err(|e| format!("Could not create near credential directory: {}", e))?;
+    std::fs::create_dir_all(path.clone())?;
 
     path.push(format!("{}.json", account_id));
     Ok(path)
@@ -121,4 +112,36 @@ pub(crate) fn into_state_map(
     };
 
     state_items.iter().map(decode).collect()
+}
+
+pub(crate) fn random_account_id() -> AccountId {
+    let mut rng = rand::thread_rng();
+    let random_num = rng.gen_range(10000000000000usize..99999999999999);
+    let account_id = format!("dev-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), random_num);
+    let account_id: AccountId = account_id
+        .try_into()
+        .expect("could not convert dev account into AccountId");
+
+    account_id
+}
+
+pub(crate) async fn url_create_account(
+    helper_url: Url,
+    account_id: AccountId,
+    pk: PublicKey,
+) -> anyhow::Result<()> {
+    let helper_addr = helper_url.join("account")?;
+
+    // TODO(maybe): need this in near-jsonrpc-client as well:
+    let _resp = reqwest::Client::new()
+        .post(helper_addr)
+        .header("Content-Type", "application/json")
+        .body(serde_json::to_vec(&serde_json::json!({
+            "newAccountId": account_id.to_string(),
+            "newAccountPublicKey": pk.to_string(),
+        }))?)
+        .send()
+        .await?;
+
+    Ok(())
 }

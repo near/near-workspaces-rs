@@ -1,10 +1,10 @@
 [package]
-name = "runner"
+name = "workspaces"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-runner-macros = { version = "0.1.0", path = "../runner-macros" }
+workspaces-macros = { version = "0.1.0", path = "../workspaces-macros" }
 
 actix = "=0.11.0-beta.2"
 actix_derive = "=0.6.0-beta.1"
@@ -16,6 +16,7 @@ dirs = "3.0.2"
 hex = "0.4.2"
 portpicker = "0.1.1"
 rand = "0.8.4"
+reqwest = { version = "0.11", features = ["json"] }
 serde = "1.0"
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }

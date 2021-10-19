@@ -2,14 +2,10 @@ use super::tool;
 use super::types::{AccountInfo, NearBalance};
 
 use anyhow::anyhow;
-use chrono::Utc;
-use rand::Rng;
 use std::collections::HashMap;
-use std::convert::TryInto;
-use std::fs::File;
-use std::io::prelude::*;
 use std::path::Path;
 
+use crate::runtime::context::MISSING_RUNTIME_ERROR;
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
 use near_jsonrpc_client::methods::{
     self,
@@ -24,9 +20,9 @@ use near_primitives::types::{
 };
 use near_primitives::views::{FinalExecutionOutcomeView, QueryRequest};
 
+pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
-const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const DEV_ACCOUNT_SEED: &str = "testificate";
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 
@@ -168,7 +164,7 @@ where
     let state = StateRecord::Data {
         account_id,
         data_key: key.into(),
-        value: value.into(),
+        value,
     };
     let records = vec![state];
 
@@ -189,9 +185,10 @@ pub async fn create_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
     deposit: Option<Balance>,
-) -> Result<FinalExecutionOutcomeView, String> {
-    let (access_key, _, block_hash) =
-        tool::access_key(signer_id.clone(), signer.public_key()).await?;
+) -> anyhow::Result<FinalExecutionOutcomeView> {
+    let (access_key, _, block_hash) = tool::access_key(signer_id.clone(), signer.public_key())
+        .await
+        .map_err(|e| anyhow!(e))?;
 
     let signed_tx = SignedTransaction::create_account(
         access_key.nonce + 1,
@@ -202,55 +199,20 @@ pub async fn create_account(
         signer,
         block_hash,
     );
-    let transaction_info = tool::send_tx(signed_tx).await?;
+    let transaction_info = tool::send_tx(signed_tx).await.map_err(|e| anyhow!(e))?;
     Ok(transaction_info)
 }
 
-pub async fn create_tla_account(
+/// Creates a top level account. While in sandbox, we can grab the `ExecutionOutcomeView`, but
+/// while in Testnet or Mainnet, a helper account creator is used instead which does not
+/// provide the `ExecutionOutcomeView`.
+pub async fn create_top_level_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
-) -> Result<FinalExecutionOutcomeView, String> {
-    let root_signer = tool::root_account();
-    create_account(
-        &root_signer,
-        root_signer.account_id.clone(),
-        new_account_id,
-        new_account_pk,
-        None,
-    )
-    .await
-}
-
-async fn create_account_and_deploy(
-    new_account_id: AccountId,
-    new_account_pk: PublicKey,
-    code_filepath: impl AsRef<Path>,
-) -> Result<FinalExecutionOutcomeView, String> {
-    let root_signer = tool::root_account();
-    let (access_key, _, block_hash) =
-        tool::access_key(root_signer.account_id.clone(), root_signer.public_key()).await?;
-
-    let mut code = Vec::new();
-    File::open(code_filepath)
-        .map_err(|e| e.to_string())?
-        .read_to_end(&mut code)
-        .map_err(|e| e.to_string())?;
-
-    // This transaction creates the account too:
-    let signed_tx = SignedTransaction::create_contract(
-        access_key.nonce + 1,
-        root_signer.account_id.clone(),
-        new_account_id,
-        code,
-        100 * NEAR_BASE,
-        new_account_pk,
-        &root_signer,
-        block_hash,
-    );
-    dbg!(&signed_tx);
-
-    let transaction_info = tool::send_tx(signed_tx).await?;
-    Ok(transaction_info)
+) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
+    let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
+    rt.create_top_level_account(new_account_id, new_account_pk)
+        .await
 }
 
 pub async fn delete_account(
@@ -274,31 +236,32 @@ pub async fn delete_account(
 }
 
 fn dev_generate() -> (AccountId, InMemorySigner) {
-    let mut rng = rand::thread_rng();
-    let random_num = rng.gen_range(10000000000000usize..99999999999999);
-    let account_id = format!("dev-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), random_num);
-    let account_id: AccountId = account_id
-        .try_into()
-        .expect("could not convert dev account into AccountId");
-
+    let account_id = tool::random_account_id();
     let signer = InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
     signer.write_to_file(&tool::credentials_filepath(account_id.clone()).unwrap());
     (account_id, signer)
 }
 
-pub async fn dev_create() -> Result<(AccountId, InMemorySigner), String> {
+pub async fn dev_create() -> anyhow::Result<(AccountId, InMemorySigner)> {
     let (account_id, signer) = dev_generate();
-    let outcome = create_tla_account(account_id.clone(), signer.public_key()).await?;
+    let outcome = create_top_level_account(account_id.clone(), signer.public_key()).await?;
     dbg!(outcome);
     Ok((account_id, signer))
 }
 
 pub async fn dev_deploy(
     contract_file: impl AsRef<Path>,
-) -> Result<(AccountId, InMemorySigner), String> {
+) -> anyhow::Result<(AccountId, InMemorySigner)> {
     let (account_id, signer) = dev_generate();
-    let outcome =
-        create_account_and_deploy(account_id.clone(), signer.public_key(), contract_file).await?;
+    let outcome = crate::runtime::context::current()
+        .expect(MISSING_RUNTIME_ERROR)
+        .create_tla_and_deploy(
+            account_id.clone(),
+            signer.public_key(),
+            &signer,
+            contract_file,
+        )
+        .await?;
     dbg!(outcome);
     Ok((account_id, signer))
 }
