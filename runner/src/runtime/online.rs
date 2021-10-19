@@ -35,7 +35,7 @@ impl Default for TestnetRuntime {
     }
 }
 
-pub(crate) async fn create_tla_account(
+pub(crate) async fn create_top_level_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
 ) -> anyhow::Result<()> {
@@ -51,7 +51,7 @@ pub(crate) async fn create_tla_and_deploy(
     signer: &dyn Signer,
     code_filepath: impl AsRef<Path>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
-    create_tla_account(new_account_id.clone(), new_account_pk.clone()).await?;
+    create_top_level_account(new_account_id.clone(), new_account_pk.clone()).await?;
 
     // TODO: backoff-and-retry: two separate transactions, requires a sleep in between.
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;

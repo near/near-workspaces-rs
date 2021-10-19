@@ -16,7 +16,7 @@ use near_primitives::types::AccountId;
 use near_primitives::views::FinalExecutionOutcomeView;
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
-const TESTNET_CREDENTIALS_DIR: &str = ".near-credentials/testnet/runner";
+const TESTNET_CREDENTIALS_DIR: &str = ".near-credentials/testnet/";
 
 // TODO: implement mainnet/testnet runtimes
 #[allow(dead_code)]
@@ -64,17 +64,17 @@ impl RuntimeFlavor {
         }
     }
 
-    pub async fn create_tla_account(
+    pub async fn create_top_level_account(
         &self,
         new_account_id: AccountId,
         new_account_pk: PublicKey,
     ) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
         match self {
             Self::Sandbox(_) => Ok(Some(
-                local::create_tla_account(new_account_id, new_account_pk).await?,
+                local::create_top_level_account(new_account_id, new_account_pk).await?,
             )),
             Self::Testnet => {
-                online::create_tla_account(new_account_id, new_account_pk).await?;
+                online::create_top_level_account(new_account_id, new_account_pk).await?;
                 Ok(None)
             }
             _ => unimplemented!(),
