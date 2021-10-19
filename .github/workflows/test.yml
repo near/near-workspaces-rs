@@ -24,7 +24,7 @@ jobs:
       - name: Check Formatting
         run: cargo fmt -- --check
       - name: Check Clippy
-        run: cargo clippy --features unstable --tests -- -Dclippy::all
+        run: cargo clippy -- -Dclippy::all
 
   test:
     needs: check
