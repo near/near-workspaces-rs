@@ -6,4 +6,4 @@ pub use workspaces_macros::main;
 pub use workspaces_macros::test;
 
 pub use rpc::api::*;
-pub use runtime::SandboxRuntime;
+pub use runtime::{SandboxRuntime, TestnetRuntime};
