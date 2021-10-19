@@ -1,10 +1,10 @@
 [package]
-name = "runner"
+name = "workspaces"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-runner-macros = { version = "0.1.0", path = "../runner-macros" }
+workspaces-macros = { version = "0.1.0", path = "../workspaces-macros" }
 
 actix = "=0.11.0-beta.2"
 actix_derive = "=0.6.0-beta.1"
