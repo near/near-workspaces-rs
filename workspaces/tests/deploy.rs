@@ -1,5 +1,5 @@
-use workspaces::*;
 use serde::{Deserialize, Serialize};
+use workspaces::*;
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{

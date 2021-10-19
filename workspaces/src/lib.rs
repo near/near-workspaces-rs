@@ -5,5 +5,5 @@ mod runtime;
 pub use workspaces_macros::main;
 pub use workspaces_macros::test;
 
-pub use runtime::SandboxRuntime;
 pub use rpc::api::*;
+pub use runtime::SandboxRuntime;

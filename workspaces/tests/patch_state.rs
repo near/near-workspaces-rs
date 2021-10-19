@@ -17,7 +17,9 @@ struct StatusMessage {
 }
 
 async fn view_status_state() -> (AccountId, StatusMessage) {
-    let (contract_id, signer) = workspaces::dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
+    let (contract_id, signer) = workspaces::dev_deploy(STATUS_MSG_WASM_FILEPATH)
+        .await
+        .unwrap();
 
     workspaces::call(
         &signer,
@@ -34,7 +36,9 @@ async fn view_status_state() -> (AccountId, StatusMessage) {
     .await
     .unwrap();
 
-    let mut state_items = workspaces::view_state(contract_id.clone(), None).await.unwrap();
+    let mut state_items = workspaces::view_state(contract_id.clone(), None)
+        .await
+        .unwrap();
     let state = state_items.remove("STATE").unwrap();
     let status_msg: StatusMessage =
         StatusMessage::try_from_slice(&state).expect("Expected to retrieve state");

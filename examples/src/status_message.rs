@@ -4,7 +4,9 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 
 #[workspaces::main(sandbox)]
 async fn main() {
-    let (contract_id, signer) = workspaces::dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
+    let (contract_id, signer) = workspaces::dev_deploy(STATUS_MSG_WASM_FILEPATH)
+        .await
+        .unwrap();
 
     workspaces::call(
         &signer,
