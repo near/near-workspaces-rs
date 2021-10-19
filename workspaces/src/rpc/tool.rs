@@ -37,8 +37,7 @@ pub(crate) fn root_account() -> InMemorySigner {
         .home_dir();
     path.push("validator_key.json");
 
-    let root_signer = InMemorySigner::from_file(&path);
-    root_signer
+    InMemorySigner::from_file(&path)
 }
 
 pub(crate) async fn access_key(

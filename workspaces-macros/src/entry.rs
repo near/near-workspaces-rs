@@ -110,9 +110,9 @@ fn parse_knobs(
         {
             #rt
             let body = async #body;
-            let mut rt = tokio::runtime::Runtime::new().unwrap();
+            let rt = tokio::runtime::Runtime::new().unwrap();
             let local = tokio::task::LocalSet::new();
-            local.block_on(&mut rt, body);
+            local.block_on(&rt, body);
         }
     })
     .expect("Parsing failure");

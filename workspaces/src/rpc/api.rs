@@ -168,7 +168,7 @@ where
     let state = StateRecord::Data {
         account_id,
         data_key: key.into(),
-        value: value.into(),
+        value,
     };
     let records = vec![state];
 
