@@ -154,7 +154,5 @@ where
         }
     };
 
-    tokio::task::spawn_blocking(task)
-        .await
-        .map_err(Into::into)
+    tokio::task::spawn_blocking(task).await.map_err(Into::into)
 }
