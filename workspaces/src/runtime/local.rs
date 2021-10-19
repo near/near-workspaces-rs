@@ -33,8 +33,7 @@ fn root_account() -> InMemorySigner {
     let mut path = home_dir(port);
     path.push("validator_key.json");
 
-    let root_signer = InMemorySigner::from_file(&path);
-    root_signer
+    InMemorySigner::from_file(&path)
 }
 
 pub(crate) async fn create_top_level_account(

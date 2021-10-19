@@ -89,11 +89,11 @@ fn parse_knobs(
 
     let rt = match flavor.unwrap() {
         Flavor::Sandbox => quote_spanned! {last_stmt_start_span=>
-            let mut rt = runner::SandboxRuntime::default();
+            let mut rt = workspaces::SandboxRuntime::default();
             let _ = rt.run().unwrap();
         },
         Flavor::Testnet => quote_spanned! {last_stmt_start_span=>
-            let mut rt = runner::TestnetRuntime::default();
+            let mut rt = workspaces::TestnetRuntime::default();
             let _ = rt.run().unwrap();
         },
         // TODO: Add further implementations for mainnet
@@ -114,9 +114,9 @@ fn parse_knobs(
         {
             #rt
             let body = async #body;
-            let mut rt = tokio::runtime::Runtime::new().unwrap();
+            let rt = tokio::runtime::Runtime::new().unwrap();
             let local = tokio::task::LocalSet::new();
-            local.block_on(&mut rt, body);
+            local.block_on(&rt, body);
         }
     })
     .expect("Parsing failure");
