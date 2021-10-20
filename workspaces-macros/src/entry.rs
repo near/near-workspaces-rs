@@ -114,8 +114,8 @@ fn parse_knobs(
         {
             #rt
             let body = async #body;
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            let local = tokio::task::LocalSet::new();
+            let rt = workspaces::__private::tokio::runtime::Runtime::new().unwrap();
+            let local = workspaces::__private::tokio::task::LocalSet::new();
             local.block_on(&rt, body);
         }
     })
