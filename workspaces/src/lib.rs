@@ -9,3 +9,8 @@ pub use workspaces_macros::test;
 pub use exports::*;
 pub use rpc::api::*;
 pub use runtime::{scope, SandboxRuntime, TestnetRuntime};
+
+// Used for generated code, Not a public API
+#[doc(hidden)]
+#[path = "private/mod.rs"]
+pub mod __private;
