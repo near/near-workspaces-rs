@@ -111,7 +111,7 @@ impl SandboxServer {
         self.process = Some(child);
 
         // TODO: Get rid of this sleep, and ping sandbox is alive instead:
-        thread::sleep(Duration::from_secs(3));
+        // thread::sleep(Duration::from_secs(3));
         Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use super::client::client;
 use super::tool;
 use super::types::{AccountInfo, NearBalance};
 
@@ -27,7 +28,7 @@ const DEV_ACCOUNT_SEED: &str = "testificate";
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 
 pub async fn display_account_info(account_id: AccountId) -> Result<AccountInfo, String> {
-    let query_resp = tool::json_client()
+    let query_resp = client()
         .call(&RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccount {
@@ -104,7 +105,7 @@ pub async fn view(
     method_name: String,
     args: FunctionArgs,
 ) -> Result<serde_json::Value, String> {
-    let query_resp = tool::json_client()
+    let query_resp = client()
         .call(&RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::CallFunction {
@@ -132,7 +133,7 @@ pub async fn view_state(
     contract_id: AccountId,
     prefix: Option<StoreKey>,
 ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
-    let query_resp = tool::json_client()
+    let query_resp = client()
         .call(&methods::query::RpcQueryRequest {
             block_reference: BlockReference::Finality(Finality::Final),
             request: QueryRequest::ViewState {
@@ -168,13 +169,13 @@ where
     };
     let records = vec![state];
 
-    let query_resp = tool::json_client()
+    let query_resp = client()
         .call(&RpcSandboxPatchStateRequest { records })
         .await
         .map_err(|err| format!("Failed to patch state: {:?}", err));
 
     // TODO: Similar to `tool::send_tx`. Exponential Backoff required, so have this wait for state to be patched.
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+    // tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
     query_resp
 }

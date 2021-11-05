@@ -54,7 +54,7 @@ pub(crate) async fn create_tla_and_deploy(
     create_top_level_account(new_account_id.clone(), new_account_pk.clone()).await?;
 
     // TODO: backoff-and-retry: two separate transactions, requires a sleep in between.
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+    // tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
     let (access_key, _, block_hash) = tool::access_key(new_account_id.clone(), new_account_pk)
         .await

@@ -21,6 +21,7 @@ use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{AccountId, BlockHeight, Finality};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest, StateItem};
 
+use crate::rpc::client::client;
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
 
 fn rt_current_addr() -> String {
@@ -37,7 +38,7 @@ pub(crate) async fn access_key(
     account_id: AccountId,
     pk: PublicKey,
 ) -> Result<(AccessKeyView, BlockHeight, CryptoHash), String> {
-    let query_resp = json_client()
+    let query_resp = client()
         .call(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
@@ -57,10 +58,9 @@ pub(crate) async fn access_key(
 }
 
 pub(crate) async fn send_tx(tx: SignedTransaction) -> Result<FinalExecutionOutcomeView, String> {
-    let client = json_client();
+    let client = client();
     let transaction_info_result = loop {
         let transaction_info_result = client
-            .clone()
             .call(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
                 signed_transaction: tx.clone(),
             })
@@ -82,7 +82,7 @@ pub(crate) async fn send_tx(tx: SignedTransaction) -> Result<FinalExecutionOutco
     };
 
     // TODO: remove this after adding exponential backoff
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+    // tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
     transaction_info_result.map_err(|e| format!("Error transaction: {:?}", e))
 }
