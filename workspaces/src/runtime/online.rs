@@ -1,5 +1,3 @@
-use anyhow::anyhow;
-
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -11,7 +9,7 @@ use near_primitives::views::FinalExecutionOutcomeView;
 
 use super::context;
 use super::RuntimeFlavor;
-use crate::rpc::tool;
+use crate::rpc::{client, tool};
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
 
 pub struct TestnetRuntime {
@@ -53,25 +51,23 @@ pub(crate) async fn create_tla_and_deploy(
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
     create_top_level_account(new_account_id.clone(), new_account_pk.clone()).await?;
 
-    // TODO: backoff-and-retry: two separate transactions, requires a sleep in between.
-    // tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-
-    let (access_key, _, block_hash) = tool::access_key(new_account_id.clone(), new_account_pk)
-        .await
-        .map_err(|e| anyhow!(e))?;
-
     let mut code = Vec::new();
     File::open(code_filepath)?.read_to_end(&mut code)?;
 
-    let signed_tx = SignedTransaction::from_actions(
-        access_key.nonce + 1,
-        new_account_id.clone(),
-        new_account_id.clone(),
-        signer,
-        vec![Action::DeployContract(DeployContractAction { code })],
-        block_hash,
-    );
+    client::send_tx_and_retry(|| async {
+        let (access_key, _, block_hash) =
+            tool::access_key(new_account_id.clone(), new_account_pk.clone()).await?;
 
-    let transaction_info = tool::send_tx(signed_tx).await.map_err(|e| anyhow!(e))?;
-    Ok(transaction_info)
+        Ok(SignedTransaction::from_actions(
+            access_key.nonce + 1,
+            new_account_id.clone(),
+            new_account_id.clone(),
+            signer,
+            vec![Action::DeployContract(DeployContractAction {
+                code: code.clone(),
+            })],
+            block_hash,
+        ))
+    })
+    .await
 }

@@ -1,11 +1,9 @@
-use anyhow::anyhow;
 use portpicker::pick_unused_port;
 
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::process::Child;
-use std::{thread, time::Duration};
 
 use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_primitives::transaction::SignedTransaction;
@@ -14,7 +12,7 @@ use near_primitives::views::FinalExecutionOutcomeView;
 
 use super::context;
 use super::RuntimeFlavor;
-use crate::rpc::tool;
+use crate::rpc::{client, tool};
 use crate::NEAR_BASE;
 
 fn home_dir(port: u16) -> PathBuf {
@@ -57,30 +55,28 @@ pub(crate) async fn create_tla_and_deploy(
     _signer: &dyn Signer,
     code_filepath: impl AsRef<Path>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
-    let root_signer = root_account();
-    let (access_key, _, block_hash) =
-        tool::access_key(root_signer.account_id.clone(), root_signer.public_key())
-            .await
-            .map_err(|e| anyhow!(e))?;
-
     let mut code = Vec::new();
     File::open(code_filepath)?.read_to_end(&mut code)?;
 
-    // This transaction creates the account too:
-    let signed_tx = SignedTransaction::create_contract(
-        access_key.nonce + 1,
-        root_signer.account_id.clone(),
-        new_account_id,
-        code,
-        100 * NEAR_BASE,
-        new_account_pk,
-        &root_signer,
-        block_hash,
-    );
-    dbg!(&signed_tx);
+    let root_signer = root_account();
 
-    let transaction_info = tool::send_tx(signed_tx).await.map_err(|e| anyhow!(e))?;
-    Ok(transaction_info)
+    client::send_tx_and_retry(|| async {
+        let (access_key, _, block_hash) =
+            tool::access_key(root_signer.account_id.clone(), root_signer.public_key()).await?;
+
+        // This transaction creates the account too:
+        Ok(SignedTransaction::create_contract(
+            access_key.nonce + 1,
+            root_signer.account_id.clone(),
+            new_account_id.clone(),
+            code.clone(),
+            100 * NEAR_BASE,
+            new_account_pk.clone(),
+            &root_signer,
+            block_hash,
+        ))
+    })
+    .await
 }
 
 pub struct SandboxServer {
@@ -110,8 +106,6 @@ impl SandboxServer {
         println!("Started sandbox: pid={:?}", child.id());
         self.process = Some(child);
 
-        // TODO: Get rid of this sleep, and ping sandbox is alive instead:
-        // thread::sleep(Duration::from_secs(3));
         Ok(())
     }
 }
