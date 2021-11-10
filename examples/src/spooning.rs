@@ -18,6 +18,10 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 /// ```
 const TESTNET_PREDEPLOYED_CONTRACT_ID: &str = "dev-20211013002148-59466083160385";
 
+// The following two structs (Record and StatusMessage) are representation of the
+// internal data stored on chain. They will be deserialized into the following
+// formats. Note that these will be different depending on what data structure
+// we use in our contract.
 #[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize)]
 struct Record {
     k: String,
@@ -29,21 +33,33 @@ struct StatusMessage {
     records: Vec<Record>,
 }
 
+/// Deploy a status message smart contract (https://examples.near.org/rust-status-message)
+/// with an attached message associated to the contract id.
+///
+/// For example, our predeployed testnet contract has already done this:
+///    set_status(TESTNET_PREDEPLOYED_CONTRACT_ID) = "hello from testnet"
 async fn deploy_status_contract(msg: &str) -> (AccountId, InMemorySigner) {
     let (contract_id, signer) = workspaces::dev_deploy(STATUS_MSG_WASM_FILEPATH)
         .await
         .unwrap();
 
+    // This will `call` into `set_status` with the message we want to set.
     workspaces::call(
+        // The signer of the transaction:
         &signer,
+        // The signer id:
         contract_id.clone(),
+        // The contract we want to call into:
         contract_id.clone(),
+        // The method we want to call:
         "set_status".into(),
+        // The set of arguments we want to pass:
         serde_json::json!({
             "message": msg,
         })
         .to_string()
         .into_bytes(),
+        // No need to worry about this one. Not transferring any tokens, so None:
         None,
     )
     .await
@@ -56,7 +72,7 @@ async fn deploy_status_contract(msg: &str) -> (AccountId, InMemorySigner) {
 async fn main() -> anyhow::Result<()> {
     // Grab STATE from the testnet status_message contract. This contract contains the following data:
     //   get_status(dev-20211013002148-59466083160385) => "hello from testnet"
-    let (testnet_contract_id, status_msg) = workspaces::scope("testnet", async {
+    let (testnet_contract_id, status_msg) = workspaces::with_testnet(async {
         let contract_id: AccountId = TESTNET_PREDEPLOYED_CONTRACT_ID
             .to_string()
             .try_into()
@@ -74,7 +90,7 @@ async fn main() -> anyhow::Result<()> {
     .await?;
 
     // Patch testnet STATE into our local sandboxed status_message contract
-    workspaces::scope("sandbox", async move {
+    workspaces::with_sandbox(async move {
         // Deploy with the following status_message state: sandbox_contract_id => "hello from sandbox"
         let (sandbox_contract_id, _) = deploy_status_contract("hello from sandbox").await;
 
