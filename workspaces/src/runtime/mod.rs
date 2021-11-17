@@ -13,6 +13,8 @@ use near_crypto::{PublicKey, Signer};
 use near_primitives::types::AccountId;
 use near_primitives::views::FinalExecutionOutcomeView;
 
+use crate::CallExecutionResult;
+
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
 const TESTNET_CREDENTIALS_DIR: &str = ".near-credentials/testnet/";
 
@@ -66,7 +68,7 @@ impl RuntimeFlavor {
         &self,
         new_account_id: AccountId,
         new_account_pk: PublicKey,
-    ) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
+    ) -> anyhow::Result<Option<CallExecutionResult>> {
         match self {
             Self::Sandbox(_) => Ok(Some(
                 local::create_top_level_account(new_account_id, new_account_pk).await?,
