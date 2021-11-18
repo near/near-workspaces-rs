@@ -1,7 +1,7 @@
 use serde_json::json;
 
-use near_primitives::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_primitives::types::AccountId;
+use workspaces::borsh::{self, BorshDeserialize, BorshSerialize};
+use workspaces::AccountId;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
 
