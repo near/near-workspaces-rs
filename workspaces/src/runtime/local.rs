@@ -13,7 +13,7 @@ use near_primitives::views::FinalExecutionOutcomeView;
 use super::context;
 use super::RuntimeFlavor;
 use crate::rpc::{client, tool};
-use crate::NEAR_BASE;
+use crate::{CallExecutionResult, NEAR_BASE};
 
 fn home_dir(port: u16) -> PathBuf {
     let mut path = std::env::temp_dir();
@@ -37,7 +37,7 @@ fn root_account() -> InMemorySigner {
 pub(crate) async fn create_top_level_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
-) -> anyhow::Result<FinalExecutionOutcomeView> {
+) -> anyhow::Result<CallExecutionResult> {
     let root_signer = root_account();
     crate::create_account(
         &root_signer,

@@ -17,13 +17,35 @@ use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
 use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{AccountId, Balance, Finality, FunctionArgs, Gas, StoreKey};
-use near_primitives::views::{FinalExecutionOutcomeView, QueryRequest};
+use near_primitives::views::{FinalExecutionOutcomeView, FinalExecutionStatus, QueryRequest};
 
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 const DEV_ACCOUNT_SEED: &str = "testificate";
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
+
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub struct CallExecutionResult {
+    /// Execution status. Contains the result in case of successful execution.
+    pub status: FinalExecutionStatus,
+    /// Total gas burnt by the call execution
+    pub total_gas_burnt: Gas,
+}
+
+impl From<FinalExecutionOutcomeView> for CallExecutionResult {
+    fn from(transaction_result: FinalExecutionOutcomeView) -> Self {
+        CallExecutionResult {
+            status: transaction_result.status,
+            total_gas_burnt: transaction_result.transaction_outcome.outcome.gas_burnt
+                + transaction_result
+                    .receipts_outcome
+                    .iter()
+                    .map(|t| t.outcome.gas_burnt)
+                    .sum::<u64>(),
+        }
+    }
+}
 
 pub async fn display_account_info(account_id: AccountId) -> anyhow::Result<AccountInfo> {
     let query_resp = client::new()
@@ -55,7 +77,7 @@ pub async fn transfer_near(
     signer_id: AccountId,
     receiver_id: AccountId,
     amount_yocto: Balance,
-) -> anyhow::Result<FinalExecutionOutcomeView> {
+) -> anyhow::Result<CallExecutionResult> {
     client::send_tx_and_retry(|| async {
         let (access_key, _, block_hash) =
             tool::access_key(signer_id.clone(), signer.public_key()).await?;
@@ -70,6 +92,7 @@ pub async fn transfer_near(
         ))
     })
     .await
+    .map(Into::into)
 }
 
 pub async fn call(
@@ -79,7 +102,7 @@ pub async fn call(
     method_name: String,
     args: Vec<u8>,
     deposit: Option<Balance>,
-) -> anyhow::Result<FinalExecutionOutcomeView> {
+) -> anyhow::Result<CallExecutionResult> {
     client::send_tx_and_retry(|| async {
         let (access_key, _, block_hash) =
             tool::access_key(signer_id.clone(), signer.public_key()).await?;
@@ -97,6 +120,7 @@ pub async fn call(
         ))
     })
     .await
+    .map(Into::into)
 }
 
 pub async fn view(
@@ -180,7 +204,7 @@ pub async fn create_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
     deposit: Option<Balance>,
-) -> anyhow::Result<FinalExecutionOutcomeView> {
+) -> anyhow::Result<CallExecutionResult> {
     client::send_tx_and_retry(|| async {
         let (access_key, _, block_hash) =
             tool::access_key(signer_id.clone(), signer.public_key()).await?;
@@ -196,6 +220,7 @@ pub async fn create_account(
         ))
     })
     .await
+    .map(Into::into)
 }
 
 /// Creates a top level account. While in sandbox, we can grab the `ExecutionOutcomeView`, but
@@ -204,7 +229,7 @@ pub async fn create_account(
 pub async fn create_top_level_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
-) -> anyhow::Result<Option<FinalExecutionOutcomeView>> {
+) -> anyhow::Result<Option<CallExecutionResult>> {
     let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
     rt.create_top_level_account(new_account_id, new_account_pk)
         .await
@@ -214,7 +239,7 @@ pub async fn delete_account(
     account_id: AccountId,
     signer: &dyn Signer,
     beneficiary_id: AccountId,
-) -> anyhow::Result<FinalExecutionOutcomeView> {
+) -> anyhow::Result<CallExecutionResult> {
     client::send_tx_and_retry(|| async {
         let (access_key, _, block_hash) =
             tool::access_key(account_id.clone(), signer.public_key()).await?;
@@ -229,6 +254,7 @@ pub async fn delete_account(
         ))
     })
     .await
+    .map(Into::into)
 }
 
 fn dev_generate() -> (AccountId, InMemorySigner) {
