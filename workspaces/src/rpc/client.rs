@@ -2,20 +2,20 @@
 //       warnings about unstable API.
 #![allow(deprecated)]
 
+use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::hash::CryptoHash;
-use near_primitives::types::{AccountId, Finality};
+use near_primitives::types::{AccountId, Finality, FunctionArgs};
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
-use near_crypto::{Signer, InMemorySigner, PublicKey};
+use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
+use near_primitives::transaction::{Action, FunctionCallAction, SignedTransaction, TransferAction};
 use near_primitives::types::Balance;
-use near_primitives::transaction::{Action, FunctionCallAction, SignedTransaction};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
-use crate::rpc::tool;
 use crate::DEFAULT_CALL_FN_GAS;
 
 fn rt_current_addr() -> String {
@@ -48,7 +48,12 @@ impl Client {
         retry(|| async { json_client().call(method).await }).await
     }
 
-    async fn send_tx_and_retry(&self, signer: &InMemorySigner, receiver_id: AccountId, actions: Vec<Action>) -> anyhow::Result<FinalExecutionOutcomeView> {
+    async fn send_tx_and_retry(
+        &self,
+        signer: &InMemorySigner,
+        receiver_id: AccountId,
+        actions: Vec<Action>,
+    ) -> anyhow::Result<FinalExecutionOutcomeView> {
         send_tx_and_retry(|| async {
             let (AccessKeyView { nonce, .. }, block_hash) =
                 access_key(signer.account_id.clone(), signer.public_key()).await?;
@@ -61,7 +66,8 @@ impl Client {
                 actions.clone(),
                 block_hash,
             ))
-        }).await
+        })
+        .await
     }
 
     pub async fn _call(
@@ -82,6 +88,49 @@ impl Client {
 
         self.send_tx_and_retry(signer, contract_id, actions).await
     }
+
+    // TODO: return a type T instead of Value
+    pub async fn view(
+        &self,
+        contract_id: AccountId,
+        method_name: String,
+        args: FunctionArgs,
+    ) -> anyhow::Result<serde_json::Value> {
+        let query_resp = self
+            .call(&RpcQueryRequest {
+                block_reference: Finality::None.into(), // Optimisitic query
+                request: QueryRequest::CallFunction {
+                    account_id: contract_id,
+                    method_name,
+                    args,
+                },
+            })
+            .await?;
+
+        let call_result = match query_resp.kind {
+            QueryResponseKind::CallResult(result) => result.result,
+            _ => return Err(anyhow::anyhow!("Error call result")),
+        };
+
+        let result = std::str::from_utf8(&call_result)?;
+        Ok(serde_json::from_str(result)?)
+    }
+
+    pub async fn transfer_near(
+        &self,
+        signer: &InMemorySigner,
+        receiver_id: AccountId,
+        amount_yocto: Balance,
+    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+        self.send_tx_and_retry(
+            signer,
+            receiver_id,
+            vec![Action::Transfer(TransferAction {
+                deposit: amount_yocto,
+            })],
+        )
+        .await
+    }
 }
 
 pub(crate) async fn access_key(
@@ -99,9 +148,7 @@ pub(crate) async fn access_key(
         .await?;
 
     match query_resp.kind {
-        QueryResponseKind::AccessKey(access_key) => {
-            Ok((access_key, query_resp.block_hash))
-        }
+        QueryResponseKind::AccessKey(access_key) => Ok((access_key, query_resp.block_hash)),
         _ => Err(anyhow::anyhow!("Could not retrieve access key")),
     }
 }

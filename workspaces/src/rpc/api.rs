@@ -78,21 +78,11 @@ pub async fn transfer_near(
     receiver_id: AccountId,
     amount_yocto: Balance,
 ) -> anyhow::Result<CallExecutionResult> {
-    client::send_tx_and_retry(|| async {
-        let (access_key, _, block_hash) =
-            tool::access_key(signer_id.clone(), signer.public_key()).await?;
-
-        Ok(SignedTransaction::send_money(
-            access_key.nonce + 1,
-            signer_id.clone(),
-            receiver_id.clone(),
-            signer,
-            amount_yocto,
-            block_hash,
-        ))
-    })
-    .await
-    .map(Into::into)
+    let signer = InMemorySigner::from_file(&tool::credentials_filepath(signer_id.clone()).unwrap());
+    client::new()
+        .transfer_near(&signer, receiver_id, amount_yocto)
+        .await
+        .map(Into::into)
 }
 
 pub async fn call(
@@ -115,24 +105,10 @@ pub async fn view(
     method_name: String,
     args: FunctionArgs,
 ) -> anyhow::Result<serde_json::Value> {
-    let query_resp = client::new()
-        .call(&RpcQueryRequest {
-            block_reference: Finality::None.into(),
-            request: QueryRequest::CallFunction {
-                account_id: contract_id,
-                method_name,
-                args,
-            },
-        })
-        .await?;
-
-    let call_result = match query_resp.kind {
-        QueryResponseKind::CallResult(result) => result.result,
-        _ => return Err(anyhow!("Error call result")),
-    };
-
-    let result = std::str::from_utf8(&call_result)?;
-    Ok(serde_json::from_str(result)?)
+    client::new()
+        .view(contract_id, method_name, args)
+        .await
+        .map(Into::into)
 }
 
 pub async fn view_state(
