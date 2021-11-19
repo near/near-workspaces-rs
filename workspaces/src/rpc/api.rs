@@ -168,22 +168,11 @@ pub async fn create_account(
     new_account_pk: PublicKey,
     deposit: Option<Balance>,
 ) -> anyhow::Result<CallExecutionResult> {
-    client::send_tx_and_retry(|| async {
-        let (access_key, _, block_hash) =
-            tool::access_key(signer_id.clone(), signer.public_key()).await?;
-
-        Ok(SignedTransaction::create_account(
-            access_key.nonce + 1,
-            signer_id.clone(),
-            new_account_id.clone(),
-            deposit.unwrap_or(NEAR_BASE),
-            new_account_pk.clone(),
-            signer,
-            block_hash,
-        ))
-    })
-    .await
-    .map(Into::into)
+    let signer = InMemorySigner::from_file(&tool::credentials_filepath(signer_id.clone()).unwrap());
+    client::new()
+        .create_account(&signer, new_account_id, new_account_pk, deposit.unwrap_or(NEAR_BASE))
+        .await
+        .map(Into::into)
 }
 
 /// Creates a top level account. While in sandbox, we can grab the `ExecutionOutcomeView`, but

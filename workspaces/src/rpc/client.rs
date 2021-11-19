@@ -4,6 +4,7 @@
 
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
+use near_primitives::account::{AccessKey, AccessKeyPermission};
 use near_primitives::hash::CryptoHash;
 use near_primitives::types::{AccountId, Finality, FunctionArgs};
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
@@ -11,7 +12,7 @@ use tokio_retry::Retry;
 
 use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
-use near_primitives::transaction::{Action, FunctionCallAction, SignedTransaction, TransferAction};
+use near_primitives::transaction::{Action, AddKeyAction, CreateAccountAction, FunctionCallAction, SignedTransaction, TransferAction};
 use near_primitives::types::Balance;
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
@@ -52,22 +53,9 @@ impl Client {
         &self,
         signer: &InMemorySigner,
         receiver_id: AccountId,
-        actions: Vec<Action>,
+        action: Action,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
-        send_tx_and_retry(|| async {
-            let (AccessKeyView { nonce, .. }, block_hash) =
-                access_key(signer.account_id.clone(), signer.public_key()).await?;
-
-            Ok(SignedTransaction::from_actions(
-                nonce + 1,
-                signer.account_id.clone(),
-                receiver_id.clone(),
-                signer as &dyn Signer,
-                actions.clone(),
-                block_hash,
-            ))
-        })
-        .await
+        send_batch_tx_and_retry(signer, receiver_id, vec![action]).await
     }
 
     pub async fn _call(
@@ -79,14 +67,12 @@ impl Client {
         gas: Option<u64>,
         deposit: Option<Balance>,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
-        let actions = vec![Action::FunctionCall(FunctionCallAction {
+        self.send_tx_and_retry(signer, contract_id, FunctionCallAction {
             args,
             method_name,
             gas: gas.unwrap_or(DEFAULT_CALL_FN_GAS),
             deposit: deposit.unwrap_or(0),
-        })];
-
-        self.send_tx_and_retry(signer, contract_id, actions).await
+        }.into()).await
     }
 
     // TODO: return a type T instead of Value
@@ -125,11 +111,28 @@ impl Client {
         self.send_tx_and_retry(
             signer,
             receiver_id,
-            vec![Action::Transfer(TransferAction {
+            TransferAction {
                 deposit: amount_yocto,
-            })],
+            }.into(),
         )
         .await
+    }
+
+    pub async fn create_account(
+        &self,
+        signer: &InMemorySigner,
+        new_account_id: AccountId,
+        new_account_pk: PublicKey,
+        amount: Balance,
+    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+        send_batch_tx_and_retry(signer, new_account_id, vec![
+            CreateAccountAction {}.into(),
+            AddKeyAction {
+                public_key: new_account_pk,
+                access_key: AccessKey { nonce: 0, permission: AccessKeyPermission::FullAccess },
+            }.into(),
+            TransferAction { deposit: amount }.into(),
+        ]).await
     }
 }
 
@@ -179,4 +182,25 @@ where
     T: core::future::Future<Output = anyhow::Result<SignedTransaction>>,
 {
     retry(|| async { send_tx(task().await?).await }).await
+}
+
+async fn send_batch_tx_and_retry(
+    signer: &InMemorySigner,
+    receiver_id: AccountId,
+    actions: Vec<Action>,
+) -> anyhow::Result<FinalExecutionOutcomeView> {
+    send_tx_and_retry(|| async {
+        let (AccessKeyView { nonce, .. }, block_hash) =
+            access_key(signer.account_id.clone(), signer.public_key()).await?;
+
+        Ok(SignedTransaction::from_actions(
+            nonce + 1,
+            signer.account_id.clone(),
+            receiver_id.clone(),
+            signer as &dyn Signer,
+            actions.clone(),
+            block_hash,
+        ))
+    })
+    .await
 }
