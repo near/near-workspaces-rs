@@ -2,14 +2,21 @@
 //       warnings about unstable API.
 #![allow(deprecated)]
 
+use near_jsonrpc_primitives::types::query::QueryResponseKind;
+use near_primitives::hash::CryptoHash;
+use near_primitives::types::{AccountId, Finality};
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
+use near_crypto::{Signer, InMemorySigner, PublicKey};
 use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
-use near_primitives::transaction::SignedTransaction;
-use near_primitives::views::FinalExecutionOutcomeView;
+use near_primitives::types::Balance;
+use near_primitives::transaction::{Action, FunctionCallAction, SignedTransaction};
+use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
+use crate::rpc::tool;
+use crate::DEFAULT_CALL_FN_GAS;
 
 fn rt_current_addr() -> String {
     crate::runtime::context::current()
@@ -21,13 +28,15 @@ fn json_client() -> JsonRpcClient {
     JsonRpcClient::connect(&rt_current_addr())
 }
 
-pub(crate) fn new() -> RetryClient {
-    RetryClient::new()
+pub(crate) fn new() -> Client {
+    Client::new()
 }
 
-pub struct RetryClient;
+/// A client that wraps around JsonRpcClient, and provides more capabilities such
+/// as retry w/ exponential backoff and utility functions for sending transactions.
+pub struct Client;
 
-impl RetryClient {
+impl Client {
     fn new() -> Self {
         Self {}
     }
@@ -37,6 +46,63 @@ impl RetryClient {
         method: &M,
     ) -> JsonRpcMethodCallResult<M::Result, M::Error> {
         retry(|| async { json_client().call(method).await }).await
+    }
+
+    async fn send_tx_and_retry(&self, signer: &InMemorySigner, receiver_id: AccountId, actions: Vec<Action>) -> anyhow::Result<FinalExecutionOutcomeView> {
+        send_tx_and_retry(|| async {
+            let (AccessKeyView { nonce, .. }, block_hash) =
+                access_key(signer.account_id.clone(), signer.public_key()).await?;
+
+            Ok(SignedTransaction::from_actions(
+                nonce + 1,
+                signer.account_id.clone(),
+                receiver_id.clone(),
+                signer as &dyn Signer,
+                actions.clone(),
+                block_hash,
+            ))
+        }).await
+    }
+
+    pub async fn _call(
+        &self,
+        signer: &InMemorySigner,
+        contract_id: AccountId,
+        method_name: String,
+        args: Vec<u8>,
+        gas: Option<u64>,
+        deposit: Option<Balance>,
+    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+        let actions = vec![Action::FunctionCall(FunctionCallAction {
+            args,
+            method_name,
+            gas: gas.unwrap_or(DEFAULT_CALL_FN_GAS),
+            deposit: deposit.unwrap_or(0),
+        })];
+
+        self.send_tx_and_retry(signer, contract_id, actions).await
+    }
+}
+
+pub(crate) async fn access_key(
+    account_id: AccountId,
+    pk: PublicKey,
+) -> anyhow::Result<(AccessKeyView, CryptoHash)> {
+    let query_resp = new()
+        .call(&methods::query::RpcQueryRequest {
+            block_reference: Finality::Final.into(),
+            request: QueryRequest::ViewAccessKey {
+                account_id,
+                public_key: pk,
+            },
+        })
+        .await?;
+
+    match query_resp.kind {
+        QueryResponseKind::AccessKey(access_key) => {
+            Ok((access_key, query_resp.block_hash))
+        }
+        _ => Err(anyhow::anyhow!("Could not retrieve access key")),
     }
 }
 

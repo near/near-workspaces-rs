@@ -23,7 +23,7 @@ pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 const DEV_ACCOUNT_SEED: &str = "testificate";
-const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
+pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct CallExecutionResult {
@@ -103,24 +103,11 @@ pub async fn call(
     args: Vec<u8>,
     deposit: Option<Balance>,
 ) -> anyhow::Result<CallExecutionResult> {
-    client::send_tx_and_retry(|| async {
-        let (access_key, _, block_hash) =
-            tool::access_key(signer_id.clone(), signer.public_key()).await?;
-
-        Ok(SignedTransaction::call(
-            access_key.nonce + 1,
-            signer_id.clone(),
-            contract_id.clone(),
-            signer,
-            deposit.unwrap_or(0),
-            method_name.clone(),
-            args.clone(),
-            DEFAULT_CALL_FN_GAS,
-            block_hash,
-        ))
-    })
-    .await
-    .map(Into::into)
+    let signer = InMemorySigner::from_file(&tool::credentials_filepath(signer_id.clone()).unwrap());
+    client::new()
+        ._call(&signer, contract_id, method_name, args, None, deposit)
+        .await
+        .map(Into::into)
 }
 
 pub async fn view(
