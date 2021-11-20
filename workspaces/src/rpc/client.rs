@@ -2,22 +2,25 @@
 //       warnings about unstable API.
 #![allow(deprecated)]
 
+use std::collections::HashMap;
+
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::account::{AccessKey, AccessKeyPermission};
 use near_primitives::hash::CryptoHash;
-use near_primitives::types::{AccountId, Finality, FunctionArgs};
+use near_primitives::types::{AccountId, Finality, FunctionArgs, StoreKey};
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
 use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
-use near_primitives::transaction::{Action, AddKeyAction, CreateAccountAction, FunctionCallAction, SignedTransaction, TransferAction};
+use near_primitives::transaction::{Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, FunctionCallAction, SignedTransaction, TransferAction};
 use near_primitives::types::Balance;
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
+use crate::rpc::tool;
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
-use crate::DEFAULT_CALL_FN_GAS;
+use crate::{DEFAULT_CALL_FN_GAS, ERR_INVALID_VARIANT};
 
 fn rt_current_addr() -> String {
     crate::runtime::context::current()
@@ -102,6 +105,31 @@ impl Client {
         Ok(serde_json::from_str(result)?)
     }
 
+    pub async fn view_state(
+        &self,
+        contract_id: AccountId,
+        prefix: Option<StoreKey>,
+    ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
+        // client::retry(|| async {
+        let query_resp = self
+            .call(&methods::query::RpcQueryRequest {
+                block_reference: Finality::None.into(),
+                request: QueryRequest::ViewState {
+                    account_id: contract_id.clone(),
+                    prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
+                },
+            })
+            .await?;
+
+        match query_resp.kind {
+            QueryResponseKind::ViewState(state) => tool::into_state_map(&state.values),
+            _ => Err(anyhow::anyhow!(ERR_INVALID_VARIANT)),
+        }
+        // })
+        // .await
+    }
+
+    // TODO: write tests that uses transfer_near
     pub async fn transfer_near(
         &self,
         signer: &InMemorySigner,
@@ -133,6 +161,17 @@ impl Client {
             }.into(),
             TransferAction { deposit: amount }.into(),
         ]).await
+    }
+
+    // TODO: write tests that uses delete_account
+    pub async fn delete_account(
+        &self,
+        signer: &InMemorySigner,
+        account_id: AccountId,
+        beneficiary_id: AccountId,
+    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+        self.send_tx_and_retry(signer, account_id, DeleteAccountAction { beneficiary_id }.into())
+            .await
     }
 }
 
