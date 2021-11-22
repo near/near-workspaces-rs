@@ -1,6 +1,8 @@
 mod exports;
+mod network;
 mod rpc;
 mod runtime;
+mod worker;
 
 #[cfg(not(test))] // Work around for rust-lang/rust#62127
 pub use workspaces_macros::main;

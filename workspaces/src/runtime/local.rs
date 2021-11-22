@@ -21,7 +21,8 @@ fn home_dir(port: u16) -> PathBuf {
     path
 }
 
-fn root_account() -> InMemorySigner {
+// TODO: clean up this crate since we're taking this into network/ module
+pub(crate) fn root_account() -> InMemorySigner {
     let rt = crate::runtime::context::current().expect(context::MISSING_RUNTIME_ERROR);
     let port = match rt {
         RuntimeFlavor::Sandbox(port) => port,
