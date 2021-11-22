@@ -52,8 +52,8 @@ pub trait NetworkActions {
 /// This view has extra info about the execution, such as gas usage and whether
 /// the transaction failed to be processed on the chain.
 pub struct CallExecution<T> {
-    result: T,
-    details: crate::CallExecutionResult,
+    pub result: T,
+    pub details: crate::CallExecutionResult,
 }
 
 impl<T> CallExecution<T> {
@@ -79,7 +79,7 @@ impl<T> Into<anyhow::Result<T>> for CallExecution<T> {
 #[async_trait]
 pub trait TopLevelAccountCreator {
     async fn create_tla(&self, id: AccountId, pk: PublicKey) -> anyhow::Result<CallExecution<Account>>;
-    async fn create_tla_and_deploy(&self, id: AccountId, pk: PublicKey, wasm: impl AsRef<Path>) -> anyhow::Result<CallExecution<Account>>;
+    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(&self, id: AccountId, pk: PublicKey, wasm: P) -> anyhow::Result<CallExecution<Account>>;
 }
 
 // NOTE: Not all networks/runtimes will have the ability to be able to do dev_deploy.
