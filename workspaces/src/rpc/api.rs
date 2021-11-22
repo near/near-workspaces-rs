@@ -185,7 +185,8 @@ pub async fn delete_account(
         .map(Into::into)
 }
 
-fn dev_generate() -> (AccountId, InMemorySigner) {
+// TODO: remove this public(crate)
+pub(crate) fn dev_generate() -> (AccountId, InMemorySigner) {
     let account_id = tool::random_account_id();
     let signer = InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
     signer.write_to_file(&tool::credentials_filepath(account_id.clone()).unwrap());

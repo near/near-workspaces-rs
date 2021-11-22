@@ -28,28 +28,31 @@ fn rt_current_addr() -> String {
         .rpc_addr()
 }
 
-fn json_client() -> JsonRpcClient {
-    JsonRpcClient::connect(&rt_current_addr())
+fn json_client(addr: &str) -> JsonRpcClient {
+    JsonRpcClient::connect(addr)
 }
 
 pub(crate) fn new() -> Client {
-    Client::new()
+    Client::new(rt_current_addr())
 }
 
 /// A client that wraps around JsonRpcClient, and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
-pub struct Client;
+pub struct Client {
+    rpc_addr: String,
+}
 
 impl Client {
-    fn new() -> Self {
-        Self {}
+    fn new(rpc_addr: String) -> Self {
+        Self { rpc_addr }
     }
 
+    // TODO: rename to call_and_retry
     pub(crate) async fn call<M: methods::RpcMethod>(
         &self,
         method: &M,
     ) -> JsonRpcMethodCallResult<M::Result, M::Error> {
-        retry(|| async { json_client().call(method).await }).await
+        retry(|| async { json_client(&self.rpc_addr).call(method).await }).await
     }
 
     async fn send_tx_and_retry(
@@ -110,10 +113,9 @@ impl Client {
         contract_id: AccountId,
         prefix: Option<StoreKey>,
     ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
-        // client::retry(|| async {
         let query_resp = self
             .call(&methods::query::RpcQueryRequest {
-                block_reference: Finality::None.into(),
+                block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::ViewState {
                     account_id: contract_id.clone(),
                     prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
@@ -125,8 +127,6 @@ impl Client {
             QueryResponseKind::ViewState(state) => tool::into_state_map(&state.values),
             _ => Err(anyhow::anyhow!(ERR_INVALID_VARIANT)),
         }
-        // })
-        // .await
     }
 
     // TODO: write tests that uses transfer_near
