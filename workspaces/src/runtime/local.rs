@@ -109,6 +109,10 @@ impl SandboxServer {
 
         Ok(())
     }
+
+    pub fn rpc_addr(&self) -> String {
+        format!("http://localhost:{}", self.rpc_port)
+    }
 }
 
 impl Default for SandboxServer {
