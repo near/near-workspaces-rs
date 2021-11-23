@@ -61,7 +61,7 @@ pub(crate) async fn create_tla_and_deploy(
 
     let root_signer = root_account();
 
-    client::send_tx_and_retry(|| async {
+    client::send_tx_and_retry(&client::new(), || async {
         let (access_key, _, block_hash) =
             tool::access_key(root_signer.account_id.clone(), root_signer.public_key()).await?;
 

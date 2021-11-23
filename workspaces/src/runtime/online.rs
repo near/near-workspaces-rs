@@ -54,7 +54,7 @@ pub(crate) async fn create_tla_and_deploy(
     let mut code = Vec::new();
     File::open(code_filepath)?.read_to_end(&mut code)?;
 
-    client::send_tx_and_retry(|| async {
+    client::send_tx_and_retry(&client::new(), || async {
         let (access_key, _, block_hash) =
             tool::access_key(new_account_id.clone(), new_account_pk.clone()).await?;
 

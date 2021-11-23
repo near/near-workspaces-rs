@@ -14,7 +14,10 @@ use tokio_retry::Retry;
 
 use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
-use near_primitives::transaction::{Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction, FunctionCallAction, SignedTransaction, TransferAction};
+use near_primitives::transaction::{
+    Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
+    FunctionCallAction, SignedTransaction, TransferAction,
+};
 use near_primitives::types::Balance;
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
@@ -73,12 +76,18 @@ impl Client {
         gas: Option<u64>,
         deposit: Option<Balance>,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
-        self.send_tx_and_retry(signer, contract_id, FunctionCallAction {
-            args,
-            method_name,
-            gas: gas.unwrap_or(DEFAULT_CALL_FN_GAS),
-            deposit: deposit.unwrap_or(0),
-        }.into()).await
+        self.send_tx_and_retry(
+            signer,
+            contract_id,
+            FunctionCallAction {
+                args,
+                method_name,
+                gas: gas.unwrap_or(DEFAULT_CALL_FN_GAS),
+                deposit: deposit.unwrap_or(0),
+            }
+            .into(),
+        )
+        .await
     }
 
     // TODO: return a type T instead of Value
@@ -141,7 +150,8 @@ impl Client {
             receiver_id,
             TransferAction {
                 deposit: amount_yocto,
-            }.into(),
+            }
+            .into(),
         )
         .await
     }
@@ -209,8 +219,12 @@ impl Client {
         account_id: AccountId,
         beneficiary_id: AccountId,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
-        self.send_tx_and_retry(signer, account_id, DeleteAccountAction { beneficiary_id }.into())
-            .await
+        self.send_tx_and_retry(
+            signer,
+            account_id,
+            DeleteAccountAction { beneficiary_id }.into(),
+        )
+        .await
     }
 }
 

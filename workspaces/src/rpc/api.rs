@@ -115,9 +115,7 @@ pub async fn view_state(
     contract_id: AccountId,
     prefix: Option<StoreKey>,
 ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
-    client::new()
-        .view_state(contract_id, prefix)
-        .await
+    client::new().view_state(contract_id, prefix).await
 }
 
 pub async fn patch_state<T>(
@@ -156,7 +154,12 @@ pub async fn create_account(
 ) -> anyhow::Result<CallExecutionResult> {
     let signer = InMemorySigner::from_file(&tool::credentials_filepath(signer_id.clone()).unwrap());
     client::new()
-        .create_account(&signer, new_account_id, new_account_pk, deposit.unwrap_or(NEAR_BASE))
+        .create_account(
+            &signer,
+            new_account_id,
+            new_account_pk,
+            deposit.unwrap_or(NEAR_BASE),
+        )
         .await
         .map(Into::into)
 }
@@ -178,7 +181,8 @@ pub async fn delete_account(
     signer: &dyn Signer,
     beneficiary_id: AccountId,
 ) -> anyhow::Result<CallExecutionResult> {
-    let signer = InMemorySigner::from_file(&tool::credentials_filepath(account_id.clone()).unwrap());
+    let signer =
+        InMemorySigner::from_file(&tool::credentials_filepath(account_id.clone()).unwrap());
     client::new()
         .delete_account(&signer, account_id, beneficiary_id)
         .await
@@ -186,6 +190,7 @@ pub async fn delete_account(
 }
 
 // TODO: remove this public(crate)
+// TODO: return a single Object instead. maybe just signer
 pub(crate) fn dev_generate() -> (AccountId, InMemorySigner) {
     let account_id = tool::random_account_id();
     let signer = InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
