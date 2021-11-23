@@ -80,5 +80,3 @@ impl NetworkInfo for Sandbox {
         todo!()
     }
 }
-
-impl Network for Sandbox {}

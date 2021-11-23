@@ -11,6 +11,8 @@ use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 
 use crate::rpc::client::Client;
 
+pub use crate::network::sandbox::Sandbox;
+
 // TODO: currently a marker trait
 pub trait Server {
 }
@@ -40,6 +42,8 @@ pub trait NetworkInfo {
     fn keystore_path(&self) -> std::path::PathBuf;
 
     fn rpc_url(&self) -> String;
+
+    // TODO: not everything has a helper url. maybe make this optional or remove it into a seprate trait
     fn helper_url(&self) -> String;
 }
 
@@ -116,4 +120,10 @@ pub trait StatePatcher {
     async fn patch_state(&self) -> anyhow::Result<()>;
 }
 
-pub trait Network: TopLevelAccountCreator + NetworkActions + NetworkInfo {}
+pub trait Network: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync {}
+
+impl<T> Network for T
+where
+    T: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync,
+{
+}
