@@ -13,8 +13,7 @@ pub use workspaces_macros::test;
 pub use exports::*;
 pub use rpc::api::*;
 pub use runtime::{with_sandbox, with_testnet, SandboxRuntime, TestnetRuntime};
-
-pub use worker::sandbox;
+pub use worker::{sandbox, Worker};
 
 // Used for generated code, Not a public API
 #[doc(hidden)]
