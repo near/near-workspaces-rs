@@ -22,7 +22,7 @@ where
     F: Fn(Worker<Sandbox>) -> T,
     T: core::future::Future,
 {
-    let worker = Worker::new(Sandbox::default());
+    let worker = Worker::new(Sandbox::new());
 
     task(worker).await
 }

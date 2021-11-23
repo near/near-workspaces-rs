@@ -39,8 +39,8 @@ impl Sandbox {
     }
 }
 
-impl Default for Sandbox {
-    fn default() -> Self {
+impl Sandbox {
+    pub(crate) fn new() -> Self {
         let mut server = SandboxServer::default();
         server.start().unwrap();
 
