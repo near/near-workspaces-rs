@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use async_trait::async_trait;
 
-use near_crypto::{InMemorySigner, PublicKey};
+use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_primitives::types::{AccountId, Balance};
 
 use crate::NEAR_BASE;
@@ -37,9 +37,7 @@ impl Sandbox {
 
         InMemorySigner::from_file(&path)
     }
-}
 
-impl Sandbox {
     pub(crate) fn new() -> Self {
         let mut server = SandboxServer::default();
         server.start().unwrap();
@@ -73,17 +71,17 @@ impl TopLevelAccountCreator for Sandbox {
     async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
         &self,
         id: AccountId,
-        pk: PublicKey,
+        signer: &InMemorySigner,
         wasm: P,
     ) -> anyhow::Result<CallExecution<Contract>> {
+        let root_signer = self.root_signer();
         // TODO: async_compat/async version of File
         let mut code = Vec::new();
         File::open(wasm)?.read_to_end(&mut code)?;
 
-        let root_signer = self.root_signer();
         let outcome = self
             .client
-            .create_account_and_deploy(&root_signer, id.clone(), pk, DEFAULT_DEPOSIT, code)
+            .create_account_and_deploy(&root_signer, id.clone(), signer.public_key(), DEFAULT_DEPOSIT, code)
             .await?;
 
         Ok(CallExecution {

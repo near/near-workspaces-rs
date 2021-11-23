@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use async_trait::async_trait;
-use near_crypto::PublicKey;
+use near_crypto::{InMemorySigner, PublicKey};
 use near_primitives::types::AccountId;
 
 use crate::network::{
@@ -31,10 +31,10 @@ where
     async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
         &self,
         id: AccountId,
-        pk: PublicKey,
+        signer: &InMemorySigner,
         wasm: P,
     ) -> anyhow::Result<CallExecution<Contract>> {
-        self.workspace.create_tla_and_deploy(id, pk, wasm).await
+        self.workspace.create_tla_and_deploy(id, signer, wasm).await
     }
 }
 

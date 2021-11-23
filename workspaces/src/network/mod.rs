@@ -31,6 +31,7 @@ pub trait NetworkInfo {
     /// Path to the keystore directory
     fn keystore_path(&self) -> std::path::PathBuf;
 
+    // TODO: change return type to Url instead of String
     /// Rpc endpoint to point our client to
     fn rpc_url(&self) -> String;
 
@@ -77,7 +78,7 @@ impl<T> Into<anyhow::Result<T>> for CallExecution<T> {
 #[async_trait]
 pub trait TopLevelAccountCreator {
     async fn create_tla(&self, id: AccountId, pk: PublicKey) -> anyhow::Result<CallExecution<Account>>;
-    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(&self, id: AccountId, pk: PublicKey, wasm: P) -> anyhow::Result<CallExecution<Contract>>;
+    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(&self, id: AccountId, signer: &InMemorySigner, wasm: P) -> anyhow::Result<CallExecution<Contract>>;
 }
 
 // NOTE: Not all networks/runtimes will have the ability to be able to do dev_deploy.
@@ -125,7 +126,7 @@ where
     async fn dev_deploy<P: AsRef<Path> + Send + Sync>(&self, wasm: P) -> anyhow::Result<Contract> {
         let (account_id, signer) = self.dev_generate();
         let contract = self
-            .create_tla_and_deploy(account_id.clone(), signer.public_key, wasm)
+            .create_tla_and_deploy(account_id.clone(), &signer, wasm)
             .await?;
         contract.into()
     }
