@@ -12,7 +12,7 @@ struct Workspace<T> {
 
 // TODO: implement Rc<Workspace> so we can do clone() to copy context
 pub struct Worker<T> {
-    ctx: Workspace<T>,
+    workspace: T,
 }
 
 impl<T> Worker<T> where T: Network {

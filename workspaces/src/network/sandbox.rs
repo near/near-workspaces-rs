@@ -39,7 +39,7 @@ impl TopLevelAccountCreator for Sandbox {
         })
     }
 
-    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(&self, id: AccountId, pk: PublicKey, wasm: P) -> anyhow::Result<CallExecution<Account>> {
+    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(&self, id: AccountId, pk: PublicKey, wasm: P) -> anyhow::Result<CallExecution<Contract>> {
         // TODO: async_compat/async version of File
         let mut code = Vec::new();
         File::open(wasm)?.read_to_end(&mut code)?;
@@ -48,7 +48,7 @@ impl TopLevelAccountCreator for Sandbox {
         let outcome = self.client.create_account_and_deploy(&root_signer, id, pk, NEAR_BASE, code).await?;
 
         Ok(CallExecution {
-            result: Account {},
+            result: Contract { account: Account {} },
             details: outcome.into(),
         })
     }

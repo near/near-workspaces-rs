@@ -79,7 +79,7 @@ impl<T> Into<anyhow::Result<T>> for CallExecution<T> {
 #[async_trait]
 pub trait TopLevelAccountCreator {
     async fn create_tla(&self, id: AccountId, pk: PublicKey) -> anyhow::Result<CallExecution<Account>>;
-    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(&self, id: AccountId, pk: PublicKey, wasm: P) -> anyhow::Result<CallExecution<Account>>;
+    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(&self, id: AccountId, pk: PublicKey, wasm: P) -> anyhow::Result<CallExecution<Contract>>;
 }
 
 // NOTE: Not all networks/runtimes will have the ability to be able to do dev_deploy.
@@ -105,7 +105,9 @@ where
     }
 
     async fn dev_deploy<P: AsRef<Path> + Send + Sync>(&self, wasm: P) -> anyhow::Result<Contract> {
-        Ok(Contract { account: Account {}})
+        let (account_id, signer) =  crate::dev_generate();
+        let contract = self.create_tla_and_deploy(account_id.clone(), signer.public_key, wasm).await?;
+        contract.into()
     }
 }
 
