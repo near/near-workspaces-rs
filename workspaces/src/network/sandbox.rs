@@ -112,7 +112,7 @@ impl NetworkActions for Sandbox {}
 
 impl NetworkInfo for Sandbox {
     fn name(&self) -> String {
-        "Sandbox".into()
+        "sandbox".into()
     }
 
     fn root_account_id(&self) -> AccountId {

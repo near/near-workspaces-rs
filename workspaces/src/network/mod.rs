@@ -55,7 +55,7 @@ pub struct CallExecution<T> {
 }
 
 impl<T> CallExecution<T> {
-    fn unwrap(self) -> T {
+    pub fn unwrap(self) -> T {
         match self.details.status {
             FinalExecutionStatus::SuccessValue(_) => self.result,
             _ => panic!("Call failed"),
