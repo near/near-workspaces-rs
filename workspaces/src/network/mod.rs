@@ -7,6 +7,9 @@ use std::path::Path;
 use async_trait::async_trait;
 
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
+use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
+use near_primitives::borsh::BorshSerialize;
+use near_primitives::state_record::StateRecord;
 use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 
 use crate::rpc::client::Client;
@@ -140,9 +143,52 @@ where
     }
 }
 
+pub trait AllowStatePatching {}
+
 #[async_trait]
 pub trait StatePatcher {
-    async fn patch_state(&self) -> anyhow::Result<()>;
+    async fn patch_state<T>(
+        &self,
+        contract_id: AccountId,
+        key: String,
+        value: &T,
+    ) -> anyhow::Result<()>
+    where
+        T: BorshSerialize + Send + Sync;
+}
+
+#[async_trait]
+impl<T> StatePatcher for T
+where
+    T: AllowStatePatching + NetworkClient,
+    Self: Send + Sync,
+{
+    async fn patch_state<U>(
+        &self,
+        contract_id: AccountId,
+        key: String,
+        value: &U,
+    ) -> anyhow::Result<()>
+    where
+        U: BorshSerialize + Send + Sync,
+    {
+        let value = U::try_to_vec(value).unwrap();
+        let state = StateRecord::Data {
+            account_id: contract_id,
+            data_key: key.into(),
+            value,
+        };
+        let records = vec![state];
+
+        // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
+        let _patch_resp = self
+            .client()
+            .query(&RpcSandboxPatchStateRequest { records })
+            .await
+            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
+
+        Ok(())
+    }
 }
 
 pub trait Network: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync {}

@@ -13,8 +13,8 @@ use crate::runtime::local::SandboxServer;
 use crate::NEAR_BASE;
 
 use super::{
-    Account, AllowDevAccountCreation, CallExecution, Contract, NetworkActions, NetworkClient,
-    NetworkInfo, TopLevelAccountCreator,
+    Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkActions,
+    NetworkClient, NetworkInfo, TopLevelAccountCreator,
 };
 
 const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
@@ -46,6 +46,8 @@ impl Sandbox {
         Self { server, client }
     }
 }
+
+impl AllowStatePatching for Sandbox {}
 
 impl AllowDevAccountCreation for Sandbox {}
 
