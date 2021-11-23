@@ -1,24 +1,18 @@
 mod impls;
 
+use std::sync::Arc;
 
 use crate::network::{Network, Sandbox};
 
-// TODO: create contract
-
-struct Workspace<T> {
-    // network: Box<dyn Network>,
-    network: T,
-}
-
-// TODO: implement Rc<Workspace> so we can do clone() to copy context
+#[derive(Clone)]
 pub struct Worker<T> {
-    workspace: T,
+    workspace: Arc<T>,
 }
 
 impl<T> Worker<T> where T: Network {
     pub(crate) fn new(network: T) -> Self {
         Self {
-            workspace: network,
+            workspace: Arc::new(network),
         }
     }
 }
