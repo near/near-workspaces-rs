@@ -138,6 +138,20 @@ impl Client {
         }
     }
 
+    pub async fn deploy(
+        &self,
+        signer: &InMemorySigner,
+        contract_id: AccountId,
+        wasm: Vec<u8>
+    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+        self.send_tx_and_retry(
+            signer,
+            contract_id,
+            DeployContractAction { code: wasm }.into()
+        )
+        .await
+    }
+
     // TODO: write tests that uses transfer_near
     pub async fn transfer_near(
         &self,
@@ -206,7 +220,7 @@ impl Client {
                 }
                 .into(),
                 TransferAction { deposit: amount }.into(),
-                Action::DeployContract(DeployContractAction { code }),
+                DeployContractAction { code }.into(),
             ],
         )
         .await
