@@ -12,10 +12,7 @@ use crate::NEAR_BASE;
 use crate::rpc::client::Client;
 use crate::runtime::local::SandboxServer;
 
-use super::{
-    Account, AllowDevAccountCreation, CallExecution, Contract, NetworkActions, NetworkInfo,
-    TopLevelAccountCreator,
-};
+use super::{Account, AllowDevAccountCreation, CallExecution, Contract, NetworkActions, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 
 const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
 
@@ -87,9 +84,16 @@ impl TopLevelAccountCreator for Sandbox {
         Ok(CallExecution {
             result: Contract {
                 account: Account { id },
+                signer: signer.clone(),
             },
             details: outcome.into(),
         })
+    }
+}
+
+impl NetworkClient for Sandbox {
+    fn client(&self) -> &Client {
+        &self.client
     }
 }
 

@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use crate::network::{Network, Sandbox};
 
-#[derive(Clone)]
 pub struct Worker<T> {
     workspace: Arc<T>,
 }
@@ -17,18 +16,6 @@ impl<T> Worker<T> where T: Network {
     }
 }
 
-impl Worker<Sandbox> {
-    pub fn sandbox() -> Self {
-        Self::new(Sandbox::new())
-    }
-}
-
-pub async fn sandbox<F, T>(task: F) -> <T as core::future::Future>::Output
-where
-    F: Fn(Worker<Sandbox>) -> T,
-    T: core::future::Future,
-{
-    let worker = Worker::new(Sandbox::new());
-
-    task(worker).await
+pub fn sandbox() -> Worker<Sandbox> {
+    Worker::new(Sandbox::new())
 }

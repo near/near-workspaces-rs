@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use workspaces::{Contract, DevNetwork, Worker};
 use workspaces::prelude::*;
 
 
@@ -30,44 +29,29 @@ fn expected() -> NftMetadata {
     serde_json::from_str(EXPECTED_NFT_METADATA).unwrap()
 }
 
-#[workspaces::test(sandbox)]
+#[tokio::test]
 async fn test_dev_deploy() {
-    let (contract_id, signer) = workspaces::dev_deploy(NFT_WASM_FILEPATH)
-        .await
-        .expect("could not dev-deploy NFT contract");
+    let worker = workspaces::sandbox();
 
-    workspaces::call(
-        &signer,
-        contract_id.clone(),
-        contract_id.clone(),
-        "new_default_meta".to_string(),
-        format!("{{\"owner_id\": \"{}\"}}", contract_id).into(),
-        None,
+    let contract = worker.dev_deploy(NFT_WASM_FILEPATH).await.unwrap();
+    let _result = worker.call(
+        &contract,
+        "new_default_meta".into(),
+        serde_json::json!({
+            "owner_id": contract.id()
+        }).to_string().into_bytes()
     )
     .await
     .unwrap();
 
-    let call_result = workspaces::view(
-        contract_id.clone(),
+    let result = worker.view(
+        contract.id(),
         "nft_metadata".to_string(),
         Vec::new().into(),
     )
     .await
     .unwrap();
 
-    let actual: NftMetadata = serde_json::from_value(call_result).unwrap();
+    let actual: NftMetadata = serde_json::from_value(result).unwrap();
     assert_eq!(actual, expected());
-}
-
-async fn deploy_nft(worker: Worker<impl DevNetwork>) -> Contract {
-    worker.dev_deploy(NFT_WASM_FILEPATH).await.unwrap()
-}
-
-#[tokio::test]
-async fn test_dev_deploy_v2() {
-    workspaces::sandbox(|worker| async move {
-        let contract = deploy_nft(worker).await;
-        println!("{:?}", contract.id());
-    })
-    .await;
 }

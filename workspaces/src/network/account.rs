@@ -9,8 +9,8 @@ pub struct Account {
 }
 
 impl Account {
-    pub fn id(&self) -> &AccountId {
-        &self.id
+    pub fn id(&self) -> AccountId {
+        self.id.clone()
     }
 }
 
@@ -19,11 +19,12 @@ unsafe impl Send for Account {}
 
 pub struct Contract {
     pub(crate) account: Account,
+    pub(crate) signer: InMemorySigner,
 }
 
 impl Contract {
-    pub fn id(&self) -> &AccountId {
-        &self.account.id
+    pub fn id(&self) -> AccountId {
+        self.account.id.clone()
     }
 }
 

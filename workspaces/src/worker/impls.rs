@@ -2,16 +2,24 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use near_crypto::{InMemorySigner, PublicKey};
-use near_primitives::types::AccountId;
+use near_primitives::types::{AccountId, FunctionArgs};
 
-use crate::network::{
-    Account, AllowDevAccountCreation, CallExecution, Contract, NetworkInfo, TopLevelAccountCreator,
-};
+use crate::CallExecutionResult;
+use crate::network::{Account, AllowDevAccountCreation, CallExecution, Contract, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::rpc::client::Client;
 
 use super::Worker;
 
 unsafe impl<T> Send for Worker<T> where T: Send {}
 unsafe impl<T> Sync for Worker<T> where T: Sync {}
+
+impl<T> Clone for Worker<T> {
+    fn clone(&self) -> Self {
+        Self {
+            workspace: self.workspace.clone(),
+        }
+    }
+}
 
 impl<T> AllowDevAccountCreation for Worker<T> where T: AllowDevAccountCreation {}
 
@@ -60,5 +68,21 @@ where
 
     fn helper_url(&self) -> String {
         self.workspace.helper_url()
+    }
+}
+
+impl<T> Worker<T> where T: NetworkClient {
+    pub(crate) fn client(&self) -> &Client {
+        self.workspace.client()
+    }
+
+    pub async fn call(&self, contract: &Contract, method: String, args: Vec<u8>) -> anyhow::Result<CallExecutionResult> {
+        self.client()._call(&contract.signer, contract.id(), method, args, None, None)
+            .await
+            .map(Into::into)
+    }
+
+    pub async fn view(&self, contract_id: AccountId, method_name: String, args: FunctionArgs) -> anyhow::Result<serde_json::Value> {
+        self.client().view(contract_id, method_name, args).await
     }
 }
