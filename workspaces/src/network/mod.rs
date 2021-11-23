@@ -1,4 +1,3 @@
-mod impls;
 mod sandbox;
 mod testnet;
 
@@ -15,15 +14,13 @@ pub use crate::network::sandbox::Sandbox;
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
 
-// TODO: currently a marker trait
-pub trait Server {
-}
-
+#[derive(Debug)]
 pub struct Account {}
 
 unsafe impl std::marker::Sync for Account {}
 unsafe impl std::marker::Send for Account {}
 
+#[derive(Debug)]
 pub struct Contract {
     account: Account,
 }
