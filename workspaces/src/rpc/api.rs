@@ -8,8 +8,8 @@ use std::path::Path;
 
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
-use near_jsonrpc_client::methods::{
-    sandbox_patch_state::{RpcSandboxPatchStateRequest, RpcSandboxPatchStateResponse},
+use near_jsonrpc_client::methods::sandbox_patch_state::{
+    RpcSandboxPatchStateRequest, RpcSandboxPatchStateResponse,
 };
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
 use near_primitives::borsh::BorshSerialize;

@@ -13,6 +13,7 @@ use crate::rpc::client::Client;
 
 pub use crate::network::account::{Account, Contract};
 pub use crate::network::sandbox::Sandbox;
+pub use crate::network::testnet::Testnet;
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
 

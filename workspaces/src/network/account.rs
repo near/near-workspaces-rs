@@ -1,4 +1,4 @@
-use near_crypto::{InMemorySigner};
+use near_crypto::InMemorySigner;
 use near_primitives::types::AccountId;
 
 pub struct Account {

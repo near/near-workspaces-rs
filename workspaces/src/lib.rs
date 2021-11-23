@@ -14,8 +14,8 @@ pub use exports::*;
 pub use rpc::api::*;
 pub use runtime::{with_sandbox, with_testnet, SandboxRuntime, TestnetRuntime};
 
-pub use worker::{sandbox, Worker};
-pub use network::{Contract, Network, DevNetwork};
+pub use network::{Contract, DevNetwork, Network};
+pub use worker::{sandbox, testnet, Worker};
 
 // Used for generated code, Not a public API
 #[doc(hidden)]
