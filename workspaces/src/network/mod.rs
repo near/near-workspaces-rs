@@ -35,14 +35,18 @@ pub trait NetworkClient {
 pub trait NetworkInfo {
     /// Name of the network itself
     fn name(&self) -> String;
+
+    /// Root Account ID of the network. Mainnet has `near`, testnet has `testnet`.
     fn root_account_id(&self) -> AccountId;
 
     /// Path to the keystore directory
     fn keystore_path(&self) -> std::path::PathBuf;
 
+    /// Rpc endpoint to point our client to
     fn rpc_url(&self) -> String;
 
     // TODO: not everything has a helper url. maybe make this optional or remove it into a seprate trait
+    /// The helper URL to create top level account out of for certain networks.
     fn helper_url(&self) -> String;
 }
 
