@@ -1,17 +1,17 @@
 use serde_json::json;
+use workspaces::prelude::*;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 
-#[workspaces::main(sandbox)]
+#[tokio::main]
 async fn main() {
-    let (contract_id, signer) = workspaces::dev_deploy(STATUS_MSG_WASM_FILEPATH)
+    let worker = workspaces::sandbox();
+    let contract = worker.dev_deploy(STATUS_MSG_WASM_FILEPATH)
         .await
         .unwrap();
 
-    workspaces::call(
-        &signer,
-        contract_id.clone(),
-        contract_id.clone(),
+    let outcome = worker.call(
+        &contract,
         "set_status".into(),
         json!({
             "message": "hello_world",
@@ -22,12 +22,13 @@ async fn main() {
     )
     .await
     .unwrap();
+    println!("set_status: {:?}", outcome);
 
-    let result = workspaces::view(
-        contract_id.clone(),
+    let result = worker.view(
+        contract.id(),
         "get_status".into(),
         json!({
-            "account_id": contract_id,
+            "account_id": contract.id(),
         })
         .to_string()
         .into_bytes()
