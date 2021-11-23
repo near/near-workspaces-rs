@@ -67,7 +67,7 @@ async fn deploy_nft(worker: Worker<impl DevNetwork>) -> Contract {
 async fn test_dev_deploy_v2() {
     workspaces::sandbox(|worker| async move {
         let contract = deploy_nft(worker).await;
-        println!("{:?}", contract);
+        println!("{:?}", contract.id());
     })
     .await;
 }

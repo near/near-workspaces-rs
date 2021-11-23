@@ -61,11 +61,11 @@ impl TopLevelAccountCreator for Sandbox {
         let root_signer = self.root_signer();
         let outcome = self
             .client
-            .create_account(&root_signer, id, pk, DEFAULT_DEPOSIT)
+            .create_account(&root_signer, id.clone(), pk, DEFAULT_DEPOSIT)
             .await?;
 
         Ok(CallExecution {
-            result: Account {},
+            result: Account { id },
             details: outcome.into(),
         })
     }
@@ -83,12 +83,12 @@ impl TopLevelAccountCreator for Sandbox {
         let root_signer = self.root_signer();
         let outcome = self
             .client
-            .create_account_and_deploy(&root_signer, id, pk, DEFAULT_DEPOSIT, code)
+            .create_account_and_deploy(&root_signer, id.clone(), pk, DEFAULT_DEPOSIT, code)
             .await?;
 
         Ok(CallExecution {
             result: Contract {
-                account: Account {},
+                account: Account { id },
             },
             details: outcome.into(),
         })

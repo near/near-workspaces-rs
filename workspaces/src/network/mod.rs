@@ -1,3 +1,4 @@
+mod account;
 mod sandbox;
 mod testnet;
 
@@ -11,22 +12,10 @@ use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 use crate::rpc::client::Client;
 
 pub use crate::network::sandbox::Sandbox;
+pub use account::{Account, Contract};
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
 
-#[derive(Debug)]
-pub struct Account {}
-
-unsafe impl std::marker::Sync for Account {}
-unsafe impl std::marker::Send for Account {}
-
-#[derive(Debug)]
-pub struct Contract {
-    account: Account,
-}
-
-unsafe impl std::marker::Sync for Contract {}
-unsafe impl std::marker::Send for Contract {}
 
 pub trait NetworkClient {
     fn client(&self) -> &Client;
