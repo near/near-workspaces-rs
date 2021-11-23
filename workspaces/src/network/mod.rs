@@ -146,3 +146,9 @@ pub trait StatePatcher {
 pub trait Network: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync {}
 
 impl<T> Network for T where T: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync {}
+
+/// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
+pub trait DevNetwork: AllowDevAccountCreation + Network {}
+
+// Implemented by default if we have `AllowDevAccountCreation`
+impl<T> DevNetwork for T where T: AllowDevAccountCreation + Network {}

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use workspaces::{Contract, DevNetwork, Worker};
 use workspaces::prelude::*;
 
 
@@ -58,10 +59,14 @@ async fn test_dev_deploy() {
     assert_eq!(actual, expected());
 }
 
+async fn deploy_nft(worker: Worker<impl DevNetwork>) -> Contract {
+    worker.dev_deploy(NFT_WASM_FILEPATH).await.unwrap()
+}
+
 #[tokio::test]
 async fn test_dev_deploy_v2() {
     workspaces::sandbox(|worker| async move {
-        let contract = worker.dev_deploy(NFT_WASM_FILEPATH).await.unwrap();
+        let contract = deploy_nft(worker).await;
         println!("{:?}", contract);
     })
     .await;
