@@ -81,8 +81,8 @@ pub(crate) async fn create_tla_and_deploy(
 }
 
 pub struct SandboxServer {
-    pub(self) rpc_port: u16,
-    pub(self) net_port: u16,
+    pub(crate) rpc_port: u16,
+    pub(crate) net_port: u16,
     process: Option<Child>,
 }
 
