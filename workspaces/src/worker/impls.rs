@@ -89,7 +89,7 @@ where
         deposit: Option<Balance>,
     ) -> anyhow::Result<CallExecutionResult> {
         self.client()
-            ._call(&contract.signer, contract.id(), method, args, None, deposit)
+            .call(&contract.signer, contract.id(), method, args, None, deposit)
             .await
             .map(Into::into)
     }

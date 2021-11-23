@@ -51,7 +51,7 @@ impl Client {
     }
 
     // TODO: rename to call_and_retry
-    pub(crate) async fn call<M: methods::RpcMethod>(
+    pub(crate) async fn query<M: methods::RpcMethod>(
         &self,
         method: &M,
     ) -> JsonRpcMethodCallResult<M::Result, M::Error> {
@@ -67,7 +67,7 @@ impl Client {
         send_batch_tx_and_retry(self, signer, receiver_id, vec![action]).await
     }
 
-    pub async fn _call(
+    pub async fn call(
         &self,
         signer: &InMemorySigner,
         contract_id: AccountId,
@@ -98,7 +98,7 @@ impl Client {
         args: FunctionArgs,
     ) -> anyhow::Result<serde_json::Value> {
         let query_resp = self
-            .call(&RpcQueryRequest {
+            .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::CallFunction {
                     account_id: contract_id,
@@ -123,7 +123,7 @@ impl Client {
         prefix: Option<StoreKey>,
     ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
         let query_resp = self
-            .call(&methods::query::RpcQueryRequest {
+            .query(&methods::query::RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::ViewState {
                     account_id: contract_id.clone(),
@@ -248,7 +248,7 @@ pub(crate) async fn access_key(
     pk: PublicKey,
 ) -> anyhow::Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
-        .call(&methods::query::RpcQueryRequest {
+        .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
                 account_id,
@@ -279,7 +279,7 @@ pub(crate) async fn send_tx(
     tx: SignedTransaction,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
     client
-        .call(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
+        .query(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
             signed_transaction: tx.clone(),
         })
         .await

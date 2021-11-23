@@ -21,7 +21,7 @@ pub(crate) async fn access_key(
     pk: PublicKey,
 ) -> anyhow::Result<(AccessKeyView, BlockHeight, CryptoHash)> {
     let query_resp = client::new()
-        .call(&methods::query::RpcQueryRequest {
+        .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
                 account_id,

@@ -47,7 +47,7 @@ impl From<FinalExecutionOutcomeView> for CallExecutionResult {
 
 pub async fn display_account_info(account_id: AccountId) -> anyhow::Result<AccountInfo> {
     let query_resp = client::new()
-        .call(&RpcQueryRequest {
+        .query(&RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccount {
                 account_id: account_id.clone(),
@@ -93,7 +93,7 @@ pub async fn call(
 ) -> anyhow::Result<CallExecutionResult> {
     let signer = InMemorySigner::from_file(&tool::credentials_filepath(signer_id.clone()).unwrap());
     client::new()
-        ._call(&signer, contract_id, method_name, args, None, deposit)
+        .call(&signer, contract_id, method_name, args, None, deposit)
         .await
         .map(Into::into)
 }
@@ -136,7 +136,7 @@ where
     let records = vec![state];
 
     let query_resp = client::new()
-        .call(&RpcSandboxPatchStateRequest { records })
+        .query(&RpcSandboxPatchStateRequest { records })
         .await
         .map_err(|err| format!("Failed to patch state: {:?}", err));
 
