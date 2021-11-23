@@ -2,7 +2,7 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use near_crypto::{InMemorySigner, PublicKey};
-use near_primitives::types::{AccountId, FunctionArgs};
+use near_primitives::types::{AccountId, Balance, FunctionArgs};
 
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, Contract, NetworkClient, NetworkInfo,
@@ -86,9 +86,10 @@ where
         contract: &Contract,
         method: String,
         args: Vec<u8>,
+        deposit: Option<Balance>,
     ) -> anyhow::Result<CallExecutionResult> {
         self.client()
-            ._call(&contract.signer, contract.id(), method, args, None, None)
+            ._call(&contract.signer, contract.id(), method, args, None, deposit)
             .await
             .map(Into::into)
     }

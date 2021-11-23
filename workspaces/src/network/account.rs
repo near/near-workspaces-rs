@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-
-use near_crypto::{InMemorySigner, PublicKey, SecretKey};
+use near_crypto::{InMemorySigner};
 use near_primitives::types::AccountId;
-
 
 pub struct Account {
     pub(crate) id: AccountId,

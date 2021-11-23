@@ -9,13 +9,11 @@ use std::path::Path;
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
 use near_jsonrpc_client::methods::{
-    self,
     sandbox_patch_state::{RpcSandboxPatchStateRequest, RpcSandboxPatchStateResponse},
 };
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
-use near_primitives::transaction::SignedTransaction;
 use near_primitives::types::{AccountId, Balance, Finality, FunctionArgs, Gas, StoreKey};
 use near_primitives::views::{FinalExecutionOutcomeView, FinalExecutionStatus, QueryRequest};
 
@@ -73,7 +71,7 @@ pub async fn display_account_info(account_id: AccountId) -> anyhow::Result<Accou
 }
 
 pub async fn transfer_near(
-    signer: &dyn Signer,
+    _signer: &dyn Signer,
     signer_id: AccountId,
     receiver_id: AccountId,
     amount_yocto: Balance,
@@ -86,7 +84,7 @@ pub async fn transfer_near(
 }
 
 pub async fn call(
-    signer: &dyn Signer,
+    _signer: &dyn Signer,
     signer_id: AccountId,
     contract_id: AccountId,
     method_name: String,
@@ -146,7 +144,7 @@ where
 }
 
 pub async fn create_account(
-    signer: &dyn Signer,
+    _signer: &dyn Signer,
     signer_id: AccountId,
     new_account_id: AccountId,
     new_account_pk: PublicKey,
@@ -178,7 +176,7 @@ pub async fn create_top_level_account(
 
 pub async fn delete_account(
     account_id: AccountId,
-    signer: &dyn Signer,
+    _signer: &dyn Signer,
     beneficiary_id: AccountId,
 ) -> anyhow::Result<CallExecutionResult> {
     let signer =
