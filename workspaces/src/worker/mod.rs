@@ -17,6 +17,12 @@ impl<T> Worker<T> where T: Network {
     }
 }
 
+impl Worker<Sandbox> {
+    pub fn sandbox() -> Self {
+        Self::new(Sandbox::new())
+    }
+}
+
 pub async fn sandbox<F, T>(task: F) -> <T as core::future::Future>::Output
 where
     F: Fn(Worker<Sandbox>) -> T,
