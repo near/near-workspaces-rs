@@ -8,11 +8,14 @@ use async_trait::async_trait;
 use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_primitives::types::{AccountId, Balance};
 
-use crate::NEAR_BASE;
 use crate::rpc::client::Client;
 use crate::runtime::local::SandboxServer;
+use crate::NEAR_BASE;
 
-use super::{Account, AllowDevAccountCreation, CallExecution, Contract, NetworkActions, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use super::{
+    Account, AllowDevAccountCreation, CallExecution, Contract, NetworkActions, NetworkClient,
+    NetworkInfo, TopLevelAccountCreator,
+};
 
 const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
 
@@ -78,7 +81,13 @@ impl TopLevelAccountCreator for Sandbox {
 
         let outcome = self
             .client
-            .create_account_and_deploy(&root_signer, id.clone(), signer.public_key(), DEFAULT_DEPOSIT, code)
+            .create_account_and_deploy(
+                &root_signer,
+                id.clone(),
+                signer.public_key(),
+                DEFAULT_DEPOSIT,
+                code,
+            )
             .await?;
 
         Ok(CallExecution {

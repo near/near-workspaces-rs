@@ -142,12 +142,12 @@ impl Client {
         &self,
         signer: &InMemorySigner,
         contract_id: AccountId,
-        wasm: Vec<u8>
+        wasm: Vec<u8>,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             contract_id,
-            DeployContractAction { code: wasm }.into()
+            DeployContractAction { code: wasm }.into(),
         )
         .await
     }

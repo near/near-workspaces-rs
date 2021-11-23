@@ -8,7 +8,10 @@ pub struct Worker<T> {
     workspace: Arc<T>,
 }
 
-impl<T> Worker<T> where T: Network {
+impl<T> Worker<T>
+where
+    T: Network,
+{
     pub(crate) fn new(network: T) -> Self {
         Self {
             workspace: Arc::new(network),

@@ -11,11 +11,10 @@ use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 
 use crate::rpc::client::Client;
 
-pub use crate::network::sandbox::Sandbox;
 pub use crate::network::account::{Account, Contract};
+pub use crate::network::sandbox::Sandbox;
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
-
 
 pub trait NetworkClient {
     fn client(&self) -> &Client;
@@ -40,9 +39,7 @@ pub trait NetworkInfo {
     fn helper_url(&self) -> String;
 }
 
-
-pub trait NetworkActions {
-}
+pub trait NetworkActions {}
 
 // TODO: add CallExecution* Types into their own file
 /// Struct to hold a type we want to return along w/ the execution result view.
@@ -77,8 +74,18 @@ impl<T> Into<anyhow::Result<T>> for CallExecution<T> {
 
 #[async_trait]
 pub trait TopLevelAccountCreator {
-    async fn create_tla(&self, id: AccountId, pk: PublicKey) -> anyhow::Result<CallExecution<Account>>;
-    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(&self, id: AccountId, signer: &InMemorySigner, wasm: P) -> anyhow::Result<CallExecution<Contract>>;
+    async fn create_tla(
+        &self,
+        id: AccountId,
+        pk: PublicKey,
+    ) -> anyhow::Result<CallExecution<Account>>;
+
+    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
+        &self,
+        id: AccountId,
+        signer: &InMemorySigner,
+        wasm: P,
+    ) -> anyhow::Result<CallExecution<Contract>>;
 }
 
 // NOTE: Not all networks/runtimes will have the ability to be able to do dev_deploy.
