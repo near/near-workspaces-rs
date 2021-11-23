@@ -1,17 +1,19 @@
 mod impls;
-mod testnet;
 mod sandbox;
+mod testnet;
 
 use std::path::Path;
 
 use async_trait::async_trait;
 
-use near_crypto::PublicKey;
+use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
 use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 
 use crate::rpc::client::Client;
 
 pub use crate::network::sandbox::Sandbox;
+
+const DEV_ACCOUNT_SEED: &str = "testificate";
 
 // TODO: currently a marker trait
 pub trait Server {
@@ -74,8 +76,10 @@ impl<T> Into<anyhow::Result<T>> for CallExecution<T> {
         match self.details.status {
             FinalExecutionStatus::SuccessValue(_) => Ok(self.result),
             FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
-            FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started")),
-            FinalExecutionStatus::Started => Err(anyhow::anyhow!("Transaction still being processed.")),
+            FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started.")),
+            FinalExecutionStatus::Started => {
+                Err(anyhow::anyhow!("Transaction still being processed."))
+            }
         }
     }
 }
@@ -92,6 +96,7 @@ pub trait AllowDevAccountCreation {}
 
 #[async_trait]
 pub trait DevAccountDeployer {
+    fn dev_generate(&self) -> (AccountId, InMemorySigner);
     async fn dev_create(&self) -> anyhow::Result<Account>;
     async fn dev_deploy<P: AsRef<Path> + Send + Sync>(&self, wasm: P) -> anyhow::Result<Contract>;
 }
@@ -99,18 +104,39 @@ pub trait DevAccountDeployer {
 #[async_trait]
 impl<T> DevAccountDeployer for T
 where
-    T: TopLevelAccountCreator + AllowDevAccountCreation,
+    T: TopLevelAccountCreator + NetworkInfo + AllowDevAccountCreation,
     Self: Send + Sync,
 {
+    fn dev_generate(&self) -> (AccountId, InMemorySigner) {
+        let account_id = crate::rpc::tool::random_account_id();
+        let signer =
+            InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
+
+        let mut savepath = self.keystore_path();
+
+        // TODO: potentially make this into the async version:
+        std::fs::create_dir_all(savepath.clone()).unwrap();
+
+        savepath = savepath.join(account_id.to_string());
+        savepath.set_extension("json");
+        signer.write_to_file(&savepath);
+
+        (account_id, signer)
+    }
+
     async fn dev_create(&self) -> anyhow::Result<Account> {
-        let (account_id, signer) = crate::dev_generate();
-        let account = self.create_tla(account_id.clone(), signer.public_key).await?;
+        let (account_id, signer) = self.dev_generate();
+        let account = self
+            .create_tla(account_id.clone(), signer.public_key)
+            .await?;
         account.into()
     }
 
     async fn dev_deploy<P: AsRef<Path> + Send + Sync>(&self, wasm: P) -> anyhow::Result<Contract> {
-        let (account_id, signer) =  crate::dev_generate();
-        let contract = self.create_tla_and_deploy(account_id.clone(), signer.public_key, wasm).await?;
+        let (account_id, signer) = self.dev_generate();
+        let contract = self
+            .create_tla_and_deploy(account_id.clone(), signer.public_key, wasm)
+            .await?;
         contract.into()
     }
 }
@@ -122,8 +148,4 @@ pub trait StatePatcher {
 
 pub trait Network: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync {}
 
-impl<T> Network for T
-where
-    T: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync,
-{
-}
+impl<T> Network for T where T: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync {}

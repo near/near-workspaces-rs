@@ -61,7 +61,7 @@ impl Client {
         receiver_id: AccountId,
         action: Action,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(signer, receiver_id, vec![action]).await
+        send_batch_tx_and_retry(self, signer, receiver_id, vec![action]).await
     }
 
     pub async fn _call(
@@ -153,14 +153,24 @@ impl Client {
         new_account_pk: PublicKey,
         amount: Balance,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(signer, new_account_id, vec![
-            CreateAccountAction {}.into(),
-            AddKeyAction {
-                public_key: new_account_pk,
-                access_key: AccessKey { nonce: 0, permission: AccessKeyPermission::FullAccess },
-            }.into(),
-            TransferAction { deposit: amount }.into(),
-        ]).await
+        send_batch_tx_and_retry(
+            self,
+            signer,
+            new_account_id,
+            vec![
+                CreateAccountAction {}.into(),
+                AddKeyAction {
+                    public_key: new_account_pk,
+                    access_key: AccessKey {
+                        nonce: 0,
+                        permission: AccessKeyPermission::FullAccess,
+                    },
+                }
+                .into(),
+                TransferAction { deposit: amount }.into(),
+            ],
+        )
+        .await
     }
 
     pub async fn create_account_and_deploy(
@@ -171,15 +181,25 @@ impl Client {
         amount: Balance,
         code: Vec<u8>,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(signer, new_account_id, vec![
-            CreateAccountAction {}.into(),
-            AddKeyAction {
-                public_key: new_account_pk,
-                access_key: AccessKey { nonce: 0, permission: AccessKeyPermission::FullAccess },
-            }.into(),
-            TransferAction { deposit: amount }.into(),
-            Action::DeployContract(DeployContractAction { code }),
-        ]).await
+        send_batch_tx_and_retry(
+            self,
+            signer,
+            new_account_id,
+            vec![
+                CreateAccountAction {}.into(),
+                AddKeyAction {
+                    public_key: new_account_pk,
+                    access_key: AccessKey {
+                        nonce: 0,
+                        permission: AccessKeyPermission::FullAccess,
+                    },
+                }
+                .into(),
+                TransferAction { deposit: amount }.into(),
+                Action::DeployContract(DeployContractAction { code }),
+            ],
+        )
+        .await
     }
 
     // TODO: write tests that uses delete_account
@@ -195,10 +215,11 @@ impl Client {
 }
 
 pub(crate) async fn access_key(
+    client: &Client,
     account_id: AccountId,
     pk: PublicKey,
 ) -> anyhow::Result<(AccessKeyView, CryptoHash)> {
-    let query_resp = new()
+    let query_resp = client
         .call(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
@@ -225,8 +246,11 @@ where
     Retry::spawn(retry_strategy, task).await
 }
 
-pub(crate) async fn send_tx(tx: SignedTransaction) -> anyhow::Result<FinalExecutionOutcomeView> {
-    self::new()
+pub(crate) async fn send_tx(
+    client: &Client,
+    tx: SignedTransaction,
+) -> anyhow::Result<FinalExecutionOutcomeView> {
+    client
         .call(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
             signed_transaction: tx.clone(),
         })
@@ -234,22 +258,26 @@ pub(crate) async fn send_tx(tx: SignedTransaction) -> anyhow::Result<FinalExecut
         .map_err(|e| anyhow::anyhow!(e))
 }
 
-pub(crate) async fn send_tx_and_retry<T, F>(task: F) -> anyhow::Result<FinalExecutionOutcomeView>
+pub(crate) async fn send_tx_and_retry<T, F>(
+    client: &Client,
+    task: F,
+) -> anyhow::Result<FinalExecutionOutcomeView>
 where
     F: Fn() -> T,
     T: core::future::Future<Output = anyhow::Result<SignedTransaction>>,
 {
-    retry(|| async { send_tx(task().await?).await }).await
+    retry(|| async { send_tx(client, task().await?).await }).await
 }
 
 async fn send_batch_tx_and_retry(
+    client: &Client,
     signer: &InMemorySigner,
     receiver_id: AccountId,
     actions: Vec<Action>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
-    send_tx_and_retry(|| async {
+    send_tx_and_retry(client, || async {
         let (AccessKeyView { nonce, .. }, block_hash) =
-            access_key(signer.account_id.clone(), signer.public_key()).await?;
+            access_key(client, signer.account_id.clone(), signer.public_key()).await?;
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
