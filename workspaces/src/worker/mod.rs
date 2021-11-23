@@ -1,7 +1,7 @@
-use near_crypto::PublicKey;
-use near_primitives::{account::Account, types::AccountId};
+mod impls;
 
-use crate::network::{Contract, Network, NetworkActions};
+
+use crate::network::{Network, Sandbox};
 
 // TODO: create contract
 
@@ -16,4 +16,19 @@ pub struct Worker<T> {
 }
 
 impl<T> Worker<T> where T: Network {
+    pub(crate) fn new(network: T) -> Self {
+        Self {
+            workspace: network,
+        }
+    }
+}
+
+pub async fn sandbox<F, T>(task: F) -> <T as core::future::Future>::Output
+where
+    F: Fn(Worker<Sandbox>) -> T,
+    T: core::future::Future,
+{
+    let worker = Worker::new(Sandbox::default());
+
+    task(worker).await
 }

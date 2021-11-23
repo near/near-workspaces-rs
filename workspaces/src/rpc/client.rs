@@ -14,7 +14,7 @@ use tokio_retry::Retry;
 
 use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
-use near_primitives::transaction::{Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, FunctionCallAction, SignedTransaction, TransferAction};
+use near_primitives::transaction::{Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction, FunctionCallAction, SignedTransaction, TransferAction};
 use near_primitives::types::Balance;
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
@@ -43,7 +43,7 @@ pub struct Client {
 }
 
 impl Client {
-    fn new(rpc_addr: String) -> Self {
+    pub(crate) fn new(rpc_addr: String) -> Self {
         Self { rpc_addr }
     }
 
@@ -160,6 +160,25 @@ impl Client {
                 access_key: AccessKey { nonce: 0, permission: AccessKeyPermission::FullAccess },
             }.into(),
             TransferAction { deposit: amount }.into(),
+        ]).await
+    }
+
+    pub async fn create_account_and_deploy(
+        &self,
+        signer: &InMemorySigner,
+        new_account_id: AccountId,
+        new_account_pk: PublicKey,
+        amount: Balance,
+        code: Vec<u8>,
+    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+        send_batch_tx_and_retry(signer, new_account_id, vec![
+            CreateAccountAction {}.into(),
+            AddKeyAction {
+                public_key: new_account_pk,
+                access_key: AccessKey { nonce: 0, permission: AccessKeyPermission::FullAccess },
+            }.into(),
+            TransferAction { deposit: amount }.into(),
+            Action::DeployContract(DeployContractAction { code }),
         ]).await
     }
 

@@ -7,7 +7,7 @@ use near_primitives::types::AccountId;
 
 use crate::{NEAR_BASE, rpc::client::Client, runtime::local::SandboxServer};
 
-use super::{Account, AllowDevAccountCreation, CallExecution, Network, NetworkActions, NetworkInfo, TopLevelAccountCreator};
+use super::{Account, AllowDevAccountCreation, CallExecution, Contract, Network, NetworkActions, NetworkInfo, TopLevelAccountCreator};
 
 
 pub struct Sandbox {

@@ -4,6 +4,8 @@ mod rpc;
 mod runtime;
 mod worker;
 
+pub mod prelude;
+
 #[cfg(not(test))] // Work around for rust-lang/rust#62127
 pub use workspaces_macros::main;
 pub use workspaces_macros::test;
@@ -11,6 +13,8 @@ pub use workspaces_macros::test;
 pub use exports::*;
 pub use rpc::api::*;
 pub use runtime::{with_sandbox, with_testnet, SandboxRuntime, TestnetRuntime};
+
+pub use worker::sandbox;
 
 // Used for generated code, Not a public API
 #[doc(hidden)]
