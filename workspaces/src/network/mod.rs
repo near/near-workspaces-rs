@@ -12,7 +12,7 @@ use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 use crate::rpc::client::Client;
 
 pub use crate::network::sandbox::Sandbox;
-pub use account::{Account, Contract};
+pub use crate::network::account::{Account, Contract};
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
 
