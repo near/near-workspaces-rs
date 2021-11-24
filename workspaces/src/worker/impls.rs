@@ -3,11 +3,12 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use near_crypto::{InMemorySigner, PublicKey};
+use near_primitives::borsh::BorshSerialize;
 use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
 
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, Contract, NetworkClient, NetworkInfo,
-    TopLevelAccountCreator,
+    StatePatcher, TopLevelAccountCreator,
 };
 use crate::rpc::client::Client;
 use crate::worker::Worker;
@@ -71,6 +72,24 @@ where
 
     fn helper_url(&self) -> String {
         self.workspace.helper_url()
+    }
+}
+
+#[async_trait]
+impl<T> StatePatcher for Worker<T>
+where
+    T: StatePatcher + Send + Sync,
+{
+    async fn patch_state<U>(
+        &self,
+        contract_id: AccountId,
+        key: String,
+        value: &U,
+    ) -> anyhow::Result<()>
+    where
+        U: BorshSerialize + Send + Sync,
+    {
+        self.workspace.patch_state(contract_id, key, value).await
     }
 }
 

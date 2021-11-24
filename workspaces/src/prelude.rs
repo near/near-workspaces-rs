@@ -1,3 +1,4 @@
 pub use crate::network::{
-    AllowDevAccountCreation, DevAccountDeployer, Network, TopLevelAccountCreator,
+    AllowDevAccountCreation, AllowStatePatching, DevAccountDeployer, DevNetwork, Network,
+    StatePatcher, TopLevelAccountCreator,
 };

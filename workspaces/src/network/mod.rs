@@ -106,8 +106,7 @@ pub trait DevAccountDeployer {
 #[async_trait]
 impl<T> DevAccountDeployer for T
 where
-    T: TopLevelAccountCreator + NetworkInfo + AllowDevAccountCreation,
-    Self: Send + Sync,
+    T: TopLevelAccountCreator + NetworkInfo + AllowDevAccountCreation + Send + Sync,
 {
     fn dev_generate(&self) -> (AccountId, InMemorySigner) {
         let account_id = crate::rpc::tool::random_account_id();
@@ -147,21 +146,20 @@ pub trait AllowStatePatching {}
 
 #[async_trait]
 pub trait StatePatcher {
-    async fn patch_state<T>(
+    async fn patch_state<U>(
         &self,
         contract_id: AccountId,
         key: String,
-        value: &T,
+        value: &U,
     ) -> anyhow::Result<()>
     where
-        T: BorshSerialize + Send + Sync;
+        U: BorshSerialize + Send + Sync;
 }
 
 #[async_trait]
 impl<T> StatePatcher for T
 where
-    T: AllowStatePatching + NetworkClient,
-    Self: Send + Sync,
+    T: AllowStatePatching + NetworkClient + Send + Sync,
 {
     async fn patch_state<U>(
         &self,
@@ -191,9 +189,15 @@ where
     }
 }
 
-pub trait Network: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync {}
+pub trait Network:
+    TopLevelAccountCreator + NetworkActions + NetworkInfo + NetworkClient + Send + Sync
+{
+}
 
-impl<T> Network for T where T: TopLevelAccountCreator + NetworkActions + NetworkInfo + Send + Sync {}
+impl<T> Network for T where
+    T: TopLevelAccountCreator + NetworkActions + NetworkInfo + NetworkClient + Send + Sync
+{
+}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
 pub trait DevNetwork: AllowDevAccountCreation + Network {}
