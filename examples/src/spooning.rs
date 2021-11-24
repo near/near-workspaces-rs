@@ -1,8 +1,8 @@
 use std::convert::TryInto;
 
 use workspaces::borsh::{self, BorshDeserialize, BorshSerialize};
-use workspaces::{AccountId, Contract, Worker};
 use workspaces::prelude::*;
+use workspaces::{AccountId, Contract, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 
@@ -39,26 +39,29 @@ struct StatusMessage {
 ///
 /// For example, our predeployed testnet contract has already done this:
 ///    set_status(TESTNET_PREDEPLOYED_CONTRACT_ID) = "hello from testnet"
-async fn deploy_status_contract(worker: Worker<impl DevNetwork>, msg: &str) -> anyhow::Result<Contract> {
-    let contract = worker.dev_deploy(STATUS_MSG_WASM_FILEPATH)
-        .await?;
+async fn deploy_status_contract(
+    worker: Worker<impl DevNetwork>,
+    msg: &str,
+) -> anyhow::Result<Contract> {
+    let contract = worker.dev_deploy(STATUS_MSG_WASM_FILEPATH).await?;
 
     // This will `call` into `set_status` with the message we want to set.
-    worker.call(
-        // The contract we want to call into:
-        &contract,
-        // The method we want to call:
-        "set_status".into(),
-        // The set of arguments we want to pass:
-        serde_json::json!({
-            "message": msg,
-        })
-        .to_string()
-        .into_bytes(),
-        // No need to worry about this one. Not transferring any tokens, so None:
-        None,
-    )
-    .await?;
+    worker
+        .call(
+            // The contract we want to call into:
+            &contract,
+            // The method we want to call:
+            "set_status".into(),
+            // The set of arguments we want to pass:
+            serde_json::json!({
+                "message": msg,
+            })
+            .to_string()
+            .into_bytes(),
+            // No need to worry about this one. Not transferring any tokens, so None:
+            None,
+        )
+        .await?;
 
     Ok(contract)
 }
@@ -73,9 +76,7 @@ async fn main() -> anyhow::Result<()> {
             .try_into()
             .unwrap();
 
-        let mut state_items = worker.view_state(contract_id.clone(), None)
-            .await
-            .unwrap();
+        let mut state_items = worker.view_state(contract_id.clone(), None).await.unwrap();
 
         let state = state_items.remove("STATE").unwrap();
         let status_msg: StatusMessage =
@@ -94,42 +95,41 @@ async fn main() -> anyhow::Result<()> {
     let sandbox_contract = deploy_status_contract(worker.clone(), "hello from sandbox").await?;
 
     // Patch our testnet STATE into our local sandbox:
-    worker.patch_state(
-        sandbox_contract.id(),
-        "STATE".to_string(),
-        &status_msg,
-    )
-    .await?;
+    worker
+        .patch_state(sandbox_contract.id(), "STATE".to_string(), &status_msg)
+        .await?;
 
     // Now grab the state to see that it has indeed been patched:
-    let result = worker.view(
-        sandbox_contract.id(),
-        "get_status".into(),
-        serde_json::json!({
-            "account_id": testnet_contract_id.to_string(),
-        })
-        .to_string()
-        .into_bytes()
-        .into(),
-    )
-    .await?;
+    let result = worker
+        .view(
+            sandbox_contract.id(),
+            "get_status".into(),
+            serde_json::json!({
+                "account_id": testnet_contract_id.to_string(),
+            })
+            .to_string()
+            .into_bytes()
+            .into(),
+        )
+        .await?;
 
     let status: String = serde_json::from_value(result)?;
     println!("New status patched: {:?}", status);
     assert_eq!(status, "hello from testnet".to_string());
 
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
-    let result = worker.view(
-        sandbox_contract.id(),
-        "get_status".into(),
-        serde_json::json!({
-            "account_id": sandbox_contract.id(),
-        })
-        .to_string()
-        .into_bytes()
-        .into(),
-    )
-    .await?;
+    let result = worker
+        .view(
+            sandbox_contract.id(),
+            "get_status".into(),
+            serde_json::json!({
+                "account_id": sandbox_contract.id(),
+            })
+            .to_string()
+            .into_bytes()
+            .into(),
+        )
+        .await?;
     assert_eq!(result, serde_json::Value::Null);
 
     Ok(())

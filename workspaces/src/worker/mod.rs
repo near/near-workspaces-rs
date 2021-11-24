@@ -30,7 +30,7 @@ pub fn testnet() -> Worker<Testnet> {
 pub async fn with_sandbox<F, T>(task: F) -> T::Output
 where
     F: Fn(Worker<Sandbox>) -> T,
-    T: core::future::Future
+    T: core::future::Future,
 {
     task(sandbox()).await
 }
@@ -38,7 +38,7 @@ where
 pub async fn with_testnet<F, T>(task: F) -> T::Output
 where
     F: Fn(Worker<Testnet>) -> T,
-    T: core::future::Future
+    T: core::future::Future,
 {
     task(testnet()).await
 }
