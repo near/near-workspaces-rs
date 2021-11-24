@@ -26,3 +26,19 @@ pub fn sandbox() -> Worker<Sandbox> {
 pub fn testnet() -> Worker<Testnet> {
     Worker::new(Testnet::new())
 }
+
+pub async fn with_sandbox<F, T>(task: F) -> T::Output
+where
+    F: Fn(Worker<Sandbox>) -> T,
+    T: core::future::Future
+{
+    task(sandbox()).await
+}
+
+pub async fn with_testnet<F, T>(task: F) -> T::Output
+where
+    F: Fn(Worker<Testnet>) -> T,
+    T: core::future::Future
+{
+    task(testnet()).await
+}

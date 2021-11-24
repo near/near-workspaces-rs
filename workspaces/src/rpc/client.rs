@@ -50,7 +50,6 @@ impl Client {
         Self { rpc_addr }
     }
 
-    // TODO: rename to call_and_retry
     pub(crate) async fn query<M: methods::RpcMethod>(
         &self,
         method: &M,
