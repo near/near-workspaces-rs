@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use std::path::Path;
 
 use async_trait::async_trait;
 use near_crypto::{InMemorySigner, PublicKey};
-use near_primitives::types::{AccountId, Balance, FunctionArgs};
+use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
 
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, Contract, NetworkClient, NetworkInfo,
@@ -101,5 +102,13 @@ where
         args: FunctionArgs,
     ) -> anyhow::Result<serde_json::Value> {
         self.client().view(contract_id, method_name, args).await
+    }
+
+    pub async fn view_state(
+        &self,
+        contract_id: AccountId,
+        prefix: Option<StoreKey>,
+    ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
+        self.client().view_state(contract_id, prefix).await
     }
 }
