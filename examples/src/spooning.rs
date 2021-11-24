@@ -13,8 +13,8 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 /// ```norun
 /// #[workspaces::main(testnet)]
 /// async fn deploy_testnet() {
-///     let (contract_id, _) = deploy_status_contract("hello from testnet").await;
-///     println!("{}", contract_id);
+///     let contract = deploy_status_contract("hello from testnet").await;
+///     println!("{}", contract.id());
 /// }
 /// ```
 const TESTNET_PREDEPLOYED_CONTRACT_ID: &str = "dev-20211013002148-59466083160385";
