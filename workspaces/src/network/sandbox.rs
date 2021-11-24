@@ -56,16 +56,21 @@ impl TopLevelAccountCreator for Sandbox {
     async fn create_tla(
         &self,
         id: AccountId,
-        pk: PublicKey,
+        signer: InMemorySigner,
     ) -> anyhow::Result<CallExecution<Account>> {
         let root_signer = self.root_signer();
         let outcome = self
             .client
-            .create_account(&root_signer, id.clone(), pk, DEFAULT_DEPOSIT)
+            .create_account(
+                &root_signer,
+                id.clone(),
+                signer.public_key(),
+                DEFAULT_DEPOSIT,
+            )
             .await?;
 
         Ok(CallExecution {
-            result: Account { id },
+            result: Account::new(id, signer),
             details: outcome.into(),
         })
     }
@@ -73,7 +78,7 @@ impl TopLevelAccountCreator for Sandbox {
     async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
         &self,
         id: AccountId,
-        signer: &InMemorySigner,
+        signer: InMemorySigner,
         wasm: P,
     ) -> anyhow::Result<CallExecution<Contract>> {
         let root_signer = self.root_signer();
@@ -93,10 +98,7 @@ impl TopLevelAccountCreator for Sandbox {
             .await?;
 
         Ok(CallExecution {
-            result: Contract {
-                account: Account { id },
-                signer: signer.clone(),
-            },
+            result: Contract::new(id, signer),
             details: outcome.into(),
         })
     }

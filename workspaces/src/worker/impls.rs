@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use async_trait::async_trait;
-use near_crypto::{InMemorySigner, PublicKey};
+use near_crypto::InMemorySigner;
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
 
@@ -35,15 +35,15 @@ where
     async fn create_tla(
         &self,
         id: AccountId,
-        pk: PublicKey,
+        signer: InMemorySigner,
     ) -> anyhow::Result<CallExecution<Account>> {
-        self.workspace.create_tla(id, pk).await
+        self.workspace.create_tla(id, signer).await
     }
 
     async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
         &self,
         id: AccountId,
-        signer: &InMemorySigner,
+        signer: InMemorySigner,
         wasm: P,
     ) -> anyhow::Result<CallExecution<Contract>> {
         self.workspace.create_tla_and_deploy(id, signer, wasm).await
@@ -109,7 +109,14 @@ where
         deposit: Option<Balance>,
     ) -> anyhow::Result<CallExecutionResult> {
         self.client()
-            .call(&contract.signer, contract.id(), method, args, None, deposit)
+            .call(
+                contract.signer(),
+                contract.id(),
+                method,
+                args,
+                None,
+                deposit,
+            )
             .await
             .map(Into::into)
     }

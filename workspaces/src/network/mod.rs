@@ -6,7 +6,7 @@ use std::path::Path;
 
 use async_trait::async_trait;
 
-use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
+use near_crypto::{InMemorySigner, KeyType, Signer};
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
@@ -81,13 +81,13 @@ pub trait TopLevelAccountCreator {
     async fn create_tla(
         &self,
         id: AccountId,
-        pk: PublicKey,
+        signer: InMemorySigner,
     ) -> anyhow::Result<CallExecution<Account>>;
 
     async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
         &self,
         id: AccountId,
-        signer: &InMemorySigner,
+        signer: InMemorySigner,
         wasm: P,
     ) -> anyhow::Result<CallExecution<Contract>>;
 }
@@ -127,16 +127,14 @@ where
 
     async fn dev_create(&self) -> anyhow::Result<Account> {
         let (account_id, signer) = self.dev_generate();
-        let account = self
-            .create_tla(account_id.clone(), signer.public_key)
-            .await?;
+        let account = self.create_tla(account_id.clone(), signer).await?;
         account.into()
     }
 
     async fn dev_deploy<P: AsRef<Path> + Send + Sync>(&self, wasm: P) -> anyhow::Result<Contract> {
         let (account_id, signer) = self.dev_generate();
         let contract = self
-            .create_tla_and_deploy(account_id.clone(), &signer, wasm)
+            .create_tla_and_deploy(account_id.clone(), signer, wasm)
             .await?;
         contract.into()
     }

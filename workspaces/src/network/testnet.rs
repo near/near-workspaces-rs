@@ -39,12 +39,17 @@ impl TopLevelAccountCreator for Testnet {
     async fn create_tla(
         &self,
         id: AccountId,
-        pk: PublicKey,
+        signer: InMemorySigner,
     ) -> anyhow::Result<CallExecution<Account>> {
-        tool::url_create_account(Url::parse(&self.helper_url())?, id.clone(), pk).await?;
+        tool::url_create_account(
+            Url::parse(&self.helper_url())?,
+            id.clone(),
+            signer.public_key(),
+        )
+        .await?;
 
         Ok(CallExecution {
-            result: Account { id },
+            result: Account::new(id, signer),
             details: CallExecutionResult {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.
@@ -58,23 +63,19 @@ impl TopLevelAccountCreator for Testnet {
     async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
         &self,
         id: AccountId,
-        signer: &InMemorySigner,
+        signer: InMemorySigner,
         wasm: P,
     ) -> anyhow::Result<CallExecution<Contract>> {
         // TODO: async_compat/async version of File
         let mut code = Vec::new();
         File::open(wasm)?.read_to_end(&mut code)?;
 
-        let account = self.create_tla(id.clone(), signer.public_key()).await?;
+        let account = self.create_tla(id.clone(), signer.clone()).await?;
         let account = Into::<anyhow::Result<_>>::into(account)?;
-
         let outcome = self.client.deploy(&signer, id, code).await?;
 
         Ok(CallExecution {
-            result: Contract {
-                account,
-                signer: signer.clone(),
-            },
+            result: Contract::account(account),
             details: outcome.into(),
         })
     }
