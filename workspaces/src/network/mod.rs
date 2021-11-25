@@ -63,10 +63,10 @@ impl<T> CallExecution<T> {
     }
 }
 
-impl<T> Into<anyhow::Result<T>> for CallExecution<T> {
-    fn into(self) -> anyhow::Result<T> {
-        match self.details.status {
-            FinalExecutionStatus::SuccessValue(_) => Ok(self.result),
+impl<T> From<CallExecution<T>> for anyhow::Result<T> {
+    fn from(value: CallExecution<T>) -> anyhow::Result<T> {
+        match value.details.status {
+            FinalExecutionStatus::SuccessValue(_) => Ok(value.result),
             FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
             FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started.")),
             FinalExecutionStatus::Started => {

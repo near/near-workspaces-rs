@@ -6,7 +6,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use url::Url;
 
-use near_crypto::{InMemorySigner, PublicKey, Signer};
+use near_crypto::{InMemorySigner, Signer};
 use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 
 use crate::network::{
