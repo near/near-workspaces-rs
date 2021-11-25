@@ -7,7 +7,7 @@ edition = "2018"
 [dev-dependencies]
 anyhow = "1.0"
 tokio = { version = "1.10.0", features = ["full"] }
-workspaces = { version = "0.1.0", path = "../workspaces" }
+workspaces = { version = "0.2.0", path = "../workspaces" }
 serde_json = "1.0"
 
 
