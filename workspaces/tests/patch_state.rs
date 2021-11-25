@@ -17,7 +17,9 @@ struct StatusMessage {
     records: Vec<Record>,
 }
 
-async fn view_status_state(worker: Worker<impl DevNetwork>) -> (AccountId, StatusMessage) {
+async fn view_status_state(
+    worker: Worker<impl DevNetwork>,
+) -> anyhow::Result<(AccountId, StatusMessage)> {
     let contract = worker.dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
 
     worker
@@ -31,21 +33,21 @@ async fn view_status_state(worker: Worker<impl DevNetwork>) -> (AccountId, Statu
             .into_bytes(),
             None,
         )
-        .await
-        .unwrap();
+        .await?;
 
-    let mut state_items = worker.view_state(contract.id(), None).await.unwrap();
-    let state = state_items.remove("STATE").unwrap();
-    let status_msg: StatusMessage =
-        StatusMessage::try_from_slice(&state).expect("Expected to retrieve state");
+    let mut state_items = worker.view_state(contract.id(), None).await?;
+    let state = state_items
+        .remove("STATE")
+        .ok_or_else(|| anyhow::anyhow!("Could not retrieve STATE"))?;
+    let status_msg: StatusMessage = StatusMessage::try_from_slice(&state)?;
 
-    (contract.id(), status_msg)
+    Ok((contract.id(), status_msg))
 }
 
 #[tokio::test]
-async fn test_view_state() {
+async fn test_view_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
-    let (contract_id, status_msg) = view_status_state(worker).await;
+    let (contract_id, status_msg) = view_status_state(worker).await?;
 
     assert_eq!(
         status_msg,
@@ -56,12 +58,14 @@ async fn test_view_state() {
             }]
         }
     );
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_patch_state() {
+async fn test_patch_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
-    let (contract_id, mut status_msg) = view_status_state(worker.clone()).await;
+    let (contract_id, mut status_msg) = view_status_state(worker.clone()).await?;
     status_msg.records.push(Record {
         k: "alice.near".to_string(),
         v: "hello world".to_string(),
@@ -69,8 +73,7 @@ async fn test_patch_state() {
 
     worker
         .patch_state(contract_id.clone(), "STATE".to_string(), &status_msg)
-        .await
-        .unwrap();
+        .await?;
 
     let result = worker
         .view(
@@ -83,9 +86,10 @@ async fn test_patch_state() {
             .into_bytes()
             .into(),
         )
-        .await
-        .unwrap();
+        .await?;
 
     let status: String = serde_json::from_value(result).unwrap();
     assert_eq!(status, "hello world".to_string());
+
+    Ok(())
 }

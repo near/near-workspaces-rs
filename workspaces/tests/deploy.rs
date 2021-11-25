@@ -29,10 +29,10 @@ fn expected() -> NftMetadata {
 }
 
 #[tokio::test]
-async fn test_dev_deploy() {
+async fn test_dev_deploy() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
 
-    let contract = worker.dev_deploy(NFT_WASM_FILEPATH).await.unwrap();
+    let contract = worker.dev_deploy(NFT_WASM_FILEPATH).await?;
     let _result = worker
         .call(
             &contract,
@@ -44,14 +44,14 @@ async fn test_dev_deploy() {
             .into_bytes(),
             None,
         )
-        .await
-        .unwrap();
+        .await?;
 
     let result = worker
         .view(contract.id(), "nft_metadata".to_string(), Vec::new().into())
-        .await
-        .unwrap();
+        .await?;
 
     let actual: NftMetadata = serde_json::from_value(result).unwrap();
     assert_eq!(actual, expected());
+
+    Ok(())
 }
