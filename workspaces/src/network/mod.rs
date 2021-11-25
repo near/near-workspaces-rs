@@ -1,6 +1,7 @@
 mod account;
 mod result;
 mod sandbox;
+mod server;
 mod testnet;
 
 use std::path::Path;

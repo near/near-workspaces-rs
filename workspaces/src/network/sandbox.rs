@@ -13,7 +13,7 @@ use super::{
     NetworkClient, NetworkInfo, TopLevelAccountCreator,
 };
 use crate::rpc::client::Client;
-use crate::runtime::local::SandboxServer;
+use crate::network::server::SandboxServer;
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
