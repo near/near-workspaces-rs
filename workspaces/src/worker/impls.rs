@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use async_trait::async_trait;
-use near_crypto::InMemorySigner;
+use near_crypto::{InMemorySigner, Signer};
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
 
 use crate::network::{
-    Account, AllowDevAccountCreation, CallExecution, CallExecutionResult, Contract, NetworkClient,
+    Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
     NetworkInfo, StatePatcher, TopLevelAccountCreator,
 };
 use crate::rpc::client::Client;
@@ -106,7 +106,7 @@ where
         method: String,
         args: Vec<u8>,
         deposit: Option<Balance>,
-    ) -> anyhow::Result<CallExecutionResult> {
+    ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
             .call(
                 contract.signer(),
@@ -135,5 +135,29 @@ where
         prefix: Option<StoreKey>,
     ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
         self.client().view_state(contract_id, prefix).await
+    }
+
+    pub async fn transfer_near(
+        &self,
+        signer: &InMemorySigner,
+        receiver_id: AccountId,
+        amount_yocto: Balance
+    ) -> anyhow::Result<CallExecutionDetails> {
+        self.client()
+            .transfer_near(signer, receiver_id, amount_yocto)
+            .await
+            .map(Into::into)
+    }
+
+    pub async fn delete_account(
+        &self,
+        account_id: AccountId,
+        signer: &InMemorySigner,
+        beneficiary_id: AccountId,
+    ) -> anyhow::Result<CallExecutionDetails> {
+        self.client()
+            .delete_account(signer, account_id, beneficiary_id)
+            .await
+            .map(Into::into)
     }
 }

@@ -6,7 +6,7 @@ use anyhow::anyhow;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::network::CallExecutionResult;
+use crate::network::CallExecutionDetails;
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
 use near_jsonrpc_client::methods::sandbox_patch_state::{
@@ -54,7 +54,7 @@ pub async fn transfer_near(
     signer_id: AccountId,
     receiver_id: AccountId,
     amount_yocto: Balance,
-) -> anyhow::Result<CallExecutionResult> {
+) -> anyhow::Result<CallExecutionDetails> {
     let signer = InMemorySigner::from_file(&tool::credentials_filepath(signer_id.clone()).unwrap());
     client::new()
         .transfer_near(&signer, receiver_id, amount_yocto)
@@ -69,7 +69,7 @@ pub async fn call(
     method_name: String,
     args: Vec<u8>,
     deposit: Option<Balance>,
-) -> anyhow::Result<CallExecutionResult> {
+) -> anyhow::Result<CallExecutionDetails> {
     let signer = InMemorySigner::from_file(&tool::credentials_filepath(signer_id.clone()).unwrap());
     client::new()
         .call(&signer, contract_id, method_name, args, None, deposit)
@@ -128,7 +128,7 @@ pub async fn create_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
     deposit: Option<Balance>,
-) -> anyhow::Result<CallExecutionResult> {
+) -> anyhow::Result<CallExecutionDetails> {
     let signer = InMemorySigner::from_file(&tool::credentials_filepath(signer_id.clone()).unwrap());
     client::new()
         .create_account(
@@ -147,7 +147,7 @@ pub async fn create_account(
 pub async fn create_top_level_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
-) -> anyhow::Result<Option<CallExecutionResult>> {
+) -> anyhow::Result<Option<CallExecutionDetails>> {
     let rt = crate::runtime::context::current().expect(MISSING_RUNTIME_ERROR);
     rt.create_top_level_account(new_account_id, new_account_pk)
         .await
@@ -157,7 +157,7 @@ pub async fn delete_account(
     account_id: AccountId,
     _signer: &dyn Signer,
     beneficiary_id: AccountId,
-) -> anyhow::Result<CallExecutionResult> {
+) -> anyhow::Result<CallExecutionDetails> {
     let signer =
         InMemorySigner::from_file(&tool::credentials_filepath(account_id.clone()).unwrap());
     client::new()

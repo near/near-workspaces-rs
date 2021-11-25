@@ -19,7 +19,7 @@ pub use crate::network::account::{Account, Contract};
 pub use crate::network::sandbox::Sandbox;
 pub use crate::network::testnet::Testnet;
 
-pub use self::result::{CallExecution, CallExecutionResult};
+pub use self::result::{CallExecution, CallExecutionDetails};
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
 

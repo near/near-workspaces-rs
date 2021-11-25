@@ -10,7 +10,7 @@ use near_crypto::{InMemorySigner, Signer};
 use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 
 use crate::network::{
-    Account, AllowDevAccountCreation, CallExecution, CallExecutionResult, NetworkActions,
+    Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, NetworkActions,
     NetworkClient, NetworkInfo, TopLevelAccountCreator,
 };
 use crate::rpc::{client::Client, tool};
@@ -50,7 +50,7 @@ impl TopLevelAccountCreator for Testnet {
 
         Ok(CallExecution {
             result: Account::new(id, signer),
-            details: CallExecutionResult {
+            details: CallExecutionDetails {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.
                 total_gas_burnt: 0,

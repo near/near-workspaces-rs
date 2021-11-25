@@ -6,7 +6,7 @@ use near_primitives::views::{FinalExecutionOutcomeView, FinalExecutionStatus};
 /// the transaction failed to be processed on the chain.
 pub struct CallExecution<T> {
     pub result: T,
-    pub details: CallExecutionResult,
+    pub details: CallExecutionDetails,
 }
 
 impl<T> CallExecution<T> {
@@ -29,16 +29,16 @@ impl<T> From<CallExecution<T>> for anyhow::Result<T> {
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
-pub struct CallExecutionResult {
+pub struct CallExecutionDetails {
     /// Execution status. Contains the result in case of successful execution.
     pub status: FinalExecutionStatus,
     /// Total gas burnt by the call execution
     pub total_gas_burnt: Gas,
 }
 
-impl From<FinalExecutionOutcomeView> for CallExecutionResult {
+impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
     fn from(transaction_result: FinalExecutionOutcomeView) -> Self {
-        CallExecutionResult {
+        CallExecutionDetails {
             status: transaction_result.status,
             total_gas_burnt: transaction_result.transaction_outcome.outcome.gas_burnt
                 + transaction_result

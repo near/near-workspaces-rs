@@ -12,7 +12,7 @@ use near_primitives::views::FinalExecutionOutcomeView;
 
 use super::context;
 use super::RuntimeFlavor;
-use crate::network::CallExecutionResult;
+use crate::network::CallExecutionDetails;
 use crate::rpc::{client, tool};
 use crate::NEAR_BASE;
 
@@ -39,7 +39,7 @@ pub(crate) fn root_account() -> InMemorySigner {
 pub(crate) async fn create_top_level_account(
     new_account_id: AccountId,
     new_account_pk: PublicKey,
-) -> anyhow::Result<CallExecutionResult> {
+) -> anyhow::Result<CallExecutionDetails> {
     let root_signer = root_account();
     crate::create_account(
         &root_signer,
