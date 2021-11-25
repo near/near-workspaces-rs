@@ -1,4 +1,5 @@
 mod account;
+mod result;
 mod sandbox;
 mod testnet;
 
@@ -10,13 +11,15 @@ use near_crypto::{InMemorySigner, KeyType, Signer};
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
-use near_primitives::{types::AccountId, views::FinalExecutionStatus};
+use near_primitives::types::AccountId;
 
 use crate::rpc::client::Client;
 
 pub use crate::network::account::{Account, Contract};
 pub use crate::network::sandbox::Sandbox;
 pub use crate::network::testnet::Testnet;
+
+pub use self::result::{CallExecution, CallExecutionResult};
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
 
@@ -44,37 +47,6 @@ pub trait NetworkInfo {
 }
 
 pub trait NetworkActions {}
-
-// TODO: add CallExecution* Types into their own file
-/// Struct to hold a type we want to return along w/ the execution result view.
-/// This view has extra info about the execution, such as gas usage and whether
-/// the transaction failed to be processed on the chain.
-pub struct CallExecution<T> {
-    pub result: T,
-    pub details: crate::CallExecutionResult,
-}
-
-impl<T> CallExecution<T> {
-    pub fn unwrap(self) -> T {
-        match self.details.status {
-            FinalExecutionStatus::SuccessValue(_) => self.result,
-            _ => panic!("Call failed"),
-        }
-    }
-}
-
-impl<T> From<CallExecution<T>> for anyhow::Result<T> {
-    fn from(value: CallExecution<T>) -> anyhow::Result<T> {
-        match value.details.status {
-            FinalExecutionStatus::SuccessValue(_) => Ok(value.result),
-            FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
-            FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started.")),
-            FinalExecutionStatus::Started => {
-                Err(anyhow::anyhow!("Transaction still being processed."))
-            }
-        }
-    }
-}
 
 #[async_trait]
 pub trait TopLevelAccountCreator {

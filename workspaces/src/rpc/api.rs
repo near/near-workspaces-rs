@@ -6,6 +6,7 @@ use anyhow::anyhow;
 use std::collections::HashMap;
 use std::path::Path;
 
+use crate::network::CallExecutionResult;
 use crate::runtime::context::MISSING_RUNTIME_ERROR;
 use near_crypto::{InMemorySigner, KeyType, PublicKey, Signer};
 use near_jsonrpc_client::methods::sandbox_patch_state::{
@@ -15,35 +16,13 @@ use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
 use near_primitives::types::{AccountId, Balance, Finality, FunctionArgs, Gas, StoreKey};
-use near_primitives::views::{FinalExecutionOutcomeView, FinalExecutionStatus, QueryRequest};
+use near_primitives::views::QueryRequest;
 
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 pub(crate) const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 const DEV_ACCOUNT_SEED: &str = "testificate";
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
-
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub struct CallExecutionResult {
-    /// Execution status. Contains the result in case of successful execution.
-    pub status: FinalExecutionStatus,
-    /// Total gas burnt by the call execution
-    pub total_gas_burnt: Gas,
-}
-
-impl From<FinalExecutionOutcomeView> for CallExecutionResult {
-    fn from(transaction_result: FinalExecutionOutcomeView) -> Self {
-        CallExecutionResult {
-            status: transaction_result.status,
-            total_gas_burnt: transaction_result.transaction_outcome.outcome.gas_burnt
-                + transaction_result
-                    .receipts_outcome
-                    .iter()
-                    .map(|t| t.outcome.gas_burnt)
-                    .sum::<u64>(),
-        }
-    }
-}
 
 pub async fn display_account_info(account_id: AccountId) -> anyhow::Result<AccountInfo> {
     let query_resp = client::new()

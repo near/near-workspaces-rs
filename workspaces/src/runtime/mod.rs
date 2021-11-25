@@ -14,7 +14,7 @@ use near_crypto::{PublicKey, Signer};
 use near_primitives::types::AccountId;
 use near_primitives::views::FinalExecutionOutcomeView;
 
-use crate::CallExecutionResult;
+use crate::network::CallExecutionResult;
 
 const SANDBOX_CREDENTIALS_DIR: &str = ".near-credentials/sandbox/";
 const TESTNET_CREDENTIALS_DIR: &str = ".near-credentials/testnet/";

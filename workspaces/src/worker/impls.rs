@@ -7,12 +7,11 @@ use near_primitives::borsh::BorshSerialize;
 use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
 
 use crate::network::{
-    Account, AllowDevAccountCreation, CallExecution, Contract, NetworkClient, NetworkInfo,
-    StatePatcher, TopLevelAccountCreator,
+    Account, AllowDevAccountCreation, CallExecution, CallExecutionResult, Contract, NetworkClient,
+    NetworkInfo, StatePatcher, TopLevelAccountCreator,
 };
 use crate::rpc::client::Client;
 use crate::worker::Worker;
-use crate::CallExecutionResult;
 
 unsafe impl<T> Send for Worker<T> where T: Send {}
 unsafe impl<T> Sync for Worker<T> where T: Sync {}

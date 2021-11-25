@@ -10,11 +10,11 @@ use near_crypto::{InMemorySigner, Signer};
 use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 
 use crate::network::{
-    Account, AllowDevAccountCreation, CallExecution, NetworkActions, NetworkClient, NetworkInfo,
-    TopLevelAccountCreator,
+    Account, AllowDevAccountCreation, CallExecution, CallExecutionResult, NetworkActions,
+    NetworkClient, NetworkInfo, TopLevelAccountCreator,
 };
 use crate::rpc::{client::Client, tool};
-use crate::{CallExecutionResult, Contract};
+use crate::Contract;
 
 const RPC_URL: &str = "https://rpc.testnet.near.org";
 const HELPER_URL: &str = "https://helper.testnet.near.org";

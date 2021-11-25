@@ -12,8 +12,9 @@ use near_primitives::views::FinalExecutionOutcomeView;
 
 use super::context;
 use super::RuntimeFlavor;
+use crate::network::CallExecutionResult;
 use crate::rpc::{client, tool};
-use crate::{CallExecutionResult, NEAR_BASE};
+use crate::NEAR_BASE;
 
 fn home_dir(port: u16) -> PathBuf {
     let mut path = std::env::temp_dir();
