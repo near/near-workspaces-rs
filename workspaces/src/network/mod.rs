@@ -47,8 +47,6 @@ pub trait NetworkInfo {
     fn helper_url(&self) -> String;
 }
 
-pub trait NetworkActions {}
-
 #[async_trait]
 pub trait TopLevelAccountCreator {
     async fn create_tla(
@@ -160,15 +158,9 @@ where
     }
 }
 
-pub trait Network:
-    TopLevelAccountCreator + NetworkActions + NetworkInfo + NetworkClient + Send + Sync
-{
-}
+pub trait Network: TopLevelAccountCreator + NetworkInfo + NetworkClient + Send + Sync {}
 
-impl<T> Network for T where
-    T: TopLevelAccountCreator + NetworkActions + NetworkInfo + NetworkClient + Send + Sync
-{
-}
+impl<T> Network for T where T: TopLevelAccountCreator + NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
 pub trait DevNetwork: AllowDevAccountCreation + Network {}

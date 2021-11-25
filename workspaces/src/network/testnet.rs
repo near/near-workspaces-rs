@@ -10,8 +10,8 @@ use near_crypto::{InMemorySigner, Signer};
 use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 
 use crate::network::{
-    Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, NetworkActions,
-    NetworkClient, NetworkInfo, TopLevelAccountCreator,
+    Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, NetworkClient,
+    NetworkInfo, TopLevelAccountCreator,
 };
 use crate::rpc::{client::Client, tool};
 use crate::Contract;
@@ -33,7 +33,6 @@ impl Testnet {
 
 impl AllowDevAccountCreation for Testnet {}
 
-// TODO: maybe sig should take InMmeorySigner instead of id/pk
 #[async_trait]
 impl TopLevelAccountCreator for Testnet {
     async fn create_tla(
@@ -108,5 +107,3 @@ impl NetworkClient for Testnet {
         &self.client
     }
 }
-
-impl NetworkActions for Testnet {}

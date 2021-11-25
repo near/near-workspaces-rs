@@ -9,8 +9,8 @@ use near_crypto::{InMemorySigner, Signer};
 use near_primitives::types::{AccountId, Balance};
 
 use super::{
-    Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkActions,
-    NetworkClient, NetworkInfo, TopLevelAccountCreator,
+    Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkClient,
+    NetworkInfo, TopLevelAccountCreator,
 };
 use crate::network::server::SandboxServer;
 use crate::rpc::client::Client;
@@ -110,8 +110,6 @@ impl NetworkClient for Sandbox {
         &self.client
     }
 }
-
-impl NetworkActions for Sandbox {}
 
 impl NetworkInfo for Sandbox {
     fn name(&self) -> String {
