@@ -12,8 +12,8 @@ use super::{
     Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkActions,
     NetworkClient, NetworkInfo, TopLevelAccountCreator,
 };
-use crate::rpc::client::Client;
 use crate::network::server::SandboxServer;
+use crate::rpc::client::Client;
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
