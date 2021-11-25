@@ -4,39 +4,30 @@
 
 use std::collections::HashMap;
 
-use near_jsonrpc_client::methods::query::RpcQueryRequest;
-use near_jsonrpc_primitives::types::query::QueryResponseKind;
-use near_primitives::account::{AccessKey, AccessKeyPermission};
-use near_primitives::hash::CryptoHash;
-use near_primitives::types::{AccountId, Finality, FunctionArgs, StoreKey};
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
 use near_crypto::{InMemorySigner, PublicKey, Signer};
+use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
+use near_jsonrpc_primitives::types::query::QueryResponseKind;
+use near_primitives::account::{AccessKey, AccessKeyPermission};
+use near_primitives::hash::CryptoHash;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::Balance;
+use near_primitives::types::{AccountId, Balance, Finality, FunctionArgs, Gas, StoreKey};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
 use crate::rpc::tool;
-use crate::runtime::context::MISSING_RUNTIME_ERROR;
-use crate::{DEFAULT_CALL_FN_GAS, ERR_INVALID_VARIANT};
 
-fn rt_current_addr() -> String {
-    crate::runtime::context::current()
-        .expect(MISSING_RUNTIME_ERROR)
-        .rpc_addr()
-}
+const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
+const ERR_INVALID_VARIANT: &str =
+    "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 
 fn json_client(addr: &str) -> JsonRpcClient {
     JsonRpcClient::connect(addr)
-}
-
-pub(crate) fn new() -> Client {
-    Client::new(rt_current_addr())
 }
 
 /// A client that wraps around JsonRpcClient, and provides more capabilities such

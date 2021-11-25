@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use async_trait::async_trait;
-use near_crypto::{InMemorySigner, Signer};
+use near_crypto::InMemorySigner;
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
 
@@ -141,7 +141,7 @@ where
         &self,
         signer: &InMemorySigner,
         receiver_id: AccountId,
-        amount_yocto: Balance
+        amount_yocto: Balance,
     ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)

@@ -8,14 +8,15 @@ use async_trait::async_trait;
 use near_crypto::{InMemorySigner, Signer};
 use near_primitives::types::{AccountId, Balance};
 
-use crate::rpc::client::Client;
-use crate::runtime::local::SandboxServer;
-use crate::NEAR_BASE;
-
 use super::{
     Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkActions,
     NetworkClient, NetworkInfo, TopLevelAccountCreator,
 };
+use crate::rpc::client::Client;
+use crate::runtime::local::SandboxServer;
+
+// Constant taken from nearcore crate to avoid dependency
+pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 
 const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
 
@@ -25,7 +26,7 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
-    fn home_dir(port: u16) -> PathBuf {
+    pub(crate) fn home_dir(port: u16) -> PathBuf {
         let mut path = std::env::temp_dir();
         path.push(format!("sandbox-{}", port));
         path
