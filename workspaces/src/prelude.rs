@@ -1,3 +1,1 @@
-pub use crate::network::{
-    DevAccountDeployer, StatePatcher, TopLevelAccountCreator,
-};
+pub use crate::network::{DevAccountDeployer, StatePatcher, TopLevelAccountCreator};
