@@ -25,7 +25,7 @@ pub(crate) fn new() -> RetryClient {
     RetryClient::new()
 }
 
-pub struct RetryClient;
+pub(crate) struct RetryClient;
 
 impl RetryClient {
     fn new() -> Self {

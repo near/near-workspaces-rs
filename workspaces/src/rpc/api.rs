@@ -59,7 +59,7 @@ pub async fn display_account_info(account_id: AccountId) -> anyhow::Result<Accou
 
     let account_view = match query_resp.kind {
         QueryResponseKind::ViewAccount(result) => result,
-        _ => return Err(anyhow!("Error call result")),
+        _ => anyhow::bail!("Incorrect query resp: maybe bug in rpc code?"),
     };
 
     Ok(AccountInfo {
