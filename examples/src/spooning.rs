@@ -43,7 +43,8 @@ async fn deploy_status_contract(
     worker: Worker<impl DevNetwork>,
     msg: &str,
 ) -> anyhow::Result<Contract> {
-    let contract = worker.dev_deploy(STATUS_MSG_WASM_FILEPATH).await?;
+    let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
+    let contract = worker.dev_deploy(wasm).await?;
 
     // This will `call` into `set_status` with the message we want to set.
     worker

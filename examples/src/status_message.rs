@@ -4,9 +4,10 @@ use workspaces::prelude::*;
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
-    let contract = worker.dev_deploy(STATUS_MSG_WASM_FILEPATH).await.unwrap();
+    let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
+    let contract = worker.dev_deploy(wasm).await?;
 
     let outcome = worker
         .call(
@@ -19,8 +20,7 @@ async fn main() {
             .into_bytes(),
             None,
         )
-        .await
-        .unwrap();
+        .await?;
     println!("set_status: {:?}", outcome);
 
     let result = worker
@@ -34,11 +34,12 @@ async fn main() {
             .into_bytes()
             .into(),
         )
-        .await
-        .unwrap();
+        .await?;
 
     println!(
         "status: {:?}",
         serde_json::to_string_pretty(&result).unwrap()
     );
+
+    Ok(())
 }

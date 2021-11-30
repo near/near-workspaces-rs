@@ -5,7 +5,7 @@ mod sandbox;
 mod server;
 mod testnet;
 
-use std::path::Path;
+
 
 use async_trait::async_trait;
 
@@ -41,11 +41,11 @@ pub trait TopLevelAccountCreator {
         signer: InMemorySigner,
     ) -> anyhow::Result<CallExecution<Account>>;
 
-    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
+    async fn create_tla_and_deploy(
         &self,
         id: AccountId,
         signer: InMemorySigner,
-        wasm: P,
+        wasm: Vec<u8>,
     ) -> anyhow::Result<CallExecution<Contract>>;
 }
 
@@ -57,7 +57,7 @@ pub trait AllowDevAccountCreation {}
 pub trait DevAccountDeployer {
     fn dev_generate(&self) -> (AccountId, InMemorySigner);
     async fn dev_create(&self) -> anyhow::Result<Account>;
-    async fn dev_deploy<P: AsRef<Path> + Send + Sync>(&self, wasm: P) -> anyhow::Result<Contract>;
+    async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract>;
 }
 
 #[async_trait]
@@ -88,7 +88,7 @@ where
         account.into()
     }
 
-    async fn dev_deploy<P: AsRef<Path> + Send + Sync>(&self, wasm: P) -> anyhow::Result<Contract> {
+    async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract> {
         let (account_id, signer) = self.dev_generate();
         let contract = self
             .create_tla_and_deploy(account_id.clone(), signer, wasm)

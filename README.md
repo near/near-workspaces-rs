@@ -13,14 +13,19 @@ use workspaces::prelude::*;
 async fn test_deploy_and_view() {
     let worker = workspaces::sandbox();
 
-    let contract = worker.dev_deploy("path/to/file.wasm")
+    let contract = worker.dev_deploy(std::fs::read("path/to/file.wasm"))
         .await
         .expect("could not dev-deploy contract");
 
     let result = worker.view(
         contract_id,
         "function_name".to_string(),
-        r#""some_arg": "some_value"".into(),
+        json!({
+            "some_arg": "some_value"
+        })
+        .to_string()
+        .into_bytes()
+        .into(),
     )
     .await
     .expect("could not call into view function");

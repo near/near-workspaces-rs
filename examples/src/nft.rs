@@ -5,9 +5,10 @@ use workspaces::prelude::*;
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
-    let contract = worker.dev_deploy(NFT_WASM_FILEPATH).await.unwrap();
+    let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
+    let contract = worker.dev_deploy(wasm).await.unwrap();
 
     let outcome = worker
         .call(
@@ -16,8 +17,8 @@ async fn main() {
             format!("{{\"owner_id\": \"{}\"}}", contract.id()).into(),
             None,
         )
-        .await
-        .unwrap();
+        .await?;
+
     println!("new_default_meta outcome: {:#?}", outcome);
 
     let deposit = 10000000000000000000000;
@@ -38,8 +39,8 @@ async fn main() {
             .into_bytes(),
             Some(deposit),
         )
-        .await
-        .unwrap();
+        .await?;
+
     println!("nft_mint outcome: {:#?}", outcome);
 
     let result = worker
@@ -48,8 +49,7 @@ async fn main() {
             "nft_metadata".to_string(),
             Vec::new().into(),
         )
-        .await
-        .unwrap();
+        .await?;
 
     println!(
         "--------------\n{}",
@@ -57,4 +57,6 @@ async fn main() {
     );
 
     println!("Dev Account ID: {}", contract.id());
+
+    Ok(())
 }

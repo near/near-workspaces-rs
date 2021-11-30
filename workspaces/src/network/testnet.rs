@@ -1,6 +1,6 @@
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
+
+
+use std::path::{PathBuf};
 use std::str::FromStr;
 
 use async_trait::async_trait;
@@ -62,19 +62,15 @@ impl TopLevelAccountCreator for Testnet {
         })
     }
 
-    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
+    async fn create_tla_and_deploy(
         &self,
         id: AccountId,
         signer: InMemorySigner,
-        wasm: P,
+        wasm: Vec<u8>,
     ) -> anyhow::Result<CallExecution<Contract>> {
-        // TODO: async_compat/async version of File
-        let mut code = Vec::new();
-        File::open(wasm)?.read_to_end(&mut code)?;
-
         let account = self.create_tla(id.clone(), signer.clone()).await?;
         let account = Into::<anyhow::Result<_>>::into(account)?;
-        let outcome = self.client.deploy(&signer, id, code).await?;
+        let outcome = self.client.deploy(&signer, id, wasm).await?;
 
         Ok(CallExecution {
             result: Contract::account(account),

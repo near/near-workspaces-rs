@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::Path;
+
 
 use async_trait::async_trait;
 use near_crypto::InMemorySigner;
@@ -40,11 +40,11 @@ where
         self.workspace.create_tla(id, signer).await
     }
 
-    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
+    async fn create_tla_and_deploy(
         &self,
         id: AccountId,
         signer: InMemorySigner,
-        wasm: P,
+        wasm: Vec<u8>,
     ) -> anyhow::Result<CallExecution<Contract>> {
         self.workspace.create_tla_and_deploy(id, signer, wasm).await
     }

@@ -1,6 +1,6 @@
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
+
+
+use std::path::{PathBuf};
 use std::str::FromStr;
 
 use async_trait::async_trait;
@@ -89,17 +89,13 @@ impl TopLevelAccountCreator for Sandbox {
         })
     }
 
-    async fn create_tla_and_deploy<P: AsRef<Path> + Send + Sync>(
+    async fn create_tla_and_deploy(
         &self,
         id: AccountId,
         signer: InMemorySigner,
-        wasm: P,
+        wasm: Vec<u8>,
     ) -> anyhow::Result<CallExecution<Contract>> {
         let root_signer = self.root_signer();
-        // TODO: async_compat/async version of File
-        let mut code = Vec::new();
-        File::open(wasm)?.read_to_end(&mut code)?;
-
         let outcome = self
             .client
             .create_account_and_deploy(
@@ -107,7 +103,7 @@ impl TopLevelAccountCreator for Sandbox {
                 id.clone(),
                 signer.public_key(),
                 DEFAULT_DEPOSIT,
-                code,
+                wasm,
             )
             .await?;
 

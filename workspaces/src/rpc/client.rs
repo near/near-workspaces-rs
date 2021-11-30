@@ -270,7 +270,7 @@ pub(crate) async fn send_tx(
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
     client
         .query(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
-            signed_transaction: tx.clone(),
+            signed_transaction: tx,
         })
         .await
         .map_err(|e| anyhow::anyhow!(e))
