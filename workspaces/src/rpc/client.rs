@@ -100,7 +100,7 @@ impl Client {
 
         let call_result = match query_resp.kind {
             QueryResponseKind::CallResult(result) => result.result,
-            _ => return Err(anyhow::anyhow!("Error call result")),
+            _ => anyhow::bail!("Error call result"),
         };
 
         let result = std::str::from_utf8(&call_result)?;
