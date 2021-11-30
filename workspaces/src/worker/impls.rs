@@ -110,7 +110,7 @@ where
         self.client()
             .call(
                 contract.signer(),
-                contract.id(),
+                contract.id().clone(),
                 method,
                 args,
                 None,

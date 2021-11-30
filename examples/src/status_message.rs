@@ -25,7 +25,7 @@ async fn main() {
 
     let result = worker
         .view(
-            contract.id(),
+            contract.id().clone(),
             "get_status".into(),
             json!({
                 "account_id": contract.id(),

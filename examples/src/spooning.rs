@@ -96,13 +96,17 @@ async fn main() -> anyhow::Result<()> {
 
     // Patch our testnet STATE into our local sandbox:
     worker
-        .patch_state(sandbox_contract.id(), "STATE".to_string(), &status_msg)
+        .patch_state(
+            sandbox_contract.id().clone(),
+            "STATE".to_string(),
+            &status_msg,
+        )
         .await?;
 
     // Now grab the state to see that it has indeed been patched:
     let result = worker
         .view(
-            sandbox_contract.id(),
+            sandbox_contract.id().clone(),
             "get_status".into(),
             serde_json::json!({
                 "account_id": testnet_contract_id.to_string(),
@@ -120,7 +124,7 @@ async fn main() -> anyhow::Result<()> {
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
     let result = worker
         .view(
-            sandbox_contract.id(),
+            sandbox_contract.id().clone(),
             "get_status".into(),
             serde_json::json!({
                 "account_id": sandbox_contract.id(),

@@ -35,13 +35,13 @@ async fn view_status_state(
         )
         .await?;
 
-    let mut state_items = worker.view_state(contract.id(), None).await?;
+    let mut state_items = worker.view_state(contract.id().clone(), None).await?;
     let state = state_items
         .remove("STATE")
         .ok_or_else(|| anyhow::anyhow!("Could not retrieve STATE"))?;
     let status_msg: StatusMessage = StatusMessage::try_from_slice(&state)?;
 
-    Ok((contract.id(), status_msg))
+    Ok((contract.id().clone(), status_msg))
 }
 
 #[tokio::test]

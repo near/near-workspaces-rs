@@ -11,17 +11,14 @@ impl Account {
         Self { id, signer }
     }
 
-    pub fn id(&self) -> AccountId {
-        self.id.clone()
+    pub fn id(&self) -> &AccountId {
+        &self.id
     }
 
     pub(crate) fn signer(&self) -> &InMemorySigner {
         &self.signer
     }
 }
-
-unsafe impl Sync for Account {}
-unsafe impl Send for Account {}
 
 // TODO: allow users to create Contracts so that they can call into
 // them without deploying the contract themselves.
@@ -40,14 +37,11 @@ impl Contract {
         Self { account }
     }
 
-    pub fn id(&self) -> AccountId {
-        self.account.id.clone()
+    pub fn id(&self) -> &AccountId {
+        &self.account.id
     }
 
     pub(crate) fn signer(&self) -> &InMemorySigner {
         self.account.signer()
     }
 }
-
-unsafe impl Sync for Contract {}
-unsafe impl Send for Contract {}

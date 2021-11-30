@@ -47,7 +47,11 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
         .await?;
 
     let result = worker
-        .view(contract.id(), "nft_metadata".to_string(), Vec::new().into())
+        .view(
+            contract.id().clone(),
+            "nft_metadata".to_string(),
+            Vec::new().into(),
+        )
         .await?;
 
     let actual: NftMetadata = serde_json::from_value(result).unwrap();

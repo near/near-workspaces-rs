@@ -43,7 +43,11 @@ async fn main() {
     println!("nft_mint outcome: {:#?}", outcome);
 
     let result = worker
-        .view(contract.id(), "nft_metadata".to_string(), Vec::new().into())
+        .view(
+            contract.id().clone(),
+            "nft_metadata".to_string(),
+            Vec::new().into(),
+        )
         .await
         .unwrap();
 
