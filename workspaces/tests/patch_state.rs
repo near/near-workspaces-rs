@@ -73,7 +73,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
     });
 
     worker
-        .patch_state(contract_id.clone(), "STATE".to_string(), &status_msg)
+        .patch_state(contract_id.clone(), "STATE".to_string(), status_msg.try_to_vec()?)
         .await?;
 
     let result = worker

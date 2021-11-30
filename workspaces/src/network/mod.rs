@@ -5,13 +5,10 @@ mod sandbox;
 mod server;
 mod testnet;
 
-
-
 use async_trait::async_trait;
 
 use near_crypto::{InMemorySigner, KeyType, Signer};
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
-use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
 use near_primitives::types::AccountId;
 
@@ -101,14 +98,12 @@ pub trait AllowStatePatching {}
 
 #[async_trait]
 pub trait StatePatcher {
-    async fn patch_state<U>(
+    async fn patch_state(
         &self,
         contract_id: AccountId,
         key: String,
-        value: &U,
-    ) -> anyhow::Result<()>
-    where
-        U: BorshSerialize + Send + Sync;
+        value: Vec<u8>,
+    ) -> anyhow::Result<()>;
 }
 
 #[async_trait]
@@ -116,16 +111,12 @@ impl<T> StatePatcher for T
 where
     T: AllowStatePatching + NetworkClient + Send + Sync,
 {
-    async fn patch_state<U>(
+    async fn patch_state(
         &self,
         contract_id: AccountId,
         key: String,
-        value: &U,
-    ) -> anyhow::Result<()>
-    where
-        U: BorshSerialize + Send + Sync,
-    {
-        let value = U::try_to_vec(value).unwrap();
+        value: Vec<u8>,
+    ) -> anyhow::Result<()> {
         let state = StateRecord::Data {
             account_id: contract_id,
             data_key: key.into(),

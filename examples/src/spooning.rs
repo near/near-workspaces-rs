@@ -11,9 +11,10 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 ///
 /// If you'd like a different account to deploy it to, run the following:
 /// ```norun
-/// #[workspaces::main(testnet)]
-/// async fn deploy_testnet() {
-///     let contract = deploy_status_contract("hello from testnet").await;
+/// async fn deploy_testnet() -> anyhow::Result<()> {
+///     let worker = worspaces::testnet();
+///
+///     let contract = deploy_status_contract(worker, "hello from testnet").await?;
 ///     println!("{}", contract.id());
 /// }
 /// ```
@@ -100,7 +101,7 @@ async fn main() -> anyhow::Result<()> {
         .patch_state(
             sandbox_contract.id().clone(),
             "STATE".to_string(),
-            &status_msg,
+            status_msg.try_to_vec()?,
         )
         .await?;
 

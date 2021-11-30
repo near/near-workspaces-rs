@@ -3,7 +3,6 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use near_crypto::InMemorySigner;
-use near_primitives::borsh::BorshSerialize;
 use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
 
 use crate::network::Info;
@@ -64,15 +63,12 @@ impl<T> StatePatcher for Worker<T>
 where
     T: StatePatcher + Send + Sync,
 {
-    async fn patch_state<U>(
+    async fn patch_state(
         &self,
         contract_id: AccountId,
         key: String,
-        value: &U,
-    ) -> anyhow::Result<()>
-    where
-        U: BorshSerialize + Send + Sync,
-    {
+        value: Vec<u8>,
+    ) -> anyhow::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
     }
 }
