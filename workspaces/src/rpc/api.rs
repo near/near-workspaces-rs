@@ -1,3 +1,4 @@
+use super::client;
 use super::tool;
 use super::types::{AccountInfo, NearBalance};
 
@@ -15,9 +16,7 @@ use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryRequest};
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
 use near_primitives::transaction::SignedTransaction;
-use near_primitives::types::{
-    AccountId, Balance, BlockReference, Finality, FunctionArgs, Gas, StoreKey,
-};
+use near_primitives::types::{AccountId, Balance, Finality, FunctionArgs, Gas, StoreKey};
 use near_primitives::views::{FinalExecutionOutcomeView, FinalExecutionStatus, QueryRequest};
 
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
@@ -48,20 +47,19 @@ impl From<FinalExecutionOutcomeView> for CallExecutionResult {
     }
 }
 
-pub async fn display_account_info(account_id: AccountId) -> Result<AccountInfo, String> {
-    let query_resp = tool::json_client()
+pub async fn display_account_info(account_id: AccountId) -> anyhow::Result<AccountInfo> {
+    let query_resp = client::new()
         .call(&RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccount {
                 account_id: account_id.clone(),
             },
         })
-        .await
-        .map_err(|err| err.to_string())?;
+        .await?;
 
     let account_view = match query_resp.kind {
         QueryResponseKind::ViewAccount(result) => result,
-        _ => return Err("Error call result".to_owned()),
+        _ => anyhow::bail!("Incorrect query resp: maybe bug in rpc code?"),
     };
 
     Ok(AccountInfo {
@@ -79,21 +77,22 @@ pub async fn transfer_near(
     signer_id: AccountId,
     receiver_id: AccountId,
     amount_yocto: Balance,
-) -> Result<CallExecutionResult, String> {
-    let (access_key, _, block_hash) =
-        tool::access_key(signer_id.clone(), signer.public_key()).await?;
+) -> anyhow::Result<CallExecutionResult> {
+    client::send_tx_and_retry(|| async {
+        let (access_key, _, block_hash) =
+            tool::access_key(signer_id.clone(), signer.public_key()).await?;
 
-    let tx = SignedTransaction::send_money(
-        access_key.nonce + 1,
-        signer_id,
-        receiver_id,
-        signer,
-        amount_yocto,
-        block_hash,
-    );
-
-    let transaction_info = tool::send_tx(tx).await?;
-    Ok(transaction_info.into())
+        Ok(SignedTransaction::send_money(
+            access_key.nonce + 1,
+            signer_id.clone(),
+            receiver_id.clone(),
+            signer,
+            amount_yocto,
+            block_hash,
+        ))
+    })
+    .await
+    .map(Into::into)
 }
 
 pub async fn call(
@@ -103,72 +102,73 @@ pub async fn call(
     method_name: String,
     args: Vec<u8>,
     deposit: Option<Balance>,
-) -> Result<CallExecutionResult, String> {
-    let (access_key, _, block_hash) =
-        tool::access_key(signer_id.clone(), signer.public_key()).await?;
-    let tx = SignedTransaction::call(
-        access_key.nonce + 1,
-        signer_id,
-        contract_id,
-        signer,
-        deposit.unwrap_or(0),
-        method_name,
-        args,
-        DEFAULT_CALL_FN_GAS,
-        block_hash,
-    );
-    let transaction_info = tool::send_tx(tx).await?;
-    Ok(transaction_info.into())
+) -> anyhow::Result<CallExecutionResult> {
+    client::send_tx_and_retry(|| async {
+        let (access_key, _, block_hash) =
+            tool::access_key(signer_id.clone(), signer.public_key()).await?;
+
+        Ok(SignedTransaction::call(
+            access_key.nonce + 1,
+            signer_id.clone(),
+            contract_id.clone(),
+            signer,
+            deposit.unwrap_or(0),
+            method_name.clone(),
+            args.clone(),
+            DEFAULT_CALL_FN_GAS,
+            block_hash,
+        ))
+    })
+    .await
+    .map(Into::into)
 }
 
 pub async fn view(
     contract_id: AccountId,
     method_name: String,
     args: FunctionArgs,
-) -> Result<serde_json::Value, String> {
-    let query_resp = tool::json_client()
+) -> anyhow::Result<serde_json::Value> {
+    let query_resp = client::new()
         .call(&RpcQueryRequest {
-            block_reference: Finality::Final.into(),
+            block_reference: Finality::None.into(),
             request: QueryRequest::CallFunction {
                 account_id: contract_id,
                 method_name,
                 args,
             },
         })
-        .await
-        .map_err(|err| format!("Failed to fetch query for view method: {:?}", err))?;
+        .await?;
 
     let call_result = match query_resp.kind {
         QueryResponseKind::CallResult(result) => result.result,
-        _ => return Err("Error call result".to_string()),
+        _ => return Err(anyhow!("Error call result")),
     };
 
-    let call_result_str = String::from_utf8(call_result).map_err(|e| e.to_string())?;
-    let serde_call_result: serde_json::Value = serde_json::from_str(&call_result_str)
-        .map_err(|err| format!("serde_json error: {:?}", err))?;
-
-    Ok(serde_call_result)
+    let result = std::str::from_utf8(&call_result)?;
+    Ok(serde_json::from_str(result)?)
 }
 
 pub async fn view_state(
     contract_id: AccountId,
     prefix: Option<StoreKey>,
 ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
-    let query_resp = tool::json_client()
-        .call(&methods::query::RpcQueryRequest {
-            block_reference: BlockReference::Finality(Finality::Final),
-            request: QueryRequest::ViewState {
-                account_id: contract_id,
-                prefix: prefix.unwrap_or_else(|| vec![].into()),
-            },
-        })
-        .await
-        .map_err(|err| anyhow!("Failed to query state: {:?}", err))?;
+    client::retry(|| async {
+        let query_resp = client::new()
+            .call(&methods::query::RpcQueryRequest {
+                block_reference: Finality::None.into(),
+                request: QueryRequest::ViewState {
+                    account_id: contract_id.clone(),
+                    prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
+                },
+            })
+            .await?;
 
-    match query_resp.kind {
-        QueryResponseKind::ViewState(state) => tool::into_state_map(&state.values),
-        _ => Err(anyhow!(ERR_INVALID_VARIANT)),
-    }
+        match query_resp.kind {
+            QueryResponseKind::ViewState(state) => tool::into_state_map(&state.values),
+            _ => Err(anyhow!(ERR_INVALID_VARIANT)),
+        }
+    })
+    .await
 }
 
 pub async fn patch_state<T>(
@@ -190,13 +190,10 @@ where
     };
     let records = vec![state];
 
-    let query_resp = tool::json_client()
+    let query_resp = client::new()
         .call(&RpcSandboxPatchStateRequest { records })
         .await
         .map_err(|err| format!("Failed to patch state: {:?}", err));
-
-    // TODO: Similar to `tool::send_tx`. Exponential Backoff required, so have this wait for state to be patched.
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
     query_resp
 }
@@ -208,21 +205,22 @@ pub async fn create_account(
     new_account_pk: PublicKey,
     deposit: Option<Balance>,
 ) -> anyhow::Result<CallExecutionResult> {
-    let (access_key, _, block_hash) = tool::access_key(signer_id.clone(), signer.public_key())
-        .await
-        .map_err(|e| anyhow!(e))?;
+    client::send_tx_and_retry(|| async {
+        let (access_key, _, block_hash) =
+            tool::access_key(signer_id.clone(), signer.public_key()).await?;
 
-    let signed_tx = SignedTransaction::create_account(
-        access_key.nonce + 1,
-        signer_id,
-        new_account_id,
-        deposit.unwrap_or(NEAR_BASE),
-        new_account_pk,
-        signer,
-        block_hash,
-    );
-    let transaction_info = tool::send_tx(signed_tx).await.map_err(|e| anyhow!(e))?;
-    Ok(transaction_info.into())
+        Ok(SignedTransaction::create_account(
+            access_key.nonce + 1,
+            signer_id.clone(),
+            new_account_id.clone(),
+            deposit.unwrap_or(NEAR_BASE),
+            new_account_pk.clone(),
+            signer,
+            block_hash,
+        ))
+    })
+    .await
+    .map(Into::into)
 }
 
 /// Creates a top level account. While in sandbox, we can grab the `ExecutionOutcomeView`, but
@@ -241,20 +239,22 @@ pub async fn delete_account(
     account_id: AccountId,
     signer: &dyn Signer,
     beneficiary_id: AccountId,
-) -> Result<CallExecutionResult, String> {
-    let (access_key, _, block_hash) =
-        tool::access_key(account_id.clone(), signer.public_key()).await?;
+) -> anyhow::Result<CallExecutionResult> {
+    client::send_tx_and_retry(|| async {
+        let (access_key, _, block_hash) =
+            tool::access_key(account_id.clone(), signer.public_key()).await?;
 
-    let signed_tx = SignedTransaction::delete_account(
-        access_key.nonce + 1,
-        account_id.clone(),
-        account_id,
-        beneficiary_id,
-        signer,
-        block_hash,
-    );
-    let transaction_info = tool::send_tx(signed_tx).await?;
-    Ok(transaction_info.into())
+        Ok(SignedTransaction::delete_account(
+            access_key.nonce + 1,
+            account_id.clone(),
+            account_id.clone(),
+            beneficiary_id.clone(),
+            signer,
+            block_hash,
+        ))
+    })
+    .await
+    .map(Into::into)
 }
 
 fn dev_generate() -> (AccountId, InMemorySigner) {
