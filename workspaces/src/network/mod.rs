@@ -52,7 +52,7 @@ pub trait AllowDevAccountCreation {}
 
 #[async_trait]
 pub trait DevAccountDeployer {
-    fn dev_generate(&self) -> (AccountId, InMemorySigner);
+    async fn dev_generate(&self) -> (AccountId, InMemorySigner);
     async fn dev_create(&self) -> anyhow::Result<Account>;
     async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract>;
 }
@@ -62,7 +62,7 @@ impl<T> DevAccountDeployer for T
 where
     T: TopLevelAccountCreator + NetworkInfo + AllowDevAccountCreation + Send + Sync,
 {
-    fn dev_generate(&self) -> (AccountId, InMemorySigner) {
+    async fn dev_generate(&self) -> (AccountId, InMemorySigner) {
         let account_id = crate::rpc::tool::random_account_id();
         let signer =
             InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
@@ -80,13 +80,13 @@ where
     }
 
     async fn dev_create(&self) -> anyhow::Result<Account> {
-        let (account_id, signer) = self.dev_generate();
+        let (account_id, signer) = self.dev_generate().await;
         let account = self.create_tla(account_id.clone(), signer).await?;
         account.into()
     }
 
     async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract> {
-        let (account_id, signer) = self.dev_generate();
+        let (account_id, signer) = self.dev_generate().await;
         let contract = self
             .create_tla_and_deploy(account_id.clone(), signer, wasm)
             .await?;
