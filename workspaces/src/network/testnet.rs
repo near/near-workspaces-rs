@@ -67,7 +67,7 @@ impl TopLevelAccountCreator for Testnet {
         wasm: Vec<u8>,
     ) -> anyhow::Result<CallExecution<Contract>> {
         let account = self.create_tla(id.clone(), signer.clone()).await?;
-        let account = Into::<anyhow::Result<_>>::into(account)?;
+        let account = account.into_result()?;
         let outcome = self.client.deploy(&signer, id, wasm).await?;
 
         Ok(CallExecution {

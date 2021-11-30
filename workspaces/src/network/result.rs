@@ -11,7 +11,11 @@ pub struct CallExecution<T> {
 
 impl<T> CallExecution<T> {
     pub fn unwrap(self) -> T {
-        Into::<anyhow::Result<_>>::into(self).unwrap()
+        self.into_result().unwrap()
+    }
+
+    pub fn into_result(self) -> anyhow::Result<T> {
+        Into::<anyhow::Result<_>>::into(self)
     }
 }
 
