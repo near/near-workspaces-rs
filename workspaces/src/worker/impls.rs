@@ -13,9 +13,6 @@ use crate::network::{
 use crate::rpc::client::Client;
 use crate::worker::Worker;
 
-unsafe impl<T> Send for Worker<T> where T: Send {}
-unsafe impl<T> Sync for Worker<T> where T: Sync {}
-
 impl<T> Clone for Worker<T> {
     fn clone(&self) -> Self {
         Self {

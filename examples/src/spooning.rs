@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use workspaces::borsh::{self, BorshDeserialize, BorshSerialize};
 use workspaces::prelude::*;
-use workspaces::{AccountId, Contract, Worker};
+use workspaces::{AccountId, Contract, DevNetwork, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 
