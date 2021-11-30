@@ -57,7 +57,7 @@ impl Client {
         send_batch_tx_and_retry(self, signer, receiver_id, vec![action]).await
     }
 
-    pub async fn call(
+    pub(crate) async fn call(
         &self,
         signer: &InMemorySigner,
         contract_id: AccountId,
@@ -81,7 +81,7 @@ impl Client {
     }
 
     // TODO: return a type T instead of Value
-    pub async fn view(
+    pub(crate) async fn view(
         &self,
         contract_id: AccountId,
         method_name: String,
@@ -107,7 +107,7 @@ impl Client {
         Ok(serde_json::from_str(result)?)
     }
 
-    pub async fn view_state(
+    pub(crate) async fn view_state(
         &self,
         contract_id: AccountId,
         prefix: Option<StoreKey>,
@@ -128,7 +128,7 @@ impl Client {
         }
     }
 
-    pub async fn deploy(
+    pub(crate) async fn deploy(
         &self,
         signer: &InMemorySigner,
         contract_id: AccountId,
@@ -143,7 +143,7 @@ impl Client {
     }
 
     // TODO: write tests that uses transfer_near
-    pub async fn transfer_near(
+    pub(crate) async fn transfer_near(
         &self,
         signer: &InMemorySigner,
         receiver_id: AccountId,
@@ -160,7 +160,7 @@ impl Client {
         .await
     }
 
-    pub async fn create_account(
+    pub(crate) async fn create_account(
         &self,
         signer: &InMemorySigner,
         new_account_id: AccountId,
@@ -187,7 +187,7 @@ impl Client {
         .await
     }
 
-    pub async fn create_account_and_deploy(
+    pub(crate) async fn create_account_and_deploy(
         &self,
         signer: &InMemorySigner,
         new_account_id: AccountId,
@@ -217,7 +217,7 @@ impl Client {
     }
 
     // TODO: write tests that uses delete_account
-    pub async fn delete_account(
+    pub(crate) async fn delete_account(
         &self,
         signer: &InMemorySigner,
         account_id: AccountId,
