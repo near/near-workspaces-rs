@@ -9,6 +9,7 @@ use url::Url;
 use near_crypto::{InMemorySigner, Signer};
 use near_primitives::{types::AccountId, views::FinalExecutionStatus};
 
+use crate::network::Info;
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, NetworkClient,
     NetworkInfo, TopLevelAccountCreator,
@@ -21,12 +22,19 @@ const HELPER_URL: &str = "https://helper.testnet.near.org";
 
 pub struct Testnet {
     client: Client,
+    info: Info,
 }
 
 impl Testnet {
     pub(crate) fn new() -> Self {
         Self {
             client: Client::new(RPC_URL.into()),
+            info: Info {
+                name: "testnet".into(),
+                root_id: AccountId::from_str("testnet").unwrap(),
+                keystore_path: PathBuf::from(".near-credentials/testnet/"),
+                rpc_url: RPC_URL.into(),
+            },
         }
     }
 }
@@ -40,12 +48,7 @@ impl TopLevelAccountCreator for Testnet {
         id: AccountId,
         signer: InMemorySigner,
     ) -> anyhow::Result<CallExecution<Account>> {
-        tool::url_create_account(
-            Url::parse(&self.helper_url())?,
-            id.clone(),
-            signer.public_key(),
-        )
-        .await?;
+        tool::url_create_account(Url::parse(HELPER_URL)?, id.clone(), signer.public_key()).await?;
 
         Ok(CallExecution {
             result: Account::new(id, signer),
@@ -80,30 +83,14 @@ impl TopLevelAccountCreator for Testnet {
     }
 }
 
-impl NetworkInfo for Testnet {
-    fn name(&self) -> String {
-        "testnet".into()
-    }
-
-    fn root_account_id(&self) -> AccountId {
-        AccountId::from_str("testnet").unwrap()
-    }
-
-    fn keystore_path(&self) -> PathBuf {
-        PathBuf::from(".near-credentials/testnet/")
-    }
-
-    fn rpc_url(&self) -> String {
-        RPC_URL.into()
-    }
-
-    fn helper_url(&self) -> String {
-        HELPER_URL.into()
-    }
-}
-
 impl NetworkClient for Testnet {
     fn client(&self) -> &Client {
         &self.client
+    }
+}
+
+impl NetworkInfo for Testnet {
+    fn info(&self) -> &Info {
+        &self.info
     }
 }

@@ -1,4 +1,5 @@
 mod account;
+mod info;
 mod result;
 mod sandbox;
 mod server;
@@ -14,13 +15,13 @@ use near_primitives::borsh::BorshSerialize;
 use near_primitives::state_record::StateRecord;
 use near_primitives::types::AccountId;
 
+pub(crate) use crate::network::info::Info;
 use crate::rpc::client::Client;
 
 pub use crate::network::account::{Account, Contract};
+pub use crate::network::result::{CallExecution, CallExecutionDetails};
 pub use crate::network::sandbox::Sandbox;
 pub use crate::network::testnet::Testnet;
-
-pub use self::result::{CallExecution, CallExecutionDetails};
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
 
@@ -29,22 +30,7 @@ pub trait NetworkClient {
 }
 
 pub trait NetworkInfo {
-    /// Name of the network itself
-    fn name(&self) -> String;
-
-    /// Root Account ID of the network. Mainnet has `near`, testnet has `testnet`.
-    fn root_account_id(&self) -> AccountId;
-
-    /// Path to the keystore directory
-    fn keystore_path(&self) -> std::path::PathBuf;
-
-    // TODO: change return type to Url instead of String
-    /// Rpc endpoint to point our client to
-    fn rpc_url(&self) -> String;
-
-    // TODO: not everything has a helper url. maybe make this optional or remove it into a seprate trait
-    /// The helper URL to create top level account out of for certain networks.
-    fn helper_url(&self) -> String;
+    fn info(&self) -> &Info;
 }
 
 #[async_trait]
@@ -84,7 +70,7 @@ where
         let signer =
             InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
 
-        let mut savepath = self.keystore_path();
+        let mut savepath = self.info().keystore_path.clone();
 
         // TODO: potentially make this into the async version:
         std::fs::create_dir_all(savepath.clone()).unwrap();

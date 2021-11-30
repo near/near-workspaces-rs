@@ -13,6 +13,7 @@ use super::{
     NetworkInfo, TopLevelAccountCreator,
 };
 use crate::network::server::SandboxServer;
+use crate::network::Info;
 use crate::rpc::client::Client;
 
 // Constant taken from nearcore crate to avoid dependency
@@ -23,6 +24,7 @@ const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
 pub struct Sandbox {
     server: SandboxServer,
     client: Client,
+    info: Info,
 }
 
 impl Sandbox {
@@ -44,7 +46,18 @@ impl Sandbox {
         server.start().unwrap();
 
         let client = Client::new(server.rpc_addr());
-        Self { server, client }
+        let info = Info {
+            name: "sandbox".to_string(),
+            root_id: AccountId::from_str("test.near").unwrap(),
+            keystore_path: PathBuf::from(".near-credentials/sandbox/"),
+            rpc_url: server.rpc_addr(),
+        };
+
+        Self {
+            server,
+            client,
+            info,
+        }
     }
 }
 
@@ -112,23 +125,7 @@ impl NetworkClient for Sandbox {
 }
 
 impl NetworkInfo for Sandbox {
-    fn name(&self) -> String {
-        "sandbox".into()
-    }
-
-    fn root_account_id(&self) -> AccountId {
-        AccountId::from_str("test.near").unwrap()
-    }
-
-    fn keystore_path(&self) -> PathBuf {
-        PathBuf::from(".near-credentials/sandbox/")
-    }
-
-    fn rpc_url(&self) -> String {
-        self.server.rpc_addr()
-    }
-
-    fn helper_url(&self) -> String {
-        todo!()
+    fn info(&self) -> &Info {
+        &self.info
     }
 }

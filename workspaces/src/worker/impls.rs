@@ -6,6 +6,7 @@ use near_crypto::InMemorySigner;
 use near_primitives::borsh::BorshSerialize;
 use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
 
+use crate::network::Info;
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
     NetworkInfo, StatePatcher, TopLevelAccountCreator,
@@ -53,24 +54,8 @@ impl<T> NetworkInfo for Worker<T>
 where
     T: NetworkInfo,
 {
-    fn name(&self) -> String {
-        self.workspace.name()
-    }
-
-    fn root_account_id(&self) -> AccountId {
-        self.workspace.root_account_id()
-    }
-
-    fn keystore_path(&self) -> std::path::PathBuf {
-        self.workspace.keystore_path()
-    }
-
-    fn rpc_url(&self) -> String {
-        self.workspace.rpc_url()
-    }
-
-    fn helper_url(&self) -> String {
-        self.workspace.helper_url()
+    fn info(&self) -> &Info {
+        self.workspace.info()
     }
 }
 
