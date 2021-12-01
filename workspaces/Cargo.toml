@@ -21,13 +21,8 @@ tokio = { version = "1", features = ["full"] }
 tokio-retry = "0.3"
 url = { version = "2.2.2", features = ["serde"] }
 
-near-crypto = { git = "https://github.com/near/nearcore", rev = "88a9e74d4b99867e417fe199cbd74559fd4fc349" }
-near-primitives = { git = "https://github.com/near/nearcore", rev="88a9e74d4b99867e417fe199cbd74559fd4fc349" }
-near-jsonrpc-primitives = { git = "https://github.com/near/nearcore", rev="88a9e74d4b99867e417fe199cbd74559fd4fc349" }
-
+near-crypto = "0.5"
+near-primitives = "0.5"
+near-jsonrpc-primitives = "0.5"
+near-jsonrpc-client = { version = "0.1", features = ["sandbox"] }
 near-sandbox-utils = { git = "https://github.com/near/sandbox" }
-
-[dependencies.near-jsonrpc-client]
-git = "https://github.com/near/near-jsonrpc-client-rs"
-rev = "d3c7a057792f661ba585b575012bf85d954bd327"
-features = ["sandbox"]

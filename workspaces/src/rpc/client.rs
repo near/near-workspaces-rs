@@ -8,7 +8,7 @@ use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
-use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
+use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::account::{AccessKey, AccessKeyPermission};
 use near_primitives::hash::CryptoHash;
@@ -26,10 +26,6 @@ const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 
-fn json_client(addr: &str) -> JsonRpcClient {
-    JsonRpcClient::connect(addr)
-}
-
 /// A client that wraps around JsonRpcClient, and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
 pub struct Client {
@@ -44,8 +40,8 @@ impl Client {
     pub(crate) async fn query<M: methods::RpcMethod>(
         &self,
         method: &M,
-    ) -> JsonRpcMethodCallResult<M::Result, M::Error> {
-        retry(|| async { json_client(&self.rpc_addr).call(method).await }).await
+    ) -> MethodCallResult<M::Response, M::Error> {
+        retry(|| async { JsonRpcClient::connect(&self.rpc_addr).call(method).await }).await
     }
 
     async fn send_tx_and_retry(
