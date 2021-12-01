@@ -21,6 +21,10 @@ use serde::{Deserialize, Serialize};
 pub struct AccountId(Box<str>);
 
 impl AccountId {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -70,10 +74,7 @@ impl AccountId {
 
         (!last_char_is_separator)
             .then(|| ())
-            .ok_or(ParseAccountError(
-                ParseErrorKind::Invalid,
-                account_id.to_string(),
-            ))
+            .ok_or_else(|| ParseAccountError(ParseErrorKind::Invalid, account_id.to_string()))
     }
 }
 
@@ -92,10 +93,9 @@ impl From<AccountId> for String {
     }
 }
 
-impl Into<near_primitives::types::AccountId> for AccountId {
-    fn into(self) -> near_primitives::types::AccountId {
-        self.0
-            .into_string()
+impl From<AccountId> for near_primitives::types::AccountId {
+    fn from(id: AccountId) -> Self {
+        id.0.into_string()
             .try_into()
             .expect("Should not fail since this is already validated before")
     }
@@ -214,7 +214,7 @@ impl KeyFile {
             .metadata()
             .expect("Failed to retrieve key file metadata.")
             .permissions();
-        perm.set_mode(u32::from(libc::S_IWUSR | libc::S_IRUSR));
+        perm.set_mode(libc::S_IWUSR | libc::S_IRUSR);
         file.set_permissions(perm)
             .expect("Failed to set permissions for a key file.");
         let str = serde_json::to_string_pretty(self).expect("Error serializing the key file.");
