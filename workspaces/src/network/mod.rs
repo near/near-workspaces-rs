@@ -7,18 +7,17 @@ mod testnet;
 
 use async_trait::async_trait;
 
-use near_crypto::KeyType;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
 
 pub(crate) use crate::network::info::Info;
 use crate::rpc::client::Client;
+use crate::types::{AccountId, InMemorySigner, KeyType, Signer};
 
 pub use crate::network::account::{Account, Contract};
 pub use crate::network::result::{CallExecution, CallExecutionDetails};
 pub use crate::network::sandbox::Sandbox;
 pub use crate::network::testnet::Testnet;
-pub use crate::types::{AccountId, InMemorySigner, Signer};
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
 

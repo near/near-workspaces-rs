@@ -1,4 +1,6 @@
-/// Types copied over from nearcore since those APIs are not yet stable.
+/// Types copied over from near_primitives since those APIs are not yet stable.
+/// and internal libraries like near-jsonrpc-client requires specific versions
+/// of these types which shouldn't be exposed either.
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::fs::File;
@@ -12,7 +14,7 @@ use near_crypto::vrf::{Proof, Value};
 use near_crypto::Signature;
 use near_primitives::account::id::{MAX_ACCOUNT_ID_LEN, MIN_ACCOUNT_ID_LEN};
 
-pub use near_crypto::{KeyType, PublicKey, SecretKey, Signer};
+pub(crate) use near_crypto::{KeyType, PublicKey, SecretKey, Signer};
 use serde::{Deserialize, Serialize};
 
 #[derive(Eq, Ord, Hash, Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -135,7 +137,7 @@ pub struct InMemorySigner {
 }
 
 impl InMemorySigner {
-    pub fn from_seed(account_id: AccountId, key_type: KeyType, seed: &str) -> Self {
+    pub(crate) fn from_seed(account_id: AccountId, key_type: KeyType, seed: &str) -> Self {
         let secret_key = SecretKey::from_seed(key_type, seed);
         Self {
             account_id,
@@ -144,7 +146,9 @@ impl InMemorySigner {
         }
     }
 
-    pub fn from_secret_key(account_id: AccountId, secret_key: SecretKey) -> Self {
+    pub fn from_secret_key(account_id: AccountId, secret_key: &str) -> Self {
+        let secret_key = SecretKey::from_str(secret_key).expect("Invalid secret key");
+
         Self {
             account_id,
             public_key: secret_key.public_key(),
