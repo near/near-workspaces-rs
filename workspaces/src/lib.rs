@@ -10,4 +10,4 @@ pub use types::{AccountId, InMemorySigner, KeyType};
 pub use worker::{sandbox, testnet, with_sandbox, with_testnet, Worker};
 
 /// Export Borsh types so others can make use of Borsh(De)Serialize
-pub use near_primitives::borsh;
+pub use borsh;
