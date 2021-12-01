@@ -88,8 +88,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
                 "account_id": "alice.near",
             })
             .to_string()
-            .into_bytes()
-            .into(),
+            .into_bytes(),
         )
         .await?;
 

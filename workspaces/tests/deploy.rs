@@ -51,7 +51,7 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
         .view(
             contract.id().clone(),
             "nft_metadata".to_string(),
-            Vec::new().into(),
+            Vec::new(),
         )
         .await?;
 

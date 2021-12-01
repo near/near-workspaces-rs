@@ -17,7 +17,7 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{AccountId, Balance, Finality, FunctionArgs, Gas, StoreKey};
+use near_primitives::types::{AccountId, Balance, Finality, Gas, StoreKey};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
 use crate::rpc::tool;
@@ -85,7 +85,7 @@ impl Client {
         &self,
         contract_id: AccountId,
         method_name: String,
-        args: FunctionArgs,
+        args: Vec<u8>,
     ) -> anyhow::Result<serde_json::Value> {
         let query_resp = self
             .query(&RpcQueryRequest {
@@ -93,7 +93,7 @@ impl Client {
                 request: QueryRequest::CallFunction {
                     account_id: contract_id,
                     method_name,
-                    args,
+                    args: args.into(),
                 },
             })
             .await?;

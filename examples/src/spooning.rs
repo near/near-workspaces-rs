@@ -114,8 +114,7 @@ async fn main() -> anyhow::Result<()> {
                 "account_id": testnet_contract_id.to_string(),
             })
             .to_string()
-            .into_bytes()
-            .into(),
+            .into_bytes(),
         )
         .await?;
 
@@ -132,8 +131,7 @@ async fn main() -> anyhow::Result<()> {
                 "account_id": sandbox_contract.id(),
             })
             .to_string()
-            .into_bytes()
-            .into(),
+            .into_bytes(),
         )
         .await?;
     assert_eq!(result, serde_json::Value::Null);

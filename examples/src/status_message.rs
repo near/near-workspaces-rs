@@ -31,8 +31,7 @@ async fn main() -> anyhow::Result<()> {
                 "account_id": contract.id(),
             })
             .to_string()
-            .into_bytes()
-            .into(),
+            .into_bytes(),
         )
         .await?;
 

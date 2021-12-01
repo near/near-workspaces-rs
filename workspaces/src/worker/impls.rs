@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use near_crypto::InMemorySigner;
-use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
+use near_primitives::types::{AccountId, Balance, StoreKey};
 
 use crate::network::Info;
 use crate::network::{
@@ -101,7 +101,7 @@ where
         &self,
         contract_id: AccountId,
         method_name: String,
-        args: FunctionArgs,
+        args: Vec<u8>,
     ) -> anyhow::Result<serde_json::Value> {
         self.client().view(contract_id, method_name, args).await
     }
