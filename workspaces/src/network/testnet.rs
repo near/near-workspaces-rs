@@ -4,8 +4,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use url::Url;
 
-use near_crypto::{InMemorySigner, Signer};
-use near_primitives::{types::AccountId, views::FinalExecutionStatus};
+use near_primitives::views::FinalExecutionStatus;
 
 use crate::network::Info;
 use crate::network::{
@@ -13,6 +12,7 @@ use crate::network::{
     NetworkInfo, TopLevelAccountCreator,
 };
 use crate::rpc::{client::Client, tool};
+use crate::types::{AccountId, InMemorySigner, Signer};
 use crate::Contract;
 
 const RPC_URL: &str = "https://rpc.testnet.near.org";

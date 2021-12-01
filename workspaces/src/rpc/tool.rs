@@ -5,9 +5,9 @@ use chrono::Utc;
 use rand::Rng;
 use url::Url;
 
-use near_crypto::PublicKey;
-use near_primitives::types::AccountId;
 use near_primitives::views::StateItem;
+
+use crate::types::{AccountId, PublicKey};
 
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
 /// Assumes key and value are base64 encoded, so this also decodes them.

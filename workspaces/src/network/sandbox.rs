@@ -3,16 +3,17 @@ use std::str::FromStr;
 
 use async_trait::async_trait;
 
-use near_crypto::{InMemorySigner, Signer};
-use near_primitives::types::{AccountId, Balance};
+use near_primitives::types::Balance;
 
 use super::{
     Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkClient,
     NetworkInfo, TopLevelAccountCreator,
 };
+
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::rpc::client::Client;
+use crate::types::{AccountId, InMemorySigner, Signer};
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;

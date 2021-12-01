@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
-use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
@@ -17,10 +16,11 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{AccountId, Balance, Finality, FunctionArgs, Gas, StoreKey};
+use near_primitives::types::{Balance, Finality, FunctionArgs, Gas, StoreKey};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
 use crate::rpc::tool;
+use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
 
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 const ERR_INVALID_VARIANT: &str =
@@ -91,7 +91,7 @@ impl Client {
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::CallFunction {
-                    account_id: contract_id,
+                    account_id: contract_id.into(),
                     method_name,
                     args,
                 },
@@ -116,7 +116,7 @@ impl Client {
             .query(&methods::query::RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::ViewState {
-                    account_id: contract_id.clone(),
+                    account_id: contract_id.into(),
                     prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
                 },
             })
@@ -226,7 +226,10 @@ impl Client {
         self.send_tx_and_retry(
             signer,
             account_id,
-            DeleteAccountAction { beneficiary_id }.into(),
+            DeleteAccountAction {
+                beneficiary_id: beneficiary_id.into(),
+            }
+            .into(),
         )
         .await
     }
@@ -241,7 +244,7 @@ pub(crate) async fn access_key(
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
-                account_id,
+                account_id: account_id.into(),
                 public_key: pk,
             },
         })
@@ -299,8 +302,8 @@ async fn send_batch_tx_and_retry(
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
-            signer.account_id.clone(),
-            receiver_id.clone(),
+            signer.account_id.clone().into(),
+            receiver_id.clone().into(),
             signer as &dyn Signer,
             actions.clone(),
             block_hash,

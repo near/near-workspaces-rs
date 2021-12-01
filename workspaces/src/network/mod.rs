@@ -7,10 +7,9 @@ mod testnet;
 
 use async_trait::async_trait;
 
-use near_crypto::{InMemorySigner, KeyType, Signer};
+use near_crypto::KeyType;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
-use near_primitives::types::AccountId;
 
 pub(crate) use crate::network::info::Info;
 use crate::rpc::client::Client;
@@ -19,6 +18,7 @@ pub use crate::network::account::{Account, Contract};
 pub use crate::network::result::{CallExecution, CallExecutionDetails};
 pub use crate::network::sandbox::Sandbox;
 pub use crate::network::testnet::Testnet;
+pub use crate::types::{AccountId, InMemorySigner, Signer};
 
 const DEV_ACCOUNT_SEED: &str = "testificate";
 
@@ -118,7 +118,7 @@ where
         value: Vec<u8>,
     ) -> anyhow::Result<()> {
         let state = StateRecord::Data {
-            account_id: contract_id,
+            account_id: contract_id.into(),
             data_key: key.into(),
             value,
         };

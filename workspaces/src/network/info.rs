@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use near_primitives::types::AccountId;
+use crate::types::AccountId;
 
 pub struct Info {
     /// Name of the network itself

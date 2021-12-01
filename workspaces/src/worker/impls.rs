@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use near_crypto::InMemorySigner;
-use near_primitives::types::{AccountId, Balance, FunctionArgs, StoreKey};
+use near_primitives::types::{Balance, FunctionArgs, StoreKey};
 
 use crate::network::Info;
 use crate::network::{
@@ -10,6 +9,7 @@ use crate::network::{
     NetworkInfo, StatePatcher, TopLevelAccountCreator,
 };
 use crate::rpc::client::Client;
+use crate::types::{AccountId, InMemorySigner};
 use crate::worker::Worker;
 
 impl<T> Clone for Worker<T> {
