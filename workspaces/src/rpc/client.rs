@@ -1,7 +1,3 @@
-// TODO: Remove this when near-jsonrpc-client crate no longer defaults to deprecation for
-//       warnings about unstable API.
-#![allow(deprecated)]
-
 use std::collections::HashMap;
 
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
