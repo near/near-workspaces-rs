@@ -210,13 +210,18 @@ impl KeyFile {
     pub fn write_to_file(&self, path: &Path) {
         let mut file = File::create(path).expect("Failed to create / write a key file.");
 
-        if cfg!(target_family = "unix") {
+        #[cfg(unix)] {
             use std::os::unix::prelude::PermissionsExt;
             let mut perm = file
                 .metadata()
                 .expect("Failed to retrieve key file metadata.")
                 .permissions();
+
+            #[cfg(target_os = "macos")]
+            perm.set_mode(u32::from(libc::S_IWUSR | libc::S_IRUSR));
+            #[cfg(not(target_os = "macos"))]
             perm.set_mode(libc::S_IWUSR | libc::S_IRUSR);
+
             file.set_permissions(perm)
                 .expect("Failed to set permissions for a key file.");
         }
