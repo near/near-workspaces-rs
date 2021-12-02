@@ -14,7 +14,11 @@ async fn main() -> anyhow::Result<()> {
         .call(
             &contract,
             "new_default_meta".to_string(),
-            format!("{{\"owner_id\": \"{}\"}}", contract.id()).into(),
+            json!({
+                "owner_id": contract.id(),
+            })
+            .to_string()
+            .into_bytes(),
             None,
         )
         .await?;
