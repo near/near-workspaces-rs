@@ -210,7 +210,8 @@ impl KeyFile {
     pub fn write_to_file(&self, path: &Path) {
         let mut file = File::create(path).expect("Failed to create / write a key file.");
 
-        #[cfg(unix)] {
+        #[cfg(unix)]
+        {
             use std::os::unix::prelude::PermissionsExt;
             let mut perm = file
                 .metadata()
