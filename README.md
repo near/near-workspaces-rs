@@ -21,11 +21,10 @@ async fn test_deploy_and_view() {
         contract_id,
         "function_name".to_string(),
         json!({
-            "some_arg": "some_value"
+            "some_arg": "some_value",
         })
         .to_string()
-        .into_bytes()
-        .into(),
+        .into_bytes(),
     )
     .await
     .expect("could not call into view function");
