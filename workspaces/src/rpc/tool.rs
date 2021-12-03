@@ -24,6 +24,19 @@ pub(crate) fn into_state_map(
     state_items.iter().map(decode).collect()
 }
 
+pub(crate) fn into_state_map_raw(
+    state_items: &[StateItem],
+) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
+    let decode = |s: &StateItem| {
+        Ok((
+            base64::decode(&s.key)?,
+            base64::decode(&s.value)?,
+        ))
+    };
+
+    state_items.iter().map(decode).collect()
+}
+
 pub(crate) fn random_account_id() -> AccountId {
     let mut rng = rand::thread_rng();
     let random_num = rng.gen_range(10000000000000usize..99999999999999);

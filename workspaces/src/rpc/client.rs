@@ -13,10 +13,10 @@ use near_primitives::transaction::{
     FunctionCallAction, SignedTransaction, TransferAction,
 };
 use near_primitives::types::{Balance, Finality, Gas, StoreKey};
-use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
+use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest, AccountView, ContractCodeView};
 
 use crate::rpc::tool;
-use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
+use crate::types::{AccountId, BlockId, InMemorySigner, PublicKey, Signer};
 
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 const ERR_INVALID_VARIANT: &str =
@@ -119,6 +119,80 @@ impl Client {
             _ => Err(anyhow::anyhow!(ERR_INVALID_VARIANT)),
         }
     }
+
+
+    pub(crate) async fn view_state_raw(
+        &self,
+        contract_id: AccountId,
+        prefix: Option<StoreKey>,
+        block_id: Option<BlockId>,
+    ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
+        let block_reference = block_id.map(Into::into)
+            .unwrap_or_else(|| Finality::None.into());
+
+        let query_resp = self
+            .query(&methods::query::RpcQueryRequest {
+                // block_reference: Finality::None.into(), // Optimisitic query
+                block_reference,
+                request: QueryRequest::ViewState {
+                    account_id: contract_id.into(),
+                    prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
+                },
+            })
+            .await?;
+
+        match query_resp.kind {
+            QueryResponseKind::ViewState(state) => tool::into_state_map_raw(&state.values),
+            _ => anyhow::bail!(ERR_INVALID_VARIANT),
+        }
+    }
+
+    pub(crate) async fn view_account(
+        &self,
+        accound_id: AccountId,
+        block_id: Option<BlockId>,
+    ) -> anyhow::Result<AccountView> {
+        let block_reference = block_id.map(Into::into)
+            .unwrap_or_else(|| Finality::None.into());
+
+        let query_resp = self
+            .query(&methods::query::RpcQueryRequest {
+                block_reference,
+                request: QueryRequest::ViewAccount {
+                    account_id: accound_id.into(),
+                },
+            })
+            .await?;
+
+        match query_resp.kind {
+            QueryResponseKind::ViewAccount(account) => Ok(account),
+            _ => anyhow::bail!(ERR_INVALID_VARIANT),
+        }
+    }
+
+    pub(crate) async fn view_code(
+        &self,
+        account_id: AccountId,
+        block_id: Option<BlockId>,
+    ) -> anyhow::Result<ContractCodeView> {
+        let block_reference = block_id.map(Into::into)
+            .unwrap_or_else(|| Finality::None.into());
+
+        let query_resp = self
+            .query(&methods::query::RpcQueryRequest {
+                block_reference,
+                request: QueryRequest::ViewCode {
+                    account_id: account_id.into(),
+                },
+            })
+            .await?;
+
+        match query_resp.kind {
+            QueryResponseKind::ViewCode(code) => Ok(code),
+            _ => anyhow::bail!(ERR_INVALID_VARIANT),
+        }
+    }
+
 
     pub(crate) async fn deploy(
         &self,

@@ -241,3 +241,32 @@ impl KeyFile {
         serde_json::from_str(&content).expect("Failed to deserialize KeyFile")
     }
 }
+
+pub type BlockHeight = u64;
+pub struct CryptoHash(pub [u8; 32]);
+
+pub enum BlockId {
+    Height(BlockHeight),
+    Hash(CryptoHash),
+}
+
+impl From<CryptoHash> for near_primitives::hash::CryptoHash {
+    fn from(hash: CryptoHash) -> Self {
+        Self(hash.0)
+    }
+}
+
+impl From<BlockId> for near_primitives::types::BlockId {
+    fn from(id: BlockId) -> Self {
+        match id {
+            BlockId::Height(height) => Self::Height(height),
+            BlockId::Hash(hash) => Self::Hash(hash.into()),
+        }
+    }
+}
+
+impl From<BlockId> for near_primitives::types::BlockReference {
+    fn from(block_id: BlockId) -> Self {
+        Self::BlockId(block_id.into())
+    }
+}

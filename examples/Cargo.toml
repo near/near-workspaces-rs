@@ -23,3 +23,7 @@ path = "src/status_message.rs"
 [[example]]
 name = "spooning"
 path = "src/spooning.rs"
+
+[[example]]
+name = "ref-finance"
+path = "src/ref_finance.rs"
