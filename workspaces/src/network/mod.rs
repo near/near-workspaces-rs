@@ -1,5 +1,6 @@
 mod account;
 mod info;
+mod mainnet;
 mod result;
 mod sandbox;
 mod server;
@@ -15,6 +16,7 @@ use crate::rpc::client::Client;
 use crate::types::{AccountId, InMemorySigner, KeyType, Signer};
 
 pub use crate::network::account::{Account, Contract};
+pub use crate::network::mainnet::Mainnet;
 pub use crate::network::result::{CallExecution, CallExecutionDetails};
 pub use crate::network::sandbox::Sandbox;
 pub use crate::network::testnet::Testnet;
