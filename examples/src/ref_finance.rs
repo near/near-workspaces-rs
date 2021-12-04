@@ -29,7 +29,7 @@ async fn create_ref(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Res
         "storage_deposit".into(),
         serde_json::json!({
             // TODO:
-            "attachedDeposit": parse_near!("30 mN") as u64,
+            "attachedDeposit": parse_near!("30 mN"),
         }).to_string().into_bytes(),
         None,
     ).await?;
