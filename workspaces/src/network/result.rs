@@ -22,7 +22,10 @@ impl<T> CallExecution<T> {
 impl<T> From<CallExecution<T>> for anyhow::Result<T> {
     fn from(value: CallExecution<T>) -> anyhow::Result<T> {
         match value.details.status {
-            FinalExecutionStatus::SuccessValue(_) => Ok(value.result),
+            FinalExecutionStatus::SuccessValue(val) => {
+                println!("------> success val: {:?}", val);
+                Ok(value.result)
+            }
             FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
             FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started.")),
             FinalExecutionStatus::Started => {
@@ -38,6 +41,19 @@ pub struct CallExecutionDetails {
     pub status: FinalExecutionStatus,
     /// Total gas burnt by the call execution
     pub total_gas_burnt: Gas,
+}
+
+impl CallExecutionDetails {
+    pub fn try_into_call_result(self) -> anyhow::Result<String> {
+        match self.status {
+            FinalExecutionStatus::SuccessValue(val) => Ok(val),
+            FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
+            FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started.")),
+            FinalExecutionStatus::Started => {
+                Err(anyhow::anyhow!("Transaction still being processed."))
+            }
+        }
+    }
 }
 
 impl From<FinalExecutionOutcomeView> for CallExecutionDetails {

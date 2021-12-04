@@ -1,3 +1,5 @@
+use std::hash::{Hash, Hasher};
+
 use crate::types::{AccountId, InMemorySigner};
 
 pub struct Account {
@@ -19,8 +21,23 @@ impl Account {
     }
 }
 
+impl PartialEq for Account {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for Account {}
+
+impl Hash for Account {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
 // TODO: allow users to create Contracts so that they can call into
 // them without deploying the contract themselves.
+#[derive(PartialEq, Eq, Hash)]
 pub struct Contract {
     pub(crate) account: Account,
 }

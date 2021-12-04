@@ -34,23 +34,54 @@ async fn create_ref(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Res
         None,
     ).await?;
 
-    // const refFinance = await creator.createAccountFrom({
-    //     mainnetContract: REF_FINANCE_ACCOUNT,
-    //     block_id,
-    //     initialBalance: NEAR.parse('1000 N').toJSON(),
-    // });
-
     Ok(ref_finance)
 }
 
+async fn create_wnear(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Result<Contract> {
+    let mainnet = workspaces::mainnet();
+    let wnear_id: AccountId = "wrap.near".to_string().try_into().unwrap();
+    let wnear = worker.import_contract(wnear_id.clone(), &mainnet).transact().await?;
 
-async fn create_pool_with_liquidity(worker: &Worker<impl Network>, ft: &Contract, ref_finance: &Contract, token_amounts: HashMap<AccountId, u128>) -> anyhow::Result<()> {
-    let token_ids = token_amounts.keys().cloned().map(Into::into).collect::<Vec<String>>();
-     worker.call(
-         &ref_finance,
-         "extend_whitelisted_tokens".into(),
+    worker.call(
+        &wnear,
+        "new".into(),
+        serde_json::json!({
+            "owner_id": wnear_id.clone(),
+            "total_supply": parse_near!("1,000,000,000 N"),
+        }).to_string().into_bytes(),
+        None,
+    ).await?;
+
+    worker.call(
+        &wnear,
+        "storage_deposit".into(),
+        Vec::new(),
+        Some(parse_near!("0.008 N")),
+    )
+    .await?;
+
+    worker.call(
+        &wnear,
+        "storage_deposit".into(),
+        Vec::new(),
+        Some(parse_near!("200 N")),
+    )
+    .await?;
+
+    Ok(wnear)
+  }
+
+
+async fn create_pool_with_liquidity(worker: &Worker<impl Network>, ref_finance: &Contract, tokens: HashMap<&Contract, u128>) -> anyhow::Result<String> {
+    // let token_ids = tokens.keys().cloned().map(Into::into).collect::<Vec<String>>();
+    // let token_amounts = tokens.
+    let (token_ids, token_amounts): (Vec<String>, Vec<u128>) = tokens.iter().map(|(key, val)| (key.id().clone().into(), val)).unzip();
+
+    worker.call(
+        &ref_finance,
+        "extend_whitelisted_tokens".into(),
         serde_json::json!({ "tokens": token_ids }).to_string().into_bytes(),
-         None,
+        None,
     ).await?;
 
     let pool_id = worker.call(
@@ -61,59 +92,95 @@ async fn create_pool_with_liquidity(worker: &Worker<impl Network>, ft: &Contract
             "fee": 25,
         }).to_string().into_bytes(),
         Some(parse_near!("3 mN")),
+    ).await?
+    .try_into_call_result()?;
+
+    worker.call(
+        &ref_finance,
+        "register_tokens".into(),
+        serde_json::json!({
+            "token_ids": token_ids,
+        }).to_string().into_bytes(),
+        Some(1),
     ).await?;
 
+    deposit_tokens(worker, &ref_finance, tokens).await?;
+
+    worker.call(
+        &ref_finance,
+        "add_liquidity".into(),
+        serde_json::json!({
+            "pool_id": pool_id,
+            "amounts": token_amounts,
+        }).to_string().into_bytes(),
+        Some(parse_near!("1 N")),
+    ).await?;
+
+    Ok(pool_id)
+}
 
 
-    // const pool_id: string = await root.call(refFinance, 'add_simple_pool', {tokens, fee: 25}, {
-    //   attachedDeposit: NEAR.parse('3mN'),
-    // });
+async fn deposit_tokens(
+    worker: &Worker<impl Network>,
+    ref_finance: &Contract,
+    tokens: HashMap<&Contract, u128>
+) -> anyhow::Result<()> {
+    for (contract, amount) in tokens {
+        worker.call(
+            &ref_finance,
+            "storage_deposit".into(),
+            serde_json::json!({
+                "registration_only": true,
+            }).to_string().into_bytes(),
+            Some(parse_near!("1 N")),
+        ).await?;
 
-    // await root.call(refFinance, 'register_tokens', {token_ids: tokens}, {
-    //   attachedDeposit: '1',
-    // });
-    // await depositTokens(root, refFinance, tokenAmounts);
-    // await root.call(refFinance, 'add_liquidity', {
-    //   pool_id,
-    //   amounts: Object.values(tokenAmounts),
-    // }, {
-    //   attachedDeposit: NEAR.parse('1N'),
-    // });
-    // return pool_id;
+        worker.call(
+            &contract,
+            "ft_transfer_call".into(),
+            serde_json::json!({
+                "receiver_id": ref_finance.id().clone(),
+                "amount": amount,
+                "msg": "",
+            }).to_string().into_bytes(),
+            Some(1),
+            //     gas: Gas.parse('200Tgas'),
+        ).await?;
+    }
 
     Ok(())
-  }
+}
 
 
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // let testnet_worker = workspaces::testnet();
     let worker = workspaces::sandbox();
 
     let ref_finance = create_ref(&worker).await?;
+    let wnear = create_wnear(&worker).await?;
+
     println!("ref account id: {:?}", ref_finance.id());
 
-    // let ft: Contract = worker.dev_deploy(std::fs::read(FT_CONTRACT_FILEPATH)?).await?;
-    // worker.call(
-    //     &ft,
-    //     "new_default_meta".into(),
-    //     serde_json::json!({
-    //         "owner_id": ft.id().clone(),
-    //         "total_supply": parse_near!("1,000,000,000 N"),
-    //     })
-    //     .to_string()
-    //     .into_bytes(),
-    //     None,
-    // ).await?;
+    let ft: Contract = worker.dev_deploy(std::fs::read(FT_CONTRACT_FILEPATH)?).await?;
+    worker.call(
+        &ft,
+        "new_default_meta".into(),
+        serde_json::json!({
+            "owner_id": ft.id().clone(),
+            "total_supply": parse_near!("1,000,000,000 N"),
+        })
+        .to_string()
+        .into_bytes(),
+        None,
+    ).await?;
 
-    // let pool_id = create_pool_with_liquidity(&worker, &ft, &ref_finance, maplit::hashmap! {
-    //     ft.id().clone() => parse_near!("5 N"),
-    //     ref_finance.id().clone() => parse_near!("10 N"),
-    // }).await?;
+    let pool_id = create_pool_with_liquidity(&worker, &ref_finance, maplit::hashmap! {
+        &ft => parse_near!("5 N"),
+        &wnear => parse_near!("10 N"),
+    }).await?;
 
-    // let status: String = serde_json::from_value(result)?;
-    // println!("New status patched: {:?}", status);
+    println!("pool_id: {}", pool_id);
 
     Ok(())
 }
