@@ -109,7 +109,7 @@ pub trait StatePatcher {
         value: Vec<u8>,
     ) -> anyhow::Result<()>;
 
-    async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>) -> anyhow::Result<Contract>;
+    async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>, with_data: bool) -> anyhow::Result<Contract>;
 }
 
 #[async_trait]
@@ -140,7 +140,7 @@ where
         Ok(())
     }
 
-    async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>) -> anyhow::Result<Contract> {
+    async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>, with_data: bool) -> anyhow::Result<Contract> {
         let signer = InMemorySigner::from_seed(id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
         let account_view = worker.client().view_account(id.clone(), None).await?;
         println!("GOT account view {:?}", account_view.code_hash);
@@ -166,17 +166,19 @@ where
             });
         }
 
-        records.extend(
-            worker.client()
-                .view_state_raw(id.clone(), None, None)
-                .await?
-                .into_iter()
-                .map(|(key, value)| StateRecord::Data {
-                    account_id: id.clone().into(),
-                    data_key: key.into(),
-                    value,
-                })
-        );
+        if with_data {
+            records.extend(
+                worker.client()
+                    .view_state_raw(id.clone(), None, None)
+                    .await?
+                    .into_iter()
+                    .map(|(key, value)| StateRecord::Data {
+                        account_id: id.clone().into(),
+                        data_key: key.into(),
+                        value,
+                    })
+            );
+        }
 
         // NOTE: For some reason, patching anything with account/contract related items takes two patches
         // otherwise its super non-deterministic and mostly just fails to locate the account afterwards: ¯\_(ツ)_/¯

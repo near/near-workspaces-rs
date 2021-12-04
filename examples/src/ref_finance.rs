@@ -1,15 +1,14 @@
 use std::{convert::TryInto, collections::HashMap};
 use workspaces::{prelude::*, AccountId, Contract, Network, Worker};
-
-const TESTNET_PREDEPLOYED_CONTRACT_ID: &str = "dev-20211013002148-59466083160385";
+use near_units::parse_near;
 
 const FT_CONTRACT_FILEPATH: &str =  "./examples/res/fungible_token.wasm";
 const REF_FINANCE_ACCOUNT_ID: &str = "v2.ref-finance.near";
 
 async fn create_ref(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Result<Contract> {
-    let testnet = workspaces::testnet();
+    let testnet = workspaces::mainnet();
     let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.to_string().try_into().unwrap();
-    let ref_finance = worker.create_contract_from(ref_finance_id.clone(), testnet).await?;
+    let ref_finance = worker.create_contract_from(ref_finance_id.clone(), testnet, false).await?;
 
     worker.call(
         &ref_finance,
@@ -27,7 +26,7 @@ async fn create_ref(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Res
         "storage_deposit".into(),
         serde_json::json!({
             // TODO:
-            "attachedDeposit": 3000000, //NEAR.parse('30 mN'),
+            "attachedDeposit": parse_near!("30 mN") as u64,
         }).to_string().into_bytes(),
         None,
     ).await?;
@@ -43,31 +42,30 @@ async fn create_ref(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Res
 
 
 async fn create_pool_with_liquidity(worker: &Worker<impl Network>, ft: &Contract, ref_finance: &Contract, token_amounts: HashMap<AccountId, u128>) -> anyhow::Result<()> {
-//   await root.call(refFinance, 'extend_whitelisted_tokens', {tokens});
-
+    let token_ids = token_amounts.keys().cloned().map(Into::into).collect::<Vec<String>>();
      worker.call(
          &ref_finance,
          "extend_whitelisted_tokens".into(),
-        serde_json::json!({
-            "tokens": token_amounts.keys().cloned().map(Into::into).collect::<Vec<String>>(),
-        }).to_string().into_bytes(),
+        serde_json::json!({ "tokens": token_ids }).to_string().into_bytes(),
          None,
+    ).await?;
+
+    let pool_id = worker.call(
+        &ref_finance,
+        "add_simple_pool".into(),
+        serde_json::json!({
+            "tokens": token_ids,
+            "fee": 25,
+        }).to_string().into_bytes(),
+        Some(parse_near!("3 mN")),
     ).await?;
 
 
 
-
-    // root: Account,
-    // refFinance: NearAccount,
-    // tokenAmounts: Record<AccountID, string>,
-//   ): Promise<string> {
-
-
-    // const tokens = Object.keys(tokenAmounts);
-    // await root.call(refFinance, 'extend_whitelisted_tokens', {tokens});
     // const pool_id: string = await root.call(refFinance, 'add_simple_pool', {tokens, fee: 25}, {
     //   attachedDeposit: NEAR.parse('3mN'),
     // });
+
     // await root.call(refFinance, 'register_tokens', {token_ids: tokens}, {
     //   attachedDeposit: '1',
     // });
@@ -87,38 +85,32 @@ async fn create_pool_with_liquidity(worker: &Worker<impl Network>, ft: &Contract
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let testnet_worker = workspaces::testnet();
+    // let testnet_worker = workspaces::testnet();
     let worker = workspaces::sandbox();
 
-    let ft: Contract = worker.dev_deploy(std::fs::read(FT_CONTRACT_FILEPATH)?).await?;
-    // create_pool_with_liquidity(&worker, &ft, ), HashMap::new()).await?;
+    let ref_finance = create_ref(&worker).await?;
+    println!("ref account id: {:?}", ref_finance.id());
 
-    let contract_id: AccountId = TESTNET_PREDEPLOYED_CONTRACT_ID
-        .to_string()
-        .try_into()
-        .unwrap();
+    // let ft: Contract = worker.dev_deploy(std::fs::read(FT_CONTRACT_FILEPATH)?).await?;
+    // worker.call(
+    //     &ft,
+    //     "new_default_meta".into(),
+    //     serde_json::json!({
+    //         "owner_id": ft.id().clone(),
+    //         "total_supply": parse_near!("1,000,000,000 N"),
+    //     })
+    //     .to_string()
+    //     .into_bytes(),
+    //     None,
+    // ).await?;
 
-    let status_msg = worker.create_contract_from(contract_id, testnet_worker).await?;
+    // let pool_id = create_pool_with_liquidity(&worker, &ft, &ref_finance, maplit::hashmap! {
+    //     ft.id().clone() => parse_near!("5 N"),
+    //     ref_finance.id().clone() => parse_near!("10 N"),
+    // }).await?;
 
-    println!("ACCOUNT: {:?}", status_msg.id());
-
-    // tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-
-    let result = worker
-        .view(
-            status_msg.id().clone(),
-            "get_status".into(),
-            serde_json::json!({
-                "account_id": TESTNET_PREDEPLOYED_CONTRACT_ID,
-            })
-            .to_string()
-            .into_bytes(),
-        )
-        .await?;
-
-
-    let status: String = serde_json::from_value(result)?;
-    println!("New status patched: {:?}", status);
+    // let status: String = serde_json::from_value(result)?;
+    // println!("New status patched: {:?}", status);
 
     Ok(())
 }

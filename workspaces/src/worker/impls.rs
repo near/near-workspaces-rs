@@ -69,8 +69,8 @@ where
         self.workspace.patch_state(contract_id, key, value).await
     }
 
-    async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>) -> anyhow::Result<Contract> {
-        self.workspace.create_contract_from(id, worker).await
+    async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>, with_data: bool) -> anyhow::Result<Contract> {
+        self.workspace.create_contract_from(id, worker, with_data).await
     }
 }
 
