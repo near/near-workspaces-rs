@@ -9,6 +9,7 @@ use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
     NetworkInfo, StatePatcher, TopLevelAccountCreator,
 };
+use crate::patch::ImportContractBuilder;
 use crate::rpc::client::Client;
 use crate::types::{AccountId, InMemorySigner};
 use crate::worker::Worker;
@@ -67,6 +68,10 @@ where
         value: Vec<u8>,
     ) -> anyhow::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
+    }
+
+    fn import_contract<'a, 'b>(&'b self, id: AccountId, worker: &'a Worker<impl Network>) -> ImportContractBuilder<'a, 'b> {
+        self.workspace.import_contract(id, worker)
     }
 
     async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>, with_data: bool) -> anyhow::Result<Contract> {

@@ -6,9 +6,12 @@ const FT_CONTRACT_FILEPATH: &str =  "./examples/res/fungible_token.wasm";
 const REF_FINANCE_ACCOUNT_ID: &str = "v2.ref-finance.near";
 
 async fn create_ref(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Result<Contract> {
-    let testnet = workspaces::mainnet();
+    let mainnet = workspaces::mainnet();
     let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.to_string().try_into().unwrap();
-    let ref_finance = worker.create_contract_from(ref_finance_id.clone(), testnet, false).await?;
+    let ref_finance = worker.import_contract(ref_finance_id.clone(), &mainnet)
+        .with_initial_balance(parse_near!("1000 N"))
+        .transact()
+        .await?;
 
     worker.call(
         &ref_finance,
