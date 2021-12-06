@@ -5,3 +5,6 @@ Cargo.lock
 # Code Editor related files
 .idea
 .vscode
+
+# generated files
+.near-credentials
