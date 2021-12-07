@@ -161,12 +161,12 @@ async fn main() -> anyhow::Result<()> {
 
     let ref_finance = create_ref(&root, &worker).await?;
     let wnear = create_wnear(&root, &worker).await?;
-    println!("ref account id: {:?}", ref_finance.id());
 
     let pool_id = create_pool_with_liquidity(&worker, &root, &ref_finance, maplit::hashmap! {
         &ft => parse_near!("5 N"),
         &wnear => parse_near!("10 N"),
     }).await?;
+    println!("Created a liquid pool with id: {:?}", ref_finance.id());
 
     deposit_tokens(&worker, &root, &ref_finance, maplit::hashmap! {
         &ft => parse_near!("100 N"),
@@ -183,7 +183,7 @@ async fn main() -> anyhow::Result<()> {
         .to_string()
         .into_bytes(),
     ).await?;
-    println!("ft deposit: {:?}", ft_deposit);
+    println!("Current FT deposit: {}", ft_deposit);
     let ft_deposit: String = serde_json::from_str(&ft_deposit)?;
     assert_eq!(ft_deposit, parse_near!("100 N").to_string());
 
@@ -197,7 +197,7 @@ async fn main() -> anyhow::Result<()> {
         .to_string()
         .into_bytes(),
     ).await?;
-    println!("wn deposit: {:?}", wnear_deposit);
+    println!("Current WNear deposit: {}", wnear_deposit);
     let wnear_deposit: String = serde_json::from_str(&wnear_deposit)?;
     assert_eq!(wnear_deposit, parse_near!("100 N").to_string());
 
@@ -208,7 +208,7 @@ async fn main() -> anyhow::Result<()> {
             "pool_id": pool_id,
         }).to_string().into_bytes(),
     ).await?;
-    println!("total_shares: {:?}", total_shares);
+    println!("Pool[{}] total_shares: {}", pool_id, total_shares);
     let total_shares: String = serde_json::from_str(&total_shares)?;
     assert_eq!(total_shares, "1000000000000000000000000");
 
@@ -222,7 +222,7 @@ async fn main() -> anyhow::Result<()> {
             "amount_in": parse_near!("1 N").to_string(),
         }).to_string().into_bytes(),
     ).await?;
-    println!("actual_return: {:?}", expected_return);
+    println!("Expect return for trading in 1 FT token for WNear: {}", expected_return);
     let expected_return: String = serde_json::from_str(&expected_return)?;
     assert_eq!(expected_return, "1662497915624478906119726");
 
@@ -243,7 +243,7 @@ async fn main() -> anyhow::Result<()> {
         .transact()
         .await?
         .try_into_call_result()?;
-    println!("actual_return: {:?}", actual_out);
+    println!("Actual return for trading in 1 FT token for WNear: {}", actual_out);
     let actual_out: String = serde_json::from_str(&actual_out)?;
     assert_eq!(actual_out, expected_return);
 
@@ -253,7 +253,7 @@ async fn main() -> anyhow::Result<()> {
             "token_id": ft.id().clone(),
         }).to_string().into_bytes(),
     ).await?;
-    println!("ft_deposit: {:?}", ft_deposit);
+    println!("New FT deposit after swap: {}", ft_deposit);
     let ft_deposit: String = serde_json::from_str(&ft_deposit)?;
     assert_eq!(ft_deposit, parse_near!("99 N").to_string());
 
@@ -267,7 +267,7 @@ async fn main() -> anyhow::Result<()> {
         .to_string()
         .into_bytes(),
     ).await?;
-    println!("new wn deposit: {:?}", wnear_deposit);
+    println!("New WNear deposit after swap: {}", wnear_deposit);
 
     Ok(())
 }

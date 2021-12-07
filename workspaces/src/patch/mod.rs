@@ -62,7 +62,6 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
 
         if account_view.code_hash != CryptoHash::default() {
             let code_view = self.from_network.view_code(self.account_id.clone(), None).await?;
-            println!("-----\nGOT code view {:?}", code_view.hash);
             records.push(StateRecord::Contract {
                 account_id: self.account_id.clone().into(),
                 code: code_view.code,
