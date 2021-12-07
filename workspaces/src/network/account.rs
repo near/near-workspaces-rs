@@ -22,8 +22,8 @@ impl Account {
         &self.signer
     }
 
-    pub fn call_other<'a, T: Network>(&self, worker: &'a Worker<T>, other: AccountId, function: String) -> CallBuilder<'a, T> {
-        CallBuilder::new(worker, other, self.signer.clone(), function)
+    pub fn call<'a, T: Network>(&self, worker: &'a Worker<T>, contract_id: AccountId, function: String) -> CallBuilder<'a, T> {
+        CallBuilder::new(worker, contract_id, self.signer.clone(), function)
     }
 }
 
@@ -67,12 +67,8 @@ impl Contract {
         self.account.signer()
     }
 
-    pub fn call<'a, T: Network>(&'a self, worker: &'a Worker<T>, function: String) -> CallBuilder<'a, T> {
-        CallBuilder::new(worker, self.id().clone(), self.signer().clone(), function)
-    }
-
-    pub fn call_other<'a, T: Network>(&self, worker: &'a Worker<T>, other: AccountId, function: String) -> CallBuilder<'a, T> {
-        self.account.call_other(worker, other, function)
+    pub fn call<'a, T: Network>(&self, worker: &'a Worker<T>, other: AccountId, function: String) -> CallBuilder<'a, T> {
+        self.account.call(worker, other, function)
     }
 }
 

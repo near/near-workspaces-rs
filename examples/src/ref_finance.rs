@@ -13,7 +13,7 @@ async fn create_ref(root: &Account, worker: &Worker<impl Network + StatePatcher>
         .transact()
         .await?;
 
-    root.call_other(&worker, ref_finance.id().clone(), "new".into())
+    root.call(&worker, ref_finance.id().clone(), "new".into())
         .with_args(
             serde_json::json!({
                 "owner_id": ref_finance.id().clone(),
@@ -24,7 +24,7 @@ async fn create_ref(root: &Account, worker: &Worker<impl Network + StatePatcher>
         .transact()
         .await?;
 
-    root.call_other(&worker, ref_finance.id().clone(), "storage_deposit".into())
+    root.call(&worker, ref_finance.id().clone(), "storage_deposit".into())
         .with_args(serde_json::json!({}).to_string().into_bytes())
         .with_deposit(parse_near!("30 mN"))
         .transact()
@@ -38,7 +38,7 @@ async fn create_wnear(owner: &Account, worker: &Worker<impl Network + StatePatch
     let wnear_id: AccountId = "wrap.near".to_string().try_into().unwrap();
     let wnear = worker.import_contract(wnear_id.clone(), &mainnet).transact().await?;
 
-    owner.call_other(&worker, wnear.id().clone(), "new".into())
+    owner.call(&worker, wnear.id().clone(), "new".into())
         .with_args(
             serde_json::json!({
                 "owner_id": owner.id().clone(),
@@ -48,14 +48,14 @@ async fn create_wnear(owner: &Account, worker: &Worker<impl Network + StatePatch
         .transact()
         .await?;
 
-    owner.call_other(&worker, wnear.id().clone(), "storage_deposit".into())
+    owner.call(&worker, wnear.id().clone(), "storage_deposit".into())
         .with_args(serde_json::json!({}).to_string().into_bytes())
         .with_deposit(parse_near!("0.008 N"))
         .transact()
         .await?;
 
 
-    owner.call_other(&worker, wnear.id().clone(), "near_deposit".into())
+    owner.call(&worker, wnear.id().clone(), "near_deposit".into())
         .with_args(serde_json::json!({}).to_string().into_bytes())
         .with_deposit(parse_near!("200 N"))
         .transact()
@@ -87,7 +87,7 @@ async fn create_pool_with_liquidity(worker: &Worker<impl Network>, root: &Accoun
     .try_into_call_result()?;
     let pool_id: u64 = serde_json::from_str(&pool_id)?;
 
-    root.call_other(&worker, ref_finance.id().clone(), "register_tokens".into())
+    root.call(&worker, ref_finance.id().clone(), "register_tokens".into())
         .with_args(serde_json::json!({
             "token_ids": token_ids,
         }).to_string().into_bytes())
@@ -97,7 +97,7 @@ async fn create_pool_with_liquidity(worker: &Worker<impl Network>, root: &Accoun
 
     deposit_tokens(worker, root, &ref_finance, tokens).await?;
 
-    root.call_other(&worker, ref_finance.id().clone(), "add_liquidity".into())
+    root.call(&worker, ref_finance.id().clone(), "add_liquidity".into())
         .with_args(serde_json::json!({
             "pool_id": pool_id,
             "amounts": token_amounts,
@@ -117,7 +117,7 @@ async fn deposit_tokens(
     tokens: HashMap<&Contract, u128>
 ) -> anyhow::Result<()> {
     for (contract, amount) in tokens {
-        ref_finance.call_other(&worker, contract.id().clone(), "storage_deposit".into())
+        ref_finance.call(&worker, contract.id().clone(), "storage_deposit".into())
             .with_args(serde_json::json!({
                 "registration_only": true,
             }).to_string().into_bytes())
@@ -125,7 +125,7 @@ async fn deposit_tokens(
             .transact()
             .await?;
 
-        root.call_other(&worker, contract.id().clone(), "ft_transfer_call".into())
+        root.call(&worker, contract.id().clone(), "ft_transfer_call".into())
             .with_args(serde_json::json!({
                 "receiver_id": ref_finance.id().clone(),
                 "amount": amount.to_string(),
@@ -226,7 +226,7 @@ async fn main() -> anyhow::Result<()> {
     let expected_return: String = serde_json::from_str(&expected_return)?;
     assert_eq!(expected_return, "1662497915624478906119726");
 
-    let actual_out = root.call_other(&worker, ref_finance.id().clone(), "swap".into())
+    let actual_out = root.call(&worker, ref_finance.id().clone(), "swap".into())
         .with_args(
             serde_json::json!({
                 "actions": vec![serde_json::json!({
