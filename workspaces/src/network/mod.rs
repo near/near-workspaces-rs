@@ -9,8 +9,6 @@ mod testnet;
 use async_trait::async_trait;
 
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
-use near_primitives::account::AccessKey;
-use near_primitives::hash::CryptoHash;
 use near_primitives::state_record::StateRecord;
 
 use crate::Worker;
