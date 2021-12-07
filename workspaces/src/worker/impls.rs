@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use near_primitives::types::{Balance, StoreKey};
 
-use crate::network::Info;
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
     NetworkInfo, StatePatcher, TopLevelAccountCreator,
 };
+use crate::network::{Info, Sandbox};
 use crate::rpc::client::Client;
 use crate::types::{AccountId, InMemorySigner};
 use crate::worker::Worker;
@@ -136,5 +136,13 @@ where
             .delete_account(signer, account_id, beneficiary_id)
             .await
             .map(Into::into)
+    }
+}
+
+impl Worker<Sandbox> {
+    pub fn root_account(&self) -> Account {
+        let account_id = self.info().root_id.clone();
+        let signer = self.workspace.root_signer();
+        Account::new(account_id, signer)
     }
 }
