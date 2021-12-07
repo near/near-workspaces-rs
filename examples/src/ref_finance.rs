@@ -1,11 +1,11 @@
 use std::{convert::TryInto, collections::HashMap};
-use workspaces::{prelude::*, AccountId, Contract, Network, Worker};
-use near_units::parse_near;
+use workspaces::{prelude::*, AccountId, Contract, Account, Network, Worker};
+use near_units::{parse_near, parse_gas};
 
 const FT_CONTRACT_FILEPATH: &str =  "./examples/res/fungible_token.wasm";
 const REF_FINANCE_ACCOUNT_ID: &str = "v2.ref-finance.near";
 
-async fn create_ref(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Result<Contract> {
+async fn create_ref(owner: AccountId, worker: &Worker<impl Network + StatePatcher>) -> anyhow::Result<Contract> {
     let mainnet = workspaces::mainnet();
     let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.to_string().try_into().unwrap();
     let ref_finance = worker.import_contract(ref_finance_id.clone(), &mainnet)
@@ -17,7 +17,7 @@ async fn create_ref(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Res
         &ref_finance,
         "new".into(),
         serde_json::json!({
-            "owner_id": ref_finance_id,
+            "owner_id": ref_finance.id().clone(),
             "exchange_fee": 4,
             "referral_fee": 1,
         }).to_string().into_bytes(),
@@ -27,17 +27,15 @@ async fn create_ref(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Res
     worker.call(
         &ref_finance,
         "storage_deposit".into(),
-        serde_json::json!({
-            // TODO:
-            "attachedDeposit": parse_near!("30 mN"),
-        }).to_string().into_bytes(),
-        None,
+        // Vec::new(),
+        serde_json::json!({}).to_string().into_bytes(),
+        Some(parse_near!("30 mN")),
     ).await?;
 
     Ok(ref_finance)
 }
 
-async fn create_wnear(worker: &Worker<impl Network + StatePatcher>) -> anyhow::Result<Contract> {
+async fn create_wnear(owner: AccountId, worker: &Worker<impl Network + StatePatcher>) -> anyhow::Result<Contract> {
     let mainnet = workspaces::mainnet();
     let wnear_id: AccountId = "wrap.near".to_string().try_into().unwrap();
     let wnear = worker.import_contract(wnear_id.clone(), &mainnet).transact().await?;
@@ -46,7 +44,7 @@ async fn create_wnear(worker: &Worker<impl Network + StatePatcher>) -> anyhow::R
         &wnear,
         "new".into(),
         serde_json::json!({
-            "owner_id": wnear_id.clone(),
+            "owner_id": owner,
             "total_supply": parse_near!("1,000,000,000 N"),
         }).to_string().into_bytes(),
         None,
@@ -55,15 +53,15 @@ async fn create_wnear(worker: &Worker<impl Network + StatePatcher>) -> anyhow::R
     worker.call(
         &wnear,
         "storage_deposit".into(),
-        Vec::new(),
+        serde_json::json!({}).to_string().into_bytes(),
         Some(parse_near!("0.008 N")),
     )
     .await?;
 
     worker.call(
         &wnear,
-        "storage_deposit".into(),
-        Vec::new(),
+        "near_deposit".into(),
+        serde_json::json!({}).to_string().into_bytes(),
         Some(parse_near!("200 N")),
     )
     .await?;
@@ -72,10 +70,8 @@ async fn create_wnear(worker: &Worker<impl Network + StatePatcher>) -> anyhow::R
   }
 
 
-async fn create_pool_with_liquidity(worker: &Worker<impl Network>, ref_finance: &Contract, tokens: HashMap<&Contract, u128>) -> anyhow::Result<String> {
-    // let token_ids = tokens.keys().cloned().map(Into::into).collect::<Vec<String>>();
-    // let token_amounts = tokens.
-    let (token_ids, token_amounts): (Vec<String>, Vec<u128>) = tokens.iter().map(|(key, val)| (key.id().clone().into(), val)).unzip();
+async fn create_pool_with_liquidity(worker: &Worker<impl Network>, root: &Account, ref_finance: &Contract, tokens: HashMap<&Contract, u128>) -> anyhow::Result<u64> {
+    let (token_ids, token_amounts): (Vec<String>, Vec<String>) = tokens.iter().map(|(key, val)| (key.id().clone().into(), val.to_string())).unzip();
 
     worker.call(
         &ref_finance,
@@ -94,27 +90,45 @@ async fn create_pool_with_liquidity(worker: &Worker<impl Network>, ref_finance: 
         Some(parse_near!("3 mN")),
     ).await?
     .try_into_call_result()?;
+    let pool_id: u64 = serde_json::from_str(&pool_id)?;
 
-    worker.call(
-        &ref_finance,
-        "register_tokens".into(),
-        serde_json::json!({
+    root.call_other(&worker, ref_finance.id().clone(), "register_tokens".into())
+        .with_args(serde_json::json!({
             "token_ids": token_ids,
-        }).to_string().into_bytes(),
-        Some(1),
-    ).await?;
+        }).to_string().into_bytes())
+        .with_deposit(1)
+        .transact()
+        .await?;
 
-    deposit_tokens(worker, &ref_finance, tokens).await?;
+    // worker.call(
+    //     &ref_finance,
+    //     "register_tokens".into(),
+    //     serde_json::json!({
+    //         "token_ids": token_ids,
+    //     }).to_string().into_bytes(),
+    //     Some(1),
+    // ).await?;
 
-    worker.call(
-        &ref_finance,
-        "add_liquidity".into(),
-        serde_json::json!({
+    deposit_tokens(worker, root, &ref_finance, tokens).await?;
+
+    root.call_other(&worker, ref_finance.id().clone(), "add_liquidity".into())
+        .with_args(serde_json::json!({
             "pool_id": pool_id,
-            "amounts": token_amounts,
-        }).to_string().into_bytes(),
-        Some(parse_near!("1 N")),
-    ).await?;
+            "token_amounts": token_amounts,
+        }).to_string().into_bytes())
+        .with_deposit(parse_near!("1 N"))
+        .transact()
+        .await?;
+
+    // worker.call(
+    //     &ref_finance,
+    //     "add_liquidity".into(),
+    //     serde_json::json!({
+    //         "pool_id": pool_id,
+    //         "amounts": token_amounts,
+    //     }).to_string().into_bytes(),
+    //     Some(parse_near!("1 N")),
+    // ).await?;
 
     Ok(pool_id)
 }
@@ -122,45 +136,71 @@ async fn create_pool_with_liquidity(worker: &Worker<impl Network>, ref_finance: 
 
 async fn deposit_tokens(
     worker: &Worker<impl Network>,
+    root: &Account,
     ref_finance: &Contract,
     tokens: HashMap<&Contract, u128>
 ) -> anyhow::Result<()> {
     for (contract, amount) in tokens {
-        worker.call(
-            &ref_finance,
-            "storage_deposit".into(),
-            serde_json::json!({
-                "registration_only": true,
-            }).to_string().into_bytes(),
-            Some(parse_near!("1 N")),
-        ).await?;
+        // worker.call(
+        //     &ref_finance,
+        //     "storage_deposit".into(),
+        //     serde_json::json!({
+        //         "registration_only": true,
+        //     }).to_string().into_bytes(),
+        //     Some(parse_near!("1 N")),
+        // ).await?;
 
-        worker.call(
-            &contract,
-            "ft_transfer_call".into(),
-            serde_json::json!({
+        ref_finance.call_other(&worker, contract.id().clone(), "storage_deposit".into())
+            .with_args(serde_json::json!({
+                "registration_only": true,
+            }).to_string().into_bytes())
+            .with_deposit(parse_near!("1 N"))
+            .transact()
+            .await?;
+
+        root.call_other(&worker, contract.id().clone(), "ft_transfer_call".into())
+            .with_args(serde_json::json!({
                 "receiver_id": ref_finance.id().clone(),
-                "amount": amount,
+                "amount": amount.to_string(),
                 "msg": "",
-            }).to_string().into_bytes(),
-            Some(1),
-            //     gas: Gas.parse('200Tgas'),
-        ).await?;
+            }).to_string().into_bytes())
+            .with_gas(parse_gas!("200 Tgas") as u64)
+            .with_deposit(1)
+            .transact()
+            .await?;
+
+        // worker.call(
+        //     &contract,
+        //     "ft_transfer_call".into(),
+        //     serde_json::json!({
+        //         "receiver_id": ref_finance.id().clone(),
+        //         "amount": amount,
+        //         "msg": "",
+        //     }).to_string().into_bytes(),
+        //     Some(1),
+        //     //     gas: Gas.parse('200Tgas'),
+        // ).await?;
+
+        // contract.call(&worker, "ft_transfer_call".into())
+        //     .with_args(serde_json::json!({
+        //         "receiver_id": ref_finance.id().clone(),
+        //         "amount": amount.to_string(),
+        //         "msg": "",
+        //     }).to_string().into_bytes())
+        //     .with_gas(parse_gas!("200 Tgas") as u64)
+        //     .with_deposit(1)
+        //     .transact()
+        //     .await?;
     }
 
     Ok(())
 }
 
 
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
-
-    let ref_finance = create_ref(&worker).await?;
-    let wnear = create_wnear(&worker).await?;
-
-    println!("ref account id: {:?}", ref_finance.id());
+    let root = worker.root_account();
 
     let ft: Contract = worker.dev_deploy(std::fs::read(FT_CONTRACT_FILEPATH)?).await?;
     worker.call(
@@ -168,19 +208,68 @@ async fn main() -> anyhow::Result<()> {
         "new_default_meta".into(),
         serde_json::json!({
             "owner_id": ft.id().clone(),
-            "total_supply": parse_near!("1,000,000,000 N"),
+            "total_supply": parse_near!("1,000,000,000 N").to_string(),
         })
         .to_string()
         .into_bytes(),
         None,
     ).await?;
 
-    let pool_id = create_pool_with_liquidity(&worker, &ref_finance, maplit::hashmap! {
+    let ref_finance = create_ref(ft.id().clone(), &worker).await?;
+    let wnear = create_wnear(ft.id().clone(), &worker).await?;
+    println!("ref account id: {:?}", ref_finance.id());
+
+    let pool_id = create_pool_with_liquidity(&worker, &root, &ref_finance, maplit::hashmap! {
         &ft => parse_near!("5 N"),
         &wnear => parse_near!("10 N"),
     }).await?;
 
-    println!("pool_id: {}", pool_id);
+    // deposit_tokens(&worker, &ref_finance, maplit::hashmap! {
+    //     &ft => parse_near!("100 N"),
+    //     &wnear => parse_near!("100 N"),
+    // }).await?;
+
+    // let result1 = worker.view(
+    //     ref_finance.id().clone(),
+    //     "get_deposit".into(),
+    //     serde_json::json!({
+    //         "account_id": ft.id().clone(),
+    //         "token_id": ft.id().clone(),
+    //     })
+    //     .to_string()
+    //     .into_bytes(),
+    // ).await?;
+
+    // let result2 = worker.view(
+    //     ref_finance.id().clone(),
+    //     "get_deposit".into(),
+    //     serde_json::json!({
+    //         "account_id": ft.id().clone(),
+    //         "token_id": wnear.id().clone(),
+    //     })
+    //     .to_string()
+    //     .into_bytes(),
+    // ).await?;
+
+
+    // println!(
+    //     "--------------\n{}\n{}",
+    //     serde_json::to_string_pretty(&result1).unwrap(),
+    //     serde_json::to_string_pretty(&result2).unwrap(),
+    // );
+
+    // let result3 = worker.view(
+    //     ref_finance.id().clone(),
+    //     "get_pool_total_shares".into(),
+    //     serde_json::json!({
+    //         "pool_id": pool_id,
+    //     }).to_string().into_bytes(),
+    // ).await?;
+
+    // println!(
+    //     "--------------\n{}",
+    //     serde_json::to_string_pretty(&result3).unwrap(),
+    // );
 
     Ok(())
 }

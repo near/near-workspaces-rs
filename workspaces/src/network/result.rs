@@ -45,14 +45,15 @@ pub struct CallExecutionDetails {
 
 impl CallExecutionDetails {
     pub fn try_into_call_result(self) -> anyhow::Result<String> {
-        match self.status {
-            FinalExecutionStatus::SuccessValue(val) => Ok(val),
-            FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
-            FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started.")),
-            FinalExecutionStatus::Started => {
-                Err(anyhow::anyhow!("Transaction still being processed."))
-            }
-        }
+        let result = match self.status {
+            FinalExecutionStatus::SuccessValue(val) => val,
+            FinalExecutionStatus::Failure(err) => anyhow::bail!(err),
+            FinalExecutionStatus::NotStarted => anyhow::bail!("Transaction not started."),
+            FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
+        };
+        let result = base64::decode(&result)?;
+        let result = std::str::from_utf8(&result)?;
+        Ok(result.into())
     }
 }
 

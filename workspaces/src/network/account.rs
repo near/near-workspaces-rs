@@ -1,6 +1,8 @@
 use std::hash::{Hash, Hasher};
 
-use crate::types::{AccountId, InMemorySigner};
+use crate::{types::{AccountId, InMemorySigner}, Worker, Network};
+
+use super::CallExecutionDetails;
 
 pub struct Account {
     pub(crate) id: AccountId,
@@ -18,6 +20,10 @@ impl Account {
 
     pub(crate) fn signer(&self) -> &InMemorySigner {
         &self.signer
+    }
+
+    pub fn call_other<'a, T: Network>(&self, worker: &'a Worker<T>, other: AccountId, function: String) -> CallBuilder<'a, T> {
+        CallBuilder::new(worker, other, self.signer.clone(), function)
     }
 }
 
@@ -59,5 +65,67 @@ impl Contract {
 
     pub(crate) fn signer(&self) -> &InMemorySigner {
         self.account.signer()
+    }
+
+    pub fn call<'a, T: Network>(&'a self, worker: &'a Worker<T>, function: String) -> CallBuilder<'a, T> {
+        CallBuilder::new(worker, self.id().clone(), self.signer().clone(), function)
+    }
+
+    pub fn call_other<'a, T: Network>(&self, worker: &'a Worker<T>, other: AccountId, function: String) -> CallBuilder<'a, T> {
+        self.account.call_other(worker, other, function)
+    }
+}
+
+pub struct CallBuilder<'a, T> {
+    worker: &'a Worker<T>,
+    signer: InMemorySigner,
+    contract_id: AccountId,
+
+    function: String,
+    args: Option<Vec<u8>>,
+    deposit: Option<u128>,
+    gas: Option<u64>,
+}
+
+impl<'a, T: Network> CallBuilder<'a, T> {
+    fn new(worker: &'a Worker<T>, contract_id: AccountId, signer: InMemorySigner, function: String) -> Self {
+        Self {
+            worker,
+            signer,
+            contract_id,
+            function,
+            args: None,
+            deposit: None,
+            gas: None,
+        }
+    }
+
+    pub fn with_args(mut self, args: Vec<u8>) -> Self {
+        self.args = Some(args);
+        self
+    }
+
+    pub fn with_deposit(mut self, deposit: u128) -> Self {
+        self.deposit = Some(deposit);
+        self
+    }
+
+    pub fn with_gas(mut self, gas: u64) -> Self {
+        self.gas = Some(gas);
+        self
+    }
+
+    pub async fn transact(self) -> anyhow::Result<CallExecutionDetails> {
+        self.worker.client()
+            .call(
+                &self.signer,
+                self.contract_id,
+                self.function,
+                self.args.expect("required `with_gas` to be specified as apart of Call"),
+                self.gas,
+                self.deposit,
+            )
+            .await
+            .map(Into::into)
     }
 }

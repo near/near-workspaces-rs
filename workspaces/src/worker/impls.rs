@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use near_primitives::types::{Balance, StoreKey};
 
 use crate::Network;
-use crate::network::Info;
+use crate::network::{Info, Sandbox};
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
     NetworkInfo, StatePatcher, TopLevelAccountCreator,
@@ -146,5 +146,13 @@ where
             .delete_account(signer, account_id, beneficiary_id)
             .await
             .map(Into::into)
+    }
+}
+
+impl Worker<Sandbox> {
+    pub fn root_account(&self) -> Account {
+        let account_id = self.info().root_id.clone();
+        let signer = self.workspace.root_signer();
+        Account::new(account_id, signer)
     }
 }
