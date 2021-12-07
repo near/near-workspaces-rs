@@ -168,52 +168,90 @@ async fn main() -> anyhow::Result<()> {
         &wnear => parse_near!("10 N"),
     }).await?;
 
-    // deposit_tokens(&worker, &ref_finance, maplit::hashmap! {
-    //     &ft => parse_near!("100 N"),
-    //     &wnear => parse_near!("100 N"),
-    // }).await?;
+    deposit_tokens(&worker, &root, &ref_finance, maplit::hashmap! {
+        &ft => parse_near!("100 N"),
+        &wnear => parse_near!("100 N"),
+    }).await?;
 
-    // let result1 = worker.view(
-    //     ref_finance.id().clone(),
-    //     "get_deposit".into(),
-    //     serde_json::json!({
-    //         "account_id": ft.id().clone(),
-    //         "token_id": ft.id().clone(),
-    //     })
-    //     .to_string()
-    //     .into_bytes(),
-    // ).await?;
+    let ft_deposit = worker.view(
+        ref_finance.id().clone(),
+        "get_deposit".into(),
+        serde_json::json!({
+            "account_id": root.id().clone(),
+            "token_id": ft.id().clone(),
+        })
+        .to_string()
+        .into_bytes(),
+    ).await?;
+    // let ft_deposit: u128 = serde_json::from_value(ft_deposit)?;
+    // assert_eq!(ft_deposit, parse_near!("100 N"));
 
-    // let result2 = worker.view(
-    //     ref_finance.id().clone(),
-    //     "get_deposit".into(),
-    //     serde_json::json!({
-    //         "account_id": ft.id().clone(),
-    //         "token_id": wnear.id().clone(),
-    //     })
-    //     .to_string()
-    //     .into_bytes(),
-    // ).await?;
+    let wnear_deposit = worker.view(
+        ref_finance.id().clone(),
+        "get_deposit".into(),
+        serde_json::json!({
+            "account_id": root.id().clone(),
+            "token_id": wnear.id().clone(),
+        })
+        .to_string()
+        .into_bytes(),
+    ).await?;
+    // let wnear_deposit: u128 = serde_json::from_value(wnear_deposit)?;
+    // assert_eq!(wnear_deposit, parse_near!("100 N"));
 
+    let total_shares = worker.view(
+        ref_finance.id().clone(),
+        "get_pool_total_shares".into(),
+        serde_json::json!({
+            "pool_id": pool_id,
+        }).to_string().into_bytes(),
+    ).await?;
+    // let total_shares: u128 = serde_json::from_value(total_shares)?;
+    // assert_eq!(total_shares, 1000000000000000000000000);
 
-    // println!(
-    //     "--------------\n{}\n{}",
-    //     serde_json::to_string_pretty(&result1).unwrap(),
-    //     serde_json::to_string_pretty(&result2).unwrap(),
-    // );
+    println!("WELP: {:?}", (ft_deposit, wnear_deposit, total_shares));
 
-    // let result3 = worker.view(
-    //     ref_finance.id().clone(),
-    //     "get_pool_total_shares".into(),
-    //     serde_json::json!({
-    //         "pool_id": pool_id,
-    //     }).to_string().into_bytes(),
-    // ).await?;
+    let expected_return = worker.view(
+        ref_finance.id().clone(),
+        "get_return".into(),
+        serde_json::json!({
+            "pool_id": pool_id,
+            "token_in": ft.id().clone(),
+            "token_out": wnear.id().clone(),
+            "amount_in": parse_near!("1 N").to_string(),
+        }).to_string().into_bytes(),
+    ).await?;
+    println!("actual_return: {:?}", expected_return);
+    // let expected_return: u128 = serde_json::from_value(expected_return)?;
+    // assert_eq!(expected_return, 1662497915624478906119726);
 
-    // println!(
-    //     "--------------\n{}",
-    //     serde_json::to_string_pretty(&result3).unwrap(),
-    // );
+    let actual_out = root.call_other(&worker, ref_finance.id().clone(), "swap".into())
+        .with_args(
+            serde_json::json!({
+                "actions": vec![serde_json::json!({
+                    "pool_id": pool_id,
+                    "token_in": ft.id().clone(),
+                    "token_out": wnear.id().clone(),
+                    "amount_in": parse_near!("1 N").to_string(),
+                    "min_amount_out": "1",
+                })],
+            }).to_string().into_bytes(),
+        )
+        .with_deposit(1)
+        .with_gas(parse_gas!("100 Tgas") as u64)
+        .transact()
+        .await?
+        .try_into_call_result()?;
+    // let actual_out: u64 = serde_json::from_str(&actual_out)?;
+    println!("actual_return: {:?}", actual_out);
+
+    let ft_deposit = worker.view(ref_finance.id().clone(), "get_deposit".into(),
+        serde_json::json!({
+            "account_id": root.id().clone(),
+            "token_id": ft.id().clone(),
+        }).to_string().into_bytes(),
+    ).await?;
+    println!("ft_deposit: {:?}", ft_deposit);
 
     Ok(())
 }
