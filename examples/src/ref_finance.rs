@@ -183,8 +183,9 @@ async fn main() -> anyhow::Result<()> {
         .to_string()
         .into_bytes(),
     ).await?;
-    // let ft_deposit: u128 = serde_json::from_value(ft_deposit)?;
-    // assert_eq!(ft_deposit, parse_near!("100 N"));
+    println!("ft deposit: {:?}", ft_deposit);
+    let ft_deposit: String = serde_json::from_str(&ft_deposit)?;
+    assert_eq!(ft_deposit, parse_near!("100 N").to_string());
 
     let wnear_deposit = worker.view(
         ref_finance.id().clone(),
@@ -196,8 +197,9 @@ async fn main() -> anyhow::Result<()> {
         .to_string()
         .into_bytes(),
     ).await?;
-    // let wnear_deposit: u128 = serde_json::from_value(wnear_deposit)?;
-    // assert_eq!(wnear_deposit, parse_near!("100 N"));
+    println!("wn deposit: {:?}", wnear_deposit);
+    let wnear_deposit: String = serde_json::from_str(&wnear_deposit)?;
+    assert_eq!(wnear_deposit, parse_near!("100 N").to_string());
 
     let total_shares = worker.view(
         ref_finance.id().clone(),
@@ -206,10 +208,9 @@ async fn main() -> anyhow::Result<()> {
             "pool_id": pool_id,
         }).to_string().into_bytes(),
     ).await?;
-    // let total_shares: u128 = serde_json::from_value(total_shares)?;
-    // assert_eq!(total_shares, 1000000000000000000000000);
-
-    println!("WELP: {:?}", (ft_deposit, wnear_deposit, total_shares));
+    println!("total_shares: {:?}", total_shares);
+    let total_shares: String = serde_json::from_str(&total_shares)?;
+    assert_eq!(total_shares, "1000000000000000000000000");
 
     let expected_return = worker.view(
         ref_finance.id().clone(),
@@ -222,8 +223,8 @@ async fn main() -> anyhow::Result<()> {
         }).to_string().into_bytes(),
     ).await?;
     println!("actual_return: {:?}", expected_return);
-    // let expected_return: u128 = serde_json::from_value(expected_return)?;
-    // assert_eq!(expected_return, 1662497915624478906119726);
+    let expected_return: String = serde_json::from_str(&expected_return)?;
+    assert_eq!(expected_return, "1662497915624478906119726");
 
     let actual_out = root.call_other(&worker, ref_finance.id().clone(), "swap".into())
         .with_args(
@@ -242,8 +243,9 @@ async fn main() -> anyhow::Result<()> {
         .transact()
         .await?
         .try_into_call_result()?;
-    // let actual_out: u64 = serde_json::from_str(&actual_out)?;
     println!("actual_return: {:?}", actual_out);
+    let actual_out: String = serde_json::from_str(&actual_out)?;
+    assert_eq!(actual_out, expected_return);
 
     let ft_deposit = worker.view(ref_finance.id().clone(), "get_deposit".into(),
         serde_json::json!({
@@ -252,6 +254,20 @@ async fn main() -> anyhow::Result<()> {
         }).to_string().into_bytes(),
     ).await?;
     println!("ft_deposit: {:?}", ft_deposit);
+    let ft_deposit: String = serde_json::from_str(&ft_deposit)?;
+    assert_eq!(ft_deposit, parse_near!("99 N").to_string());
+
+    let wnear_deposit = worker.view(
+        ref_finance.id().clone(),
+        "get_deposit".into(),
+        serde_json::json!({
+            "account_id": root.id().clone(),
+            "token_id": wnear.id().clone(),
+        })
+        .to_string()
+        .into_bytes(),
+    ).await?;
+    println!("new wn deposit: {:?}", wnear_deposit);
 
     Ok(())
 }
