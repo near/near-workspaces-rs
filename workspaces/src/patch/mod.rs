@@ -43,8 +43,6 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
         let signer = InMemorySigner::from_seed(self.account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
 
         let mut account_view = self.from_network.view_account(self.account_id.clone(), None).await?;
-        println!("GOT account view {:?}", account_view.code_hash);
-
         if let Some(initial_balance) = self.initial_balance {
             println!("Setting initial balance to {}", initial_balance);
             account_view.amount = initial_balance;

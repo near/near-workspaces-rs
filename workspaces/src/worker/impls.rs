@@ -73,10 +73,6 @@ where
     fn import_contract<'a, 'b>(&'b self, id: AccountId, worker: &'a Worker<impl Network>) -> ImportContractBuilder<'a, 'b> {
         self.workspace.import_contract(id, worker)
     }
-
-    async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>, with_data: bool) -> anyhow::Result<Contract> {
-        self.workspace.create_contract_from(id, worker, with_data).await
-    }
 }
 
 impl<T> Worker<T>

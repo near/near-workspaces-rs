@@ -111,8 +111,6 @@ pub trait StatePatcher {
     ) -> anyhow::Result<()>;
 
     fn import_contract<'a, 'b>(&'b self, id: AccountId, worker: &'a Worker<impl Network>) -> ImportContractBuilder<'a, 'b>;
-
-    async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>, with_data: bool) -> anyhow::Result<Contract>;
 }
 
 #[async_trait]
@@ -146,65 +144,6 @@ where
     fn import_contract<'a, 'b>(&'b self, id: AccountId, worker: &'a Worker<impl Network>) -> ImportContractBuilder<'a, 'b> {
         ImportContractBuilder::new(id, worker.client(), self.client())
     }
-
-    async fn create_contract_from(&self, id: AccountId, worker: Worker<impl Network + 'async_trait>, with_data: bool) -> anyhow::Result<Contract> {
-        let signer = InMemorySigner::from_seed(id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
-        let account_view = worker.client().view_account(id.clone(), None).await?;
-        println!("GOT account view {:?}", account_view.code_hash);
-
-        let mut records = vec![
-            StateRecord::Account {
-                account_id: id.clone().into(),
-                account: account_view.clone().into(),
-            },
-            StateRecord::AccessKey {
-                account_id: id.clone().into(),
-                public_key: signer.public_key(),
-                access_key: AccessKey::full_access(),
-            }
-        ];
-
-        if account_view.code_hash != CryptoHash::default() {
-            let code_view = worker.client().view_code(id.clone(), None).await?;
-            println!("-----\nGOT code view {:?}", code_view.hash);
-            records.push(StateRecord::Contract {
-                account_id: id.clone().into(),
-                code: code_view.code,
-            });
-        }
-
-        if with_data {
-            records.extend(
-                worker.client()
-                    .view_state_raw(id.clone(), None, None)
-                    .await?
-                    .into_iter()
-                    .map(|(key, value)| StateRecord::Data {
-                        account_id: id.clone().into(),
-                        data_key: key.into(),
-                        value,
-                    })
-            );
-        }
-
-        // NOTE: For some reason, patching anything with account/contract related items takes two patches
-        // otherwise its super non-deterministic and mostly just fails to locate the account afterwards: ¯\_(ツ)_/¯
-        self.client()
-            .query(&RpcSandboxPatchStateRequest { records: records.clone() })
-            .await
-            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
-
-        self.client()
-            .query(&RpcSandboxPatchStateRequest { records })
-            .await
-            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
-
-        let account = self.client().view_account(id.clone(), None).await?;
-        println!("{:?}", account.storage_usage);
-
-        Ok(Contract::new(id, signer))
-    }
-
 }
 
 pub trait Network: TopLevelAccountCreator + NetworkInfo + NetworkClient + Send + Sync {}
