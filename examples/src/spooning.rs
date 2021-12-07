@@ -118,7 +118,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .await?;
 
-    let status: String = serde_json::from_value(result)?;
+    let status: String = serde_json::from_str(&result)?;
     println!("New status patched: {:?}", status);
     assert_eq!(status, "hello from testnet".to_string());
 
@@ -134,6 +134,7 @@ async fn main() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?;
+    let result: serde_json::Value = serde_json::from_str(&result)?;
     assert_eq!(result, serde_json::Value::Null);
 
     Ok(())

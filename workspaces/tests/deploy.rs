@@ -55,7 +55,7 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
         )
         .await?;
 
-    let actual: NftMetadata = serde_json::from_value(result).unwrap();
+    let actual: NftMetadata = serde_json::from_str(&result)?;
     assert_eq!(actual, expected());
 
     Ok(())

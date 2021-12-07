@@ -112,7 +112,7 @@ where
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-    ) -> anyhow::Result<serde_json::Value> {
+    ) -> anyhow::Result<String> {
         self.client().view(contract_id, method_name, args).await
     }
 
