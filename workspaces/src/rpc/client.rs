@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryInto;
 
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
@@ -83,7 +84,7 @@ impl Client {
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::CallFunction {
-                    account_id: contract_id.into(),
+                    account_id: contract_id.try_into()?,
                     method_name,
                     args: args.into(),
                 },
@@ -108,7 +109,7 @@ impl Client {
             .query(&methods::query::RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::ViewState {
-                    account_id: contract_id.into(),
+                    account_id: contract_id.try_into()?,
                     prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
                 },
             })
@@ -219,7 +220,7 @@ impl Client {
             signer,
             account_id,
             DeleteAccountAction {
-                beneficiary_id: beneficiary_id.into(),
+                beneficiary_id: beneficiary_id.try_into()?,
             }
             .into(),
         )
@@ -236,7 +237,7 @@ pub(crate) async fn access_key(
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
-                account_id: account_id.into(),
+                account_id: account_id.try_into()?,
                 public_key: pk,
             },
         })
@@ -294,8 +295,8 @@ async fn send_batch_tx_and_retry(
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
-            signer.account_id.clone().into(),
-            receiver_id.clone().into(),
+            signer.account_id.clone().try_into()?,
+            receiver_id.clone().try_into()?,
             signer as &dyn Signer,
             actions.clone(),
             block_hash,

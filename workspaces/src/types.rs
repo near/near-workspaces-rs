@@ -11,10 +11,19 @@ use std::str::FromStr;
 use near_crypto::key_conversion::convert_secret_key;
 use near_crypto::vrf::{Proof, Value};
 use near_crypto::Signature;
-use near_primitives::account::id::{MAX_ACCOUNT_ID_LEN, MIN_ACCOUNT_ID_LEN};
+use near_primitives::types::AccountId as NearAccountId;
 
 pub(crate) use near_crypto::{KeyType, PublicKey, SecretKey, Signer};
 use serde::{Deserialize, Serialize};
+
+fn map_account_error(err: near_primitives::account::id::ParseAccountError) -> ParseAccountError {
+    let kind = match err.kind() {
+        near_primitives::account::id::ParseErrorKind::TooLong => ParseErrorKind::TooLong,
+        near_primitives::account::id::ParseErrorKind::TooShort => ParseErrorKind::TooShort,
+        near_primitives::account::id::ParseErrorKind::Invalid => ParseErrorKind::Invalid,
+    };
+    ParseAccountError(kind, err.get_account_id())
+}
 
 #[derive(Eq, Ord, Hash, Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct AccountId(Box<str>);
@@ -29,51 +38,8 @@ impl AccountId {
     }
 
     pub fn validate(account_id: &str) -> Result<(), ParseAccountError> {
-        if account_id.len() < MIN_ACCOUNT_ID_LEN {
-            return Err(ParseAccountError(
-                ParseErrorKind::TooShort,
-                account_id.to_string(),
-            ));
-        }
-
-        if account_id.len() > MAX_ACCOUNT_ID_LEN {
-            return Err(ParseAccountError(
-                ParseErrorKind::TooLong,
-                account_id.to_string(),
-            ));
-        }
-        // Adapted from https://github.com/near/near-sdk-rs/blob/fd7d4f82d0dfd15f824a1cf110e552e940ea9073/near-sdk/src/environment/env.rs#L819
-
-        // NOTE: We don't want to use Regex here, because it requires extra time to compile it.
-        // The valid account ID regex is /^(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/
-        // Instead the implementation is based on the previous character checks.
-
-        // We can safely assume that last char was a separator.
-        let mut last_char_is_separator = true;
-
-        for c in account_id.bytes() {
-            let current_char_is_separator = match c {
-                b'a'..=b'z' | b'0'..=b'9' => false,
-                b'-' | b'_' | b'.' => true,
-                _ => {
-                    return Err(ParseAccountError(
-                        ParseErrorKind::Invalid,
-                        account_id.to_string(),
-                    ))
-                }
-            };
-            if current_char_is_separator && last_char_is_separator {
-                return Err(ParseAccountError(
-                    ParseErrorKind::Invalid,
-                    account_id.to_string(),
-                ));
-            }
-            last_char_is_separator = current_char_is_separator;
-        }
-
-        (!last_char_is_separator)
-            .then(|| ())
-            .ok_or_else(|| ParseAccountError(ParseErrorKind::Invalid, account_id.to_string()))
+        NearAccountId::validate(account_id)
+            .map_err(map_account_error)
     }
 }
 
@@ -92,11 +58,13 @@ impl From<AccountId> for String {
     }
 }
 
-impl From<AccountId> for near_primitives::types::AccountId {
-    fn from(id: AccountId) -> Self {
+impl TryFrom<AccountId> for near_primitives::types::AccountId {
+    type Error = ParseAccountError;
+
+    fn try_from(id: AccountId) -> Result<Self, Self::Error> {
         id.0.into_string()
             .try_into()
-            .expect("Should not fail since this is already validated before")
+            .map_err(map_account_error)
     }
 }
 
@@ -119,12 +87,29 @@ impl fmt::Display for AccountId {
 #[derive(Eq, Hash, Clone, Debug, PartialEq)]
 pub struct ParseAccountError(pub(crate) ParseErrorKind, pub(crate) String);
 
+impl std::error::Error for ParseAccountError {}
+impl fmt::Display for ParseAccountError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}]: {}", self.1, self.0)
+    }
+}
+
 /// A list of errors that occur when parsing an invalid Account ID.
 #[derive(Eq, Hash, Clone, Debug, PartialEq)]
 pub enum ParseErrorKind {
     TooLong,
     TooShort,
     Invalid,
+}
+
+impl fmt::Display for ParseErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParseErrorKind::TooLong => write!(f, "the value is too long for account ID"),
+            ParseErrorKind::TooShort => write!(f, "the value is too short for account ID"),
+            ParseErrorKind::Invalid => write!(f, "the value has invalid characters for account ID"),
+        }
+    }
 }
 
 /// Signer that keeps secret key in memory.
@@ -200,7 +185,7 @@ impl From<KeyFile> for InMemorySigner {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct KeyFile {
+pub(crate) struct KeyFile {
     pub account_id: AccountId,
     pub public_key: PublicKey,
     pub secret_key: SecretKey,
