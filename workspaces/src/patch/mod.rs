@@ -44,7 +44,6 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
 
         let mut account_view = self.from_network.view_account(self.account_id.clone(), None).await?;
         if let Some(initial_balance) = self.initial_balance {
-            println!("Setting initial balance to {}", initial_balance);
             account_view.amount = initial_balance;
         }
 

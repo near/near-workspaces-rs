@@ -22,10 +22,7 @@ impl<T> CallExecution<T> {
 impl<T> From<CallExecution<T>> for anyhow::Result<T> {
     fn from(value: CallExecution<T>) -> anyhow::Result<T> {
         match value.details.status {
-            FinalExecutionStatus::SuccessValue(val) => {
-                println!("------> success val: {:?}", val);
-                Ok(value.result)
-            }
+            FinalExecutionStatus::SuccessValue(val) => Ok(value.result),
             FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
             FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started.")),
             FinalExecutionStatus::Started => {
