@@ -62,7 +62,7 @@ async fn create_wnear(owner: &Account, worker: &Worker<impl Network + StatePatch
         .await?;
 
     Ok(wnear)
-  }
+}
 
 
 async fn create_pool_with_liquidity(worker: &Worker<impl Network>, root: &Account, ref_finance: &Contract, tokens: HashMap<&Contract, u128>) -> anyhow::Result<u64> {
