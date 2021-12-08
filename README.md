@@ -3,7 +3,21 @@ A set of functions provided to automate workflows and write tests, such as the a
 
 This software is in very early alpha (use at your own risk). Only local sandboxed environments and testnet are available currently to run this library on.
 
+## Requirements
+- rust v1.56 and up
+- MacOS (x86) or Linux (x86) for sandbox tests. Testnet is available regardless
+
+## Include it in our project
+NOTE: since this is still alpha, we'll need to pull it down from github instead:
+```
+[dependencies]
+workspaces = { git = "https://github.com/near/workspaces-rs", rev = "..." }
+```
+Remember to grab the current revision since things are likely to change until published.
+
 ## Testing
+A simple test to get us going and familiar with the features:
+
 ```rust
 #![cfg(test)]
 
@@ -20,7 +34,7 @@ async fn test_deploy_and_view() {
     let result = worker.view(
         contract_id,
         "function_name".to_string(),
-        json!({
+        serde_json::json!({
             "some_arg": "some_value",
         })
         .to_string()
@@ -65,7 +79,7 @@ use workspaces::prelude::*;
 use workspaces::{Contract, DevNetwork, Network, Worker};
 
 // Helper function that calls into a contract we give it
-async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyhow::Result<Contract> {
+async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyhow::Result<()> {
     // Call into the function `contract_function` with args:
     worker.call(
         contract,
@@ -76,7 +90,8 @@ async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyh
         .to_string()
         .into_bytes(),
         None,
-    ).await
+    ).await?;
+    Ok(())
 }
 
 // Create a helper function that deploys a specific contract
