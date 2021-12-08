@@ -201,17 +201,6 @@ async fn main() -> anyhow::Result<()> {
     let wnear_deposit: String = serde_json::from_str(&wnear_deposit)?;
     assert_eq!(wnear_deposit, parse_near!("100 N").to_string());
 
-    let total_shares = worker.view(
-        ref_finance.id().clone(),
-        "get_pool_total_shares".into(),
-        serde_json::json!({
-            "pool_id": pool_id,
-        }).to_string().into_bytes(),
-    ).await?;
-    println!("Pool[{}] total_shares: {}", pool_id, total_shares);
-    let total_shares: String = serde_json::from_str(&total_shares)?;
-    assert_eq!(total_shares, "1000000000000000000000000");
-
     let expected_return = worker.view(
         ref_finance.id().clone(),
         "get_return".into(),
