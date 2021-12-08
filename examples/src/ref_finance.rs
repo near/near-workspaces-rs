@@ -166,7 +166,7 @@ async fn main() -> anyhow::Result<()> {
         &ft => parse_near!("5 N"),
         &wnear => parse_near!("10 N"),
     }).await?;
-    println!("Created a liquid pool with id: {:?}", ref_finance.id());
+    println!("Created a liquid pool on {} with id {}", ref_finance.id(), pool_id);
 
     deposit_tokens(&worker, &root, &ref_finance, maplit::hashmap! {
         &ft => parse_near!("100 N"),
@@ -241,11 +241,13 @@ async fn main() -> anyhow::Result<()> {
         .with_deposit(1)
         .with_gas(parse_gas!("100 Tgas") as u64)
         .transact()
-        .await?
-        .try_into_call_result()?;
+        .await?;
+    let gas_burnt = actual_out.total_gas_burnt;
+    let actual_out = actual_out.try_into_call_result()?;
     println!("Actual return for trading in 1 FT token for WNear: {}", actual_out);
     let actual_out: String = serde_json::from_str(&actual_out)?;
     assert_eq!(actual_out, expected_return);
+    println!("Gas burnt from swapping: {}", gas_burnt);
 
     let ft_deposit = worker.view(ref_finance.id().clone(), "get_deposit".into(),
         serde_json::json!({
