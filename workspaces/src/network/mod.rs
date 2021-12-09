@@ -87,9 +87,7 @@ where
 
     async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract> {
         let (id, sk) = self.dev_generate().await;
-        let contract = self
-            .create_tla_and_deploy(id.clone(), sk, wasm)
-            .await?;
+        let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
         contract.into()
     }
 }

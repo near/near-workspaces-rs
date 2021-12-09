@@ -74,12 +74,7 @@ impl TopLevelAccountCreator for Sandbox {
         let root_signer = self.root_signer();
         let outcome = self
             .client
-            .create_account(
-                &root_signer,
-                id.clone(),
-                sk.public_key(),
-                DEFAULT_DEPOSIT,
-            )
+            .create_account(&root_signer, id.clone(), sk.public_key(), DEFAULT_DEPOSIT)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);

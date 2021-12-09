@@ -292,15 +292,16 @@ async fn send_batch_tx_and_retry(
     send_tx_and_retry(client, || async {
         let (AccessKeyView { nonce, .. }, block_hash) = access_key(
             client,
-            signer.0.account_id.clone(),
-            signer.0.public_key(),
-        ).await?;
+            signer.inner().account_id.clone(),
+            signer.inner().public_key(),
+        )
+        .await?;
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
-            signer.0.account_id.clone().try_into()?,
+            signer.inner().account_id.clone(),
             receiver_id.clone().try_into()?,
-            signer as &dyn Signer,
+            signer.inner() as &dyn Signer,
             actions.clone(),
             block_hash,
         ))
