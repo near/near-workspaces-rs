@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
 
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
@@ -84,7 +83,7 @@ impl Client {
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::CallFunction {
-                    account_id: contract_id.try_into()?,
+                    account_id: contract_id,
                     method_name,
                     args: args.into(),
                 },
@@ -109,7 +108,7 @@ impl Client {
             .query(&methods::query::RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::ViewState {
-                    account_id: contract_id.try_into()?,
+                    account_id: contract_id,
                     prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
                 },
             })
@@ -219,10 +218,7 @@ impl Client {
         self.send_tx_and_retry(
             signer,
             account_id,
-            DeleteAccountAction {
-                beneficiary_id: beneficiary_id.try_into()?,
-            }
-            .into(),
+            DeleteAccountAction { beneficiary_id }.into(),
         )
         .await
     }
@@ -231,14 +227,14 @@ impl Client {
 pub(crate) async fn access_key(
     client: &Client,
     account_id: near_primitives::account::id::AccountId,
-    pk: near_crypto::PublicKey,
+    public_key: near_crypto::PublicKey,
 ) -> anyhow::Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
-                account_id: account_id.try_into()?,
-                public_key: pk.into(),
+                account_id,
+                public_key,
             },
         })
         .await?;
@@ -300,7 +296,7 @@ async fn send_batch_tx_and_retry(
         Ok(SignedTransaction::from_actions(
             nonce + 1,
             signer.inner().account_id.clone(),
-            receiver_id.clone().try_into()?,
+            receiver_id.clone(),
             signer.inner() as &dyn Signer,
             actions.clone(),
             block_hash,

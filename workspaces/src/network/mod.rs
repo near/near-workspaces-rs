@@ -5,8 +5,6 @@ mod sandbox;
 mod server;
 mod testnet;
 
-use std::convert::TryInto;
-
 use async_trait::async_trait;
 
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
@@ -116,7 +114,7 @@ where
         value: Vec<u8>,
     ) -> anyhow::Result<()> {
         let state = StateRecord::Data {
-            account_id: contract_id.try_into()?,
+            account_id: contract_id,
             data_key: key.into(),
             value,
         };
