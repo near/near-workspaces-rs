@@ -13,7 +13,7 @@ use super::{
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, Signer};
+use crate::types::{AccountId, InMemorySigner, SecretKey};
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
@@ -69,7 +69,7 @@ impl TopLevelAccountCreator for Sandbox {
     async fn create_tla(
         &self,
         id: AccountId,
-        signer: InMemorySigner,
+        sk: SecretKey,
     ) -> anyhow::Result<CallExecution<Account>> {
         let root_signer = self.root_signer();
         let outcome = self
@@ -77,11 +77,12 @@ impl TopLevelAccountCreator for Sandbox {
             .create_account(
                 &root_signer,
                 id.clone(),
-                signer.public_key(),
+                sk.public_key(),
                 DEFAULT_DEPOSIT,
             )
             .await?;
 
+        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
             result: Account::new(id, signer),
             details: outcome.into(),
@@ -91,7 +92,7 @@ impl TopLevelAccountCreator for Sandbox {
     async fn create_tla_and_deploy(
         &self,
         id: AccountId,
-        signer: InMemorySigner,
+        sk: SecretKey,
         wasm: Vec<u8>,
     ) -> anyhow::Result<CallExecution<Contract>> {
         let root_signer = self.root_signer();
@@ -100,12 +101,13 @@ impl TopLevelAccountCreator for Sandbox {
             .create_account_and_deploy(
                 &root_signer,
                 id.clone(),
-                signer.public_key(),
+                sk.public_key(),
                 DEFAULT_DEPOSIT,
                 wasm,
             )
             .await?;
 
+        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
             result: Contract::new(id, signer),
             details: outcome.into(),

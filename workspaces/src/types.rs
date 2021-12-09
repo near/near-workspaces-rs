@@ -3,17 +3,14 @@
 /// of these types which shouldn't be exposed either.
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
-use std::fs::File;
-use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 
-use near_crypto::key_conversion::convert_secret_key;
 use near_crypto::vrf::{Proof, Value};
 use near_crypto::Signature;
 use near_primitives::types::AccountId as NearAccountId;
 
-pub(crate) use near_crypto::{KeyType, PublicKey, SecretKey, Signer};
+pub(crate) use near_crypto::{KeyType, Signer};
 use serde::{Deserialize, Serialize};
 
 fn map_account_error(err: near_primitives::account::id::ParseAccountError) -> ParseAccountError {
@@ -112,117 +109,63 @@ impl fmt::Display for ParseErrorKind {
     }
 }
 
-/// Signer that keeps secret key in memory.
-#[derive(Clone)]
-pub struct InMemorySigner {
-    pub account_id: AccountId,
-    pub public_key: PublicKey,
-    pub secret_key: SecretKey,
+impl From<PublicKey> for near_crypto::PublicKey {
+    fn from(pk: PublicKey) -> Self {
+        pk.0
+    }
 }
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct PublicKey(pub(crate) near_crypto::PublicKey);
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct SecretKey(near_crypto::SecretKey);
+
+impl SecretKey {
+    pub fn public_key(&self) -> PublicKey {
+        PublicKey(self.0.public_key())
+    }
+
+    pub fn from_seed(key_type: KeyType, seed: &str) -> Self {
+        Self(near_crypto::SecretKey::from_seed(key_type, seed))
+    }
+}
+
+/// Signer that keeps secret key in memory.
+#[derive(Clone, Serialize, Deserialize)]
+pub struct InMemorySigner(pub(crate) near_crypto::InMemorySigner);
 
 impl InMemorySigner {
     pub(crate) fn from_seed(account_id: AccountId, key_type: KeyType, seed: &str) -> Self {
-        let secret_key = SecretKey::from_seed(key_type, seed);
-        Self {
-            account_id,
-            public_key: secret_key.public_key(),
-            secret_key,
-        }
+        Self(near_crypto::InMemorySigner::from_seed(account_id.try_into().unwrap(), key_type, seed))
     }
 
-    pub fn from_secret_key(account_id: AccountId, secret_key: &str) -> Self {
-        let secret_key = SecretKey::from_str(secret_key).expect("Invalid secret key");
-
-        Self {
-            account_id,
-            public_key: secret_key.public_key(),
-            secret_key,
-        }
+    pub fn from_secret_key(account_id: AccountId, secret_key: SecretKey) -> Self {
+        Self(near_crypto::InMemorySigner::from_secret_key(
+            account_id.try_into().unwrap(),
+            secret_key.0,
+        ))
     }
 
     pub fn from_file(path: &Path) -> Self {
-        KeyFile::from_file(path).into()
+        Self(near_crypto::InMemorySigner::from_file(path))
     }
 }
 
 impl Signer for InMemorySigner {
-    fn public_key(&self) -> PublicKey {
-        self.public_key.clone()
+    fn public_key(&self) -> near_crypto::PublicKey {
+        self.0.public_key()
     }
 
     fn sign(&self, data: &[u8]) -> Signature {
-        self.secret_key.sign(data)
+        self.0.sign(data)
     }
 
     fn compute_vrf_with_proof(&self, data: &[u8]) -> (Value, Proof) {
-        let secret_key = convert_secret_key(self.secret_key.unwrap_as_ed25519());
-        secret_key.compute_vrf_with_proof(&data)
+        self.0.compute_vrf_with_proof(data)
     }
 
     fn write_to_file(&self, path: &Path) {
-        KeyFile::from(self).write_to_file(path);
-    }
-}
-
-impl From<&InMemorySigner> for KeyFile {
-    fn from(signer: &InMemorySigner) -> KeyFile {
-        KeyFile {
-            account_id: signer.account_id.clone(),
-            public_key: signer.public_key.clone(),
-            secret_key: signer.secret_key.clone(),
-        }
-    }
-}
-
-impl From<KeyFile> for InMemorySigner {
-    fn from(key_file: KeyFile) -> Self {
-        Self {
-            account_id: key_file.account_id,
-            public_key: key_file.public_key,
-            secret_key: key_file.secret_key,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub(crate) struct KeyFile {
-    pub account_id: AccountId,
-    pub public_key: PublicKey,
-    pub secret_key: SecretKey,
-}
-
-impl KeyFile {
-    pub fn write_to_file(&self, path: &Path) {
-        let mut file = File::create(path).expect("Failed to create / write a key file.");
-
-        #[cfg(unix)]
-        {
-            use std::os::unix::prelude::PermissionsExt;
-            let mut perm = file
-                .metadata()
-                .expect("Failed to retrieve key file metadata.")
-                .permissions();
-
-            #[cfg(target_os = "macos")]
-            perm.set_mode(u32::from(libc::S_IWUSR | libc::S_IRUSR));
-            #[cfg(not(target_os = "macos"))]
-            perm.set_mode(libc::S_IWUSR | libc::S_IRUSR);
-
-            file.set_permissions(perm)
-                .expect("Failed to set permissions for a key file.");
-        }
-
-        let str = serde_json::to_string_pretty(self).expect("Error serializing the key file.");
-        if let Err(err) = file.write_all(str.as_bytes()) {
-            panic!("Failed to write a key file {}", err);
-        }
-    }
-
-    pub fn from_file(path: &Path) -> Self {
-        let mut file = File::open(path).expect("Could not open key file.");
-        let mut content = String::new();
-        file.read_to_string(&mut content)
-            .expect("Could not read from key file.");
-        serde_json::from_str(&content).expect("Failed to deserialize KeyFile")
+        self.0.write_to_file(path);
     }
 }

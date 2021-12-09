@@ -167,7 +167,7 @@ impl Client {
             vec![
                 CreateAccountAction {}.into(),
                 AddKeyAction {
-                    public_key: new_account_pk,
+                    public_key: new_account_pk.into(),
                     access_key: AccessKey {
                         nonce: 0,
                         permission: AccessKeyPermission::FullAccess,
@@ -195,7 +195,7 @@ impl Client {
             vec![
                 CreateAccountAction {}.into(),
                 AddKeyAction {
-                    public_key: new_account_pk,
+                    public_key: new_account_pk.into(),
                     access_key: AccessKey {
                         nonce: 0,
                         permission: AccessKeyPermission::FullAccess,
@@ -230,15 +230,15 @@ impl Client {
 
 pub(crate) async fn access_key(
     client: &Client,
-    account_id: AccountId,
-    pk: PublicKey,
+    account_id: near_primitives::account::id::AccountId,
+    pk: near_crypto::PublicKey,
 ) -> anyhow::Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
                 account_id: account_id.try_into()?,
-                public_key: pk,
+                public_key: pk.into(),
             },
         })
         .await?;
@@ -290,12 +290,15 @@ async fn send_batch_tx_and_retry(
     actions: Vec<Action>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
     send_tx_and_retry(client, || async {
-        let (AccessKeyView { nonce, .. }, block_hash) =
-            access_key(client, signer.account_id.clone(), signer.public_key()).await?;
+        let (AccessKeyView { nonce, .. }, block_hash) = access_key(
+            client,
+            signer.0.account_id.clone(),
+            signer.0.public_key(),
+        ).await?;
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
-            signer.account_id.clone().try_into()?,
+            signer.0.account_id.clone().try_into()?,
             receiver_id.clone().try_into()?,
             signer as &dyn Signer,
             actions.clone(),
