@@ -16,6 +16,10 @@ use near_primitives::account::id::{MAX_ACCOUNT_ID_LEN, MIN_ACCOUNT_ID_LEN};
 pub(crate) use near_crypto::{KeyType, PublicKey, SecretKey, Signer};
 use serde::{Deserialize, Serialize};
 
+/// Balance is type for storing amounts of tokens. Usually represents the amount of tokens
+/// in yoctoNear (1e-24).
+pub type Balance = u128;
+
 #[derive(Eq, Ord, Hash, Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct AccountId(Box<str>);
 

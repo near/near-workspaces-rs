@@ -92,7 +92,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
         )
         .await?;
 
-    let status: String = serde_json::from_value(result).unwrap();
+    let status: String = serde_json::from_str(&result)?;
     assert_eq!(status, "hello world".to_string());
 
     Ok(())

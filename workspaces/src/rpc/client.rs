@@ -78,7 +78,7 @@ impl Client {
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-    ) -> anyhow::Result<serde_json::Value> {
+    ) -> anyhow::Result<String> {
         let query_resp = self
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
@@ -96,7 +96,7 @@ impl Client {
         };
 
         let result = std::str::from_utf8(&call_result)?;
-        Ok(serde_json::from_str(result)?)
+        Ok(result.into())
     }
 
     pub(crate) async fn view_state(
