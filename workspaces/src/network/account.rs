@@ -1,4 +1,4 @@
-use crate::types::{AccountId, InMemorySigner, Balance};
+use crate::types::{AccountId, Balance, InMemorySigner};
 use crate::{Network, Worker};
 
 use super::CallExecutionDetails;

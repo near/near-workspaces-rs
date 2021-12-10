@@ -11,7 +11,7 @@ use super::{
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, SecretKey, Balance};
+use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
