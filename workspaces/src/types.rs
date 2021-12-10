@@ -3,8 +3,8 @@
 /// of these types which shouldn't be exposed either.
 use std::path::Path;
 
+pub use near_account_id::AccountId;
 pub(crate) use near_crypto::{KeyType, Signer};
-pub use near_primitives::account::id::AccountId;
 use serde::{Deserialize, Serialize};
 
 impl From<PublicKey> for near_crypto::PublicKey {

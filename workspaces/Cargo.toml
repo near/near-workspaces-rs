@@ -19,6 +19,7 @@ tokio = { version = "1", features = ["full"] }
 tokio-retry = "0.3"
 url = { version = "2.2.2", features = ["serde"] }
 
+near-account-id = "0.5"
 near-crypto = "0.5"
 near-primitives = "0.5"
 near-jsonrpc-primitives = "0.5"
