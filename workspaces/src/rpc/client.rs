@@ -83,7 +83,7 @@ impl Client {
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::CallFunction {
-                    account_id: contract_id.into(),
+                    account_id: contract_id,
                     method_name,
                     args: args.into(),
                 },
@@ -108,7 +108,7 @@ impl Client {
             .query(&methods::query::RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::ViewState {
-                    account_id: contract_id.into(),
+                    account_id: contract_id,
                     prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
                 },
             })
@@ -166,7 +166,7 @@ impl Client {
             vec![
                 CreateAccountAction {}.into(),
                 AddKeyAction {
-                    public_key: new_account_pk,
+                    public_key: new_account_pk.into(),
                     access_key: AccessKey {
                         nonce: 0,
                         permission: AccessKeyPermission::FullAccess,
@@ -194,7 +194,7 @@ impl Client {
             vec![
                 CreateAccountAction {}.into(),
                 AddKeyAction {
-                    public_key: new_account_pk,
+                    public_key: new_account_pk.into(),
                     access_key: AccessKey {
                         nonce: 0,
                         permission: AccessKeyPermission::FullAccess,
@@ -218,10 +218,7 @@ impl Client {
         self.send_tx_and_retry(
             signer,
             account_id,
-            DeleteAccountAction {
-                beneficiary_id: beneficiary_id.into(),
-            }
-            .into(),
+            DeleteAccountAction { beneficiary_id }.into(),
         )
         .await
     }
@@ -229,15 +226,15 @@ impl Client {
 
 pub(crate) async fn access_key(
     client: &Client,
-    account_id: AccountId,
-    pk: PublicKey,
+    account_id: near_primitives::account::id::AccountId,
+    public_key: near_crypto::PublicKey,
 ) -> anyhow::Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
-                account_id: account_id.into(),
-                public_key: pk,
+                account_id,
+                public_key,
             },
         })
         .await?;
@@ -289,14 +286,18 @@ async fn send_batch_tx_and_retry(
     actions: Vec<Action>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
     send_tx_and_retry(client, || async {
-        let (AccessKeyView { nonce, .. }, block_hash) =
-            access_key(client, signer.account_id.clone(), signer.public_key()).await?;
+        let (AccessKeyView { nonce, .. }, block_hash) = access_key(
+            client,
+            signer.inner().account_id.clone(),
+            signer.inner().public_key(),
+        )
+        .await?;
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
-            signer.account_id.clone().into(),
-            receiver_id.clone().into(),
-            signer as &dyn Signer,
+            signer.inner().account_id.clone(),
+            receiver_id.clone(),
+            signer.inner() as &dyn Signer,
             actions.clone(),
             block_hash,
         ))

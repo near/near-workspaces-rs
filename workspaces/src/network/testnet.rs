@@ -12,7 +12,7 @@ use crate::network::{
     NetworkInfo, TopLevelAccountCreator,
 };
 use crate::rpc::{client::Client, tool};
-use crate::types::{AccountId, InMemorySigner, Signer};
+use crate::types::{AccountId, InMemorySigner, SecretKey};
 use crate::Contract;
 
 const RPC_URL: &str = "https://rpc.testnet.near.org";
@@ -44,9 +44,10 @@ impl TopLevelAccountCreator for Testnet {
     async fn create_tla(
         &self,
         id: AccountId,
-        signer: InMemorySigner,
+        sk: SecretKey,
     ) -> anyhow::Result<CallExecution<Account>> {
-        tool::url_create_account(Url::parse(HELPER_URL)?, id.clone(), signer.public_key()).await?;
+        tool::url_create_account(Url::parse(HELPER_URL)?, id.clone(), sk.public_key()).await?;
+        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
 
         Ok(CallExecution {
             result: Account::new(id, signer),
@@ -63,10 +64,11 @@ impl TopLevelAccountCreator for Testnet {
     async fn create_tla_and_deploy(
         &self,
         id: AccountId,
-        signer: InMemorySigner,
+        sk: SecretKey,
         wasm: Vec<u8>,
     ) -> anyhow::Result<CallExecution<Contract>> {
-        let account = self.create_tla(id.clone(), signer.clone()).await?;
+        let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
+        let account = self.create_tla(id.clone(), sk).await?;
         let account = account.into_result()?;
         let outcome = self.client.deploy(&signer, id, wasm).await?;
 
