@@ -1,6 +1,6 @@
+use borsh::{self, BorshDeserialize, BorshSerialize};
 use serde_json::json;
 
-use workspaces::borsh::{self, BorshDeserialize, BorshSerialize};
 use workspaces::prelude::*;
 use workspaces::{AccountId, DevNetwork, Worker};
 

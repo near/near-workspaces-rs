@@ -1,5 +1,4 @@
-use near_crypto::InMemorySigner;
-use near_primitives::types::AccountId;
+use crate::types::{AccountId, InMemorySigner};
 
 pub struct Account {
     pub(crate) id: AccountId,

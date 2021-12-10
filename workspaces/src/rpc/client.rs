@@ -1,15 +1,10 @@
-// TODO: Remove this when near-jsonrpc-client crate no longer defaults to deprecation for
-//       warnings about unstable API.
-#![allow(deprecated)]
-
 use std::collections::HashMap;
 
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
-use near_crypto::{InMemorySigner, PublicKey, Signer};
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
-use near_jsonrpc_client::{methods, JsonRpcClient, JsonRpcMethodCallResult};
+use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::account::{AccessKey, AccessKeyPermission};
 use near_primitives::hash::CryptoHash;
@@ -17,18 +12,15 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{AccountId, Balance, Finality, Gas, StoreKey};
+use near_primitives::types::{Balance, Finality, Gas, StoreKey};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
 use crate::rpc::tool;
+use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
 
 const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
-
-fn json_client(addr: &str) -> JsonRpcClient {
-    JsonRpcClient::connect(addr)
-}
 
 /// A client that wraps around JsonRpcClient, and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
@@ -44,8 +36,8 @@ impl Client {
     pub(crate) async fn query<M: methods::RpcMethod>(
         &self,
         method: &M,
-    ) -> JsonRpcMethodCallResult<M::Result, M::Error> {
-        retry(|| async { json_client(&self.rpc_addr).call(method).await }).await
+    ) -> MethodCallResult<M::Response, M::Error> {
+        retry(|| async { JsonRpcClient::connect(&self.rpc_addr).call(method).await }).await
     }
 
     async fn send_tx_and_retry(
@@ -116,7 +108,7 @@ impl Client {
             .query(&methods::query::RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::ViewState {
-                    account_id: contract_id.clone(),
+                    account_id: contract_id,
                     prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
                 },
             })
@@ -174,7 +166,7 @@ impl Client {
             vec![
                 CreateAccountAction {}.into(),
                 AddKeyAction {
-                    public_key: new_account_pk,
+                    public_key: new_account_pk.into(),
                     access_key: AccessKey {
                         nonce: 0,
                         permission: AccessKeyPermission::FullAccess,
@@ -202,7 +194,7 @@ impl Client {
             vec![
                 CreateAccountAction {}.into(),
                 AddKeyAction {
-                    public_key: new_account_pk,
+                    public_key: new_account_pk.into(),
                     access_key: AccessKey {
                         nonce: 0,
                         permission: AccessKeyPermission::FullAccess,
@@ -234,15 +226,15 @@ impl Client {
 
 pub(crate) async fn access_key(
     client: &Client,
-    account_id: AccountId,
-    pk: PublicKey,
+    account_id: near_primitives::account::id::AccountId,
+    public_key: near_crypto::PublicKey,
 ) -> anyhow::Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::Final.into(),
             request: QueryRequest::ViewAccessKey {
                 account_id,
-                public_key: pk,
+                public_key,
             },
         })
         .await?;
@@ -294,14 +286,18 @@ async fn send_batch_tx_and_retry(
     actions: Vec<Action>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
     send_tx_and_retry(client, || async {
-        let (AccessKeyView { nonce, .. }, block_hash) =
-            access_key(client, signer.account_id.clone(), signer.public_key()).await?;
+        let (AccessKeyView { nonce, .. }, block_hash) = access_key(
+            client,
+            signer.inner().account_id.clone(),
+            signer.inner().public_key(),
+        )
+        .await?;
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
-            signer.account_id.clone(),
+            signer.inner().account_id.clone(),
             receiver_id.clone(),
-            signer as &dyn Signer,
+            signer.inner() as &dyn Signer,
             actions.clone(),
             block_hash,
         ))

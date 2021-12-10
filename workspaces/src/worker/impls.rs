@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use near_crypto::InMemorySigner;
-use near_primitives::types::{AccountId, Balance, StoreKey};
+use near_primitives::types::{Balance, StoreKey};
 
 use crate::network::Info;
 use crate::network::{
@@ -10,6 +9,7 @@ use crate::network::{
     NetworkInfo, StatePatcher, TopLevelAccountCreator,
 };
 use crate::rpc::client::Client;
+use crate::types::{AccountId, InMemorySigner, SecretKey};
 use crate::worker::Worker;
 
 impl<T> Clone for Worker<T> {
@@ -30,18 +30,18 @@ where
     async fn create_tla(
         &self,
         id: AccountId,
-        signer: InMemorySigner,
+        sk: SecretKey,
     ) -> anyhow::Result<CallExecution<Account>> {
-        self.workspace.create_tla(id, signer).await
+        self.workspace.create_tla(id, sk).await
     }
 
     async fn create_tla_and_deploy(
         &self,
         id: AccountId,
-        signer: InMemorySigner,
+        sk: SecretKey,
         wasm: Vec<u8>,
     ) -> anyhow::Result<CallExecution<Contract>> {
-        self.workspace.create_tla_and_deploy(id, signer, wasm).await
+        self.workspace.create_tla_and_deploy(id, sk, wasm).await
     }
 }
 

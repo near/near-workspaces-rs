@@ -7,13 +7,12 @@ mod testnet;
 
 use async_trait::async_trait;
 
-use near_crypto::{InMemorySigner, KeyType, Signer};
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
-use near_primitives::types::AccountId;
 
 pub(crate) use crate::network::info::Info;
 use crate::rpc::client::Client;
+use crate::types::{AccountId, KeyType, SecretKey};
 
 pub use crate::network::account::{Account, Contract};
 pub use crate::network::result::{CallExecution, CallExecutionDetails};
@@ -35,13 +34,13 @@ pub trait TopLevelAccountCreator {
     async fn create_tla(
         &self,
         id: AccountId,
-        signer: InMemorySigner,
+        sk: SecretKey,
     ) -> anyhow::Result<CallExecution<Account>>;
 
     async fn create_tla_and_deploy(
         &self,
         id: AccountId,
-        signer: InMemorySigner,
+        sk: SecretKey,
         wasm: Vec<u8>,
     ) -> anyhow::Result<CallExecution<Contract>>;
 }
@@ -52,7 +51,7 @@ pub trait AllowDevAccountCreation {}
 
 #[async_trait]
 pub trait DevAccountDeployer {
-    async fn dev_generate(&self) -> (AccountId, InMemorySigner);
+    async fn dev_generate(&self) -> (AccountId, SecretKey);
     async fn dev_create(&self) -> anyhow::Result<Account>;
     async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract>;
 }
@@ -62,34 +61,31 @@ impl<T> DevAccountDeployer for T
 where
     T: TopLevelAccountCreator + NetworkInfo + AllowDevAccountCreation + Send + Sync,
 {
-    async fn dev_generate(&self) -> (AccountId, InMemorySigner) {
-        let account_id = crate::rpc::tool::random_account_id();
-        let signer =
-            InMemorySigner::from_seed(account_id.clone(), KeyType::ED25519, DEV_ACCOUNT_SEED);
+    async fn dev_generate(&self) -> (AccountId, SecretKey) {
+        let id = crate::rpc::tool::random_account_id();
+        let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
 
         let mut savepath = self.info().keystore_path.clone();
 
         // TODO: potentially make this into the async version:
         std::fs::create_dir_all(savepath.clone()).unwrap();
 
-        savepath = savepath.join(account_id.to_string());
+        savepath = savepath.join(id.to_string());
         savepath.set_extension("json");
-        signer.write_to_file(&savepath);
+        crate::rpc::tool::write_cred_to_file(&savepath, id.clone(), sk.clone());
 
-        (account_id, signer)
+        (id, sk)
     }
 
     async fn dev_create(&self) -> anyhow::Result<Account> {
-        let (account_id, signer) = self.dev_generate().await;
-        let account = self.create_tla(account_id.clone(), signer).await?;
+        let (id, sk) = self.dev_generate().await;
+        let account = self.create_tla(id.clone(), sk).await?;
         account.into()
     }
 
     async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract> {
-        let (account_id, signer) = self.dev_generate().await;
-        let contract = self
-            .create_tla_and_deploy(account_id.clone(), signer, wasm)
-            .await?;
+        let (id, sk) = self.dev_generate().await;
+        let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
         contract.into()
     }
 }
