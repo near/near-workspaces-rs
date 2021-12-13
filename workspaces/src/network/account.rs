@@ -1,7 +1,11 @@
-use crate::types::{AccountId, Balance, InMemorySigner};
+use std::convert::TryInto;
+
+use near_crypto::KeyType;
+
+use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{Network, Worker};
 
-use super::CallExecutionDetails;
+use super::{CallExecution, CallExecutionDetails};
 
 pub struct Account {
     pub(crate) id: AccountId,
@@ -57,6 +61,22 @@ impl Account {
         worker
             .delete_account(self.id, &self.signer, beneficiary_id)
             .await
+    }
+
+    /// Create a new sub account. Returns a CreateAccountBuilder object that
+    /// we can make use of to fill out the rest of the details. The sub account
+    /// id will be in the form of: "{new_account_id}.{parent_account_id}"
+    pub fn create_account<'a, T: Network>(
+        &self,
+        worker: &'a Worker<T>,
+        new_account_id: String,
+    ) -> CreateAccountBuilder<'a, T> {
+        CreateAccountBuilder::new(
+            worker,
+            self.signer.clone(),
+            self.id().clone(),
+            new_account_id,
+        )
     }
 }
 
@@ -197,5 +217,72 @@ impl<'a, T: Network> CallBuilder<'a, T> {
             )
             .await
             .map(Into::into)
+    }
+}
+
+pub struct CreateAccountBuilder<'a, T> {
+    worker: &'a Worker<T>,
+    signer: InMemorySigner,
+    parent_id: AccountId,
+    new_account_id: String,
+
+    initial_balance: Balance,
+    secret_key: Option<SecretKey>,
+}
+
+impl<'a, T> CreateAccountBuilder<'a, T>
+where
+    T: Network,
+{
+    fn new(
+        worker: &'a Worker<T>,
+        signer: InMemorySigner,
+        parent_id: AccountId,
+        new_account_id: String,
+    ) -> Self {
+        Self {
+            worker,
+            signer,
+            parent_id,
+            new_account_id,
+            initial_balance: 100000000000000000000000,
+            secret_key: None,
+        }
+    }
+
+    pub fn with_initial_balance(mut self, initial_balance: Balance) -> Self {
+        self.initial_balance = initial_balance;
+        self
+    }
+
+    pub fn with_keys(mut self, secret_key: SecretKey) -> Self {
+        self.secret_key = Some(secret_key);
+        self
+    }
+
+    pub async fn transact(self) -> anyhow::Result<CallExecution<Account>> {
+        let sk = self
+            .secret_key
+            .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
+        let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id).try_into()?;
+
+        let outcome = self
+            .worker
+            .client()
+            .create_account(
+                &self.signer,
+                id.clone(),
+                sk.public_key(),
+                self.initial_balance,
+            )
+            .await?;
+
+        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
+        let account = Account::new(id, signer);
+
+        Ok(CallExecution {
+            result: account,
+            details: outcome.into(),
+        })
     }
 }
