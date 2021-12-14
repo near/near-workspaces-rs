@@ -106,7 +106,7 @@ async fn main() -> anyhow::Result<()> {
         .await?;
 
     // Now grab the state to see that it has indeed been patched:
-    let result = worker
+    let status: String = worker
         .view(
             sandbox_contract.id().clone(),
             "get_status".into(),
@@ -116,14 +116,14 @@ async fn main() -> anyhow::Result<()> {
             .to_string()
             .into_bytes(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
 
-    let status: String = serde_json::from_str(&result)?;
     println!("New status patched: {:?}", status);
     assert_eq!(status, "hello from testnet".to_string());
 
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
-    let result = worker
+    let result: serde_json::Value = worker
         .view(
             sandbox_contract.id().clone(),
             "get_status".into(),
@@ -133,7 +133,8 @@ async fn main() -> anyhow::Result<()> {
             .to_string()
             .into_bytes(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
     assert_eq!(result, serde_json::Value::Null);
 
     Ok(())

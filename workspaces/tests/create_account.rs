@@ -6,7 +6,7 @@ async fn test_subaccount_creation() -> anyhow::Result<()> {
     let account = worker.dev_create().await?;
 
     let sub = account
-        .create_account(&worker, "subaccount".into())
+        .create_subaccount(&worker, "subaccount".into())
         .transact()
         .await?
         .into_result()?;
