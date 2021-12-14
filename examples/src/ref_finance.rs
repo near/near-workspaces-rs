@@ -120,7 +120,8 @@ async fn create_pool_with_liquidity(
         .transact()
         .await?;
 
-    let pool_id = ref_finance.call(worker, "add_simple_pool".into())
+    let pool_id = ref_finance
+        .call(worker, "add_simple_pool".into())
         .with_args(
             serde_json::json!({
                 "tokens": token_ids,
