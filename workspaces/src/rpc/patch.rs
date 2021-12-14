@@ -62,11 +62,11 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
 
         let mut records = vec![
             StateRecord::Account {
-                account_id: self.account_id.clone().into(),
+                account_id: self.account_id.clone(),
                 account: account_view.clone().into(),
             },
             StateRecord::AccessKey {
-                account_id: self.account_id.clone().into(),
+                account_id: self.account_id.clone(),
                 public_key: pk.clone().into(),
                 access_key: AccessKey::full_access(),
             },
@@ -78,7 +78,7 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
                 .view_code(self.account_id.clone(), None)
                 .await?;
             records.push(StateRecord::Contract {
-                account_id: self.account_id.clone().into(),
+                account_id: self.account_id.clone(),
                 code: code_view.code,
             });
         }
@@ -90,8 +90,8 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
                     .await?
                     .into_iter()
                     .map(|(key, value)| StateRecord::Data {
-                        account_id: self.account_id.clone().into(),
-                        data_key: key.into(),
+                        account_id: self.account_id.clone(),
+                        data_key: key,
                         value,
                     }),
             );

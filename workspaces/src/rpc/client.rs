@@ -127,7 +127,7 @@ impl Client {
             .query(&methods::query::RpcQueryRequest {
                 block_reference,
                 request: QueryRequest::ViewState {
-                    account_id: contract_id.into(),
+                    account_id: contract_id,
                     prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
                 },
             })
@@ -141,7 +141,7 @@ impl Client {
 
     pub(crate) async fn view_account(
         &self,
-        accound_id: AccountId,
+        account_id: AccountId,
         block_id: Option<BlockId>,
     ) -> anyhow::Result<AccountView> {
         let block_reference = block_id
@@ -152,7 +152,7 @@ impl Client {
             .query(&methods::query::RpcQueryRequest {
                 block_reference,
                 request: QueryRequest::ViewAccount {
-                    account_id: accound_id.into(),
+                    account_id,
                 },
             })
             .await?;
@@ -176,7 +176,7 @@ impl Client {
             .query(&methods::query::RpcQueryRequest {
                 block_reference,
                 request: QueryRequest::ViewCode {
-                    account_id: account_id.into(),
+                    account_id,
                 },
             })
             .await?;
