@@ -151,9 +151,7 @@ impl Client {
         let query_resp = self
             .query(&methods::query::RpcQueryRequest {
                 block_reference,
-                request: QueryRequest::ViewAccount {
-                    account_id,
-                },
+                request: QueryRequest::ViewAccount { account_id },
             })
             .await?;
 
@@ -175,9 +173,7 @@ impl Client {
         let query_resp = self
             .query(&methods::query::RpcQueryRequest {
                 block_reference,
-                request: QueryRequest::ViewCode {
-                    account_id,
-                },
+                request: QueryRequest::ViewCode { account_id },
             })
             .await?;
 
