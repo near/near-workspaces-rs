@@ -5,7 +5,7 @@ use near_crypto::KeyType;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{Network, Worker};
 
-use super::{CallExecution, CallExecutionDetails};
+use super::{CallExecution, CallExecutionDetails, ViewResultDetails};
 
 pub struct Account {
     pub(crate) id: AccountId,
@@ -66,7 +66,7 @@ impl Account {
     /// Create a new sub account. Returns a CreateAccountBuilder object that
     /// we can make use of to fill out the rest of the details. The sub account
     /// id will be in the form of: "{new_account_id}.{parent_account_id}"
-    pub fn create_account<'a, T: Network>(
+    pub fn create_subaccount<'a, T: Network>(
         &self,
         worker: &'a Worker<T>,
         new_account_id: String,
@@ -131,7 +131,7 @@ impl Contract {
         worker: &Worker<T>,
         function: String,
         args: Vec<u8>,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<ViewResultDetails> {
         worker.view(self.id().clone(), function, args).await
     }
 
@@ -152,7 +152,7 @@ pub struct CallBuilder<'a, T> {
     contract_id: AccountId,
 
     function: String,
-    args: Option<Vec<u8>>,
+    args: Vec<u8>,
     deposit: Option<u128>,
     gas: Option<u64>,
 }
@@ -169,14 +169,24 @@ impl<'a, T: Network> CallBuilder<'a, T> {
             signer,
             contract_id,
             function,
-            args: None,
+            args: serde_json::json!({}).to_string().into_bytes(),
             deposit: None,
             gas: None,
         }
     }
 
     pub fn with_args(mut self, args: Vec<u8>) -> Self {
-        self.args = Some(args);
+        self.args = args;
+        self
+    }
+
+    pub fn with_args_json(mut self, args: serde_json::Value) -> Self {
+        self.args = args.to_string().into_bytes();
+        self
+    }
+
+    pub fn with_args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
+        self.args = args.try_to_vec().unwrap();
         self
     }
 
@@ -197,8 +207,7 @@ impl<'a, T: Network> CallBuilder<'a, T> {
                 &self.signer,
                 self.contract_id,
                 self.function,
-                self.args
-                    .expect("required `with_args` to be specified as apart of Call"),
+                self.args,
                 self.gas,
                 self.deposit,
             )
@@ -206,17 +215,11 @@ impl<'a, T: Network> CallBuilder<'a, T> {
             .map(Into::into)
     }
 
-    pub async fn view(self) -> anyhow::Result<Vec<u8>> {
+    pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
         self.worker
             .client()
-            .view(
-                self.contract_id,
-                self.function,
-                self.args
-                    .expect("required `with_args` to be specified as apart of View"),
-            )
+            .view(self.contract_id, self.function, self.args)
             .await
-            .map(Into::into)
     }
 }
 
