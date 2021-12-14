@@ -180,8 +180,8 @@ impl<'a, T: Network> CallBuilder<'a, T> {
         self
     }
 
-    pub fn with_args_json(mut self, args: serde_json::Value) -> Self {
-        self.args = args.to_string().into_bytes();
+    pub fn with_args_json<U: serde::Serialize>(mut self, args: U) -> Self {
+        self.args = serde_json::to_vec(&args).unwrap();
         self
     }
 
