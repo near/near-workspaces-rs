@@ -40,6 +40,20 @@ pub struct CallExecutionDetails {
     pub total_gas_burnt: Gas,
 }
 
+impl CallExecutionDetails {
+    pub fn try_into_call_result(self) -> anyhow::Result<String> {
+        let result = match self.status {
+            FinalExecutionStatus::SuccessValue(val) => val,
+            FinalExecutionStatus::Failure(err) => anyhow::bail!(err),
+            FinalExecutionStatus::NotStarted => anyhow::bail!("Transaction not started."),
+            FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
+        };
+        let result = base64::decode(&result)?;
+        let result = std::str::from_utf8(&result)?;
+        Ok(result.into())
+    }
+}
+
 impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
     fn from(transaction_result: FinalExecutionOutcomeView) -> Self {
         CallExecutionDetails {

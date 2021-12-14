@@ -9,8 +9,10 @@ use crate::network::{
 };
 use crate::network::{Info, Sandbox};
 use crate::rpc::client::Client;
+use crate::rpc::patch::ImportContractBuilder;
 use crate::types::{AccountId, InMemorySigner, SecretKey};
 use crate::worker::Worker;
+use crate::Network;
 
 impl<T> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -66,6 +68,14 @@ where
         value: Vec<u8>,
     ) -> anyhow::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
+    }
+
+    fn import_contract<'a, 'b>(
+        &'b self,
+        id: AccountId,
+        worker: &'a Worker<impl Network>,
+    ) -> ImportContractBuilder<'a, 'b> {
+        self.workspace.import_contract(id, worker)
     }
 }
 

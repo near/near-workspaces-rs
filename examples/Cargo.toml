@@ -7,10 +7,12 @@ edition = "2018"
 [dev-dependencies]
 anyhow = "1.0"
 borsh = "0.9"
+maplit = "1.0"
+near-units="0.1.0"
+# arbitrary_precision enabled for u128 types that workspaces requires for Balance types
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 tokio = { version = "1.10.0", features = ["full"] }
 workspaces = { path = "../workspaces" }
-serde_json = "1.0"
-
 
 [[example]]
 name = "nft"
@@ -23,3 +25,7 @@ path = "src/status_message.rs"
 [[example]]
 name = "spooning"
 path = "src/spooning.rs"
+
+[[example]]
+name = "ref_finance"
+path = "src/ref_finance.rs"
