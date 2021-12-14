@@ -10,7 +10,7 @@ const REF_FINANCE_ACCOUNT_ID: &str = "v2.ref-finance.near";
 /// Pull down the ref-finance contract and deploy it to the sandbox network,
 /// initializing it with all data required to run the tests.
 async fn create_ref(
-    root: &Account,
+    owner: &Account,
     worker: &Worker<impl Network + StatePatcher>,
 ) -> anyhow::Result<Contract> {
     let mainnet = workspaces::mainnet();
@@ -25,7 +25,7 @@ async fn create_ref(
     // our own set of metadata. This is because the contract's data is too big for the rpc
     // service to pull down (i.e. greater than 50mb).
 
-    root.call(&worker, ref_finance.id().clone(), "new".into())
+    owner.call(&worker, ref_finance.id().clone(), "new".into())
         .with_args(
             serde_json::json!({
                 "owner_id": ref_finance.id().clone(),
@@ -38,7 +38,7 @@ async fn create_ref(
         .transact()
         .await?;
 
-    root.call(&worker, ref_finance.id().clone(), "storage_deposit".into())
+    owner.call(&worker, ref_finance.id().clone(), "storage_deposit".into())
         .with_args(serde_json::json!({}).to_string().into_bytes())
         .with_deposit(parse_near!("30 mN"))
         .transact()
@@ -90,7 +90,7 @@ async fn create_wnear(
 
 async fn create_pool_with_liquidity(
     worker: &Worker<impl Network>,
-    root: &Account,
+    owner: &Account,
     ref_finance: &Contract,
     tokens: HashMap<&AccountId, u128>,
 ) -> anyhow::Result<u64> {
@@ -126,7 +126,7 @@ async fn create_pool_with_liquidity(
         .try_into_call_result()?;
     let pool_id: u64 = serde_json::from_str(&pool_id)?;
 
-    root.call(&worker, ref_finance.id().clone(), "register_tokens".into())
+    owner.call(&worker, ref_finance.id().clone(), "register_tokens".into())
         .with_args(
             serde_json::json!({
                 "token_ids": token_ids,
@@ -138,9 +138,9 @@ async fn create_pool_with_liquidity(
         .transact()
         .await?;
 
-    deposit_tokens(worker, root, &ref_finance, tokens).await?;
+    deposit_tokens(worker, owner, &ref_finance, tokens).await?;
 
-    root.call(&worker, ref_finance.id().clone(), "add_liquidity".into())
+    owner.call(&worker, ref_finance.id().clone(), "add_liquidity".into())
         .with_args(
             serde_json::json!({
                 "pool_id": pool_id,
@@ -229,15 +229,15 @@ async fn create_custom_ft(
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
-    let root = worker.root_account();
+    let owner = worker.root_account();
 
-    let ft = create_custom_ft(&root, &worker).await?;
-    let ref_finance = create_ref(&root, &worker).await?;
-    let wnear = create_wnear(&root, &worker).await?;
+    let ft = create_custom_ft(&owner, &worker).await?;
+    let ref_finance = create_ref(&owner, &worker).await?;
+    let wnear = create_wnear(&owner, &worker).await?;
 
     let pool_id = create_pool_with_liquidity(
         &worker,
-        &root,
+        &owner,
         &ref_finance,
         maplit::hashmap! {
             ft.id() => parse_near!("5 N"),
@@ -253,7 +253,7 @@ async fn main() -> anyhow::Result<()> {
 
     deposit_tokens(
         &worker,
-        &root,
+        &owner,
         &ref_finance,
         maplit::hashmap! {
             ft.id() => parse_near!("100 N"),
@@ -267,7 +267,7 @@ async fn main() -> anyhow::Result<()> {
             ref_finance.id().clone(),
             "get_deposit".into(),
             serde_json::json!({
-                "account_id": root.id().clone(),
+                "account_id": owner.id().clone(),
                 "token_id": ft.id().clone(),
             })
             .to_string()
@@ -283,7 +283,7 @@ async fn main() -> anyhow::Result<()> {
             ref_finance.id().clone(),
             "get_deposit".into(),
             serde_json::json!({
-                "account_id": root.id().clone(),
+                "account_id": owner.id().clone(),
                 "token_id": wnear.id().clone(),
             })
             .to_string()
@@ -315,7 +315,7 @@ async fn main() -> anyhow::Result<()> {
     let expected_return: String = serde_json::from_str(&expected_return)?;
     assert_eq!(expected_return, "1662497915624478906119726");
 
-    let actual_out = root
+    let actual_out = owner
         .call(&worker, ref_finance.id().clone(), "swap".into())
         .with_args(
             serde_json::json!({
@@ -349,7 +349,7 @@ async fn main() -> anyhow::Result<()> {
             ref_finance.id().clone(),
             "get_deposit".into(),
             serde_json::json!({
-                "account_id": root.id().clone(),
+                "account_id": owner.id().clone(),
                 "token_id": ft.id().clone(),
             })
             .to_string()
@@ -365,7 +365,7 @@ async fn main() -> anyhow::Result<()> {
             ref_finance.id().clone(),
             "get_deposit".into(),
             serde_json::json!({
-                "account_id": root.id().clone(),
+                "account_id": owner.id().clone(),
                 "token_id": wnear.id().clone(),
             })
             .to_string()
