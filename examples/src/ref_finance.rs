@@ -5,6 +5,8 @@ use workspaces::{prelude::*, DevNetwork};
 use workspaces::{Account, AccountId, Contract, Network, Worker};
 
 const FT_CONTRACT_FILEPATH: &str = "./examples/res/fungible_token.wasm";
+
+/// Contract id of ref-finance on mainnet.
 const REF_FINANCE_ACCOUNT_ID: &str = "v2.ref-finance.near";
 
 /// Pull down the ref-finance contract and deploy it to the sandbox network,
@@ -14,7 +16,10 @@ async fn create_ref(
     worker: &Worker<impl Network + StatePatcher>,
 ) -> anyhow::Result<Contract> {
     let mainnet = workspaces::mainnet();
-    let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.to_string().try_into().unwrap();
+    let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.to_string().try_into()?;
+
+    // This will pull down the relevant ref-finance contract from mainnet. We're going
+    // to be overriding the initial balance with 1000N instead of what's on mainnet.
     let ref_finance = worker
         .import_contract(ref_finance_id.clone(), &mainnet)
         .with_initial_balance(parse_near!("1000 N"))
@@ -25,7 +30,8 @@ async fn create_ref(
     // our own set of metadata. This is because the contract's data is too big for the rpc
     // service to pull down (i.e. greater than 50mb).
 
-    owner.call(&worker, ref_finance.id().clone(), "new".into())
+    owner
+        .call(&worker, ref_finance.id().clone(), "new".into())
         .with_args(
             serde_json::json!({
                 "owner_id": ref_finance.id().clone(),
@@ -38,7 +44,8 @@ async fn create_ref(
         .transact()
         .await?;
 
-    owner.call(&worker, ref_finance.id().clone(), "storage_deposit".into())
+    owner
+        .call(&worker, ref_finance.id().clone(), "storage_deposit".into())
         .with_args(serde_json::json!({}).to_string().into_bytes())
         .with_deposit(parse_near!("30 mN"))
         .transact()
@@ -47,12 +54,13 @@ async fn create_ref(
     Ok(ref_finance)
 }
 
+/// Pull down the WNear contract from mainnet and initilize it with our own metadata.
 async fn create_wnear(
     owner: &Account,
     worker: &Worker<impl Network + StatePatcher>,
 ) -> anyhow::Result<Contract> {
     let mainnet = workspaces::mainnet();
-    let wnear_id: AccountId = "wrap.near".to_string().try_into().unwrap();
+    let wnear_id: AccountId = "wrap.near".to_string().try_into()?;
     let wnear = worker
         .import_contract(wnear_id.clone(), &mainnet)
         .transact()
@@ -88,6 +96,9 @@ async fn create_wnear(
     Ok(wnear)
 }
 
+/// Create a liquidity pool on Ref-Finance, registering the tokens we provide it.
+/// Add's the amount in `tokens` we set for liquidity. This will return us the
+/// pool_id after the pool has been created.
 async fn create_pool_with_liquidity(
     worker: &Worker<impl Network>,
     owner: &Account,
@@ -99,34 +110,33 @@ async fn create_pool_with_liquidity(
         .map(|(id, amount)| (id.clone().to_string(), amount.to_string()))
         .unzip();
 
-    worker
-        .call(
-            &ref_finance,
-            "extend_whitelisted_tokens".into(),
+    ref_finance
+        .call(worker, "extend_whitelisted_tokens".into())
+        .with_args(
             serde_json::json!({ "tokens": token_ids })
                 .to_string()
                 .into_bytes(),
-            None,
         )
+        .transact()
         .await?;
 
-    let pool_id = worker
-        .call(
-            &ref_finance,
-            "add_simple_pool".into(),
+    let pool_id = ref_finance.call(worker, "add_simple_pool".into())
+        .with_args(
             serde_json::json!({
                 "tokens": token_ids,
-                "fee": 25,
+                "fee": 25
             })
             .to_string()
             .into_bytes(),
-            Some(parse_near!("3 mN")),
         )
+        .with_deposit(parse_near!("3 mN"))
+        .transact()
         .await?
         .try_into_call_result()?;
     let pool_id: u64 = serde_json::from_str(&pool_id)?;
 
-    owner.call(&worker, ref_finance.id().clone(), "register_tokens".into())
+    owner
+        .call(&worker, ref_finance.id().clone(), "register_tokens".into())
         .with_args(
             serde_json::json!({
                 "token_ids": token_ids,
@@ -140,7 +150,8 @@ async fn create_pool_with_liquidity(
 
     deposit_tokens(worker, owner, &ref_finance, tokens).await?;
 
-    owner.call(&worker, ref_finance.id().clone(), "add_liquidity".into())
+    owner
+        .call(&worker, ref_finance.id().clone(), "add_liquidity".into())
         .with_args(
             serde_json::json!({
                 "pool_id": pool_id,
@@ -156,7 +167,7 @@ async fn create_pool_with_liquidity(
     Ok(pool_id)
 }
 
-/// Deposit tokens into the respective liqudity pools
+/// Deposit tokens into Ref-Finance
 async fn deposit_tokens(
     worker: &Worker<impl Network>,
     owner: &Account,
@@ -231,9 +242,18 @@ async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
     let owner = worker.root_account();
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Stage 1: Deploy relevant contracts such as FT, WNear, and Ref-Finance
+    ///////////////////////////////////////////////////////////////////////////
+
     let ft = create_custom_ft(&owner, &worker).await?;
     let ref_finance = create_ref(&owner, &worker).await?;
     let wnear = create_wnear(&owner, &worker).await?;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Stage 2: create a pool with liquidity and deposit/transfer tokens into
+    // them from our contracts such as FT and WNear.
+    ///////////////////////////////////////////////////////////////////////////
 
     let pool_id = create_pool_with_liquidity(
         &worker,
@@ -261,6 +281,10 @@ async fn main() -> anyhow::Result<()> {
         },
     )
     .await?;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Stage 3: View our deposited/transferred tokens in ref-finance
+    ///////////////////////////////////////////////////////////////////////////
 
     let ft_deposit = worker
         .view(
@@ -293,6 +317,10 @@ async fn main() -> anyhow::Result<()> {
     println!("Current WNear deposit: {}", wnear_deposit);
     let wnear_deposit: String = serde_json::from_str(&wnear_deposit)?;
     assert_eq!(wnear_deposit, parse_near!("100 N").to_string());
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Stage 4: Check how much our expected rate is for swapping and then swap
+    ///////////////////////////////////////////////////////////////////////////
 
     let expected_return = worker
         .view(
@@ -343,6 +371,10 @@ async fn main() -> anyhow::Result<()> {
     let actual_out: String = serde_json::from_str(&actual_out)?;
     assert_eq!(actual_out, expected_return);
     println!("Gas burnt from swapping: {}", gas_burnt);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Stage 5: See that our swap tokens reflect in our deposits
+    ///////////////////////////////////////////////////////////////////////////
 
     let ft_deposit = worker
         .view(
