@@ -31,8 +31,7 @@ async fn test_deploy_and_view() {
         .await
         .expect("could not dev-deploy contract");
 
-    let result = worker.view(
-        contract_id,
+    let result: String = contract.view(
         "function_name".to_string(),
         serde_json::json!({
             "some_arg": "some_value",
@@ -40,8 +39,8 @@ async fn test_deploy_and_view() {
         .to_string()
         .into_bytes(),
     )
-    .await
-    .expect("could not call into view function");
+    .await?
+    .json()?;
 
     assert_eq!(result, OUR_EXPECTED_RESULT);
 }
@@ -81,22 +80,18 @@ use workspaces::{Contract, DevNetwork, Network, Worker};
 // Helper function that calls into a contract we give it
 async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyhow::Result<()> {
     // Call into the function `contract_function` with args:
-    worker.call(
-        contract,
-        "contract_function".into(),
-        serde_json::json!({
+    contract.call(&worker, "contract_function")
+        .args_json(serde_json::json!({
             "message": msg,
         })
-        .to_string()
-        .into_bytes(),
-        None,
-    ).await?;
+        .transact()
+        .await?;
     Ok(())
 }
 
 // Create a helper function that deploys a specific contract
 // NOTE: `dev_deploy` is only available on `DevNetwork`s such sandbox and testnet.
 async fn deploy_my_contract(worker: Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
-    worker.dev_deploy(CONTRACT_FILE).await
+    worker.dev_deploy(std::fs::read(CONTRACT_FILE)).await
 }
 ```
