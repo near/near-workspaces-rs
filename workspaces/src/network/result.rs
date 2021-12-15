@@ -1,5 +1,5 @@
 use near_primitives::types::Gas;
-use near_primitives::views::{FinalExecutionOutcomeView, FinalExecutionStatus};
+use near_primitives::views::{CallResult, FinalExecutionOutcomeView, FinalExecutionStatus};
 
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
@@ -64,6 +64,35 @@ impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
                     .iter()
                     .map(|t| t.outcome.gas_burnt)
                     .sum::<u64>(),
+        }
+    }
+}
+
+/// The result from a call into a View function. This contains the contents or
+/// the results from the view function call itself. The consumer of this object
+/// can choose how to deserialize its contents.
+pub struct ViewResultDetails {
+    /// Our result from our call into a view function.
+    pub result: Vec<u8>,
+    /// Logs generated from the view function.
+    pub logs: Vec<String>,
+}
+
+impl ViewResultDetails {
+    pub fn try_serde_deser<'a, T: serde::Deserialize<'a>>(&'a self) -> anyhow::Result<T> {
+        serde_json::from_slice(&self.result).map_err(Into::into)
+    }
+
+    pub fn try_borsh_deser<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
+        borsh::BorshDeserialize::try_from_slice(&self.result).map_err(Into::into)
+    }
+}
+
+impl From<CallResult> for ViewResultDetails {
+    fn from(result: CallResult) -> Self {
+        ViewResultDetails {
+            result: result.result,
+            logs: result.logs,
         }
     }
 }

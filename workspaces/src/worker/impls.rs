@@ -5,7 +5,7 @@ use near_primitives::types::{Balance, StoreKey};
 
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
-    NetworkInfo, StatePatcher, TopLevelAccountCreator,
+    NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
 };
 use crate::network::{Info, Sandbox};
 use crate::rpc::client::Client;
@@ -112,7 +112,7 @@ where
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<ViewResultDetails> {
         self.client().view(contract_id, method_name, args).await
     }
 

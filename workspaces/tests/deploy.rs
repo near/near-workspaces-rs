@@ -47,15 +47,15 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
         )
         .await?;
 
-    let result = worker
+    let actual: NftMetadata = worker
         .view(
             contract.id().clone(),
             "nft_metadata".to_string(),
             Vec::new(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
 
-    let actual: NftMetadata = serde_json::from_str(&result)?;
     assert_eq!(actual, expected());
 
     Ok(())

@@ -47,18 +47,16 @@ async fn main() -> anyhow::Result<()> {
 
     println!("nft_mint outcome: {:#?}", outcome);
 
-    let result = worker
+    let result: serde_json::Value = worker
         .view(
             contract.id().clone(),
             "nft_metadata".to_string(),
             Vec::new(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
 
-    println!(
-        "--------------\n{}",
-        serde_json::to_string_pretty(&result).unwrap()
-    );
+    println!("--------------\n{}", result);
 
     println!("Dev Account ID: {}", contract.id());
 

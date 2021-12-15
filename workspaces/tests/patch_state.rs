@@ -80,7 +80,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
         )
         .await?;
 
-    let result = worker
+    let status: String = worker
         .view(
             contract_id.clone(),
             "get_status".into(),
@@ -90,9 +90,9 @@ async fn test_patch_state() -> anyhow::Result<()> {
             .to_string()
             .into_bytes(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
 
-    let status: String = serde_json::from_str(&result)?;
     assert_eq!(status, "hello world".to_string());
 
     Ok(())

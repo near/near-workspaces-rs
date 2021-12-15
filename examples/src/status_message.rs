@@ -23,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
         .await?;
     println!("set_status: {:?}", outcome);
 
-    let result = worker
+    let result: String = worker
         .view(
             contract.id().clone(),
             "get_status".into(),
@@ -33,12 +33,10 @@ async fn main() -> anyhow::Result<()> {
             .to_string()
             .into_bytes(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
 
-    println!(
-        "status: {:?}",
-        serde_json::to_string_pretty(&result).unwrap()
-    );
+    println!("status: {:?}", result);
 
     Ok(())
 }

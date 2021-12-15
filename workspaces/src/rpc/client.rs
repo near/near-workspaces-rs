@@ -17,6 +17,7 @@ use near_primitives::views::{
     AccessKeyView, AccountView, ContractCodeView, FinalExecutionOutcomeView, QueryRequest,
 };
 
+use crate::network::ViewResultDetails;
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
 
@@ -74,13 +75,12 @@ impl Client {
         .await
     }
 
-    // TODO: return a type T instead of Value
     pub(crate) async fn view(
         &self,
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<ViewResultDetails> {
         let query_resp = self
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
@@ -92,13 +92,10 @@ impl Client {
             })
             .await?;
 
-        let call_result = match query_resp.kind {
-            QueryResponseKind::CallResult(result) => result.result,
-            _ => anyhow::bail!("Error call result"),
-        };
-
-        let result = std::str::from_utf8(&call_result)?;
-        Ok(result.into())
+        match query_resp.kind {
+            QueryResponseKind::CallResult(result) => Ok(result.into()),
+            _ => anyhow::bail!(ERR_INVALID_VARIANT),
+        }
     }
 
     pub(crate) async fn view_state(
