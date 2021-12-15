@@ -32,9 +32,9 @@ impl Account {
         &self,
         worker: &'a Worker<T>,
         contract_id: AccountId,
-        function: String,
+        function: &str,
     ) -> CallBuilder<'a, T> {
-        CallBuilder::new(worker, contract_id, self.signer.clone(), function)
+        CallBuilder::new(worker, contract_id, self.signer.clone(), function.into())
     }
 
     /// Transfer near to an account specified by `receiver_id` with the amount
@@ -66,11 +66,11 @@ impl Account {
     /// Create a new sub account. Returns a CreateAccountBuilder object that
     /// we can make use of to fill out the rest of the details. The sub account
     /// id will be in the form of: "{new_account_id}.{parent_account_id}"
-    pub fn create_subaccount<'a, T: Network>(
+    pub fn create_subaccount<'a, 'b, T: Network>(
         &self,
         worker: &'a Worker<T>,
-        new_account_id: String,
-    ) -> CreateAccountBuilder<'a, T> {
+        new_account_id: &'b str,
+    ) -> CreateAccountBuilder<'a, 'b, T> {
         CreateAccountBuilder::new(
             worker,
             self.signer.clone(),
@@ -119,7 +119,7 @@ impl Contract {
     pub fn call<'a, T: Network>(
         &self,
         worker: &'a Worker<T>,
-        function: String,
+        function: &str,
     ) -> CallBuilder<'a, T> {
         self.account.call(worker, self.id().clone(), function)
     }
@@ -223,17 +223,17 @@ impl<'a, T: Network> CallBuilder<'a, T> {
     }
 }
 
-pub struct CreateAccountBuilder<'a, T> {
+pub struct CreateAccountBuilder<'a, 'b, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
     parent_id: AccountId,
-    new_account_id: String,
+    new_account_id: &'b str,
 
     initial_balance: Balance,
     secret_key: Option<SecretKey>,
 }
 
-impl<'a, T> CreateAccountBuilder<'a, T>
+impl<'a, 'b, T> CreateAccountBuilder<'a, 'b, T>
 where
     T: Network,
 {
@@ -241,7 +241,7 @@ where
         worker: &'a Worker<T>,
         signer: InMemorySigner,
         parent_id: AccountId,
-        new_account_id: String,
+        new_account_id: &'b str,
     ) -> Self {
         Self {
             worker,
