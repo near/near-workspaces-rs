@@ -120,7 +120,7 @@ async fn create_pool_with_liquidity(
         .transact()
         .await?;
 
-    let pool_id = ref_finance
+    let pool_id: u64 = ref_finance
         .call(worker, "add_simple_pool".into())
         .with_args(
             serde_json::json!({
@@ -133,8 +133,7 @@ async fn create_pool_with_liquidity(
         .with_deposit(parse_near!("3 mN"))
         .transact()
         .await?
-        .try_into_call_result()?;
-    let pool_id: u64 = serde_json::from_str(&pool_id)?;
+        .try_serde_deser()?;
 
     owner
         .call(&worker, ref_finance.id().clone(), "register_tokens".into())
@@ -287,7 +286,7 @@ async fn main() -> anyhow::Result<()> {
     // Stage 3: View our deposited/transferred tokens in ref-finance
     ///////////////////////////////////////////////////////////////////////////
 
-    let ft_deposit = worker
+    let ft_deposit: String = worker
         .view(
             ref_finance.id().clone(),
             "get_deposit".into(),
@@ -298,12 +297,12 @@ async fn main() -> anyhow::Result<()> {
             .to_string()
             .into_bytes(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
     println!("Current FT deposit: {}", ft_deposit);
-    let ft_deposit: String = serde_json::from_str(&ft_deposit)?;
     assert_eq!(ft_deposit, parse_near!("100 N").to_string());
 
-    let wnear_deposit = worker
+    let wnear_deposit: String = worker
         .view(
             ref_finance.id().clone(),
             "get_deposit".into(),
@@ -314,16 +313,17 @@ async fn main() -> anyhow::Result<()> {
             .to_string()
             .into_bytes(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
+
     println!("Current WNear deposit: {}", wnear_deposit);
-    let wnear_deposit: String = serde_json::from_str(&wnear_deposit)?;
     assert_eq!(wnear_deposit, parse_near!("100 N").to_string());
 
     ///////////////////////////////////////////////////////////////////////////
     // Stage 4: Check how much our expected rate is for swapping and then swap
     ///////////////////////////////////////////////////////////////////////////
 
-    let expected_return = worker
+    let expected_return: String = worker
         .view(
             ref_finance.id().clone(),
             "get_return".into(),
@@ -336,12 +336,13 @@ async fn main() -> anyhow::Result<()> {
             .to_string()
             .into_bytes(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
+
     println!(
         "Expect return for trading in 1 FT token for WNear: {}",
         expected_return
     );
-    let expected_return: String = serde_json::from_str(&expected_return)?;
     assert_eq!(expected_return, "1662497915624478906119726");
 
     let actual_out = owner
@@ -364,12 +365,11 @@ async fn main() -> anyhow::Result<()> {
         .transact()
         .await?;
     let gas_burnt = actual_out.total_gas_burnt;
-    let actual_out = actual_out.try_into_call_result()?;
+    let actual_out: String = actual_out.try_serde_deser()?;
     println!(
         "Actual return for trading in 1 FT token for WNear: {}",
         actual_out
     );
-    let actual_out: String = serde_json::from_str(&actual_out)?;
     assert_eq!(actual_out, expected_return);
     println!("Gas burnt from swapping: {}", gas_burnt);
 
@@ -377,7 +377,7 @@ async fn main() -> anyhow::Result<()> {
     // Stage 5: See that our swap tokens reflect in our deposits
     ///////////////////////////////////////////////////////////////////////////
 
-    let ft_deposit = worker
+    let ft_deposit: String = worker
         .view(
             ref_finance.id().clone(),
             "get_deposit".into(),
@@ -388,12 +388,12 @@ async fn main() -> anyhow::Result<()> {
             .to_string()
             .into_bytes(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
     println!("New FT deposit after swap: {}", ft_deposit);
-    let ft_deposit: String = serde_json::from_str(&ft_deposit)?;
     assert_eq!(ft_deposit, parse_near!("99 N").to_string());
 
-    let wnear_deposit = worker
+    let wnear_deposit: String = worker
         .view(
             ref_finance.id().clone(),
             "get_deposit".into(),
@@ -404,7 +404,8 @@ async fn main() -> anyhow::Result<()> {
             .to_string()
             .into_bytes(),
         )
-        .await?;
+        .await?
+        .try_serde_deser()?;
     println!("New WNear deposit after swap: {}", wnear_deposit);
 
     Ok(())

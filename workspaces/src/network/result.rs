@@ -41,16 +41,24 @@ pub struct CallExecutionDetails {
 }
 
 impl CallExecutionDetails {
-    pub fn try_into_call_result(self) -> anyhow::Result<String> {
-        let result = match self.status {
-            FinalExecutionStatus::SuccessValue(val) => val,
-            FinalExecutionStatus::Failure(err) => anyhow::bail!(err),
+    pub fn try_serde_deser<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
+        let buf = self.try_into_bytes()?;
+        serde_json::from_slice(&buf).map_err(Into::into)
+    }
+
+    pub fn try_borsh_deser<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
+        let buf = self.try_into_bytes()?;
+        borsh::BorshDeserialize::try_from_slice(&buf).map_err(Into::into)
+    }
+
+    pub fn try_into_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        let result: &str = match self.status {
+            FinalExecutionStatus::SuccessValue(ref val) => val,
+            FinalExecutionStatus::Failure(ref err) => anyhow::bail!(err.clone()),
             FinalExecutionStatus::NotStarted => anyhow::bail!("Transaction not started."),
             FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
         };
-        let result = base64::decode(&result)?;
-        let result = std::str::from_utf8(&result)?;
-        Ok(result.into())
+        base64::decode(result).map_err(Into::into)
     }
 }
 
