@@ -91,7 +91,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
 
     assert_eq!(status, "hello world".to_string());
 

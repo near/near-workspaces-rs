@@ -54,7 +54,7 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
             Vec::new(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
 
     assert_eq!(actual, expected());
 

@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
             Vec::new(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
 
     println!("--------------\n{}", result);
 

@@ -34,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
 
     println!("status: {:?}", result);
 

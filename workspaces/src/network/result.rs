@@ -65,11 +65,11 @@ pub struct ViewResultDetails {
 }
 
 impl ViewResultDetails {
-    pub fn try_serde_deser<'a, T: serde::Deserialize<'a>>(&'a self) -> anyhow::Result<T> {
+    pub fn json<'a, T: serde::Deserialize<'a>>(&'a self) -> anyhow::Result<T> {
         serde_json::from_slice(&self.result).map_err(Into::into)
     }
 
-    pub fn try_borsh_deser<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
         borsh::BorshDeserialize::try_from_slice(&self.result).map_err(Into::into)
     }
 }
