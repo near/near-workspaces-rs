@@ -180,14 +180,14 @@ impl<'a, T: Network> CallBuilder<'a, T> {
         self
     }
 
-    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
-        self.args = serde_json::to_vec(&args).unwrap();
-        self
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
+        self.args = serde_json::to_vec(&args)?;
+        Ok(self)
     }
 
-    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
-        self.args = args.try_to_vec().unwrap();
-        self
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
+        self.args = args.try_to_vec()?;
+        Ok(self)
     }
 
     pub fn deposit(mut self, deposit: u128) -> Self {

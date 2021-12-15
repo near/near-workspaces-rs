@@ -67,7 +67,7 @@ pub struct ViewResultDetails {
 }
 
 impl ViewResultDetails {
-    pub fn json<'a, T: serde::Deserialize<'a>>(&'a self) -> anyhow::Result<T> {
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
         serde_json::from_slice(&self.result).map_err(Into::into)
     }
 
