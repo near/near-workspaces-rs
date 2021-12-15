@@ -1,5 +1,6 @@
-use near_primitives::types::Gas;
 use near_primitives::views::{CallResult, FinalExecutionOutcomeView, FinalExecutionStatus};
+
+use crate::types::Gas;
 
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether

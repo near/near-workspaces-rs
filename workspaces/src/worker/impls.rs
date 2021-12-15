@@ -8,8 +8,8 @@ use crate::network::{
     NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
 };
 use crate::network::{Info, Sandbox};
-use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, SecretKey};
+use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
+use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
 
 impl<T> Clone for Worker<T> {
@@ -82,6 +82,7 @@ where
         contract: &Contract,
         method: String,
         args: Vec<u8>,
+        gas: Option<Gas>,
         deposit: Option<Balance>,
     ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
@@ -90,8 +91,8 @@ where
                 contract.id().clone(),
                 method,
                 args,
-                None,
-                deposit,
+                gas.unwrap_or(DEFAULT_CALL_FN_GAS),
+                deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
             )
             .await
             .map(Into::into)

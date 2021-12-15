@@ -2,7 +2,8 @@ use std::convert::TryInto;
 
 use near_crypto::KeyType;
 
-use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
+use crate::rpc::client::{DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
+use crate::types::{AccountId, Balance, Gas, InMemorySigner, SecretKey};
 use crate::{Network, Worker};
 
 use super::{CallExecution, CallExecutionDetails, ViewResultDetails};
@@ -153,8 +154,8 @@ pub struct CallBuilder<'a, T> {
 
     function: String,
     args: Vec<u8>,
-    deposit: Option<u128>,
-    gas: Option<u64>,
+    deposit: Balance,
+    gas: Gas,
 }
 
 impl<'a, T: Network> CallBuilder<'a, T> {
@@ -170,8 +171,8 @@ impl<'a, T: Network> CallBuilder<'a, T> {
             contract_id,
             function,
             args: serde_json::json!({}).to_string().into_bytes(),
-            deposit: None,
-            gas: None,
+            deposit: DEFAULT_CALL_DEPOSIT,
+            gas: DEFAULT_CALL_FN_GAS,
         }
     }
 
@@ -191,12 +192,12 @@ impl<'a, T: Network> CallBuilder<'a, T> {
     }
 
     pub fn deposit(mut self, deposit: u128) -> Self {
-        self.deposit = Some(deposit);
+        self.deposit = deposit;
         self
     }
 
     pub fn gas(mut self, gas: u64) -> Self {
-        self.gas = Some(gas);
+        self.gas = gas;
         self
     }
 
