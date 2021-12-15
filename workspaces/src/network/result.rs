@@ -33,6 +33,7 @@ impl<T> From<CallExecution<T>> for anyhow::Result<T> {
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
+#[non_exhaustive]
 pub struct CallExecutionDetails {
     /// Execution status. Contains the result in case of successful execution.
     pub status: FinalExecutionStatus,
@@ -57,6 +58,7 @@ impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
 /// The result from a call into a View function. This contains the contents or
 /// the results from the view function call itself. The consumer of this object
 /// can choose how to deserialize its contents.
+#[non_exhaustive]
 pub struct ViewResultDetails {
     /// Our result from our call into a view function.
     pub result: Vec<u8>,
