@@ -52,7 +52,7 @@ pub trait AllowDevAccountCreation {}
 #[async_trait]
 pub trait DevAccountDeployer {
     async fn dev_generate(&self) -> (AccountId, SecretKey);
-    async fn dev_create(&self) -> anyhow::Result<Account>;
+    async fn dev_create_account(&self) -> anyhow::Result<Account>;
     async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract>;
 }
 
@@ -77,7 +77,7 @@ where
         (id, sk)
     }
 
-    async fn dev_create(&self) -> anyhow::Result<Account> {
+    async fn dev_create_account(&self) -> anyhow::Result<Account> {
         let (id, sk) = self.dev_generate().await;
         let account = self.create_tla(id.clone(), sk).await?;
         account.into()

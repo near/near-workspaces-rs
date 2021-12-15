@@ -3,7 +3,7 @@ use workspaces::prelude::*;
 #[tokio::test]
 async fn test_subaccount_creation() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
-    let account = worker.dev_create().await?;
+    let account = worker.dev_create_account().await?;
 
     let sub = account
         .create_subaccount(&worker, "subaccount")
