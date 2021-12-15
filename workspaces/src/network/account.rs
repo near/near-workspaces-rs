@@ -175,27 +175,27 @@ impl<'a, T: Network> CallBuilder<'a, T> {
         }
     }
 
-    pub fn with_args(mut self, args: Vec<u8>) -> Self {
+    pub fn args(mut self, args: Vec<u8>) -> Self {
         self.args = args;
         self
     }
 
-    pub fn with_args_json<U: serde::Serialize>(mut self, args: U) -> Self {
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
         self.args = serde_json::to_vec(&args).unwrap();
         self
     }
 
-    pub fn with_args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
         self.args = args.try_to_vec().unwrap();
         self
     }
 
-    pub fn with_deposit(mut self, deposit: u128) -> Self {
+    pub fn deposit(mut self, deposit: u128) -> Self {
         self.deposit = Some(deposit);
         self
     }
 
-    pub fn with_gas(mut self, gas: u64) -> Self {
+    pub fn gas(mut self, gas: u64) -> Self {
         self.gas = Some(gas);
         self
     }
@@ -253,12 +253,12 @@ where
         }
     }
 
-    pub fn with_initial_balance(mut self, initial_balance: Balance) -> Self {
+    pub fn initial_balance(mut self, initial_balance: Balance) -> Self {
         self.initial_balance = initial_balance;
         self
     }
 
-    pub fn with_keys(mut self, secret_key: SecretKey) -> Self {
+    pub fn keys(mut self, secret_key: SecretKey) -> Self {
         self.secret_key = Some(secret_key);
         self
     }
