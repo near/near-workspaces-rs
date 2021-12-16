@@ -43,22 +43,18 @@ pub struct CallExecutionDetails {
 }
 
 impl CallExecutionDetails {
-    // blurb mostly taken from `serde_json::from_slice`
     /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
     /// execution result of this call. This conversion can fail if the structure of
-    /// the internal value does not match the structure expected by `T`, for
-    /// example if `T` is a struct type but the value contains something other than
-    /// a JSON map. It can also fail if the structure is correct but `T`'s
-    /// implementation of `Deserialize` decides that something is wrong with the
-    /// data, for example required struct fields are missing from the JSON map or
-    /// some number is too big to fit in the expected primitive type.
+    /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
+    /// requirements.
     pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
         let buf = self.try_into_bytes()?;
         serde_json::from_slice(&buf).map_err(Into::into)
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from the execution
-    /// result of this call
+    /// result. This conversion can fail if the structure of the internal state does
+    /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
     pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
         let buf = self.try_into_bytes()?;
         borsh::BorshDeserialize::try_from_slice(&buf).map_err(Into::into)
