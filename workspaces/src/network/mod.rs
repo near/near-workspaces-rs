@@ -1,5 +1,6 @@
 mod account;
 mod info;
+mod mainnet;
 mod result;
 mod sandbox;
 mod server;
@@ -12,14 +13,17 @@ use near_primitives::state_record::StateRecord;
 
 pub(crate) use crate::network::info::Info;
 use crate::rpc::client::Client;
+use crate::rpc::patch::ImportContractBuilder;
 use crate::types::{AccountId, KeyType, SecretKey};
+use crate::Worker;
 
 pub use crate::network::account::{Account, Contract};
+pub use crate::network::mainnet::Mainnet;
 pub use crate::network::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 pub use crate::network::sandbox::Sandbox;
 pub use crate::network::testnet::Testnet;
 
-const DEV_ACCOUNT_SEED: &str = "testificate";
+pub(crate) const DEV_ACCOUNT_SEED: &str = "testificate";
 
 pub trait NetworkClient {
     fn client(&self) -> &Client;
@@ -100,6 +104,12 @@ pub trait StatePatcher {
         key: String,
         value: Vec<u8>,
     ) -> anyhow::Result<()>;
+
+    fn import_contract<'a, 'b>(
+        &'b self,
+        id: AccountId,
+        worker: &'a Worker<impl Network>,
+    ) -> ImportContractBuilder<'a, 'b>;
 }
 
 #[async_trait]
@@ -128,6 +138,14 @@ where
             .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
 
         Ok(())
+    }
+
+    fn import_contract<'a, 'b>(
+        &'b self,
+        id: AccountId,
+        worker: &'a Worker<impl Network>,
+    ) -> ImportContractBuilder<'a, 'b> {
+        ImportContractBuilder::new(id, worker.client(), self.client())
     }
 }
 

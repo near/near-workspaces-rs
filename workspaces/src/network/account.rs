@@ -14,6 +14,13 @@ pub struct Account {
 }
 
 impl Account {
+    /// Create a new account with the given path to the credentials JSON file
+    pub fn from_file(path: impl AsRef<std::path::Path>) -> Self {
+        let signer = InMemorySigner::from_file(path.as_ref());
+        let id = signer.0.account_id.clone();
+        Self::new(id, signer)
+    }
+
     pub(crate) fn new(id: AccountId, signer: InMemorySigner) -> Self {
         Self { id, signer }
     }
@@ -150,7 +157,7 @@ impl Contract {
         function: &str,
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
-        worker.view(self.id().clone(), function.into(), args).await
+        worker.view(self.id().clone(), function, args).await
     }
 
     /// Deletes the current contract, and returns the execution details of this

@@ -42,6 +42,35 @@ pub struct CallExecutionDetails {
     pub total_gas_burnt: Gas,
 }
 
+impl CallExecutionDetails {
+    /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
+    /// execution result of this call. This conversion can fail if the structure of
+    /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
+    /// requirements.
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
+        let buf = self.try_into_bytes()?;
+        serde_json::from_slice(&buf).map_err(Into::into)
+    }
+
+    /// Deserialize an instance of type `T` from bytes sourced from the execution
+    /// result. This conversion can fail if the structure of the internal state does
+    /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
+        let buf = self.try_into_bytes()?;
+        borsh::BorshDeserialize::try_from_slice(&buf).map_err(Into::into)
+    }
+
+    fn try_into_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        let result: &str = match self.status {
+            FinalExecutionStatus::SuccessValue(ref val) => val,
+            FinalExecutionStatus::Failure(ref err) => anyhow::bail!(err.clone()),
+            FinalExecutionStatus::NotStarted => anyhow::bail!("Transaction not started."),
+            FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
+        };
+        base64::decode(result).map_err(Into::into)
+    }
+}
+
 impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
     fn from(transaction_result: FinalExecutionOutcomeView) -> Self {
         CallExecutionDetails {
