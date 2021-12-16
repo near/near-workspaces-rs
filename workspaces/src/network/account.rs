@@ -80,6 +80,8 @@ impl Account {
         )
     }
 
+    /// Deploy contract code or WASM bytes to the account, consuming it
+    /// and yielding us a new [`Contract`] object.
     pub async fn deploy<T: Network>(
         self,
         worker: &Worker<T>,

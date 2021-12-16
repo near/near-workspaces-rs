@@ -68,10 +68,17 @@ pub struct ViewResultDetails {
 }
 
 impl ViewResultDetails {
+    /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
+    /// execution result of this call. This conversion can fail if the structure of
+    /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
+    /// requirements.
     pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
         serde_json::from_slice(&self.result).map_err(Into::into)
     }
 
+    /// Deserialize an instance of type `T` from bytes sourced from this view call's
+    /// result. This conversion can fail if the structure of the internal state does
+    /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
     pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
         borsh::BorshDeserialize::try_from_slice(&self.result).map_err(Into::into)
     }
