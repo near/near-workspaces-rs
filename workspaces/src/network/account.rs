@@ -15,8 +15,8 @@ pub struct Account {
 
 impl Account {
     /// Create a new account with the given path to the credentials JSON file
-    pub fn from_file(path: &std::path::Path) -> Self {
-        let signer = InMemorySigner::from_file(path);
+    pub fn from_file(path: impl AsRef<std::path::Path>) -> Self {
+        let signer = InMemorySigner::from_file(path.as_ref());
         let id = signer.0.account_id.clone();
         Self::new(id, signer)
     }

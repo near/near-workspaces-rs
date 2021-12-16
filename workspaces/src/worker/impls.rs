@@ -90,7 +90,7 @@ where
     pub async fn call(
         &self,
         contract: &Contract,
-        method: String,
+        function: &str,
         args: Vec<u8>,
         gas: Option<Gas>,
         deposit: Option<Balance>,
@@ -99,7 +99,7 @@ where
             .call(
                 contract.signer(),
                 contract.id().clone(),
-                method,
+                function.into(),
                 args,
                 gas.unwrap_or(DEFAULT_CALL_FN_GAS),
                 deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
@@ -111,10 +111,10 @@ where
     pub async fn view(
         &self,
         contract_id: AccountId,
-        method_name: String,
+        function: &str,
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
-        self.client().view(contract_id, method_name, args).await
+        self.client().view(contract_id, function.into(), args).await
     }
 
     pub async fn view_state(
