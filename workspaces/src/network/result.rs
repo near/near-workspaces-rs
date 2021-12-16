@@ -1,5 +1,6 @@
-use near_primitives::types::Gas;
-use near_primitives::views::{FinalExecutionOutcomeView, FinalExecutionStatus};
+use near_primitives::views::{CallResult, FinalExecutionOutcomeView, FinalExecutionStatus};
+
+use crate::types::Gas;
 
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
@@ -33,6 +34,7 @@ impl<T> From<CallExecution<T>> for anyhow::Result<T> {
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
+#[non_exhaustive]
 pub struct CallExecutionDetails {
     /// Execution status. Contains the result in case of successful execution.
     pub status: FinalExecutionStatus,
@@ -50,6 +52,43 @@ impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
                     .iter()
                     .map(|t| t.outcome.gas_burnt)
                     .sum::<u64>(),
+        }
+    }
+}
+
+/// The result from a call into a View function. This contains the contents or
+/// the results from the view function call itself. The consumer of this object
+/// can choose how to deserialize its contents.
+#[non_exhaustive]
+pub struct ViewResultDetails {
+    /// Our result from our call into a view function.
+    pub result: Vec<u8>,
+    /// Logs generated from the view function.
+    pub logs: Vec<String>,
+}
+
+impl ViewResultDetails {
+    /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
+    /// execution result of this call. This conversion can fail if the structure of
+    /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
+    /// requirements.
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
+        serde_json::from_slice(&self.result).map_err(Into::into)
+    }
+
+    /// Deserialize an instance of type `T` from bytes sourced from this view call's
+    /// result. This conversion can fail if the structure of the internal state does
+    /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
+        borsh::BorshDeserialize::try_from_slice(&self.result).map_err(Into::into)
+    }
+}
+
+impl From<CallResult> for ViewResultDetails {
+    fn from(result: CallResult) -> Self {
+        ViewResultDetails {
+            result: result.result,
+            logs: result.logs,
         }
     }
 }

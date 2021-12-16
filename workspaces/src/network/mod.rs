@@ -15,7 +15,7 @@ use crate::rpc::client::Client;
 use crate::types::{AccountId, KeyType, SecretKey};
 
 pub use crate::network::account::{Account, Contract};
-pub use crate::network::result::{CallExecution, CallExecutionDetails};
+pub use crate::network::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 pub use crate::network::sandbox::Sandbox;
 pub use crate::network::testnet::Testnet;
 
@@ -52,7 +52,7 @@ pub trait AllowDevAccountCreation {}
 #[async_trait]
 pub trait DevAccountDeployer {
     async fn dev_generate(&self) -> (AccountId, SecretKey);
-    async fn dev_create(&self) -> anyhow::Result<Account>;
+    async fn dev_create_account(&self) -> anyhow::Result<Account>;
     async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract>;
 }
 
@@ -77,7 +77,7 @@ where
         (id, sk)
     }
 
-    async fn dev_create(&self) -> anyhow::Result<Account> {
+    async fn dev_create_account(&self) -> anyhow::Result<Account> {
         let (id, sk) = self.dev_generate().await;
         let account = self.create_tla(id.clone(), sk).await?;
         account.into()

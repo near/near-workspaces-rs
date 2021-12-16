@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use near_primitives::types::{Balance, StoreKey};
 
-use crate::network::Info;
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
-    NetworkInfo, StatePatcher, TopLevelAccountCreator,
+    NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
 };
-use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, SecretKey};
+use crate::network::{Info, Sandbox};
+use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
+use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
 
 impl<T> Clone for Worker<T> {
@@ -82,6 +82,7 @@ where
         contract: &Contract,
         method: String,
         args: Vec<u8>,
+        gas: Option<Gas>,
         deposit: Option<Balance>,
     ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
@@ -90,8 +91,8 @@ where
                 contract.id().clone(),
                 method,
                 args,
-                None,
-                deposit,
+                gas.unwrap_or(DEFAULT_CALL_FN_GAS),
+                deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
             )
             .await
             .map(Into::into)
@@ -102,7 +103,7 @@ where
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-    ) -> anyhow::Result<serde_json::Value> {
+    ) -> anyhow::Result<ViewResultDetails> {
         self.client().view(contract_id, method_name, args).await
     }
 
@@ -136,5 +137,13 @@ where
             .delete_account(signer, account_id, beneficiary_id)
             .await
             .map(Into::into)
+    }
+}
+
+impl Worker<Sandbox> {
+    pub fn root_account(&self) -> Account {
+        let account_id = self.info().root_id.clone();
+        let signer = self.workspace.root_signer();
+        Account::new(account_id, signer)
     }
 }

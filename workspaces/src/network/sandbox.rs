@@ -3,8 +3,6 @@ use std::str::FromStr;
 
 use async_trait::async_trait;
 
-use near_primitives::types::Balance;
-
 use super::{
     Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkClient,
     NetworkInfo, TopLevelAccountCreator,
@@ -13,7 +11,7 @@ use super::{
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, SecretKey};
+use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
@@ -33,7 +31,7 @@ impl Sandbox {
         path
     }
 
-    fn root_signer(&self) -> InMemorySigner {
+    pub(crate) fn root_signer(&self) -> InMemorySigner {
         let mut path = Self::home_dir(self.server.rpc_port);
         path.push("validator_key.json");
 

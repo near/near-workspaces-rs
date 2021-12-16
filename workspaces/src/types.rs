@@ -7,6 +7,12 @@ pub use near_account_id::AccountId;
 pub(crate) use near_crypto::{KeyType, Signer};
 use serde::{Deserialize, Serialize};
 
+pub type Gas = u64;
+
+/// Balance is type for storing amounts of tokens. Usually represents the amount of tokens
+/// in yoctoNear (1e-24).
+pub type Balance = u128;
+
 impl From<PublicKey> for near_crypto::PublicKey {
     fn from(pk: PublicKey) -> Self {
         pk.0
@@ -29,6 +35,7 @@ impl SecretKey {
     }
 }
 
+#[derive(Clone)]
 pub struct InMemorySigner(near_crypto::InMemorySigner);
 
 impl InMemorySigner {

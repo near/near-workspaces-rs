@@ -15,10 +15,12 @@ use near_primitives::transaction::{
 use near_primitives::types::{Balance, Finality, Gas, StoreKey};
 use near_primitives::views::{AccessKeyView, FinalExecutionOutcomeView, QueryRequest};
 
+use crate::network::ViewResultDetails;
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
 
-const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
+pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
+pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 
@@ -55,8 +57,8 @@ impl Client {
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-        gas: Option<u64>,
-        deposit: Option<Balance>,
+        gas: Gas,
+        deposit: Balance,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
@@ -64,21 +66,20 @@ impl Client {
             FunctionCallAction {
                 args,
                 method_name,
-                gas: gas.unwrap_or(DEFAULT_CALL_FN_GAS),
-                deposit: deposit.unwrap_or(0),
+                gas,
+                deposit,
             }
             .into(),
         )
         .await
     }
 
-    // TODO: return a type T instead of Value
     pub(crate) async fn view(
         &self,
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-    ) -> anyhow::Result<serde_json::Value> {
+    ) -> anyhow::Result<ViewResultDetails> {
         let query_resp = self
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
@@ -90,13 +91,10 @@ impl Client {
             })
             .await?;
 
-        let call_result = match query_resp.kind {
-            QueryResponseKind::CallResult(result) => result.result,
-            _ => anyhow::bail!("Error call result"),
-        };
-
-        let result = std::str::from_utf8(&call_result)?;
-        Ok(serde_json::from_str(result)?)
+        match query_resp.kind {
+            QueryResponseKind::CallResult(result) => Ok(result.into()),
+            _ => anyhow::bail!(ERR_INVALID_VARIANT),
+        }
     }
 
     pub(crate) async fn view_state(
