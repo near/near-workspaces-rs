@@ -79,6 +79,22 @@ impl Account {
             new_account_id,
         )
     }
+
+    pub async fn deploy<T: Network>(
+        self,
+        worker: &Worker<T>,
+        wasm: Vec<u8>,
+    ) -> anyhow::Result<CallExecution<Contract>> {
+        let outcome = worker
+            .client()
+            .deploy(&self.signer, self.id().clone(), wasm)
+            .await?;
+
+        Ok(CallExecution {
+            result: Contract::account(self),
+            details: outcome.into(),
+        })
+    }
 }
 
 // TODO: allow users to create Contracts so that they can call into
