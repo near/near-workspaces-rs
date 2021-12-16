@@ -9,24 +9,19 @@ async fn main() -> anyhow::Result<()> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(wasm).await?;
 
-    let outcome = worker
-        .call(
-            &contract,
-            "set_status".into(),
-            json!({
-                "message": "hello_world",
-            })
-            .to_string()
-            .into_bytes(),
-            None,
-        )
+    let outcome = contract
+        .call(&worker, "set_status")
+        .args_json(json!({
+            "message": "hello_world",
+        }))?
+        .transact()
         .await?;
     println!("set_status: {:?}", outcome);
 
-    let result: String = worker
+    let result: String = contract
         .view(
-            contract.id().clone(),
-            "get_status".into(),
+            &worker,
+            "get_status",
             json!({
                 "account_id": contract.id(),
             })

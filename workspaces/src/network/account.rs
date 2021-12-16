@@ -130,10 +130,10 @@ impl Contract {
     pub async fn view<T: Network>(
         &self,
         worker: &Worker<T>,
-        function: String,
+        function: &str,
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
-        worker.view(self.id().clone(), function, args).await
+        worker.view(self.id().clone(), function.into(), args).await
     }
 
     /// Deletes the current contract, and returns the execution details of this

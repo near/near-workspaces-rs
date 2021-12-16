@@ -10,39 +10,30 @@ async fn main() -> anyhow::Result<()> {
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(wasm).await.unwrap();
 
-    let outcome = worker
-        .call(
-            &contract,
-            "new_default_meta".to_string(),
-            json!({
+    let outcome = contract
+        .call(&worker, "new_default_meta")
+        .args_json(json!({
                 "owner_id": contract.id(),
-            })
-            .to_string()
-            .into_bytes(),
-            None,
-        )
+        }))?
+        .transact()
         .await?;
 
     println!("new_default_meta outcome: {:#?}", outcome);
 
     let deposit = 10000000000000000000000;
-    let outcome = worker
-        .call(
-            &contract,
-            "nft_mint".to_string(),
-            json!({
-                "token_id": "0",
-                "token_owner_id": contract.id(),
-                "token_metadata": {
-                    "title": "Olympus Mons",
-                    "dscription": "Tallest mountain in charted solar system",
-                    "copies": 1,
-                },
-            })
-            .to_string()
-            .into_bytes(),
-            Some(deposit),
-        )
+    let outcome = contract
+        .call(&worker, "nft_mint")
+        .args_json(json!({
+            "token_id": "0",
+            "token_owner_id": contract.id(),
+            "token_metadata": {
+                "title": "Olympus Mons",
+                "dscription": "Tallest mountain in charted solar system",
+                "copies": 1,
+            },
+        }))?
+        .deposit(deposit)
+        .transact()
         .await?;
 
     println!("nft_mint outcome: {:#?}", outcome);

@@ -32,7 +32,7 @@ async fn test_deploy_and_view() {
         .expect("could not dev-deploy contract");
 
     let result: String = contract.view(
-        "function_name".to_string(),
+        "function_name",
         serde_json::json!({
             "some_arg": "some_value",
         })
