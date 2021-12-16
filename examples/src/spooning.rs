@@ -48,21 +48,12 @@ async fn deploy_status_contract(
     let contract = worker.dev_deploy(wasm).await?;
 
     // This will `call` into `set_status` with the message we want to set.
-    worker
-        .call(
-            // The contract we want to call into:
-            &contract,
-            // The method we want to call:
-            "set_status".into(),
-            // The set of arguments we want to pass:
-            serde_json::json!({
-                "message": msg,
-            })
-            .to_string()
-            .into_bytes(),
-            // No need to worry about this one. Not transferring any tokens, so None:
-            None,
-        )
+    contract
+        .call(&worker, "set_status")
+        .args_json(serde_json::json!({
+            "message": msg,
+        }))?
+        .transact()
         .await?;
 
     Ok(contract)
@@ -106,10 +97,10 @@ async fn main() -> anyhow::Result<()> {
         .await?;
 
     // Now grab the state to see that it has indeed been patched:
-    let status: String = worker
+    let status: String = sandbox_contract
         .view(
-            sandbox_contract.id().clone(),
-            "get_status".into(),
+            &worker,
+            "get_status",
             serde_json::json!({
                 "account_id": testnet_contract_id.to_string(),
             })
@@ -117,16 +108,16 @@ async fn main() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
 
     println!("New status patched: {:?}", status);
     assert_eq!(status, "hello from testnet".to_string());
 
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
-    let result: serde_json::Value = worker
+    let result: serde_json::Value = sandbox_contract
         .view(
-            sandbox_contract.id().clone(),
-            "get_status".into(),
+            &worker,
+            "get_status",
             serde_json::json!({
                 "account_id": sandbox_contract.id(),
             })
@@ -134,7 +125,7 @@ async fn main() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
     assert_eq!(result, serde_json::Value::Null);
 
     Ok(())

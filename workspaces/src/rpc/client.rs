@@ -21,7 +21,8 @@ use crate::network::ViewResultDetails;
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
 
-const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
+pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10000000000000;
+pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 
@@ -58,8 +59,8 @@ impl Client {
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-        gas: Option<u64>,
-        deposit: Option<Balance>,
+        gas: Gas,
+        deposit: Balance,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
@@ -67,8 +68,8 @@ impl Client {
             FunctionCallAction {
                 args,
                 method_name,
-                gas: gas.unwrap_or(DEFAULT_CALL_FN_GAS),
-                deposit: deposit.unwrap_or(0),
+                gas,
+                deposit,
             }
             .into(),
         )

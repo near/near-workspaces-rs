@@ -1,5 +1,6 @@
-use near_primitives::types::Gas;
 use near_primitives::views::{CallResult, FinalExecutionOutcomeView, FinalExecutionStatus};
+
+use crate::types::Gas;
 
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
@@ -33,6 +34,7 @@ impl<T> From<CallExecution<T>> for anyhow::Result<T> {
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
+#[non_exhaustive]
 pub struct CallExecutionDetails {
     /// Execution status. Contains the result in case of successful execution.
     pub status: FinalExecutionStatus,
@@ -41,17 +43,28 @@ pub struct CallExecutionDetails {
 }
 
 impl CallExecutionDetails {
-    pub fn try_serde_deser<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
+    // blurb mostly taken from `serde_json::from_slice`
+    /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
+    /// execution result of this call. This conversion can fail if the structure of
+    /// the internal value does not match the structure expected by `T`, for
+    /// example if `T` is a struct type but the value contains something other than
+    /// a JSON map. It can also fail if the structure is correct but `T`'s
+    /// implementation of `Deserialize` decides that something is wrong with the
+    /// data, for example required struct fields are missing from the JSON map or
+    /// some number is too big to fit in the expected primitive type.
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
         let buf = self.try_into_bytes()?;
         serde_json::from_slice(&buf).map_err(Into::into)
     }
 
-    pub fn try_borsh_deser<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
+    /// Deserialize an instance of type `T` from bytes sourced from the execution
+    /// result of this call
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
         let buf = self.try_into_bytes()?;
         borsh::BorshDeserialize::try_from_slice(&buf).map_err(Into::into)
     }
 
-    pub fn try_into_bytes(&self) -> anyhow::Result<Vec<u8>> {
+    fn try_into_bytes(&self) -> anyhow::Result<Vec<u8>> {
         let result: &str = match self.status {
             FinalExecutionStatus::SuccessValue(ref val) => val,
             FinalExecutionStatus::Failure(ref err) => anyhow::bail!(err.clone()),
@@ -79,6 +92,7 @@ impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
 /// The result from a call into a View function. This contains the contents or
 /// the results from the view function call itself. The consumer of this object
 /// can choose how to deserialize its contents.
+#[non_exhaustive]
 pub struct ViewResultDetails {
     /// Our result from our call into a view function.
     pub result: Vec<u8>,
@@ -87,11 +101,11 @@ pub struct ViewResultDetails {
 }
 
 impl ViewResultDetails {
-    pub fn try_serde_deser<'a, T: serde::Deserialize<'a>>(&'a self) -> anyhow::Result<T> {
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
         serde_json::from_slice(&self.result).map_err(Into::into)
     }
 
-    pub fn try_borsh_deser<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
         borsh::BorshDeserialize::try_from_slice(&self.result).map_err(Into::into)
     }
 }

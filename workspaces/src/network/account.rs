@@ -2,7 +2,8 @@ use std::convert::TryInto;
 
 use near_crypto::KeyType;
 
-use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
+use crate::rpc::client::{DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
+use crate::types::{AccountId, Balance, Gas, InMemorySigner, SecretKey};
 use crate::{Network, Worker};
 
 use super::{CallExecution, CallExecutionDetails, ViewResultDetails};
@@ -32,9 +33,9 @@ impl Account {
         &self,
         worker: &'a Worker<T>,
         contract_id: AccountId,
-        function: String,
+        function: &str,
     ) -> CallBuilder<'a, T> {
-        CallBuilder::new(worker, contract_id, self.signer.clone(), function)
+        CallBuilder::new(worker, contract_id, self.signer.clone(), function.into())
     }
 
     /// Transfer near to an account specified by `receiver_id` with the amount
@@ -66,17 +67,33 @@ impl Account {
     /// Create a new sub account. Returns a CreateAccountBuilder object that
     /// we can make use of to fill out the rest of the details. The sub account
     /// id will be in the form of: "{new_account_id}.{parent_account_id}"
-    pub fn create_subaccount<'a, T: Network>(
+    pub fn create_subaccount<'a, 'b, T: Network>(
         &self,
         worker: &'a Worker<T>,
-        new_account_id: String,
-    ) -> CreateAccountBuilder<'a, T> {
+        new_account_id: &'b str,
+    ) -> CreateAccountBuilder<'a, 'b, T> {
         CreateAccountBuilder::new(
             worker,
             self.signer.clone(),
             self.id().clone(),
             new_account_id,
         )
+    }
+
+    pub async fn deploy<T: Network>(
+        self,
+        worker: &Worker<T>,
+        wasm: Vec<u8>,
+    ) -> anyhow::Result<CallExecution<Contract>> {
+        let outcome = worker
+            .client()
+            .deploy(&self.signer, self.id().clone(), wasm)
+            .await?;
+
+        Ok(CallExecution {
+            result: Contract::account(self),
+            details: outcome.into(),
+        })
     }
 }
 
@@ -119,7 +136,7 @@ impl Contract {
     pub fn call<'a, T: Network>(
         &self,
         worker: &'a Worker<T>,
-        function: String,
+        function: &str,
     ) -> CallBuilder<'a, T> {
         self.account.call(worker, self.id().clone(), function)
     }
@@ -129,10 +146,10 @@ impl Contract {
     pub async fn view<T: Network>(
         &self,
         worker: &Worker<T>,
-        function: String,
+        function: &str,
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
-        worker.view(self.id().clone(), function, args).await
+        worker.view(self.id().clone(), function.into(), args).await
     }
 
     /// Deletes the current contract, and returns the execution details of this
@@ -153,8 +170,8 @@ pub struct CallBuilder<'a, T> {
 
     function: String,
     args: Vec<u8>,
-    deposit: Option<u128>,
-    gas: Option<u64>,
+    deposit: Balance,
+    gas: Gas,
 }
 
 impl<'a, T: Network> CallBuilder<'a, T> {
@@ -170,33 +187,33 @@ impl<'a, T: Network> CallBuilder<'a, T> {
             contract_id,
             function,
             args: serde_json::json!({}).to_string().into_bytes(),
-            deposit: None,
-            gas: None,
+            deposit: DEFAULT_CALL_DEPOSIT,
+            gas: DEFAULT_CALL_FN_GAS,
         }
     }
 
-    pub fn with_args(mut self, args: Vec<u8>) -> Self {
+    pub fn args(mut self, args: Vec<u8>) -> Self {
         self.args = args;
         self
     }
 
-    pub fn with_args_json<U: serde::Serialize>(mut self, args: U) -> Self {
-        self.args = serde_json::to_vec(&args).unwrap();
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
+        self.args = serde_json::to_vec(&args)?;
+        Ok(self)
+    }
+
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
+        self.args = args.try_to_vec()?;
+        Ok(self)
+    }
+
+    pub fn deposit(mut self, deposit: u128) -> Self {
+        self.deposit = deposit;
         self
     }
 
-    pub fn with_args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
-        self.args = args.try_to_vec().unwrap();
-        self
-    }
-
-    pub fn with_deposit(mut self, deposit: u128) -> Self {
-        self.deposit = Some(deposit);
-        self
-    }
-
-    pub fn with_gas(mut self, gas: u64) -> Self {
-        self.gas = Some(gas);
+    pub fn gas(mut self, gas: u64) -> Self {
+        self.gas = gas;
         self
     }
 
@@ -223,17 +240,17 @@ impl<'a, T: Network> CallBuilder<'a, T> {
     }
 }
 
-pub struct CreateAccountBuilder<'a, T> {
+pub struct CreateAccountBuilder<'a, 'b, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
     parent_id: AccountId,
-    new_account_id: String,
+    new_account_id: &'b str,
 
     initial_balance: Balance,
     secret_key: Option<SecretKey>,
 }
 
-impl<'a, T> CreateAccountBuilder<'a, T>
+impl<'a, 'b, T> CreateAccountBuilder<'a, 'b, T>
 where
     T: Network,
 {
@@ -241,7 +258,7 @@ where
         worker: &'a Worker<T>,
         signer: InMemorySigner,
         parent_id: AccountId,
-        new_account_id: String,
+        new_account_id: &'b str,
     ) -> Self {
         Self {
             worker,
@@ -253,12 +270,12 @@ where
         }
     }
 
-    pub fn with_initial_balance(mut self, initial_balance: Balance) -> Self {
+    pub fn initial_balance(mut self, initial_balance: Balance) -> Self {
         self.initial_balance = initial_balance;
         self
     }
 
-    pub fn with_keys(mut self, secret_key: SecretKey) -> Self {
+    pub fn keys(mut self, secret_key: SecretKey) -> Self {
         self.secret_key = Some(secret_key);
         self
     }

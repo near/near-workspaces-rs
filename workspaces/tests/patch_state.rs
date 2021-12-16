@@ -23,17 +23,12 @@ async fn view_status_state(
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(wasm).await.unwrap();
 
-    worker
-        .call(
-            &contract,
-            "set_status".into(),
-            json!({
+    contract
+        .call(&worker, "set_status")
+        .args_json(json!({
                 "message": "hello",
-            })
-            .to_string()
-            .into_bytes(),
-            None,
-        )
+        }))?
+        .transact()
         .await?;
 
     let mut state_items = worker.view_state(contract.id().clone(), None).await?;
@@ -91,7 +86,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
 
     assert_eq!(status, "hello world".to_string());
 

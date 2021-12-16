@@ -32,22 +32,18 @@ async fn create_ref(
 
     owner
         .call(&worker, ref_finance.id().clone(), "new".into())
-        .with_args(
-            serde_json::json!({
-                "owner_id": ref_finance.id().clone(),
-                "exchange_fee": 4,
-                "referral_fee": 1,
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .args_json(serde_json::json!({
+            "owner_id": ref_finance.id().clone(),
+            "exchange_fee": 4,
+            "referral_fee": 1,
+        }))?
         .transact()
         .await?;
 
     owner
         .call(&worker, ref_finance.id().clone(), "storage_deposit".into())
-        .with_args(serde_json::json!({}).to_string().into_bytes())
-        .with_deposit(parse_near!("30 mN"))
+        .args_json(serde_json::json!({}).to_string().into_bytes())?
+        .deposit(parse_near!("30 mN"))
         .transact()
         .await?;
 
@@ -68,28 +64,24 @@ async fn create_wnear(
 
     owner
         .call(&worker, wnear.id().clone(), "new".into())
-        .with_args(
-            serde_json::json!({
-                "owner_id": owner.id().clone(),
-                "total_supply": parse_near!("1,000,000,000 N"),
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .args_json(serde_json::json!({
+            "owner_id": owner.id().clone(),
+            "total_supply": parse_near!("1,000,000,000 N"),
+        }))?
         .transact()
         .await?;
 
     owner
         .call(&worker, wnear.id().clone(), "storage_deposit".into())
-        .with_args(serde_json::json!({}).to_string().into_bytes())
-        .with_deposit(parse_near!("0.008 N"))
+        .args_json(serde_json::json!({}).to_string().into_bytes())?
+        .deposit(parse_near!("0.008 N"))
         .transact()
         .await?;
 
     owner
         .call(&worker, wnear.id().clone(), "near_deposit".into())
-        .with_args(serde_json::json!({}).to_string().into_bytes())
-        .with_deposit(parse_near!("200 N"))
+        .args_json(serde_json::json!({}).to_string().into_bytes())?
+        .deposit(parse_near!("200 N"))
         .transact()
         .await?;
 
@@ -112,39 +104,27 @@ async fn create_pool_with_liquidity(
 
     ref_finance
         .call(worker, "extend_whitelisted_tokens".into())
-        .with_args(
-            serde_json::json!({ "tokens": token_ids })
-                .to_string()
-                .into_bytes(),
-        )
+        .args_json(serde_json::json!({ "tokens": token_ids }))?
         .transact()
         .await?;
 
     let pool_id: u64 = ref_finance
         .call(worker, "add_simple_pool".into())
-        .with_args(
-            serde_json::json!({
-                "tokens": token_ids,
-                "fee": 25
-            })
-            .to_string()
-            .into_bytes(),
-        )
-        .with_deposit(parse_near!("3 mN"))
+        .args_json(serde_json::json!({
+            "tokens": token_ids,
+            "fee": 25
+        }))?
+        .deposit(parse_near!("3 mN"))
         .transact()
         .await?
-        .try_serde_deser()?;
+        .json()?;
 
     owner
         .call(&worker, ref_finance.id().clone(), "register_tokens".into())
-        .with_args(
-            serde_json::json!({
-                "token_ids": token_ids,
-            })
-            .to_string()
-            .into_bytes(),
-        )
-        .with_deposit(1)
+        .args_json(serde_json::json!({
+            "token_ids": token_ids,
+        }))?
+        .deposit(1)
         .transact()
         .await?;
 
@@ -152,15 +132,11 @@ async fn create_pool_with_liquidity(
 
     owner
         .call(&worker, ref_finance.id().clone(), "add_liquidity".into())
-        .with_args(
-            serde_json::json!({
-                "pool_id": pool_id,
-                "amounts": token_amounts,
-            })
-            .to_string()
-            .into_bytes(),
-        )
-        .with_deposit(parse_near!("1 N"))
+        .args_json(serde_json::json!({
+            "pool_id": pool_id,
+            "amounts": token_amounts,
+        }))?
+        .deposit(parse_near!("1 N"))
         .transact()
         .await?;
 
@@ -178,30 +154,22 @@ async fn deposit_tokens(
         ref_finance
             .as_account()
             .call(&worker, contract_id.clone(), "storage_deposit".into())
-            .with_args(
-                serde_json::json!({
-                    "registration_only": true,
-                })
-                .to_string()
-                .into_bytes(),
-            )
-            .with_deposit(parse_near!("1 N"))
+            .args_json(serde_json::json!({
+                "registration_only": true,
+            }))?
+            .deposit(parse_near!("1 N"))
             .transact()
             .await?;
 
         owner
             .call(&worker, contract_id.clone(), "ft_transfer_call".into())
-            .with_args(
-                serde_json::json!({
-                    "receiver_id": ref_finance.id().clone(),
-                    "amount": amount.to_string(),
-                    "msg": "",
-                })
-                .to_string()
-                .into_bytes(),
-            )
-            .with_gas(parse_gas!("200 Tgas") as u64)
-            .with_deposit(1)
+            .args_json(serde_json::json!({
+                "receiver_id": ref_finance.id().clone(),
+                "amount": amount.to_string(),
+                "msg": "",
+            }))?
+            .gas(parse_gas!("200 Tgas") as u64)
+            .deposit(1)
             .transact()
             .await?;
     }
@@ -220,18 +188,12 @@ async fn create_custom_ft(
 
     // Initialize our FT contract with owner metadata and total supply available
     // to be traded and transfered into other contracts such as Ref-Finance
-    worker
-        .call(
-            &ft,
-            "new_default_meta".into(),
-            serde_json::json!({
-                "owner_id": owner.id().clone(),
-                "total_supply": parse_near!("1,000,000,000 N").to_string(),
-            })
-            .to_string()
-            .into_bytes(),
-            None,
-        )
+    ft.call(&worker, "new_default_meta")
+        .args_json(serde_json::json!({
+            "owner_id": owner.id().clone(),
+            "total_supply": parse_near!("1,000,000,000 N").to_string(),
+        }))?
+        .transact()
         .await?;
 
     Ok(ft)
@@ -298,7 +260,7 @@ async fn main() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
     println!("Current FT deposit: {}", ft_deposit);
     assert_eq!(ft_deposit, parse_near!("100 N").to_string());
 
@@ -314,7 +276,7 @@ async fn main() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
 
     println!("Current WNear deposit: {}", wnear_deposit);
     assert_eq!(wnear_deposit, parse_near!("100 N").to_string());
@@ -337,7 +299,7 @@ async fn main() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
 
     println!(
         "Expect return for trading in 1 FT token for WNear: {}",
@@ -347,25 +309,21 @@ async fn main() -> anyhow::Result<()> {
 
     let actual_out = owner
         .call(&worker, ref_finance.id().clone(), "swap".into())
-        .with_args(
-            serde_json::json!({
-                "actions": vec![serde_json::json!({
-                    "pool_id": pool_id,
-                    "token_in": ft.id().clone(),
-                    "token_out": wnear.id().clone(),
-                    "amount_in": parse_near!("1 N").to_string(),
-                    "min_amount_out": "1",
-                })],
-            })
-            .to_string()
-            .into_bytes(),
-        )
-        .with_deposit(1)
-        .with_gas(parse_gas!("100 Tgas") as u64)
+        .args_json(serde_json::json!({
+            "actions": vec![serde_json::json!({
+                "pool_id": pool_id,
+                "token_in": ft.id().clone(),
+                "token_out": wnear.id().clone(),
+                "amount_in": parse_near!("1 N").to_string(),
+                "min_amount_out": "1",
+            })],
+        }))?
+        .deposit(1)
+        .gas(parse_gas!("100 Tgas") as u64)
         .transact()
         .await?;
     let gas_burnt = actual_out.total_gas_burnt;
-    let actual_out: String = actual_out.try_serde_deser()?;
+    let actual_out: String = actual_out.json()?;
     println!(
         "Actual return for trading in 1 FT token for WNear: {}",
         actual_out
@@ -389,14 +347,14 @@ async fn main() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
     println!("New FT deposit after swap: {}", ft_deposit);
     assert_eq!(ft_deposit, parse_near!("99 N").to_string());
 
-    let wnear_deposit: String = worker
+    let wnear_deposit: String = ref_finance
         .view(
-            ref_finance.id().clone(),
-            "get_deposit".into(),
+            &worker,
+            "get_deposit",
             serde_json::json!({
                 "account_id": owner.id().clone(),
                 "token_id": wnear.id().clone(),
@@ -405,7 +363,7 @@ async fn main() -> anyhow::Result<()> {
             .into_bytes(),
         )
         .await?
-        .try_serde_deser()?;
+        .json()?;
     println!("New WNear deposit after swap: {}", wnear_deposit);
 
     Ok(())
