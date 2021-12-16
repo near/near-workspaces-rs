@@ -38,22 +38,21 @@ impl Account {
         CallBuilder::new(worker, contract_id, self.signer.clone(), function.into())
     }
 
-    /// Transfer near to an account specified by `receiver_id` with the amount
-    /// specified by `amount_yocto`. Returns the execution details of this
-    /// transaction
+    /// Transfer NEAR to an account specified by `receiver_id` with the amount
+    /// specified by `amount`. Returns the execution details of this transaction
     pub async fn transfer_near<T: Network>(
         &self,
         worker: &Worker<T>,
         receiver_id: AccountId,
-        amount_yocto: Balance,
+        amount: Balance,
     ) -> anyhow::Result<CallExecutionDetails> {
         worker
-            .transfer_near(self.signer(), receiver_id, amount_yocto)
+            .transfer_near(self.signer(), receiver_id, amount)
             .await
     }
 
     /// Deletes the current account, and returns the execution details of this
-    /// transaction. The beneciary will receive the funds of the account deleted
+    /// transaction. The beneficiary will receive the funds of the account deleted
     pub async fn delete_account<T: Network>(
         self,
         worker: &Worker<T>,
