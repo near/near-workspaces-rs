@@ -36,7 +36,7 @@ impl SecretKey {
 }
 
 #[derive(Clone)]
-pub struct InMemorySigner(near_crypto::InMemorySigner);
+pub struct InMemorySigner(pub(crate) near_crypto::InMemorySigner);
 
 impl InMemorySigner {
     pub fn from_secret_key(account_id: AccountId, secret_key: SecretKey) -> Self {
