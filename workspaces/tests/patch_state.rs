@@ -78,7 +78,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
     let status: String = worker
         .view(
             contract_id.clone(),
-            "get_status".into(),
+            "get_status",
             json!({
                 "account_id": "alice.near",
             })

@@ -83,7 +83,7 @@ async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyh
     contract.call(&worker, "contract_function")
         .args_json(serde_json::json!({
             "message": msg,
-        })
+        })?
         .transact()
         .await?;
     Ok(())
