@@ -86,10 +86,10 @@ impl Account {
         )
     }
 
-    /// Deploy contract code or WASM bytes to the account, consuming it
-    /// and yielding us a new [`Contract`] object.
+    /// Deploy contract code or WASM bytes to the account, and return us a new
+    /// [`Contract`] object that we can use to interact with the contract.
     pub async fn deploy<T: Network, U: AsRef<[u8]>>(
-        self,
+        &self,
         worker: &Worker<T>,
         wasm: U,
     ) -> anyhow::Result<CallExecution<Contract>> {
@@ -99,7 +99,7 @@ impl Account {
             .await?;
 
         Ok(CallExecution {
-            result: Contract::account(self),
+            result: Contract::new(self.id().clone(), self.signer().clone()),
             details: outcome.into(),
         })
     }

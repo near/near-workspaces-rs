@@ -2,6 +2,11 @@
 name = "workspaces"
 version = "0.1.0"
 edition = "2018"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/near/workspaces-rs"
+description = """
+Library for automating workflows and testing NEAR smart contracts.
+"""
 
 [dependencies]
 async-trait = "0.1"
@@ -25,7 +30,7 @@ near-crypto = "0.5"
 near-primitives = "0.5"
 near-jsonrpc-primitives = "0.5"
 near-jsonrpc-client = { version = "0.1", features = ["sandbox"] }
-near-sandbox-utils = { git = "https://github.com/near/sandbox" }
+near-sandbox-utils = "0.1"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

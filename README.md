@@ -11,7 +11,7 @@ This software is in very early alpha (use at your own risk). Only local sandboxe
 NOTE: since this is still alpha, we'll need to pull it down from github instead:
 ```
 [dependencies]
-workspaces = { git = "https://github.com/near/workspaces-rs", rev = "..." }
+workspaces = "0.1"
 ```
 Remember to grab the current revision since things are likely to change until published.
 
