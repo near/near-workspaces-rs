@@ -16,7 +16,7 @@ async fn create_ref(
     worker: &Worker<impl Network + StatePatcher>,
 ) -> anyhow::Result<Contract> {
     let mainnet = workspaces::mainnet();
-    let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.to_string().try_into()?;
+    let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.parse()?;
 
     // This will pull down the relevant ref-finance contract from mainnet. We're going
     // to be overriding the initial balance with 1000N instead of what's on mainnet.
@@ -33,7 +33,7 @@ async fn create_ref(
     owner
         .call(&worker, ref_finance.id().clone(), "new")
         .args_json(serde_json::json!({
-            "owner_id": ref_finance.id().clone(),
+            "owner_id": ref_finance.id(),
             "exchange_fee": 4,
             "referral_fee": 1,
         }))?
@@ -42,8 +42,7 @@ async fn create_ref(
 
     owner
         .call(&worker, ref_finance.id().clone(), "storage_deposit")
-        .args_json(serde_json::json!({}).to_string().into_bytes())?
-        .deposit(parse_near!("30 mN"))
+        .deposit(parse_near!("34 mN"))
         .transact()
         .await?;
 
@@ -65,7 +64,7 @@ async fn create_wnear(
     owner
         .call(&worker, wnear.id().clone(), "new")
         .args_json(serde_json::json!({
-            "owner_id": owner.id().clone(),
+            "owner_id": owner.id(),
             "total_supply": parse_near!("1,000,000,000 N"),
         }))?
         .transact()
@@ -73,14 +72,12 @@ async fn create_wnear(
 
     owner
         .call(&worker, wnear.id().clone(), "storage_deposit")
-        .args_json(serde_json::json!({}).to_string().into_bytes())?
         .deposit(parse_near!("0.008 N"))
         .transact()
         .await?;
 
     owner
         .call(&worker, wnear.id().clone(), "near_deposit")
-        .args_json(serde_json::json!({}).to_string().into_bytes())?
         .deposit(parse_near!("200 N"))
         .transact()
         .await?;
@@ -99,7 +96,7 @@ async fn create_pool_with_liquidity(
 ) -> anyhow::Result<u64> {
     let (token_ids, token_amounts): (Vec<String>, Vec<String>) = tokens
         .iter()
-        .map(|(id, amount)| (id.clone().to_string(), amount.to_string()))
+        .map(|(id, amount)| (id.to_string(), amount.to_string()))
         .unzip();
 
     ref_finance
@@ -164,7 +161,7 @@ async fn deposit_tokens(
         owner
             .call(&worker, contract_id.clone(), "ft_transfer_call")
             .args_json(serde_json::json!({
-                "receiver_id": ref_finance.id().clone(),
+                "receiver_id": ref_finance.id(),
                 "amount": amount.to_string(),
                 "msg": "",
             }))?
@@ -190,7 +187,7 @@ async fn create_custom_ft(
     // to be traded and transfered into other contracts such as Ref-Finance
     ft.call(&worker, "new_default_meta")
         .args_json(serde_json::json!({
-            "owner_id": owner.id().clone(),
+            "owner_id": owner.id(),
             "total_supply": parse_near!("1,000,000,000 N").to_string(),
         }))?
         .transact()
@@ -253,8 +250,8 @@ async fn main() -> anyhow::Result<()> {
             ref_finance.id().clone(),
             "get_deposit",
             serde_json::json!({
-                "account_id": owner.id().clone(),
-                "token_id": ft.id().clone(),
+                "account_id": owner.id(),
+                "token_id": ft.id(),
             })
             .to_string()
             .into_bytes(),
@@ -269,8 +266,8 @@ async fn main() -> anyhow::Result<()> {
             ref_finance.id().clone(),
             "get_deposit",
             serde_json::json!({
-                "account_id": owner.id().clone(),
-                "token_id": wnear.id().clone(),
+                "account_id": owner.id(),
+                "token_id": wnear.id(),
             })
             .to_string()
             .into_bytes(),
@@ -291,8 +288,8 @@ async fn main() -> anyhow::Result<()> {
             "get_return",
             serde_json::json!({
                 "pool_id": pool_id,
-                "token_in": ft.id().clone(),
-                "token_out": wnear.id().clone(),
+                "token_in": ft.id(),
+                "token_out": wnear.id(),
                 "amount_in": parse_near!("1 N").to_string(),
             })
             .to_string()
@@ -312,8 +309,8 @@ async fn main() -> anyhow::Result<()> {
         .args_json(serde_json::json!({
             "actions": vec![serde_json::json!({
                 "pool_id": pool_id,
-                "token_in": ft.id().clone(),
-                "token_out": wnear.id().clone(),
+                "token_in": ft.id(),
+                "token_out": wnear.id(),
                 "amount_in": parse_near!("1 N").to_string(),
                 "min_amount_out": "1",
             })],
@@ -340,8 +337,8 @@ async fn main() -> anyhow::Result<()> {
             ref_finance.id().clone(),
             "get_deposit",
             serde_json::json!({
-                "account_id": owner.id().clone(),
-                "token_id": ft.id().clone(),
+                "account_id": owner.id(),
+                "token_id": ft.id(),
             })
             .to_string()
             .into_bytes(),
@@ -356,8 +353,8 @@ async fn main() -> anyhow::Result<()> {
             &worker,
             "get_deposit",
             serde_json::json!({
-                "account_id": owner.id().clone(),
-                "token_id": wnear.id().clone(),
+                "account_id": owner.id(),
+                "token_id": wnear.id(),
             })
             .to_string()
             .into_bytes(),
