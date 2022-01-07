@@ -42,7 +42,12 @@ impl Account {
         contract_id: &AccountId,
         function: &str,
     ) -> CallBuilder<'a, T> {
-        CallBuilder::new(worker, contract_id.to_owned(), self.signer.clone(), function.into())
+        CallBuilder::new(
+            worker,
+            contract_id.to_owned(),
+            self.signer.clone(),
+            function.into(),
+        )
     }
 
     /// Transfer NEAR to an account specified by `receiver_id` with the amount
@@ -297,12 +302,7 @@ where
         let outcome = self
             .worker
             .client()
-            .create_account(
-                &self.signer,
-                &id,
-                sk.public_key(),
-                self.initial_balance,
-            )
+            .create_account(&self.signer, &id, sk.public_key(), self.initial_balance)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
