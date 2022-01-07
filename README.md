@@ -8,7 +8,6 @@ This software is in very early alpha (use at your own risk). Only local sandboxe
 - MacOS (x86) or Linux (x86) for sandbox tests. Testnet is available regardless
 
 ## Include it in our project
-NOTE: since this is still alpha, we'll need to pull it down from github instead:
 ```
 [dependencies]
 workspaces = "0.1"
@@ -24,14 +23,15 @@ A simple test to get us going and familiar with the features:
 use workspaces::prelude::*;
 
 #[tokio::test]
-async fn test_deploy_and_view() {
+async fn test_deploy_and_view() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
 
-    let contract = worker.dev_deploy(std::fs::read("path/to/file.wasm"))
+    let contract = worker.dev_deploy(include_bytes!("path/to/file.wasm").to_vec())
         .await
         .expect("could not dev-deploy contract");
 
     let result: String = contract.view(
+        &worker,
         "function_name",
         serde_json::json!({
             "some_arg": "some_value",
@@ -42,7 +42,8 @@ async fn test_deploy_and_view() {
     .await?
     .json()?;
 
-    assert_eq!(result, OUR_EXPECTED_RESULT);
+    assert_eq!(result, "OUR_EXPECTED_RESULT");
+    Ok(())
 }
 ```
 
@@ -92,6 +93,6 @@ async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyh
 // Create a helper function that deploys a specific contract
 // NOTE: `dev_deploy` is only available on `DevNetwork`s such sandbox and testnet.
 async fn deploy_my_contract(worker: Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
-    worker.dev_deploy(std::fs::read(CONTRACT_FILE)).await
+    worker.dev_deploy(std::fs::read(CONTRACT_FILE)?).await
 }
 ```
