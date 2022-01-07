@@ -47,7 +47,7 @@ impl Client {
     async fn send_tx_and_retry(
         &self,
         signer: &InMemorySigner,
-        receiver_id: AccountId,
+        receiver_id: &AccountId,
         action: Action,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(self, signer, receiver_id, vec![action]).await
@@ -56,7 +56,7 @@ impl Client {
     pub(crate) async fn call(
         &self,
         signer: &InMemorySigner,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         method_name: String,
         args: Vec<u8>,
         gas: Gas,
@@ -184,7 +184,7 @@ impl Client {
     pub(crate) async fn deploy(
         &self,
         signer: &InMemorySigner,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         wasm: Vec<u8>,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
@@ -199,7 +199,7 @@ impl Client {
     pub(crate) async fn transfer_near(
         &self,
         signer: &InMemorySigner,
-        receiver_id: AccountId,
+        receiver_id: &AccountId,
         amount_yocto: Balance,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
@@ -216,7 +216,7 @@ impl Client {
     pub(crate) async fn create_account(
         &self,
         signer: &InMemorySigner,
-        new_account_id: AccountId,
+        new_account_id: &AccountId,
         new_account_pk: PublicKey,
         amount: Balance,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
@@ -243,7 +243,7 @@ impl Client {
     pub(crate) async fn create_account_and_deploy(
         &self,
         signer: &InMemorySigner,
-        new_account_id: AccountId,
+        new_account_id: &AccountId,
         new_account_pk: PublicKey,
         amount: Balance,
         code: Vec<u8>,
@@ -273,9 +273,10 @@ impl Client {
     pub(crate) async fn delete_account(
         &self,
         signer: &InMemorySigner,
-        account_id: AccountId,
-        beneficiary_id: AccountId,
+        account_id: &AccountId,
+        beneficiary_id: &AccountId,
     ) -> anyhow::Result<FinalExecutionOutcomeView> {
+        let beneficiary_id = beneficiary_id.to_owned();
         self.send_tx_and_retry(
             signer,
             account_id,
@@ -343,7 +344,7 @@ where
 async fn send_batch_tx_and_retry(
     client: &Client,
     signer: &InMemorySigner,
-    receiver_id: AccountId,
+    receiver_id: &AccountId,
     actions: Vec<Action>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
     send_tx_and_retry(client, || async {

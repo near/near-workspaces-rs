@@ -31,7 +31,7 @@ async fn create_ref(
     // service to pull down (i.e. greater than 50mb).
 
     owner
-        .call(&worker, ref_finance.id().clone(), "new")
+        .call(&worker, ref_finance.id(), "new")
         .args_json(serde_json::json!({
             "owner_id": ref_finance.id().clone(),
             "exchange_fee": 4,
@@ -41,7 +41,7 @@ async fn create_ref(
         .await?;
 
     owner
-        .call(&worker, ref_finance.id().clone(), "storage_deposit")
+        .call(&worker, ref_finance.id(), "storage_deposit")
         .args_json(serde_json::json!({}).to_string().into_bytes())?
         .deposit(parse_near!("30 mN"))
         .transact()
@@ -63,7 +63,7 @@ async fn create_wnear(
         .await?;
 
     owner
-        .call(&worker, wnear.id().clone(), "new")
+        .call(&worker, wnear.id(), "new")
         .args_json(serde_json::json!({
             "owner_id": owner.id().clone(),
             "total_supply": parse_near!("1,000,000,000 N"),
@@ -72,14 +72,14 @@ async fn create_wnear(
         .await?;
 
     owner
-        .call(&worker, wnear.id().clone(), "storage_deposit")
+        .call(&worker, wnear.id(), "storage_deposit")
         .args_json(serde_json::json!({}).to_string().into_bytes())?
         .deposit(parse_near!("0.008 N"))
         .transact()
         .await?;
 
     owner
-        .call(&worker, wnear.id().clone(), "near_deposit")
+        .call(&worker, wnear.id(), "near_deposit")
         .args_json(serde_json::json!({}).to_string().into_bytes())?
         .deposit(parse_near!("200 N"))
         .transact()
@@ -120,7 +120,7 @@ async fn create_pool_with_liquidity(
         .json()?;
 
     owner
-        .call(&worker, ref_finance.id().clone(), "register_tokens")
+        .call(&worker, ref_finance.id(), "register_tokens")
         .args_json(serde_json::json!({
             "token_ids": token_ids,
         }))?
@@ -131,7 +131,7 @@ async fn create_pool_with_liquidity(
     deposit_tokens(worker, owner, &ref_finance, tokens).await?;
 
     owner
-        .call(&worker, ref_finance.id().clone(), "add_liquidity")
+        .call(&worker, ref_finance.id(), "add_liquidity")
         .args_json(serde_json::json!({
             "pool_id": pool_id,
             "amounts": token_amounts,
@@ -153,7 +153,7 @@ async fn deposit_tokens(
     for (contract_id, amount) in tokens {
         ref_finance
             .as_account()
-            .call(&worker, contract_id.clone(), "storage_deposit")
+            .call(&worker, contract_id, "storage_deposit")
             .args_json(serde_json::json!({
                 "registration_only": true,
             }))?
@@ -162,7 +162,7 @@ async fn deposit_tokens(
             .await?;
 
         owner
-            .call(&worker, contract_id.clone(), "ft_transfer_call")
+            .call(&worker, contract_id, "ft_transfer_call")
             .args_json(serde_json::json!({
                 "receiver_id": ref_finance.id().clone(),
                 "amount": amount.to_string(),
@@ -308,7 +308,7 @@ async fn main() -> anyhow::Result<()> {
     assert_eq!(expected_return, "1662497915624478906119726");
 
     let actual_out = owner
-        .call(&worker, ref_finance.id().clone(), "swap")
+        .call(&worker, ref_finance.id(), "swap")
         .args_json(serde_json::json!({
             "actions": vec![serde_json::json!({
                 "pool_id": pool_id,

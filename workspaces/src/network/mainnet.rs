@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use async_trait::async_trait;
 
@@ -22,7 +21,7 @@ impl Mainnet {
             client: Client::new(RPC_URL.into()),
             info: Info {
                 name: "mainnet".into(),
-                root_id: AccountId::from_str("near").unwrap(),
+                root_id: "near".parse().unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/mainnet/"),
                 rpc_url: RPC_URL.into(),
             },

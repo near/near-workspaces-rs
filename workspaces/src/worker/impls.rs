@@ -98,7 +98,7 @@ where
         self.client()
             .call(
                 contract.signer(),
-                contract.id().clone(),
+                contract.id(),
                 function.into(),
                 args,
                 gas.unwrap_or(DEFAULT_CALL_FN_GAS),
@@ -130,7 +130,7 @@ where
     pub async fn transfer_near(
         &self,
         signer: &InMemorySigner,
-        receiver_id: AccountId,
+        receiver_id: &AccountId,
         amount_yocto: Balance,
     ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
@@ -141,9 +141,9 @@ where
 
     pub async fn delete_account(
         &self,
-        account_id: AccountId,
+        account_id: &AccountId,
         signer: &InMemorySigner,
-        beneficiary_id: AccountId,
+        beneficiary_id: &AccountId,
     ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
