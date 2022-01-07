@@ -42,7 +42,7 @@ async fn create_ref(
 
     owner
         .call(&worker, ref_finance.id().clone(), "storage_deposit")
-        .deposit(parse_near!("34 mN"))
+        .deposit(parse_near!("30 mN"))
         .transact()
         .await?;
 
