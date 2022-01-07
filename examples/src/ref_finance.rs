@@ -21,7 +21,7 @@ async fn create_ref(
     // This will pull down the relevant ref-finance contract from mainnet. We're going
     // to be overriding the initial balance with 1000N instead of what's on mainnet.
     let ref_finance = worker
-        .import_contract(ref_finance_id.clone(), &mainnet)
+        .import_contract(&ref_finance_id, &mainnet)
         .with_initial_balance(parse_near!("1000 N"))
         .transact()
         .await?;
@@ -58,7 +58,7 @@ async fn create_wnear(
     let mainnet = workspaces::mainnet();
     let wnear_id: AccountId = "wrap.near".to_string().try_into()?;
     let wnear = worker
-        .import_contract(wnear_id.clone(), &mainnet)
+        .import_contract(&wnear_id, &mainnet)
         .transact()
         .await?;
 
@@ -250,7 +250,7 @@ async fn main() -> anyhow::Result<()> {
 
     let ft_deposit: String = worker
         .view(
-            ref_finance.id().clone(),
+            ref_finance.id(),
             "get_deposit",
             serde_json::json!({
                 "account_id": owner.id().clone(),
@@ -266,7 +266,7 @@ async fn main() -> anyhow::Result<()> {
 
     let wnear_deposit: String = worker
         .view(
-            ref_finance.id().clone(),
+            ref_finance.id(),
             "get_deposit",
             serde_json::json!({
                 "account_id": owner.id().clone(),
@@ -287,7 +287,7 @@ async fn main() -> anyhow::Result<()> {
 
     let expected_return: String = worker
         .view(
-            ref_finance.id().clone(),
+            ref_finance.id(),
             "get_return",
             serde_json::json!({
                 "pool_id": pool_id,
@@ -337,7 +337,7 @@ async fn main() -> anyhow::Result<()> {
 
     let ft_deposit: String = worker
         .view(
-            ref_finance.id().clone(),
+            ref_finance.id(),
             "get_deposit",
             serde_json::json!({
                 "account_id": owner.id().clone(),

@@ -69,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
             .try_into()
             .unwrap();
 
-        let mut state_items = worker.view_state(contract_id.clone(), None).await.unwrap();
+        let mut state_items = worker.view_state(&contract_id, None).await.unwrap();
 
         let state = state_items.remove("STATE").unwrap();
         let status_msg: StatusMessage =
@@ -90,7 +90,7 @@ async fn main() -> anyhow::Result<()> {
     // Patch our testnet STATE into our local sandbox:
     worker
         .patch_state(
-            sandbox_contract.id().clone(),
+            sandbox_contract.id(),
             "STATE".to_string(),
             status_msg.try_to_vec()?,
         )

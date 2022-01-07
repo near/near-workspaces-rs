@@ -157,7 +157,7 @@ impl Contract {
         function: &str,
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
-        worker.view(self.id().clone(), function, args).await
+        worker.view(self.id(), function, args).await
     }
 
     /// Deletes the current contract, and returns the execution details of this

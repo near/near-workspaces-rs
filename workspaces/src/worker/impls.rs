@@ -63,7 +63,7 @@ where
 {
     async fn patch_state(
         &self,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         key: String,
         value: Vec<u8>,
     ) -> anyhow::Result<()> {
@@ -72,7 +72,7 @@ where
 
     fn import_contract<'a, 'b>(
         &'b self,
-        id: AccountId,
+        id: &AccountId,
         worker: &'a Worker<impl Network>,
     ) -> ImportContractBuilder<'a, 'b> {
         self.workspace.import_contract(id, worker)
@@ -110,19 +110,21 @@ where
 
     pub async fn view(
         &self,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         function: &str,
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
-        self.client().view(contract_id, function.into(), args).await
+        self.client()
+            .view(contract_id.clone(), function.into(), args)
+            .await
     }
 
     pub async fn view_state(
         &self,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         prefix: Option<StoreKey>,
     ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
-        self.client().view_state(contract_id, prefix).await
+        self.client().view_state(contract_id.clone(), prefix).await
     }
 
     pub async fn transfer_near(

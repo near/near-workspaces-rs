@@ -100,14 +100,14 @@ pub trait AllowStatePatching {}
 pub trait StatePatcher {
     async fn patch_state(
         &self,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         key: String,
         value: Vec<u8>,
     ) -> anyhow::Result<()>;
 
     fn import_contract<'a, 'b>(
         &'b self,
-        id: AccountId,
+        id: &AccountId,
         worker: &'a Worker<impl Network>,
     ) -> ImportContractBuilder<'a, 'b>;
 }
@@ -119,12 +119,12 @@ where
 {
     async fn patch_state(
         &self,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         key: String,
         value: Vec<u8>,
     ) -> anyhow::Result<()> {
         let state = StateRecord::Data {
-            account_id: contract_id,
+            account_id: contract_id.to_owned(),
             data_key: key.into(),
             value,
         };
@@ -142,10 +142,10 @@ where
 
     fn import_contract<'a, 'b>(
         &'b self,
-        id: AccountId,
+        id: &AccountId,
         worker: &'a Worker<impl Network>,
     ) -> ImportContractBuilder<'a, 'b> {
-        ImportContractBuilder::new(id, worker.client(), self.client())
+        ImportContractBuilder::new(id.to_owned(), worker.client(), self.client())
     }
 }
 
