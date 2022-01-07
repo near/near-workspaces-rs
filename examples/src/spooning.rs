@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use borsh::{self, BorshDeserialize, BorshSerialize};
 use workspaces::prelude::*;
 use workspaces::{AccountId, Contract, DevNetwork, Worker};
@@ -41,7 +39,7 @@ struct StatusMessage {
 /// For example, our predeployed testnet contract has already done this:
 ///    set_status(TESTNET_PREDEPLOYED_CONTRACT_ID) = "hello from testnet"
 async fn deploy_status_contract(
-    worker: Worker<impl DevNetwork>,
+    worker: &Worker<impl DevNetwork>,
     msg: &str,
 ) -> anyhow::Result<Contract> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
@@ -49,7 +47,7 @@ async fn deploy_status_contract(
 
     // This will `call` into `set_status` with the message we want to set.
     contract
-        .call(&worker, "set_status")
+        .call(worker, "set_status")
         .args_json(serde_json::json!({
             "message": msg,
         }))?
@@ -63,21 +61,19 @@ async fn deploy_status_contract(
 async fn main() -> anyhow::Result<()> {
     // Grab STATE from the testnet status_message contract. This contract contains the following data:
     //   get_status(dev-20211013002148-59466083160385) => "hello from testnet"
-    let (testnet_contract_id, status_msg) = workspaces::with_testnet(|worker| async move {
+    let (testnet_contract_id, status_msg) = {
+        let worker = workspaces::testnet();
         let contract_id: AccountId = TESTNET_PREDEPLOYED_CONTRACT_ID
-            .to_string()
-            .try_into()
-            .unwrap();
+            .parse()
+            .map_err(anyhow::Error::msg)?;
 
-        let mut state_items = worker.view_state(contract_id.clone(), None).await.unwrap();
+        let mut state_items = worker.view_state(contract_id.clone(), None).await?;
 
         let state = state_items.remove("STATE").unwrap();
-        let status_msg: StatusMessage =
-            StatusMessage::try_from_slice(&state).expect("Expected to retrieve state");
+        let status_msg = StatusMessage::try_from_slice(&state)?;
 
         (contract_id, status_msg)
-    })
-    .await;
+    };
 
     println!("Testnet: {:?}\n", status_msg);
 
@@ -85,7 +81,7 @@ async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
 
     // Deploy with the following status_message state: sandbox_contract_id => "hello from sandbox"
-    let sandbox_contract = deploy_status_contract(worker.clone(), "hello from sandbox").await?;
+    let sandbox_contract = deploy_status_contract(&worker, "hello from sandbox").await?;
 
     // Patch our testnet STATE into our local sandbox:
     worker
@@ -102,7 +98,7 @@ async fn main() -> anyhow::Result<()> {
             &worker,
             "get_status",
             serde_json::json!({
-                "account_id": testnet_contract_id.to_string(),
+                "account_id": testnet_contract_id,
             })
             .to_string()
             .into_bytes(),
@@ -111,10 +107,10 @@ async fn main() -> anyhow::Result<()> {
         .json()?;
 
     println!("New status patched: {:?}", status);
-    assert_eq!(status, "hello from testnet".to_string());
+    assert_eq!(&status, "hello from testnet");
 
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
-    let result: serde_json::Value = sandbox_contract
+    let result: Option<String> = sandbox_contract
         .view(
             &worker,
             "get_status",
@@ -126,7 +122,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .await?
         .json()?;
-    assert_eq!(result, serde_json::Value::Null);
+    assert_eq!(result, None);
 
     Ok(())
 }
