@@ -67,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
             .parse()
             .map_err(anyhow::Error::msg)?;
 
-        let mut state_items = worker.view_state(contract_id.clone(), None).await?;
+        let mut state_items = worker.view_state(&contract_id, None).await?;
 
         let state = state_items.remove("STATE").unwrap();
         let status_msg = StatusMessage::try_from_slice(&state)?;
@@ -86,7 +86,7 @@ async fn main() -> anyhow::Result<()> {
     // Patch our testnet STATE into our local sandbox:
     worker
         .patch_state(
-            sandbox_contract.id().clone(),
+            sandbox_contract.id(),
             "STATE".to_string(),
             status_msg.try_to_vec()?,
         )

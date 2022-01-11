@@ -72,7 +72,7 @@ impl TopLevelAccountCreator for Sandbox {
         let root_signer = self.root_signer();
         let outcome = self
             .client
-            .create_account(&root_signer, id.clone(), sk.public_key(), DEFAULT_DEPOSIT)
+            .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
@@ -91,13 +91,7 @@ impl TopLevelAccountCreator for Sandbox {
         let root_signer = self.root_signer();
         let outcome = self
             .client
-            .create_account_and_deploy(
-                &root_signer,
-                id.clone(),
-                sk.public_key(),
-                DEFAULT_DEPOSIT,
-                wasm,
-            )
+            .create_account_and_deploy(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT, wasm)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);

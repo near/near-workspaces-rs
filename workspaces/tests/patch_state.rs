@@ -31,7 +31,7 @@ async fn view_status_state(
         .transact()
         .await?;
 
-    let mut state_items = worker.view_state(contract.id().clone(), None).await?;
+    let mut state_items = worker.view_state(contract.id(), None).await?;
     let state = state_items
         .remove("STATE")
         .ok_or_else(|| anyhow::anyhow!("Could not retrieve STATE"))?;
@@ -68,16 +68,12 @@ async fn test_patch_state() -> anyhow::Result<()> {
     });
 
     worker
-        .patch_state(
-            contract_id.clone(),
-            "STATE".to_string(),
-            status_msg.try_to_vec()?,
-        )
+        .patch_state(&contract_id, "STATE".to_string(), status_msg.try_to_vec()?)
         .await?;
 
     let status: String = worker
         .view(
-            contract_id.clone(),
+            &contract_id,
             "get_status",
             json!({
                 "account_id": "alice.near",

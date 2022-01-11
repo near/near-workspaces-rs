@@ -39,10 +39,15 @@ impl Account {
     pub fn call<'a, T: Network>(
         &self,
         worker: &'a Worker<T>,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         function: &str,
     ) -> CallBuilder<'a, T> {
-        CallBuilder::new(worker, contract_id, self.signer.clone(), function.into())
+        CallBuilder::new(
+            worker,
+            contract_id.to_owned(),
+            self.signer.clone(),
+            function.into(),
+        )
     }
 
     /// Transfer NEAR to an account specified by `receiver_id` with the amount
@@ -50,7 +55,7 @@ impl Account {
     pub async fn transfer_near<T: Network>(
         &self,
         worker: &Worker<T>,
-        receiver_id: AccountId,
+        receiver_id: &AccountId,
         amount: Balance,
     ) -> anyhow::Result<CallExecutionDetails> {
         worker
@@ -63,10 +68,10 @@ impl Account {
     pub async fn delete_account<T: Network>(
         self,
         worker: &Worker<T>,
-        beneficiary_id: AccountId,
+        beneficiary_id: &AccountId,
     ) -> anyhow::Result<CallExecutionDetails> {
         worker
-            .delete_account(self.id, &self.signer, beneficiary_id)
+            .delete_account(&self.id, &self.signer, beneficiary_id)
             .await
     }
 
@@ -95,7 +100,7 @@ impl Account {
     ) -> anyhow::Result<CallExecution<Contract>> {
         let outcome = worker
             .client()
-            .deploy(&self.signer, self.id().clone(), wasm.as_ref().into())
+            .deploy(&self.signer, self.id(), wasm.as_ref().into())
             .await?;
 
         Ok(CallExecution {
@@ -146,7 +151,7 @@ impl Contract {
         worker: &'a Worker<T>,
         function: &str,
     ) -> CallBuilder<'a, T> {
-        self.account.call(worker, self.id().clone(), function)
+        self.account.call(worker, self.id(), function)
     }
 
     /// Call a view function into the current contract. Returns a result that
@@ -157,7 +162,7 @@ impl Contract {
         function: &str,
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
-        worker.view(self.id().clone(), function, args).await
+        worker.view(self.id(), function, args).await
     }
 
     /// Deletes the current contract, and returns the execution details of this
@@ -165,7 +170,7 @@ impl Contract {
     pub async fn delete_contract<T: Network>(
         self,
         worker: &Worker<T>,
-        beneficiary_id: AccountId,
+        beneficiary_id: &AccountId,
     ) -> anyhow::Result<CallExecutionDetails> {
         self.account.delete_account(worker, beneficiary_id).await
     }
@@ -230,7 +235,7 @@ impl<'a, T: Network> CallBuilder<'a, T> {
             .client()
             .call(
                 &self.signer,
-                self.contract_id,
+                &self.contract_id,
                 self.function,
                 self.args,
                 self.gas,
@@ -297,12 +302,7 @@ where
         let outcome = self
             .worker
             .client()
-            .create_account(
-                &self.signer,
-                id.clone(),
-                sk.public_key(),
-                self.initial_balance,
-            )
+            .create_account(&self.signer, &id, sk.public_key(), self.initial_balance)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
