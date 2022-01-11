@@ -65,12 +65,13 @@ impl TopLevelAccountCreator for Testnet {
         &self,
         id: AccountId,
         sk: SecretKey,
-        wasm: Vec<u8>,
+        wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
         let account = self.create_tla(id.clone(), sk).await?;
         let account = account.into_result()?;
-        let outcome = self.client.deploy(&signer, &id, wasm).await?;
+
+        let outcome = self.client.deploy(&signer, &id, wasm.into()).await?;
 
         Ok(CallExecution {
             result: Contract::account(account),

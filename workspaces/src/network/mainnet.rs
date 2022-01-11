@@ -43,7 +43,7 @@ impl TopLevelAccountCreator for Mainnet {
         &self,
         _id: AccountId,
         _sk: SecretKey,
-        _wasm: Vec<u8>,
+        _wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
         panic!("Unsupported for now: https://github.com/near/workspaces-rs/issues/18");
     }

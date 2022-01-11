@@ -45,7 +45,7 @@ pub trait TopLevelAccountCreator {
         &self,
         id: AccountId,
         sk: SecretKey,
-        wasm: Vec<u8>,
+        wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>>;
 }
 
@@ -57,7 +57,7 @@ pub trait AllowDevAccountCreation {}
 pub trait DevAccountDeployer {
     async fn dev_generate(&self) -> (AccountId, SecretKey);
     async fn dev_create_account(&self) -> anyhow::Result<Account>;
-    async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract>;
+    async fn dev_deploy(&self, wasm: &[u8]) -> anyhow::Result<Contract>;
 }
 
 #[async_trait]
@@ -87,7 +87,7 @@ where
         account.into()
     }
 
-    async fn dev_deploy(&self, wasm: Vec<u8>) -> anyhow::Result<Contract> {
+    async fn dev_deploy(&self, wasm: &[u8]) -> anyhow::Result<Contract> {
         let (id, sk) = self.dev_generate().await;
         let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
         contract.into()

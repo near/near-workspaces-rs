@@ -86,12 +86,12 @@ impl TopLevelAccountCreator for Sandbox {
         &self,
         id: AccountId,
         sk: SecretKey,
-        wasm: Vec<u8>,
+        wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
         let root_signer = self.root_signer();
         let outcome = self
             .client
-            .create_account_and_deploy(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT, wasm)
+            .create_account_and_deploy(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT, wasm.into())
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);

@@ -180,7 +180,7 @@ async fn create_custom_ft(
     worker: &Worker<impl DevNetwork>,
 ) -> anyhow::Result<Contract> {
     let ft: Contract = worker
-        .dev_deploy(std::fs::read(FT_CONTRACT_FILEPATH)?)
+        .dev_deploy(&std::fs::read(FT_CONTRACT_FILEPATH)?)
         .await?;
 
     // Initialize our FT contract with owner metadata and total supply available

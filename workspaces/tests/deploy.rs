@@ -32,7 +32,7 @@ fn expected() -> NftMetadata {
 async fn test_dev_deploy() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
-    let contract = worker.dev_deploy(wasm).await?;
+    let contract = worker.dev_deploy(&wasm).await?;
 
     let _result = contract
         .call(&worker, "new_default_meta")
