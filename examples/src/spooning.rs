@@ -1,4 +1,8 @@
 use borsh::{self, BorshDeserialize, BorshSerialize};
+use std::env;
+use tracing::info;
+use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::EnvFilter;
 use workspaces::prelude::*;
 use workspaces::{AccountId, Contract, DevNetwork, Worker};
 
@@ -59,6 +63,14 @@ async fn deploy_status_contract(
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Parse log filters from RUST_LOG or fallback to INFO if empty
+    let filter = if env::var(EnvFilter::DEFAULT_ENV).is_ok() {
+        EnvFilter::from_default_env()
+    } else {
+        EnvFilter::default().add_directive(LevelFilter::INFO.into())
+    };
+    tracing_subscriber::fmt().with_env_filter(filter).init();
+
     // Grab STATE from the testnet status_message contract. This contract contains the following data:
     //   get_status(dev-20211013002148-59466083160385) => "hello from testnet"
     let (testnet_contract_id, status_msg) = {
@@ -75,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
         (contract_id, status_msg)
     };
 
-    println!("Testnet: {:?}\n", status_msg);
+    info!(target: "spooning", "Testnet: {:?}", status_msg);
 
     // Create our sandboxed environment and grab a worker to do stuff in it:
     let worker = workspaces::sandbox();
@@ -106,7 +118,7 @@ async fn main() -> anyhow::Result<()> {
         .await?
         .json()?;
 
-    println!("New status patched: {:?}", status);
+    info!(target: "spooning", "New status patched: {:?}", status);
     assert_eq!(&status, "hello from testnet");
 
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
