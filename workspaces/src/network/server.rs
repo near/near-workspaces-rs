@@ -1,7 +1,7 @@
+use crate::network::Sandbox;
+use portpicker::pick_unused_port;
 use std::process::Child;
 use tracing::info;
-use portpicker::pick_unused_port;
-use crate::network::Sandbox;
 
 pub struct SandboxServer {
     pub(crate) rpc_port: u16,
