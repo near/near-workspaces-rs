@@ -1,6 +1,7 @@
+use test_log::test;
 use workspaces::prelude::*;
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn test_subaccount_creation() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
     let account = worker.dev_create_account().await?;
