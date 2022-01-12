@@ -1,6 +1,6 @@
 use borsh::{self, BorshDeserialize, BorshSerialize};
 use serde_json::json;
-
+use test_log::test;
 use workspaces::prelude::*;
 use workspaces::{AccountId, DevNetwork, Worker};
 
@@ -40,7 +40,7 @@ async fn view_status_state(
     Ok((contract.id().clone(), status_msg))
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn test_view_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
     let (contract_id, status_msg) = view_status_state(worker).await?;
@@ -58,7 +58,7 @@ async fn test_view_state() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn test_patch_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
     let (contract_id, mut status_msg) = view_status_state(worker.clone()).await?;
