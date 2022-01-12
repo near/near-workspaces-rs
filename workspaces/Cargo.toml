@@ -31,7 +31,6 @@ near-primitives = "0.5"
 near-jsonrpc-primitives = "0.5"
 near-jsonrpc-client = { version = "0.1", features = ["sandbox"] }
 near-sandbox-utils = "0.1"
-# near-sandbox-utils = { path = "../../../sandbox/crate" }
 
 [build-dependencies]
 near-sandbox-utils = "0.1"
