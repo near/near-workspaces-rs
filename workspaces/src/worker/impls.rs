@@ -41,7 +41,7 @@ where
         &self,
         id: AccountId,
         sk: SecretKey,
-        wasm: Vec<u8>,
+        wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
         self.workspace.create_tla_and_deploy(id, sk, wasm).await
     }

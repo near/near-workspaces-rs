@@ -21,7 +21,7 @@ async fn view_status_state(
     worker: Worker<impl DevNetwork>,
 ) -> anyhow::Result<(AccountId, StatusMessage)> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
-    let contract = worker.dev_deploy(wasm).await.unwrap();
+    let contract = worker.dev_deploy(&wasm).await.unwrap();
 
     contract
         .call(&worker, "set_status")

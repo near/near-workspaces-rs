@@ -93,10 +93,10 @@ impl Account {
 
     /// Deploy contract code or WASM bytes to the account, and return us a new
     /// [`Contract`] object that we can use to interact with the contract.
-    pub async fn deploy<T: Network, U: AsRef<[u8]>>(
+    pub async fn deploy<T: Network>(
         &self,
         worker: &Worker<T>,
-        wasm: U,
+        wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
         let outcome = worker
             .client()
