@@ -1,3 +1,6 @@
+// Required since `test_log` adds more recursion than the standard recursion limit of 128
+#![recursion_limit = "256"]
+
 use borsh::{self, BorshDeserialize, BorshSerialize};
 use serde_json::json;
 use test_log::test;
