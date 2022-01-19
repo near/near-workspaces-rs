@@ -51,7 +51,7 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
         self
     }
 
-    pub fn with_initial_balance(mut self, initial_balance: Balance) -> Self {
+    pub fn initial_balance(mut self, initial_balance: Balance) -> Self {
         self.initial_balance = Some(initial_balance);
         self
     }

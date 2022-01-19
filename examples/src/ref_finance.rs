@@ -26,7 +26,7 @@ async fn create_ref(
     // to be overriding the initial balance with 1000N instead of what's on mainnet.
     let ref_finance = worker
         .import_contract(&ref_finance_id, &mainnet)
-        .with_initial_balance(parse_near!("1000 N"))
+        .initial_balance(parse_near!("1000 N"))
         .block_id(BLOCK_ID)
         .transact()
         .await?;
