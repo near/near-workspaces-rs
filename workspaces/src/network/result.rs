@@ -26,7 +26,7 @@ impl<T> CallExecution<T> {
     }
 
     /// Checks whether the transaction has failed. Returns true if
-    /// `details.status` is FinalExecutionStatus::Success.
+    /// `details.status` is FinalExecutionStatus::Failure.
     pub fn is_failure(&self) -> bool {
         matches!(self.details.status, FinalExecutionStatus::Failure(_))
     }
