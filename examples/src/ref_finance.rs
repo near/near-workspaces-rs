@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::TryInto};
 
 use near_units::{parse_gas, parse_near};
-use workspaces::{prelude::*, BlockId, DevNetwork};
+use workspaces::{prelude::*, BlockHeight, DevNetwork};
 use workspaces::{Account, AccountId, Contract, Network, Worker};
 
 const FT_CONTRACT_FILEPATH: &str = "./examples/res/fungible_token.wasm";
@@ -11,7 +11,7 @@ const REF_FINANCE_ACCOUNT_ID: &str = "v2.ref-finance.near";
 
 /// BlockId referencing back to a specific time just in case the contract has
 /// changed or has been updated at a later time.
-const BLOCK_ID: BlockId = BlockId::Height(50_000_000);
+const BLOCK_HEIGHT: BlockHeight = 50_000_000;
 
 /// Pull down the ref-finance contract and deploy it to the sandbox network,
 /// initializing it with all data required to run the tests.
@@ -27,7 +27,7 @@ async fn create_ref(
     let ref_finance = worker
         .import_contract(&ref_finance_id, &mainnet)
         .initial_balance(parse_near!("1000 N"))
-        .block_id(BLOCK_ID)
+        .block_height(BLOCK_HEIGHT)
         .transact()
         .await?;
 
@@ -63,7 +63,7 @@ async fn create_wnear(
     let wnear_id: AccountId = "wrap.near".to_string().try_into()?;
     let wnear = worker
         .import_contract(&wnear_id, &mainnet)
-        .block_id(BLOCK_ID)
+        .block_height(BLOCK_HEIGHT)
         .transact()
         .await?;
 
