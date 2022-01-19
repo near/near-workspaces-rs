@@ -1,5 +1,6 @@
 use near_crypto::KeyType;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
+use near_primitives::types::BlockId;
 use near_primitives::{
     account::AccessKey, hash::CryptoHash, state_record::StateRecord, types::Balance,
 };
@@ -20,6 +21,8 @@ pub struct ImportContractBuilder<'a, 'b> {
     /// Initial balance of the account. If None, uses what is specified
     /// from the other account instead.
     initial_balance: Option<Balance>,
+
+    block_id: Option<BlockId>,
 }
 
 impl<'a, 'b> ImportContractBuilder<'a, 'b> {
@@ -34,7 +37,13 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
             into_network,
             import_data: false,
             initial_balance: None,
+            block_id: None,
         }
+    }
+
+    pub fn block_id(mut self, block_id: BlockId) -> Self {
+        self.block_id = Some(block_id);
+        self
     }
 
     pub fn with_data(mut self) -> Self {
@@ -54,7 +63,7 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
 
         let mut account_view = self
             .from_network
-            .view_account(self.account_id.clone(), None)
+            .view_account(self.account_id.clone(), self.block_id.clone())
             .await?;
         if let Some(initial_balance) = self.initial_balance {
             account_view.amount = initial_balance;
@@ -75,7 +84,7 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
         if account_view.code_hash != CryptoHash::default() {
             let code_view = self
                 .from_network
-                .view_code(self.account_id.clone(), None)
+                .view_code(self.account_id.clone(), self.block_id.clone())
                 .await?;
             records.push(StateRecord::Contract {
                 account_id: self.account_id.clone(),
@@ -86,7 +95,7 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
         if self.import_data {
             records.extend(
                 self.from_network
-                    .view_state_raw(self.account_id.clone(), None, None)
+                    .view_state_raw(self.account_id.clone(), None, self.block_id.clone())
                     .await?
                     .into_iter()
                     .map(|(key, value)| StateRecord::Data {
