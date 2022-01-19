@@ -18,7 +18,7 @@ use crate::types::{AccountId, KeyType, SecretKey};
 use crate::Worker;
 
 pub use crate::network::account::{Account, Contract};
-pub use crate::network::mainnet::Mainnet;
+pub use crate::network::mainnet::{Mainnet, MainnetArchival};
 pub use crate::network::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 pub use crate::network::sandbox::Sandbox;
 pub use crate::network::testnet::Testnet;

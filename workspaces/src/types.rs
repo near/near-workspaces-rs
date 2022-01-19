@@ -5,6 +5,7 @@ use std::path::Path;
 
 pub use near_account_id::AccountId;
 pub(crate) use near_crypto::{KeyType, Signer};
+pub use near_primitives::types::BlockId;
 use serde::{Deserialize, Serialize};
 
 pub type Gas = u64;

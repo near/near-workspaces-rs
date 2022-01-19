@@ -2,7 +2,7 @@ mod impls;
 
 use std::sync::Arc;
 
-use crate::network::{Mainnet, Network, Sandbox, Testnet};
+use crate::network::{Mainnet, MainnetArchival, Network, Sandbox, Testnet};
 
 pub struct Worker<T> {
     workspace: Arc<T>,
@@ -29,6 +29,10 @@ pub fn testnet() -> Worker<Testnet> {
 
 pub fn mainnet() -> Worker<Mainnet> {
     Worker::new(Mainnet::new())
+}
+
+pub fn mainnet_archival() -> Worker<MainnetArchival> {
+    Worker::new(MainnetArchival::new())
 }
 
 pub async fn with_sandbox<F, T>(task: F) -> T::Output
