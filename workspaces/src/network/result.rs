@@ -18,6 +18,18 @@ impl<T> CallExecution<T> {
     pub fn into_result(self) -> anyhow::Result<T> {
         Into::<anyhow::Result<_>>::into(self)
     }
+
+    /// Checks whether the transaction was successful. Returns true if
+    /// `details.status` is FinalExecutionStatus::Success.
+    pub fn is_success(&self) -> bool {
+        matches!(self.details.status, FinalExecutionStatus::SuccessValue(_))
+    }
+
+    /// Checks whether the transaction has failed. Returns true if
+    /// `details.status` is FinalExecutionStatus::Failure.
+    pub fn is_failure(&self) -> bool {
+        matches!(self.details.status, FinalExecutionStatus::Failure(_))
+    }
 }
 
 impl<T> From<CallExecution<T>> for anyhow::Result<T> {
