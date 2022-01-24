@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::TryInto};
 
 use near_units::{parse_gas, parse_near};
-use workspaces::{prelude::*, DevNetwork};
+use workspaces::{prelude::*, BlockHeight, DevNetwork};
 use workspaces::{Account, AccountId, Contract, Network, Worker};
 
 const FT_CONTRACT_FILEPATH: &str = "./examples/res/fungible_token.wasm";
@@ -9,20 +9,25 @@ const FT_CONTRACT_FILEPATH: &str = "./examples/res/fungible_token.wasm";
 /// Contract id of ref-finance on mainnet.
 const REF_FINANCE_ACCOUNT_ID: &str = "v2.ref-finance.near";
 
+/// BlockId referencing back to a specific time just in case the contract has
+/// changed or has been updated at a later time.
+const BLOCK_HEIGHT: BlockHeight = 50_000_000;
+
 /// Pull down the ref-finance contract and deploy it to the sandbox network,
 /// initializing it with all data required to run the tests.
 async fn create_ref(
     owner: &Account,
     worker: &Worker<impl Network + StatePatcher>,
 ) -> anyhow::Result<Contract> {
-    let mainnet = workspaces::mainnet();
+    let mainnet = workspaces::mainnet_archival();
     let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.parse()?;
 
     // This will pull down the relevant ref-finance contract from mainnet. We're going
     // to be overriding the initial balance with 1000N instead of what's on mainnet.
     let ref_finance = worker
         .import_contract(&ref_finance_id, &mainnet)
-        .with_initial_balance(parse_near!("1000 N"))
+        .initial_balance(parse_near!("1000 N"))
+        .block_height(BLOCK_HEIGHT)
         .transact()
         .await?;
 
@@ -54,10 +59,11 @@ async fn create_wnear(
     owner: &Account,
     worker: &Worker<impl Network + StatePatcher>,
 ) -> anyhow::Result<Contract> {
-    let mainnet = workspaces::mainnet();
+    let mainnet = workspaces::mainnet_archival();
     let wnear_id: AccountId = "wrap.near".to_string().try_into()?;
     let wnear = worker
         .import_contract(&wnear_id, &mainnet)
+        .block_height(BLOCK_HEIGHT)
         .transact()
         .await?;
 

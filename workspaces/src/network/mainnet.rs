@@ -9,6 +9,7 @@ use crate::types::{AccountId, SecretKey};
 use crate::Contract;
 
 const RPC_URL: &str = "https://rpc.mainnet.near.org";
+const ARCHIVAL_URL: &str = "https://archival-rpc.mainnet.near.org";
 
 pub struct Mainnet {
     client: Client,
@@ -24,6 +25,18 @@ impl Mainnet {
                 root_id: "near".parse().unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/mainnet/"),
                 rpc_url: RPC_URL.into(),
+            },
+        }
+    }
+
+    pub(crate) fn archival() -> Self {
+        Self {
+            client: Client::new(ARCHIVAL_URL.into()),
+            info: Info {
+                name: "mainnet-archival".into(),
+                root_id: "near".parse().unwrap(),
+                keystore_path: PathBuf::from(".near-credentials/mainnet/"),
+                rpc_url: ARCHIVAL_URL.into(),
             },
         }
     }
