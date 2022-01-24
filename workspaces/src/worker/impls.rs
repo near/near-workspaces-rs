@@ -41,7 +41,7 @@ where
         &self,
         id: AccountId,
         sk: SecretKey,
-        wasm: Vec<u8>,
+        wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
         self.workspace.create_tla_and_deploy(id, sk, wasm).await
     }
@@ -63,7 +63,7 @@ where
 {
     async fn patch_state(
         &self,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         key: String,
         value: Vec<u8>,
     ) -> anyhow::Result<()> {
@@ -72,7 +72,7 @@ where
 
     fn import_contract<'a, 'b>(
         &'b self,
-        id: AccountId,
+        id: &AccountId,
         worker: &'a Worker<impl Network>,
     ) -> ImportContractBuilder<'a, 'b> {
         self.workspace.import_contract(id, worker)
@@ -98,7 +98,7 @@ where
         self.client()
             .call(
                 contract.signer(),
-                contract.id().clone(),
+                contract.id(),
                 function.into(),
                 args,
                 gas.unwrap_or(DEFAULT_CALL_FN_GAS),
@@ -110,25 +110,27 @@ where
 
     pub async fn view(
         &self,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         function: &str,
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
-        self.client().view(contract_id, function.into(), args).await
+        self.client()
+            .view(contract_id.clone(), function.into(), args)
+            .await
     }
 
     pub async fn view_state(
         &self,
-        contract_id: AccountId,
+        contract_id: &AccountId,
         prefix: Option<StoreKey>,
     ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
-        self.client().view_state(contract_id, prefix).await
+        self.client().view_state(contract_id.clone(), prefix).await
     }
 
     pub async fn transfer_near(
         &self,
         signer: &InMemorySigner,
-        receiver_id: AccountId,
+        receiver_id: &AccountId,
         amount_yocto: Balance,
     ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
@@ -139,9 +141,9 @@ where
 
     pub async fn delete_account(
         &self,
-        account_id: AccountId,
+        account_id: &AccountId,
         signer: &InMemorySigner,
-        beneficiary_id: AccountId,
+        beneficiary_id: &AccountId,
     ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
             .delete_account(signer, account_id, beneficiary_id)

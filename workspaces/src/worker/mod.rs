@@ -31,6 +31,10 @@ pub fn mainnet() -> Worker<Mainnet> {
     Worker::new(Mainnet::new())
 }
 
+pub fn mainnet_archival() -> Worker<Mainnet> {
+    Worker::new(Mainnet::archival())
+}
+
 pub async fn with_sandbox<F, T>(task: F) -> T::Output
 where
     F: Fn(Worker<Sandbox>) -> T,

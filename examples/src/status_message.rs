@@ -7,7 +7,7 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
-    let contract = worker.dev_deploy(wasm).await?;
+    let contract = worker.dev_deploy(&wasm).await?;
 
     let outcome = contract
         .call(&worker, "set_status")

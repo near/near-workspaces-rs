@@ -8,7 +8,7 @@ const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
-    let contract = worker.dev_deploy(wasm).await.unwrap();
+    let contract = worker.dev_deploy(&wasm).await?;
 
     let outcome = contract
         .call(&worker, "new_default_meta")
@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
     println!("nft_mint outcome: {:#?}", outcome);
 
     let result: serde_json::Value = worker
-        .view(contract.id().clone(), "nft_metadata", Vec::new())
+        .view(contract.id(), "nft_metadata", Vec::new())
         .await?
         .json()?;
 

@@ -1,8 +1,7 @@
-use std::process::Child;
-
-use portpicker::pick_unused_port;
-
 use crate::network::Sandbox;
+use portpicker::pick_unused_port;
+use std::process::Child;
+use tracing::info;
 
 pub struct SandboxServer {
     pub(crate) rpc_port: u16,
@@ -20,7 +19,7 @@ impl SandboxServer {
     }
 
     pub fn start(&mut self) -> anyhow::Result<()> {
-        println!("Starting up sandbox at localhost:{}", self.rpc_port);
+        info!(target: "workspaces", "Starting up sandbox at localhost:{}", self.rpc_port);
         let home_dir = Sandbox::home_dir(self.rpc_port);
 
         // Remove dir if it already exists:
@@ -28,7 +27,7 @@ impl SandboxServer {
         near_sandbox_utils::init(&home_dir)?.wait()?;
 
         let child = near_sandbox_utils::run(&home_dir, self.rpc_port, self.net_port)?;
-        println!("Started sandbox: pid={:?}", child.id());
+        info!(target: "workspaces", "Started sandbox: pid={:?}", child.id());
         self.process = Some(child);
 
         Ok(())
@@ -55,7 +54,8 @@ impl Drop for SandboxServer {
 
         let child = self.process.as_mut().unwrap();
 
-        eprintln!(
+        info!(
+            target: "workspaces",
             "Cleaning up sandbox: port={}, pid={}",
             self.rpc_port,
             child.id()
