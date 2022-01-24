@@ -1,13 +1,12 @@
 use near_crypto::KeyType;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
-use near_primitives::{
-    account::AccessKey, hash::CryptoHash, state_record::StateRecord, types::Balance,
-};
+use near_primitives::types::BlockId;
+use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
 use crate::network::DEV_ACCOUNT_SEED;
 use crate::rpc::client::Client;
-use crate::types::SecretKey;
-use crate::{AccountId, Contract, InMemorySigner};
+use crate::types::{BlockHeight, SecretKey};
+use crate::{AccountId, Contract, CryptoHash, InMemorySigner};
 
 pub struct ImportContractBuilder<'a, 'b> {
     account_id: AccountId,
@@ -20,6 +19,8 @@ pub struct ImportContractBuilder<'a, 'b> {
     /// Initial balance of the account. If None, uses what is specified
     /// from the other account instead.
     initial_balance: Option<Balance>,
+
+    block_id: Option<BlockId>,
 }
 
 impl<'a, 'b> ImportContractBuilder<'a, 'b> {
@@ -34,7 +35,20 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
             into_network,
             import_data: false,
             initial_balance: None,
+            block_id: None,
         }
+    }
+
+    pub fn block_height(mut self, block_height: BlockHeight) -> Self {
+        self.block_id = Some(BlockId::Height(block_height));
+        self
+    }
+
+    pub fn block_hash(mut self, block_hash: CryptoHash) -> Self {
+        self.block_id = Some(BlockId::Hash(near_primitives::hash::CryptoHash(
+            block_hash.0,
+        )));
+        self
     }
 
     pub fn with_data(mut self) -> Self {
@@ -42,19 +56,20 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
         self
     }
 
-    pub fn with_initial_balance(mut self, initial_balance: Balance) -> Self {
+    pub fn initial_balance(mut self, initial_balance: Balance) -> Self {
         self.initial_balance = Some(initial_balance);
         self
     }
 
     pub async fn transact(self) -> anyhow::Result<Contract> {
+        let account_id = self.account_id;
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();
-        let signer = InMemorySigner::from_secret_key(self.account_id.clone(), sk);
+        let signer = InMemorySigner::from_secret_key(account_id.clone(), sk);
 
         let mut account_view = self
             .from_network
-            .view_account(self.account_id.clone(), None)
+            .view_account(account_id.clone(), self.block_id.clone())
             .await?;
         if let Some(initial_balance) = self.initial_balance {
             account_view.amount = initial_balance;
@@ -62,23 +77,23 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
 
         let mut records = vec![
             StateRecord::Account {
-                account_id: self.account_id.clone(),
+                account_id: account_id.clone(),
                 account: account_view.clone().into(),
             },
             StateRecord::AccessKey {
-                account_id: self.account_id.clone(),
+                account_id: account_id.clone(),
                 public_key: pk.clone().into(),
                 access_key: AccessKey::full_access(),
             },
         ];
 
-        if account_view.code_hash != CryptoHash::default() {
+        if account_view.code_hash != near_primitives::hash::CryptoHash::default() {
             let code_view = self
                 .from_network
-                .view_code(self.account_id.clone(), None)
+                .view_code(account_id.clone(), self.block_id.clone())
                 .await?;
             records.push(StateRecord::Contract {
-                account_id: self.account_id.clone(),
+                account_id: account_id.clone(),
                 code: code_view.code,
             });
         }
@@ -86,11 +101,11 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
         if self.import_data {
             records.extend(
                 self.from_network
-                    .view_state_raw(self.account_id.clone(), None, None)
+                    .view_state_raw(account_id.clone(), None, self.block_id)
                     .await?
                     .into_iter()
                     .map(|(key, value)| StateRecord::Data {
-                        account_id: self.account_id.clone(),
+                        account_id: account_id.clone(),
                         data_key: key,
                         value,
                     }),
@@ -111,6 +126,6 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
             .await
             .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
 
-        Ok(Contract::new(self.account_id, signer))
+        Ok(Contract::new(account_id, signer))
     }
 }
