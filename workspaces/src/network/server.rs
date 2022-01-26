@@ -22,6 +22,9 @@ impl SandboxServer {
         info!(target: "workspaces", "Starting up sandbox at localhost:{}", self.rpc_port);
         let home_dir = Sandbox::home_dir(self.rpc_port);
 
+        // Supress logs for the sandbox binary by default:
+        supress_sandbox_logs_if_required();
+
         // Remove dir if it already exists:
         let _ = std::fs::remove_dir_all(&home_dir);
         near_sandbox_utils::init(&home_dir)?.wait()?;
@@ -66,4 +69,18 @@ impl Drop for SandboxServer {
             .map_err(|e| format!("Could not cleanup sandbox due to: {:?}", e))
             .unwrap();
     }
+}
+
+/// Turn off neard-sandbox logs by default. Users can turn them back on with
+/// NEAR_ENABLE_SANDBOX_LOG=on and specify further paramters with the custom
+/// NEAR_SANDBOX_LOG for higher levels of specificity. NEAR_SANDBOX_LOG args
+/// will be forward into RUST_LOG environment variable as to not conflict
+/// with similar named log targets.
+fn supress_sandbox_logs_if_required() {
+    match std::env::var("NEAR_ENABLE_SANDBOX_LOG") {
+        Ok(val) if val == "on" => {},
+        // non-exhaustive list of targets to supress, since choosing a default LogLevel
+        // does nothing in this case, since nearcore seems to be overriding it somehow:
+        _ => std::env::set_var("NEAR_SANDBOX_LOG", "near=error,stats=error,network=error")
+    };
 }
