@@ -5,10 +5,18 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::path::Path;
 
+/// Error module pertaining to all the error types exposed by workspaces. This
+/// is not an exhaustive list of errors and more can be added in the future.
 pub mod errors {
     pub use near_primitives::errors::{
         ActionError, ActionErrorKind, InvalidAccessKeyError, InvalidTxError, TxExecutionError,
     };
+}
+
+/// Status module exposing types where we can view the status of a transaction's
+/// outcome.
+pub mod status {
+    pub use near_primitives::views::{ExecutionStatusView, FinalExecutionStatus};
 }
 
 pub use near_account_id::AccountId;

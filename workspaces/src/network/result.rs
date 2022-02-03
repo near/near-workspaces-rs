@@ -1,10 +1,8 @@
 use near_account_id::AccountId;
-use near_primitives::views::{
-    CallResult, ExecutionOutcomeWithIdView, ExecutionStatusView, FinalExecutionOutcomeView,
-    FinalExecutionStatus,
-};
+use near_primitives::views::{CallResult, ExecutionOutcomeWithIdView, FinalExecutionOutcomeView};
 
-use crate::{types::Gas, CryptoHash};
+use crate::types::status::{ExecutionStatusView, FinalExecutionStatus};
+use crate::types::{CryptoHash, Gas};
 
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
