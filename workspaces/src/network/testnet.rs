@@ -11,9 +11,10 @@ use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, NetworkClient,
     NetworkInfo, TopLevelAccountCreator,
 };
+use crate::result::ExecutionOutcome;
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
-use crate::{Contract, CryptoHash, ExecutionOutcome};
+use crate::{Contract, CryptoHash};
 
 const RPC_URL: &str = "https://rpc.testnet.near.org";
 const HELPER_URL: &str = "https://helper.testnet.near.org";

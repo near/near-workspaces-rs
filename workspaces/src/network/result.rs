@@ -1,3 +1,8 @@
+// Export errors and status type taken from near_primitives, so there's a mental
+// connection when importing `workspaces::result::{errors, status}`.
+pub use crate::types::errors;
+pub use crate::types::status;
+
 use near_account_id::AccountId;
 use near_primitives::views::{CallResult, ExecutionOutcomeWithIdView, FinalExecutionOutcomeView};
 
