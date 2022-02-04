@@ -112,7 +112,7 @@ impl CallExecutionDetails {
         failures
     }
 
-    /// Just like [`CallExecutionDetails::failures`], grab only failed receipt outcomes.
+    /// Just like `failures`, grab only failed receipt outcomes.
     pub fn receipt_failures(&self) -> Vec<&ExecutionOutcome> {
         self.receipts
             .iter()
