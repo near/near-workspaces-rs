@@ -131,6 +131,15 @@ impl CallExecutionDetails {
     pub fn is_failure(&self) -> bool {
         matches!(self.status, FinalExecutionStatus::Failure(_))
     }
+
+    /// Grab all logs from both the transaction and receipt outcomes.
+    pub fn logs(&self) -> Vec<String> {
+        self.outcomes()
+            .iter()
+            .flat_map(|outcome| &outcome.logs)
+            .map(Clone::clone)
+            .collect()
+    }
 }
 
 impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
