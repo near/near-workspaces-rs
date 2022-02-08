@@ -9,6 +9,8 @@ use crate::rpc::client::{
 };
 use crate::types::{AccessKey, AccountId, Balance, Gas, InMemorySigner, PublicKey};
 
+use super::CallExecutionDetails;
+
 #[derive(Debug, Clone)]
 pub struct CallArgs {
     pub function: String,
@@ -135,7 +137,11 @@ impl<'a> Transaction<'a> {
         self
     }
 
-    pub async fn transact(self) -> anyhow::Result<FinalExecutionOutcomeView> {
+    async fn transact_raw(self) -> anyhow::Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions).await
+    }
+
+    pub async fn transact(self) -> anyhow::Result<CallExecutionDetails> {
+        self.transact_raw().await.map(Into::into)
     }
 }
