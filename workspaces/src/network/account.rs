@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use near_crypto::KeyType;
 
-use crate::types::{AccountId, Balance, Gas, InMemorySigner, SecretKey};
+use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{Network, Worker};
 
 use super::transaction::{CallArgs, Transaction};
@@ -114,7 +114,7 @@ impl Account {
     /// [`Transaction`] object that we can use to add Actions to the batched
     /// transaction. Call `transact` to send the batched transaction to the
     /// network.
-    pub async fn batch_tx<'a, T: Network>(
+    pub fn batch_tx<'a, T: Network>(
         &self,
         worker: &'a Worker<T>,
         contract_id: &AccountId,
@@ -192,7 +192,7 @@ impl Contract {
     /// making calls into this contract. Returns a [`Transaction`] object that
     /// we can use to add Actions to the batched transaction. Call `transact`
     /// to send the batched transaction to the network.
-    pub async fn batch_tx<'a, T: Network>(&self, worker: &'a Worker<T>) -> Transaction<'a> {
+    pub fn batch_tx<'a, T: Network>(&self, worker: &'a Worker<T>) -> Transaction<'a> {
         Transaction::new(worker.client(), self.signer().clone(), self.id().clone())
     }
 }
@@ -220,27 +220,27 @@ impl<'a, T: Network> CallBuilder<'a, T> {
     }
 
     pub fn args(mut self, args: Vec<u8>) -> Self {
-        self.call_args.args(args);
+        self.call_args = self.call_args.args(args);
         self
     }
 
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.call_args.args_json(args)?;
+        self.call_args = self.call_args.args_json(args)?;
         Ok(self)
     }
 
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.call_args.args_borsh(args)?;
+        self.call_args = self.call_args.args_borsh(args)?;
         Ok(self)
     }
 
     pub fn deposit(mut self, deposit: u128) -> Self {
-        self.call_args.deposit(deposit);
+        self.call_args = self.call_args.deposit(deposit);
         self
     }
 
     pub fn gas(mut self, gas: u64) -> Self {
-        self.call_args.gas(gas);
+        self.call_args = self.call_args.gas(gas);
         self
     }
 

@@ -9,6 +9,7 @@ use crate::rpc::client::{
 };
 use crate::types::{AccountId, Balance, Gas, InMemorySigner, PublicKey};
 
+#[derive(Debug, Clone)]
 pub struct CallArgs {
     pub function: String,
     pub args: Vec<u8>,
@@ -26,27 +27,27 @@ impl CallArgs {
         }
     }
 
-    pub fn args(&mut self, args: Vec<u8>) -> &mut Self {
+    pub fn args(mut self, args: Vec<u8>) -> Self {
         self.args = args;
         self
     }
 
-    pub fn args_json<U: serde::Serialize>(&mut self, args: U) -> anyhow::Result<&mut Self> {
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
         self.args = serde_json::to_vec(&args)?;
         Ok(self)
     }
 
-    pub fn args_borsh<U: borsh::BorshSerialize>(&mut self, args: U) -> anyhow::Result<&mut Self> {
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
         self.args = args.try_to_vec()?;
         Ok(self)
     }
 
-    pub fn deposit(&mut self, deposit: u128) -> &mut Self {
+    pub fn deposit(mut self, deposit: u128) -> Self {
         self.deposit = deposit;
         self
     }
 
-    pub fn gas(&mut self, gas: u64) -> &mut Self {
+    pub fn gas(mut self, gas: u64) -> Self {
         self.gas = gas;
         self
     }
@@ -60,22 +61,6 @@ impl From<CallArgs> for Action {
             deposit: args.deposit,
             gas: args.gas,
         })
-    }
-}
-
-pub trait IntoCallArgs {
-    fn into_call_args(self) -> CallArgs;
-}
-
-impl IntoCallArgs for &str {
-    fn into_call_args(self) -> CallArgs {
-        CallArgs::new(self)
-    }
-}
-
-impl IntoCallArgs for CallArgs {
-    fn into_call_args(self) -> CallArgs {
-        self
     }
 }
 
@@ -102,8 +87,8 @@ impl<'a> Transaction<'a> {
     //     self
     // }
 
-    pub fn call(mut self, call_args: impl IntoCallArgs) -> Self {
-        self.actions.push(call_args.into_call_args().into());
+    pub fn call(mut self, call_args: CallArgs) -> Self {
+        self.actions.push(call_args.into());
         self
     }
 

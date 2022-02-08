@@ -1,11 +1,12 @@
 mod account;
-mod transaction;
 mod info;
 mod mainnet;
 mod result;
 mod sandbox;
 mod server;
 mod testnet;
+
+pub mod transaction;
 
 use async_trait::async_trait;
 
