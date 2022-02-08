@@ -3,6 +3,7 @@ mod info;
 mod mainnet;
 mod result;
 mod sandbox;
+mod sandbox_shared;
 mod server;
 mod testnet;
 
@@ -21,6 +22,7 @@ pub use crate::network::account::{Account, Contract};
 pub use crate::network::mainnet::Mainnet;
 pub use crate::network::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 pub use crate::network::sandbox::Sandbox;
+pub use crate::network::sandbox_shared::SandboxShared;
 pub use crate::network::testnet::Testnet;
 
 pub(crate) const DEV_ACCOUNT_SEED: &str = "testificate";
