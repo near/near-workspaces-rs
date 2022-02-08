@@ -46,7 +46,12 @@ impl Client {
         near_jsonrpc_primitives::types::transactions::RpcTransactionError,
     > {
         retry(|| async {
-            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            // A new client is required since using a shared one between different threads can
+            // cause https://github.com/hyperium/hyper/issues/2112
+            let result = JsonRpcClient::new_client()
+                .connect(&self.rpc_addr)
+                .call(method)
+                .await;
             match &result {
                 Ok(response) => {
                     // When user sets logging level to INFO we only print one-liners with submitted
@@ -89,7 +94,12 @@ impl Client {
         M::Error: Debug,
     {
         retry(|| async {
-            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            // A new client is required since using a shared one between different threads can
+            // cause https://github.com/hyperium/hyper/issues/2112
+            let result = JsonRpcClient::new_client()
+                .connect(&self.rpc_addr)
+                .call(method)
+                .await;
             tracing::debug!(
                 target: "workspaces",
                 "Querying RPC with {:?} resulted in {:?}",

@@ -1,18 +1,17 @@
-use std::path::PathBuf;
-use std::str::FromStr;
-
-use async_trait::async_trait;
-use once_cell::sync::Lazy;
-
 use super::{
     Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkClient,
     NetworkInfo, TopLevelAccountCreator,
 };
-
+use crate::network::sandbox::NEAR_BASE;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::rpc::client::Client;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
+use async_mutex::Mutex;
+use async_trait::async_trait;
+use once_cell::sync::Lazy;
+use std::path::PathBuf;
+use std::str::FromStr;
 
 static SHARED_SERVER: Lazy<SandboxServer> = Lazy::new(|| {
     let mut server = SandboxServer::default();
@@ -20,8 +19,10 @@ static SHARED_SERVER: Lazy<SandboxServer> = Lazy::new(|| {
     server
 });
 
-// Constant taken from nearcore crate to avoid dependency
-pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
+// Using a shared sandbox instance is thread-safe as long as all threads use it with their own
+// account. This means, however, is that the creation of these accounts should be sequential in
+// order to avoid duplicated nonces.
+static TLA_ACCOUNT_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
 const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
 
@@ -69,10 +70,12 @@ impl TopLevelAccountCreator for SandboxShared {
         sk: SecretKey,
     ) -> anyhow::Result<CallExecution<Account>> {
         let root_signer = self.root_signer();
+        let guard = TLA_ACCOUNT_MUTEX.lock().await;
         let outcome = self
             .client
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
             .await?;
+        drop(guard);
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
@@ -88,6 +91,7 @@ impl TopLevelAccountCreator for SandboxShared {
         wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
         let root_signer = self.root_signer();
+        let guard = TLA_ACCOUNT_MUTEX.lock().await;
         let outcome = self
             .client
             .create_account_and_deploy(
@@ -98,6 +102,7 @@ impl TopLevelAccountCreator for SandboxShared {
                 wasm.into(),
             )
             .await?;
+        drop(guard);
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {

@@ -9,6 +9,7 @@ Library for automating workflows and testing NEAR smart contracts.
 """
 
 [dependencies]
+async-mutex = "1.4.0"
 async-trait = "0.1"
 anyhow = "1.0"
 base64 = "0.13"
