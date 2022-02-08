@@ -1,13 +1,13 @@
 use near_primitives::transaction::{
-    Action, CreateAccountAction, DeleteAccountAction, DeleteKeyAction, DeployContractAction,
-    FunctionCallAction, StakeAction, TransferAction,
+    Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
+    DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
 };
 use near_primitives::views::FinalExecutionOutcomeView;
 
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
 };
-use crate::types::{AccountId, Balance, Gas, InMemorySigner, PublicKey};
+use crate::types::{AccessKey, AccountId, Balance, Gas, InMemorySigner, PublicKey};
 
 #[derive(Debug, Clone)]
 pub struct CallArgs {
@@ -72,7 +72,7 @@ pub struct Transaction<'a> {
 }
 
 impl<'a> Transaction<'a> {
-    pub fn new(client: &'a Client, signer: InMemorySigner, receiver_id: AccountId) -> Self {
+    pub(crate) fn new(client: &'a Client, signer: InMemorySigner, receiver_id: AccountId) -> Self {
         Self {
             client,
             signer,
@@ -81,11 +81,16 @@ impl<'a> Transaction<'a> {
         }
     }
 
-    // TODO(chore): expose our own AccessKey type
-    // pub fn add_key(mut self, pk: PublicKey, access_key: AccessKey) -> Self {
-    //     self.actions.push(AddKeyAction { public_key: pk.into(), access_key }.into());
-    //     self
-    // }
+    pub fn add_key(mut self, pk: PublicKey, ak: AccessKey) -> Self {
+        self.actions.push(
+            AddKeyAction {
+                public_key: pk.into(),
+                access_key: ak.into(),
+            }
+            .into(),
+        );
+        self
+    }
 
     pub fn call(mut self, call_args: CallArgs) -> Self {
         self.actions.push(call_args.into());
