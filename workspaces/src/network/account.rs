@@ -2,10 +2,10 @@ use std::convert::TryInto;
 
 use near_crypto::KeyType;
 
-use crate::rpc::client::{DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::types::{AccountId, Balance, Gas, InMemorySigner, SecretKey};
 use crate::{Network, Worker};
 
+use super::transaction::{CallArgs, Transaction};
 use super::{CallExecution, CallExecutionDetails, ViewResultDetails};
 
 pub struct Account {
@@ -46,7 +46,7 @@ impl Account {
             worker,
             contract_id.to_owned(),
             self.signer.clone(),
-            function.into(),
+            function,
         )
     }
 
@@ -107,6 +107,19 @@ impl Account {
             result: Contract::new(self.id().clone(), self.signer().clone()),
             details: outcome.into(),
         })
+    }
+
+    /// Start a batch transaction, using the current account as the signer and
+    /// making calls into the contract provided by `contract_id`. Returns a
+    /// [`Transaction`] object that we can use to add Actions to the batched
+    /// transaction. Call `transact` to send the batched transaction to the
+    /// network.
+    pub async fn batch_tx<'a, T: Network>(
+        &self,
+        worker: &'a Worker<T>,
+        contract_id: &AccountId,
+    ) -> Transaction<'a> {
+        Transaction::new(worker.client(), self.signer().clone(), contract_id.clone())
     }
 }
 
@@ -174,17 +187,21 @@ impl Contract {
     ) -> anyhow::Result<CallExecutionDetails> {
         self.account.delete_account(worker, beneficiary_id).await
     }
+
+    /// Start a batch transaction, using the current contract as the signer and
+    /// making calls into this contract. Returns a [`Transaction`] object that
+    /// we can use to add Actions to the batched transaction. Call `transact`
+    /// to send the batched transaction to the network.
+    pub async fn batch_tx<'a, T: Network>(&self, worker: &'a Worker<T>) -> Transaction<'a> {
+        Transaction::new(worker.client(), self.signer().clone(), self.id().clone())
+    }
 }
 
 pub struct CallBuilder<'a, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
     contract_id: AccountId,
-
-    function: String,
-    args: Vec<u8>,
-    deposit: Balance,
-    gas: Gas,
+    call_args: CallArgs,
 }
 
 impl<'a, T: Network> CallBuilder<'a, T> {
@@ -192,41 +209,38 @@ impl<'a, T: Network> CallBuilder<'a, T> {
         worker: &'a Worker<T>,
         contract_id: AccountId,
         signer: InMemorySigner,
-        function: String,
+        function: &str,
     ) -> Self {
         Self {
             worker,
             signer,
             contract_id,
-            function,
-            args: serde_json::json!({}).to_string().into_bytes(),
-            deposit: DEFAULT_CALL_DEPOSIT,
-            gas: DEFAULT_CALL_FN_GAS,
+            call_args: CallArgs::new(function),
         }
     }
 
     pub fn args(mut self, args: Vec<u8>) -> Self {
-        self.args = args;
+        self.call_args.args(args);
         self
     }
 
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.args = serde_json::to_vec(&args)?;
+        self.call_args.args_json(args)?;
         Ok(self)
     }
 
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.args = args.try_to_vec()?;
+        self.call_args.args_borsh(args)?;
         Ok(self)
     }
 
     pub fn deposit(mut self, deposit: u128) -> Self {
-        self.deposit = deposit;
+        self.call_args.deposit(deposit);
         self
     }
 
     pub fn gas(mut self, gas: u64) -> Self {
-        self.gas = gas;
+        self.call_args.gas(gas);
         self
     }
 
@@ -236,10 +250,10 @@ impl<'a, T: Network> CallBuilder<'a, T> {
             .call(
                 &self.signer,
                 &self.contract_id,
-                self.function,
-                self.args,
-                self.gas,
-                self.deposit,
+                self.call_args.function,
+                self.call_args.args,
+                self.call_args.gas,
+                self.call_args.deposit,
             )
             .await
             .map(Into::into)
@@ -248,7 +262,11 @@ impl<'a, T: Network> CallBuilder<'a, T> {
     pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
         self.worker
             .client()
-            .view(self.contract_id, self.function, self.args)
+            .view(
+                self.contract_id,
+                self.call_args.function,
+                self.call_args.args,
+            )
             .await
     }
 }
