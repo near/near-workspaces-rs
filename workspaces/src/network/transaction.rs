@@ -136,6 +136,6 @@ impl<'a> Transaction<'a> {
     }
 
     pub async fn transact(self) -> anyhow::Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(&self.client, &self.signer, &self.receiver_id, self.actions).await
+        send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions).await
     }
 }
