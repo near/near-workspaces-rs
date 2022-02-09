@@ -2,7 +2,7 @@ mod impls;
 
 use std::sync::Arc;
 
-use crate::network::{Mainnet, Network, Sandbox, SandboxShared, Testnet};
+use crate::network::{Mainnet, Network, Sandbox, Testnet};
 
 pub struct Worker<T> {
     workspace: Arc<T>,
@@ -21,10 +21,6 @@ where
 
 pub fn sandbox() -> Worker<Sandbox> {
     Worker::new(Sandbox::new())
-}
-
-pub fn sandbox_shared() -> Worker<SandboxShared> {
-    Worker::new(SandboxShared::new())
 }
 
 pub fn testnet() -> Worker<Testnet> {

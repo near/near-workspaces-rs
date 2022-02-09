@@ -1,66 +1,62 @@
+use std::path::PathBuf;
+use std::str::FromStr;
+
+use async_trait::async_trait;
+
 use super::{
     Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkClient,
     NetworkInfo, TopLevelAccountCreator,
 };
+
 use crate::network::sandbox::{HasRpcPort, DEFAULT_DEPOSIT};
 use crate::network::server::SandboxServer;
 use crate::network::{Info, Sandbox};
 use crate::rpc::client::Client;
 use crate::types::{AccountId, InMemorySigner, SecretKey};
-use async_mutex::Mutex;
-use async_trait::async_trait;
-use once_cell::sync::Lazy;
-use std::path::PathBuf;
-use std::str::FromStr;
 
-static SHARED_SERVER: Lazy<SandboxServer> = Lazy::new(|| {
-    let mut server = SandboxServer::default();
-    server.start().unwrap();
-    server
-});
-
-// Using a shared sandbox instance is thread-safe as long as all threads use it with their own
-// account. This means, however, is that the creation of these accounts should be sequential in
-// order to avoid duplicated nonces.
-static TLA_ACCOUNT_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
-
-pub struct SandboxShared {
+pub struct SandboxMulti {
+    server: SandboxServer,
     client: Client,
     info: Info,
 }
 
-impl SandboxShared {
+impl SandboxMulti {
     pub(crate) fn new() -> Self {
-        let client = Client::new(SHARED_SERVER.rpc_addr());
+        let mut server = SandboxServer::default();
+        server.start().unwrap();
+
+        let client = Client::new(server.rpc_addr());
         let info = Info {
-            name: "sandbox-shared".to_string(),
+            name: "sandbox".to_string(),
             root_id: AccountId::from_str("test.near").unwrap(),
             keystore_path: PathBuf::from(".near-credentials/sandbox/"),
-            rpc_url: SHARED_SERVER.rpc_addr(),
+            rpc_url: server.rpc_addr(),
         };
 
-        Self { client, info }
+        Self {
+            server,
+            client,
+            info,
+        }
     }
 }
 
-impl AllowStatePatching for SandboxShared {}
+impl AllowStatePatching for SandboxMulti {}
 
-impl AllowDevAccountCreation for SandboxShared {}
+impl AllowDevAccountCreation for SandboxMulti {}
 
 #[async_trait]
-impl TopLevelAccountCreator for SandboxShared {
+impl TopLevelAccountCreator for SandboxMulti {
     async fn create_tla(
         &self,
         id: AccountId,
         sk: SecretKey,
     ) -> anyhow::Result<CallExecution<Account>> {
         let root_signer = Sandbox::root_signer(self.rpc_port());
-        let guard = TLA_ACCOUNT_MUTEX.lock().await;
         let outcome = self
             .client
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
             .await?;
-        drop(guard);
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
@@ -76,7 +72,6 @@ impl TopLevelAccountCreator for SandboxShared {
         wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
         let root_signer = Sandbox::root_signer(self.rpc_port());
-        let guard = TLA_ACCOUNT_MUTEX.lock().await;
         let outcome = self
             .client
             .create_account_and_deploy(
@@ -87,7 +82,6 @@ impl TopLevelAccountCreator for SandboxShared {
                 wasm.into(),
             )
             .await?;
-        drop(guard);
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
@@ -97,20 +91,20 @@ impl TopLevelAccountCreator for SandboxShared {
     }
 }
 
-impl NetworkClient for SandboxShared {
+impl NetworkClient for SandboxMulti {
     fn client(&self) -> &Client {
         &self.client
     }
 }
 
-impl NetworkInfo for SandboxShared {
+impl NetworkInfo for SandboxMulti {
     fn info(&self) -> &Info {
         &self.info
     }
 }
 
-impl HasRpcPort for SandboxShared {
+impl HasRpcPort for SandboxMulti {
     fn rpc_port(&self) -> u16 {
-        SHARED_SERVER.rpc_port
+        self.server.rpc_port
     }
 }

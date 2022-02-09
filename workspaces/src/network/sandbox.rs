@@ -1,28 +1,23 @@
-use std::path::PathBuf;
-use std::str::FromStr;
-
-use async_trait::async_trait;
-
 use super::{
     Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkClient,
     NetworkInfo, TopLevelAccountCreator,
 };
-
-use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::rpc::client::Client;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
+use async_trait::async_trait;
+use std::path::PathBuf;
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 
-const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
+pub(crate) const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
 
-pub struct Sandbox {
-    server: SandboxServer,
-    client: Client,
-    info: Info,
-}
+#[cfg(not(feature = "sandbox-multi"))]
+pub struct Sandbox(crate::network::SandboxShared);
+
+#[cfg(feature = "sandbox-multi")]
+pub struct Sandbox(crate::network::SandboxMulti);
 
 impl Sandbox {
     pub(crate) fn home_dir(port: u16) -> PathBuf {
@@ -31,30 +26,21 @@ impl Sandbox {
         path
     }
 
-    pub(crate) fn root_signer(&self) -> InMemorySigner {
-        let mut path = Self::home_dir(self.server.rpc_port);
+    pub(crate) fn root_signer(port: u16) -> InMemorySigner {
+        let mut path = Self::home_dir(port);
         path.push("validator_key.json");
 
         InMemorySigner::from_file(&path)
     }
 
+    #[cfg(not(feature = "sandbox-multi"))]
     pub(crate) fn new() -> Self {
-        let mut server = SandboxServer::default();
-        server.start().unwrap();
+        Self(crate::network::SandboxShared::new())
+    }
 
-        let client = Client::new(server.rpc_addr());
-        let info = Info {
-            name: "sandbox".to_string(),
-            root_id: AccountId::from_str("test.near").unwrap(),
-            keystore_path: PathBuf::from(".near-credentials/sandbox/"),
-            rpc_url: server.rpc_addr(),
-        };
-
-        Self {
-            server,
-            client,
-            info,
-        }
+    #[cfg(feature = "sandbox-multi")]
+    pub(crate) fn new() -> Self {
+        Self(crate::network::SandboxMulti::new())
     }
 }
 
@@ -69,17 +55,7 @@ impl TopLevelAccountCreator for Sandbox {
         id: AccountId,
         sk: SecretKey,
     ) -> anyhow::Result<CallExecution<Account>> {
-        let root_signer = self.root_signer();
-        let outcome = self
-            .client
-            .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
-            .await?;
-
-        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        Ok(CallExecution {
-            result: Account::new(id, signer),
-            details: outcome.into(),
-        })
+        self.0.create_tla(id, sk).await
     }
 
     async fn create_tla_and_deploy(
@@ -88,34 +64,28 @@ impl TopLevelAccountCreator for Sandbox {
         sk: SecretKey,
         wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
-        let root_signer = self.root_signer();
-        let outcome = self
-            .client
-            .create_account_and_deploy(
-                &root_signer,
-                &id,
-                sk.public_key(),
-                DEFAULT_DEPOSIT,
-                wasm.into(),
-            )
-            .await?;
-
-        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        Ok(CallExecution {
-            result: Contract::new(id, signer),
-            details: outcome.into(),
-        })
+        self.0.create_tla_and_deploy(id, sk, wasm).await
     }
 }
 
 impl NetworkClient for Sandbox {
     fn client(&self) -> &Client {
-        &self.client
+        self.0.client()
     }
 }
 
 impl NetworkInfo for Sandbox {
     fn info(&self) -> &Info {
-        &self.info
+        self.0.info()
+    }
+}
+
+pub(crate) trait HasRpcPort {
+    fn rpc_port(&self) -> u16;
+}
+
+impl HasRpcPort for Sandbox {
+    fn rpc_port(&self) -> u16 {
+        self.0.rpc_port()
     }
 }

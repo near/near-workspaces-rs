@@ -3,6 +3,9 @@ mod info;
 mod mainnet;
 mod result;
 mod sandbox;
+#[cfg(feature = "sandbox-multi")]
+mod sandbox_multi;
+#[cfg(not(feature = "sandbox-multi"))]
 mod sandbox_shared;
 mod server;
 mod testnet;
@@ -13,6 +16,11 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::state_record::StateRecord;
 
 pub(crate) use crate::network::info::Info;
+pub(crate) use crate::network::sandbox::HasRpcPort;
+#[cfg(feature = "sandbox-multi")]
+pub(crate) use crate::network::sandbox_multi::SandboxMulti;
+#[cfg(not(feature = "sandbox-multi"))]
+pub(crate) use crate::network::sandbox_shared::SandboxShared;
 use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractBuilder;
 use crate::types::{AccountId, KeyType, SecretKey};
@@ -22,7 +30,6 @@ pub use crate::network::account::{Account, Contract};
 pub use crate::network::mainnet::Mainnet;
 pub use crate::network::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 pub use crate::network::sandbox::Sandbox;
-pub use crate::network::sandbox_shared::SandboxShared;
 pub use crate::network::testnet::Testnet;
 
 pub(crate) const DEV_ACCOUNT_SEED: &str = "testificate";
