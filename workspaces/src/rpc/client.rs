@@ -38,17 +38,6 @@ impl Client {
         Self { rpc_addr }
     }
 
-    async fn query_retry<M: methods::RpcMethod, F, T>(
-        &self,
-        f: F,
-    ) -> MethodCallResult<M::Response, M::Error>
-    where
-        F: Fn() -> T,
-        T: core::future::Future<Output = MethodCallResult<M::Response, M::Error>>,
-    {
-        retry(|| async { f().await }).await
-    }
-
     pub(crate) async fn query_broadcast_tx(
         &self,
         method: &methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest,
@@ -56,10 +45,13 @@ impl Client {
         FinalExecutionOutcomeView,
         near_jsonrpc_primitives::types::transactions::RpcTransactionError,
     > {
-        self.query_retry::<methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest, _, _>(|| async {
+        retry(|| async {
             let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
             match &result {
                 Ok(response) => {
+                    // When user sets logging level to INFO we only print one-liners with submitted
+                    // actions and the resulting status. If the level is DEBUG or lower, we print
+                    // the entire request and response structures.
                     if tracing::level_enabled!(tracing::Level::DEBUG) {
                         tracing::debug!(
                             target: "workspaces",
@@ -77,21 +69,12 @@ impl Client {
                     }
                 }
                 Err(error) => {
-                    if tracing::level_enabled!(tracing::Level::DEBUG) {
-                        tracing::error!(
-                            target: "workspaces",
-                            "Calling RPC method {:?} resulted in error {:?}",
-                            method,
-                            error
-                        );
-                    } else {
-                        tracing::error!(
-                            target: "workspaces",
-                            "Submitting transaction with actions {:?} resulted in error {:?}",
-                            method.signed_transaction.transaction.actions,
-                            error
-                        );
-                    }
+                    tracing::error!(
+                        target: "workspaces",
+                        "Calling RPC method {:?} resulted in error {:?}",
+                        method,
+                        error
+                    );
                 }
             };
             result
@@ -105,7 +88,7 @@ impl Client {
         M::Response: Debug,
         M::Error: Debug,
     {
-        self.query_retry::<M, _, _>(|| async {
+        retry(|| async {
             let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
             tracing::debug!(
                 target: "workspaces",
