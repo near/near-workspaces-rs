@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
@@ -37,11 +38,67 @@ impl Client {
         Self { rpc_addr }
     }
 
-    pub(crate) async fn query<M: methods::RpcMethod>(
+    pub(crate) async fn query_broadcast_tx(
         &self,
-        method: &M,
-    ) -> MethodCallResult<M::Response, M::Error> {
-        retry(|| async { JsonRpcClient::connect(&self.rpc_addr).call(method).await }).await
+        method: &methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest,
+    ) -> MethodCallResult<
+        FinalExecutionOutcomeView,
+        near_jsonrpc_primitives::types::transactions::RpcTransactionError,
+    > {
+        retry(|| async {
+            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            match &result {
+                Ok(response) => {
+                    // When user sets logging level to INFO we only print one-liners with submitted
+                    // actions and the resulting status. If the level is DEBUG or lower, we print
+                    // the entire request and response structures.
+                    if tracing::level_enabled!(tracing::Level::DEBUG) {
+                        tracing::debug!(
+                            target: "workspaces",
+                            "Calling RPC method {:?} succeeded with {:?}",
+                            method,
+                            response
+                        );
+                    } else {
+                        tracing::info!(
+                            target: "workspaces",
+                            "Submitting transaction with actions {:?} succeeded with status {:?}",
+                            method.signed_transaction.transaction.actions,
+                            response.status
+                        );
+                    }
+                }
+                Err(error) => {
+                    tracing::error!(
+                        target: "workspaces",
+                        "Calling RPC method {:?} resulted in error {:?}",
+                        method,
+                        error
+                    );
+                }
+            };
+            result
+        })
+        .await
+    }
+
+    pub(crate) async fn query<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
+    where
+        M: methods::RpcMethod + Debug,
+        M::Response: Debug,
+        M::Error: Debug,
+    {
+        retry(|| async {
+            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            tracing::debug!(
+                target: "workspaces",
+                "Querying RPC with {:?} resulted in {:?}",
+                method,
+                result
+            );
+            result
+        })
+        .await
     }
 
     async fn send_tx_and_retry(
@@ -323,7 +380,7 @@ pub(crate) async fn send_tx(
     tx: SignedTransaction,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
     client
-        .query(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
+        .query_broadcast_tx(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
             signed_transaction: tx,
         })
         .await
