@@ -1,6 +1,6 @@
 use crate::network::{
-    Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, HasRpcPort,
-    NetworkClient, NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
+    Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
+    NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
 };
 use crate::network::{Info, Sandbox};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
@@ -153,7 +153,7 @@ where
 impl Worker<Sandbox> {
     pub fn root_account(&self) -> Account {
         let account_id = self.info().root_id.clone();
-        let signer = Sandbox::root_signer(self.workspace.rpc_port());
+        let signer = self.workspace.root_signer();
         Account::new(account_id, signer)
     }
 }

@@ -47,4 +47,4 @@ test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
 [features]
-sandbox-multi = []
+sandbox-parallel = []
