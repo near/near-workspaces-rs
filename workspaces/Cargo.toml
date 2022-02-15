@@ -33,10 +33,10 @@ near-crypto = "0.12.0"
 near-primitives = "0.12.0"
 near-jsonrpc-primitives = "0.12.0"
 near-jsonrpc-client = { version = "0.3.0", features = ["sandbox"] }
-near-sandbox-utils = "0.1.1"
+near-sandbox-utils = { git = "https://github.com/near/sandbox", branch = "daniyar/autocloseable" }
 
 [build-dependencies]
-near-sandbox-utils = "0.1"
+near-sandbox-utils = { git = "https://github.com/near/sandbox", branch = "daniyar/autocloseable" }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

@@ -1,12 +1,12 @@
 use crate::network::Sandbox;
+use near_sandbox_utils::SandboxHandle;
 use portpicker::pick_unused_port;
-use std::process::Child;
 use tracing::info;
 
 pub struct SandboxServer {
     pub(crate) rpc_port: u16,
     pub(crate) net_port: u16,
-    process: Option<Child>,
+    sandbox_handle: Option<SandboxHandle>,
 }
 
 impl SandboxServer {
@@ -14,7 +14,7 @@ impl SandboxServer {
         Self {
             rpc_port,
             net_port,
-            process: None,
+            sandbox_handle: None,
         }
     }
 
@@ -26,9 +26,9 @@ impl SandboxServer {
         let _ = std::fs::remove_dir_all(&home_dir);
         near_sandbox_utils::init(&home_dir)?.wait()?;
 
-        let child = near_sandbox_utils::run(&home_dir, self.rpc_port, self.net_port)?;
-        info!(target: "workspaces", "Started sandbox: pid={:?}", child.id());
-        self.process = Some(child);
+        let sandbox_handle = near_sandbox_utils::run(&home_dir, self.rpc_port, self.net_port)?;
+        info!(target: "workspaces", "Started sandbox: pid={:?}", sandbox_handle.sandbox_process.id());
+        self.sandbox_handle = Some(sandbox_handle);
 
         Ok(())
     }
@@ -48,11 +48,11 @@ impl Default for SandboxServer {
 
 impl Drop for SandboxServer {
     fn drop(&mut self) {
-        if self.process.is_none() {
+        if self.sandbox_handle.is_none() {
             return;
         }
 
-        let child = self.process.as_mut().unwrap();
+        let child = &mut self.sandbox_handle.as_mut().unwrap().sandbox_process;
 
         info!(
             target: "workspaces",
