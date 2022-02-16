@@ -61,7 +61,7 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
         self
     }
 
-    pub async fn transact(self) -> anyhow::Result<Contract> {
+    pub async fn transact(self) -> anyhow::Result<Contract<'b>> {
         let account_id = self.account_id;
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();
@@ -126,6 +126,6 @@ impl<'a, 'b> ImportContractBuilder<'a, 'b> {
             .await
             .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
 
-        Ok(Contract::new(account_id, signer))
+        Ok(Contract::new(account_id, signer, self.into_network))
     }
 }

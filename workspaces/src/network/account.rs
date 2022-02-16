@@ -2,27 +2,28 @@ use std::convert::TryInto;
 
 use near_crypto::KeyType;
 
-use crate::rpc::client::{DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
+use crate::rpc::client::{DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS, Client};
 use crate::types::{AccountId, Balance, Gas, InMemorySigner, SecretKey};
 use crate::{Network, Worker};
 
 use super::{CallExecution, CallExecutionDetails, ViewResultDetails};
 
-pub struct Account {
+pub struct Account<'a> {
     pub(crate) id: AccountId,
     pub(crate) signer: InMemorySigner,
+    client: &'a Client,
 }
 
-impl Account {
+impl<'a> Account<'a> {
     /// Create a new account with the given path to the credentials JSON file
-    pub fn from_file(path: impl AsRef<std::path::Path>) -> Self {
+    pub fn from_file(client: &'a Client, path: impl AsRef<std::path::Path>) -> Self {
         let signer = InMemorySigner::from_file(path.as_ref());
         let id = signer.0.account_id.clone();
-        Self::new(id, signer)
+        Self::new(id, signer, client)
     }
 
-    pub(crate) fn new(id: AccountId, signer: InMemorySigner) -> Self {
-        Self { id, signer }
+    pub(crate) fn new(id: AccountId, signer: InMemorySigner, client: &'a Client) -> Self {
+        Self { id, signer, client }
     }
 
     pub fn id(&self) -> &AccountId {
@@ -36,14 +37,13 @@ impl Account {
     /// Call a contract on the network specified within `worker`, and return
     /// a Builder object that we will make use to populate the rest of the
     /// call details.
-    pub fn call<'a, T: Network>(
+    pub fn call(
         &self,
-        worker: &'a Worker<T>,
         contract_id: &AccountId,
         function: &str,
-    ) -> CallBuilder<'a, T> {
+    ) -> CallBuilder<'a> {
         CallBuilder::new(
-            worker,
+            self.client,
             contract_id.to_owned(),
             self.signer.clone(),
             function.into(),
@@ -78,13 +78,12 @@ impl Account {
     /// Create a new sub account. Returns a CreateAccountBuilder object that
     /// we can make use of to fill out the rest of the details. The sub account
     /// id will be in the form of: "{new_account_id}.{parent_account_id}"
-    pub fn create_subaccount<'a, 'b, T: Network>(
+    pub fn create_subaccount<'b>(
         &self,
-        worker: &'a Worker<T>,
         new_account_id: &'b str,
-    ) -> CreateAccountBuilder<'a, 'b, T> {
+    ) -> CreateAccountBuilder<'a, 'b> {
         CreateAccountBuilder::new(
-            worker,
+            self.client,
             self.signer.clone(),
             self.id().clone(),
             new_account_id,
@@ -93,18 +92,16 @@ impl Account {
 
     /// Deploy contract code or WASM bytes to the account, and return us a new
     /// [`Contract`] object that we can use to interact with the contract.
-    pub async fn deploy<T: Network>(
+    pub async fn deploy(
         &self,
-        worker: &Worker<T>,
         wasm: &[u8],
-    ) -> anyhow::Result<CallExecution<Contract>> {
-        let outcome = worker
-            .client()
+    ) -> anyhow::Result<CallExecution<Contract<'a>>> {
+        let outcome = self.client
             .deploy(&self.signer, self.id(), wasm.as_ref().into())
             .await?;
 
         Ok(CallExecution {
-            result: Contract::new(self.id().clone(), self.signer().clone()),
+            result: Contract::new(self.id().clone(), self.signer().clone(), self.client),
             details: outcome.into(),
         })
     }
@@ -112,18 +109,18 @@ impl Account {
 
 // TODO: allow users to create Contracts so that they can call into
 // them without deploying the contract themselves.
-pub struct Contract {
-    pub(crate) account: Account,
+pub struct Contract<'a> {
+    pub(crate) account: Account<'a>,
 }
 
-impl Contract {
-    pub(crate) fn new(id: AccountId, signer: InMemorySigner) -> Self {
+impl<'a> Contract<'a> {
+    pub(crate) fn new(id: AccountId, signer: InMemorySigner, client: &'a Client) -> Self {
         Self {
-            account: Account::new(id, signer),
+            account: Account::new(id, signer, client),
         }
     }
 
-    pub(crate) fn account(account: Account) -> Self {
+    pub(crate) fn account(account: Account<'a>) -> Self {
         Self { account }
     }
 
@@ -146,12 +143,11 @@ impl Contract {
     /// If we want to make use of the contract's account to call into a
     /// different contract besides the current one, use
     /// `contract.as_account().call` instead.
-    pub fn call<'a, T: Network>(
+    pub fn call(
         &self,
-        worker: &'a Worker<T>,
         function: &str,
-    ) -> CallBuilder<'a, T> {
-        self.account.call(worker, self.id(), function)
+    ) -> CallBuilder<'a> {
+        self.account.call(self.id(), function)
     }
 
     /// Call a view function into the current contract. Returns a result that
@@ -176,8 +172,8 @@ impl Contract {
     }
 }
 
-pub struct CallBuilder<'a, T> {
-    worker: &'a Worker<T>,
+pub struct CallBuilder<'a> {
+    client: &'a Client,
     signer: InMemorySigner,
     contract_id: AccountId,
 
@@ -187,15 +183,15 @@ pub struct CallBuilder<'a, T> {
     gas: Gas,
 }
 
-impl<'a, T: Network> CallBuilder<'a, T> {
+impl<'a> CallBuilder<'a> {
     fn new(
-        worker: &'a Worker<T>,
+        client: &'a Client,
         contract_id: AccountId,
         signer: InMemorySigner,
         function: String,
     ) -> Self {
         Self {
-            worker,
+            client,
             signer,
             contract_id,
             function,
@@ -231,8 +227,7 @@ impl<'a, T: Network> CallBuilder<'a, T> {
     }
 
     pub async fn transact(self) -> anyhow::Result<CallExecutionDetails> {
-        self.worker
-            .client()
+        self.client
             .call(
                 &self.signer,
                 &self.contract_id,
@@ -246,15 +241,14 @@ impl<'a, T: Network> CallBuilder<'a, T> {
     }
 
     pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
-        self.worker
-            .client()
+        self.client
             .view(self.contract_id, self.function, self.args)
             .await
     }
 }
 
-pub struct CreateAccountBuilder<'a, 'b, T> {
-    worker: &'a Worker<T>,
+pub struct CreateAccountBuilder<'a, 'b> {
+    client: &'a Client,
     signer: InMemorySigner,
     parent_id: AccountId,
     new_account_id: &'b str,
@@ -263,18 +257,15 @@ pub struct CreateAccountBuilder<'a, 'b, T> {
     secret_key: Option<SecretKey>,
 }
 
-impl<'a, 'b, T> CreateAccountBuilder<'a, 'b, T>
-where
-    T: Network,
-{
+impl<'a, 'b> CreateAccountBuilder<'a, 'b> {
     fn new(
-        worker: &'a Worker<T>,
+        client: &'a Client,
         signer: InMemorySigner,
         parent_id: AccountId,
         new_account_id: &'b str,
     ) -> Self {
         Self {
-            worker,
+            client,
             signer,
             parent_id,
             new_account_id,
@@ -293,20 +284,19 @@ where
         self
     }
 
-    pub async fn transact(self) -> anyhow::Result<CallExecution<Account>> {
+    pub async fn transact(self) -> anyhow::Result<CallExecution<Account<'a>>> {
         let sk = self
             .secret_key
             .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
         let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id).try_into()?;
 
         let outcome = self
-            .worker
-            .client()
+            .client
             .create_account(&self.signer, &id, sk.public_key(), self.initial_balance)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        let account = Account::new(id, signer);
+        let account = Account::new(id, signer, self.client);
 
         Ok(CallExecution {
             result: account,

@@ -52,7 +52,7 @@ impl TopLevelAccountCreator for Testnet {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
 
         Ok(CallExecution {
-            result: Account::new(id, signer),
+            result: Account::new(id, signer, self.client()),
             details: CallExecutionDetails {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.

@@ -87,9 +87,9 @@ where
         self.workspace.client()
     }
 
-    pub async fn call(
+    pub async fn call<'a>(
         &self,
-        contract: &Contract,
+        contract: &Contract<'a>,
         function: &str,
         args: Vec<u8>,
         gas: Option<Gas>,
@@ -156,6 +156,6 @@ impl Worker<Sandbox> {
     pub fn root_account(&self) -> Account {
         let account_id = self.info().root_id.clone();
         let signer = self.workspace.root_signer();
-        Account::new(account_id, signer)
+        Account::new(account_id, signer, self.client())
     }
 }

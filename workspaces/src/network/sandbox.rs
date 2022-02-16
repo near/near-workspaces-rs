@@ -77,7 +77,7 @@ impl TopLevelAccountCreator for Sandbox {
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
-            result: Account::new(id, signer),
+            result: Account::new(id, signer, self.client()),
             details: outcome.into(),
         })
     }
@@ -102,7 +102,7 @@ impl TopLevelAccountCreator for Sandbox {
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
-            result: Contract::new(id, signer),
+            result: Contract::new(id, signer, self.client()),
             details: outcome.into(),
         })
     }
