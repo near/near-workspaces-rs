@@ -6,7 +6,9 @@ mod sandbox;
 mod server;
 mod testnet;
 
+use anyhow::anyhow;
 use async_trait::async_trait;
+use std::fs;
 
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
@@ -15,7 +17,7 @@ pub(crate) use crate::network::info::Info;
 use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractBuilder;
 use crate::types::{AccountId, KeyType, SecretKey};
-use crate::Worker;
+use crate::{cargo, Worker};
 
 pub use crate::network::account::{Account, Contract};
 pub use crate::network::mainnet::Mainnet;
@@ -58,6 +60,7 @@ pub trait DevAccountDeployer {
     async fn dev_generate(&self) -> (AccountId, SecretKey);
     async fn dev_create_account(&self) -> anyhow::Result<Account>;
     async fn dev_deploy(&self, wasm: &[u8]) -> anyhow::Result<Contract>;
+    async fn dev_deploy_project(&self, project_path: &str) -> anyhow::Result<Contract>;
 }
 
 #[async_trait]
@@ -91,6 +94,41 @@ where
         let (id, sk) = self.dev_generate().await;
         let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
         contract.into()
+    }
+
+    async fn dev_deploy_project(&self, project_path: &str) -> anyhow::Result<Contract> {
+        let messages = cargo::build_cargo_project(fs::canonicalize(project_path)?)?;
+        let compile_artifact = messages
+            .iter()
+            .filter_map(|m| match m {
+                cargo_metadata::Message::CompilerArtifact(artifact) => Some(artifact),
+                _ => None,
+            })
+            .last()
+            .ok_or(anyhow!(
+                "Cargo failed to produce any compilation artifacts. \
+                 Please check that your project contains a NEAR smart contract."
+            ))?;
+        let wasm_files = compile_artifact
+            .filenames
+            .iter()
+            .filter(|f| f.as_str().ends_with("wasm"))
+            .collect::<Vec<_>>();
+        if wasm_files.len() == 0 {
+            Err(anyhow!(
+                "Compilation resulted in no '.wasm' target files. \
+                 Please check that your project contains a NEAR smart contract."
+            ))
+        } else if wasm_files.len() > 1 {
+            Err(anyhow!(
+                "Compilation resulted in more than one '.wasm' target file: {:?}",
+                wasm_files
+            ))
+        } else {
+            let file = wasm_files.first().unwrap();
+            let wasm = fs::read(file.canonicalize()?)?;
+            self.dev_deploy(&wasm).await
+        }
     }
 }
 

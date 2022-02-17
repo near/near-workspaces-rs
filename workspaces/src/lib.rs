@@ -1,3 +1,4 @@
+mod cargo;
 mod network;
 mod rpc;
 mod types;
