@@ -123,7 +123,7 @@ where
             .iter()
             .filter(|f| f.as_str().ends_with(".wasm"))
             .collect::<Vec<_>>();
-        if wasm_files.len() == 0 {
+        if wasm_files.is_empty() {
             Err(anyhow!(
                 "Compilation resulted in no '.wasm' target files. \
                  Please check that your project contains a NEAR smart contract."
