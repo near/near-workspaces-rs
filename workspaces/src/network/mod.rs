@@ -60,6 +60,12 @@ pub trait DevAccountDeployer {
     async fn dev_generate(&self) -> (AccountId, SecretKey);
     async fn dev_create_account(&self) -> anyhow::Result<Account>;
     async fn dev_deploy(&self, wasm: &[u8]) -> anyhow::Result<Contract>;
+
+    /// Builds the cargo project located at `project_path` and deploys the resulting smart
+    /// contract using a freshly generated dev account.
+    ///
+    /// NOTE: This function does not check whether the resulting wasm file is a valid smart
+    /// contract or not.
     async fn dev_deploy_project(&self, project_path: &str) -> anyhow::Result<Contract>;
 }
 
@@ -98,6 +104,8 @@ where
 
     async fn dev_deploy_project(&self, project_path: &str) -> anyhow::Result<Contract> {
         let messages = cargo::build_cargo_project(fs::canonicalize(project_path)?)?;
+        // We find the last compiler artifact message which should contain information about the
+        // resulting .wasm file
         let compile_artifact = messages
             .iter()
             .filter_map(|m| match m {
@@ -109,10 +117,11 @@ where
                 "Cargo failed to produce any compilation artifacts. \
                  Please check that your project contains a NEAR smart contract."
             ))?;
+        // The project could have generated many auxiliary files, we are only interested in .wasm files
         let wasm_files = compile_artifact
             .filenames
             .iter()
-            .filter(|f| f.as_str().ends_with("wasm"))
+            .filter(|f| f.as_str().ends_with(".wasm"))
             .collect::<Vec<_>>();
         if wasm_files.len() == 0 {
             Err(anyhow!(
