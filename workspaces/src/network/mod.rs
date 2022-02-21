@@ -123,20 +123,16 @@ where
             .iter()
             .filter(|f| f.as_str().ends_with(".wasm"))
             .collect::<Vec<_>>();
-        if wasm_files.is_empty() {
-            Err(anyhow!(
+        match wasm_files.as_slice() {
+            [] => Err(anyhow!(
                 "Compilation resulted in no '.wasm' target files. \
                  Please check that your project contains a NEAR smart contract."
-            ))
-        } else if wasm_files.len() > 1 {
-            Err(anyhow!(
+            )),
+            [file] => self.dev_deploy(&fs::read(file.canonicalize()?)?).await,
+            _ => Err(anyhow!(
                 "Compilation resulted in more than one '.wasm' target file: {:?}",
                 wasm_files
-            ))
-        } else {
-            let file = wasm_files.first().unwrap();
-            let wasm = fs::read(file.canonicalize()?)?;
-            self.dev_deploy(&wasm).await
+            )),
         }
     }
 }

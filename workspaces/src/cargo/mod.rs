@@ -33,9 +33,14 @@ pub fn build_cargo_project<P: AsRef<Path> + Debug>(
             .collect())
     } else {
         Err(anyhow!(
-            "Failed to build project '{:?}': {}",
+            "Failed to build project '{:?}'.\n\
+            Stderr:\n\
+            {}\n\
+            Stdout:\n\
+            {}",
             project_path,
-            String::from_utf8(output.stderr)?
+            String::from_utf8(output.stderr)?,
+            String::from_utf8(output.stdout)?,
         ))
     }
 }
