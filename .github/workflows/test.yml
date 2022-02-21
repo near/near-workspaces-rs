@@ -35,6 +35,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v2
+    - name: Add wasm32 target
+      run: rustup target add wasm32-unknown-unknown
     - name: Build
       run: cargo build --verbose
     - name: Run tests
