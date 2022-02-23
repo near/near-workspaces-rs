@@ -41,8 +41,8 @@ impl Account {
         worker: &'a Worker<T>,
         contract_id: &AccountId,
         function: &str,
-    ) -> CallBuilder<'a, T> {
-        CallBuilder::new(
+    ) -> CallTransaction<'a, T> {
+        CallTransaction::new(
             worker,
             contract_id.to_owned(),
             self.signer.clone(),
@@ -82,8 +82,8 @@ impl Account {
         &self,
         worker: &'a Worker<T>,
         new_account_id: &'b str,
-    ) -> CreateAccountBuilder<'a, 'b, T> {
-        CreateAccountBuilder::new(
+    ) -> CreateAccountTransaction<'a, 'b, T> {
+        CreateAccountTransaction::new(
             worker,
             self.signer.clone(),
             self.id().clone(),
@@ -163,7 +163,7 @@ impl Contract {
         &self,
         worker: &'a Worker<T>,
         function: &str,
-    ) -> CallBuilder<'a, T> {
+    ) -> CallTransaction<'a, T> {
         self.account.call(worker, self.id(), function)
     }
 
@@ -197,14 +197,14 @@ impl Contract {
     }
 }
 
-pub struct CallBuilder<'a, T> {
+pub struct CallTransaction<'a, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
     contract_id: AccountId,
     call_args: CallArgs,
 }
 
-impl<'a, T: Network> CallBuilder<'a, T> {
+impl<'a, T: Network> CallTransaction<'a, T> {
     fn new(
         worker: &'a Worker<T>,
         contract_id: AccountId,
@@ -271,7 +271,7 @@ impl<'a, T: Network> CallBuilder<'a, T> {
     }
 }
 
-pub struct CreateAccountBuilder<'a, 'b, T> {
+pub struct CreateAccountTransaction<'a, 'b, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
     parent_id: AccountId,
@@ -281,7 +281,7 @@ pub struct CreateAccountBuilder<'a, 'b, T> {
     secret_key: Option<SecretKey>,
 }
 
-impl<'a, 'b, T> CreateAccountBuilder<'a, 'b, T>
+impl<'a, 'b, T> CreateAccountTransaction<'a, 'b, T>
 where
     T: Network,
 {
