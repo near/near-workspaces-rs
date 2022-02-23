@@ -23,7 +23,7 @@ impl CallArgs {
     pub fn new(function: &str) -> Self {
         Self {
             function: function.into(),
-            args: Vec::new(),
+            args: serde_json::json!({}).to_string().into_bytes(),
             deposit: DEFAULT_CALL_DEPOSIT,
             gas: DEFAULT_CALL_FN_GAS,
         }
