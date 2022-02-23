@@ -192,7 +192,7 @@ impl Contract {
     /// making calls into this contract. Returns a [`Transaction`] object that
     /// we can use to add Actions to the batched transaction. Call `transact`
     /// to send the batched transaction to the network.
-    pub fn batch_tx<'a, T: Network>(&self, worker: &'a Worker<T>) -> Transaction<'a> {
+    pub fn batch<'a, T: Network>(&self, worker: &'a Worker<T>) -> Transaction<'a> {
         Transaction::new(worker.client(), self.signer().clone(), self.id().clone())
     }
 }

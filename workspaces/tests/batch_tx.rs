@@ -13,7 +13,7 @@ async fn test_batch_tx() -> anyhow::Result<()> {
     // Batch transaction with two `call`s into `set_status`. The second one
     // should override the first one.
     contract
-        .batch_tx(&worker)
+        .batch(&worker)
         .call(
             CallArgs::new("set_status")
                 .args_json(json!({
