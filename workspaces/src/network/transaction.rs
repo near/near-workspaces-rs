@@ -162,6 +162,8 @@ impl<'a> Transaction<'a> {
     }
 }
 
+/// Similiar to a [`Transaction`], but more specific to making a call into a contract.
+/// Note, only one call can be made per `CallTransaction`.
 pub struct CallTransaction<'a, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
@@ -184,31 +186,45 @@ impl<'a, T: Network> CallTransaction<'a, T> {
         }
     }
 
+    /// Provide the arguments for the call. These args are serialized bytes from either
+    /// a JSON or Borsh serializable set of arguments. To use the more specific versions
+    /// with better quality of life, use `args_json` or `args_borsh`.
     pub fn args(mut self, args: Vec<u8>) -> Self {
         self.call_args = self.call_args.args(args);
         self
     }
 
+    /// Similiar to `args`, specify an argument that is JSON serializable and can be
+    /// accepted by the equivalent contract. Recommend to use something like
+    /// `serde_json::json!` macro to easily serialize the arguments.
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
         self.call_args = self.call_args.args_json(args)?;
         Ok(self)
     }
 
+    /// Similiar to `args`, specify an argument that is borsh serializable and can be
+    /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
         self.call_args = self.call_args.args_borsh(args)?;
         Ok(self)
     }
 
+    /// Specify the amount of tokens to be deposited where `deposit` is the amount of
+    /// tokens in yocto near.
     pub fn deposit(mut self, deposit: u128) -> Self {
         self.call_args = self.call_args.deposit(deposit);
         self
     }
 
+    /// Specify the amount of gas to be used where `gas` is the amount of gas in yocto near.
     pub fn gas(mut self, gas: u64) -> Self {
         self.call_args = self.call_args.gas(gas);
         self
     }
 
+    /// Finally, send the transaction to the network. This will consume the `CallTransaction`
+    /// object and return us the execution details, along with any errors if the transaction
+    /// failed in any process along the way.
     pub async fn transact(self) -> anyhow::Result<CallExecutionDetails> {
         self.worker
             .client()
@@ -224,6 +240,7 @@ impl<'a, T: Network> CallTransaction<'a, T> {
             .map(Into::into)
     }
 
+    /// Instead of transacting the transaction, call into the specified view function.
     pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
         self.worker
             .client()
@@ -236,6 +253,8 @@ impl<'a, T: Network> CallTransaction<'a, T> {
     }
 }
 
+/// Similiar to a [`Transaction`], but more specific to creating an account.
+/// This transaction will create a new account with the specified `receiver_id`
 pub struct CreateAccountTransaction<'a, 'b, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
@@ -266,16 +285,21 @@ where
         }
     }
 
+    /// Specifies the initial balance of the new account. Amount directly taken out
+    /// from the caller/signer of this transaction.
     pub fn initial_balance(mut self, initial_balance: Balance) -> Self {
         self.initial_balance = initial_balance;
         self
     }
 
+    /// Set the secret key of the new account.
     pub fn keys(mut self, secret_key: SecretKey) -> Self {
         self.secret_key = Some(secret_key);
         self
     }
 
+    /// Send the transaction to the network. This will consume the `CreateAccountTransaction`
+    /// and give us back the details of the execution and finally the new [`Account`] object.
     pub async fn transact(self) -> anyhow::Result<CallExecution<Account>> {
         let sk = self
             .secret_key
