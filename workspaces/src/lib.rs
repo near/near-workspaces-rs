@@ -5,7 +5,7 @@ mod worker;
 
 pub mod prelude;
 
-pub use network::transaction::CallArgs;
+pub use network::transaction::Function;
 pub use network::{Account, Contract, DevNetwork, Network};
 pub use types::{AccessKey, AccountId, BlockHeight, CryptoHash, InMemorySigner};
 pub use worker::{

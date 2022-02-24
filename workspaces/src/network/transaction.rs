@@ -16,14 +16,14 @@ use crate::worker::Worker;
 use crate::Account;
 
 #[derive(Debug, Clone)]
-pub struct CallArgs {
+pub struct Function {
     pub function: String,
     pub args: Vec<u8>,
     pub deposit: Balance,
     pub gas: Gas,
 }
 
-impl CallArgs {
+impl Function {
     pub fn new(function: &str) -> Self {
         Self {
             function: function.into(),
@@ -59,8 +59,8 @@ impl CallArgs {
     }
 }
 
-impl From<CallArgs> for Action {
-    fn from(args: CallArgs) -> Self {
+impl From<Function> for Action {
+    fn from(args: Function) -> Self {
         Self::FunctionCall(FunctionCallAction {
             method_name: args.function,
             args: args.args,
@@ -101,7 +101,7 @@ impl<'a> Transaction<'a> {
     }
 
     /// Call into the `receiver_id`'s contract with the specific function arguments.
-    pub fn call(mut self, call_args: CallArgs) -> Self {
+    pub fn call(mut self, call_args: Function) -> Self {
         self.actions.push(call_args.into());
         self
     }
@@ -168,7 +168,7 @@ pub struct CallTransaction<'a, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
     contract_id: AccountId,
-    call_args: CallArgs,
+    call_args: Function,
 }
 
 impl<'a, T: Network> CallTransaction<'a, T> {
@@ -182,7 +182,7 @@ impl<'a, T: Network> CallTransaction<'a, T> {
             worker,
             signer,
             contract_id,
-            call_args: CallArgs::new(function),
+            call_args: Function::new(function),
         }
     }
 

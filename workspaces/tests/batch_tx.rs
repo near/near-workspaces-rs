@@ -1,7 +1,7 @@
 use serde_json::json;
 use test_log::test;
 use workspaces::prelude::*;
-use workspaces::CallArgs;
+use workspaces::Function;
 
 #[test(tokio::test)]
 async fn test_batch_tx() -> anyhow::Result<()> {
@@ -15,13 +15,13 @@ async fn test_batch_tx() -> anyhow::Result<()> {
     contract
         .batch(&worker)
         .call(
-            CallArgs::new("set_status")
+            Function::new("set_status")
                 .args_json(json!({
                     "message": "hello_world",
                 }))?
                 .deposit(0),
         )
-        .call(CallArgs::new("set_status").args_json(json!({
+        .call(Function::new("set_status").args_json(json!({
             "message": "world_hello",
         }))?)
         .transact()
