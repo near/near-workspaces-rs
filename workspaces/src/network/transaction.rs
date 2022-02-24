@@ -15,6 +15,8 @@ use crate::types::{AccessKey, AccountId, Balance, Gas, InMemorySigner, PublicKey
 use crate::worker::Worker;
 use crate::Account;
 
+/// A set of arguments we can provide to a transaction, containing
+/// the function name, arguments, the amount of gas to use and deposit.
 #[derive(Debug, Clone)]
 pub struct Function {
     pub function: String,
