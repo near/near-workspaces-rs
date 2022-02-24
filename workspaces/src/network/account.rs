@@ -34,8 +34,8 @@ impl Account {
     }
 
     /// Call a contract on the network specified within `worker`, and return
-    /// a Builder object that we will make use to populate the rest of the
-    /// call details.
+    /// a [`CallTransaction`] object that we will make use to populate the
+    /// rest of the call details.
     pub fn call<'a, T: Network>(
         &self,
         worker: &'a Worker<T>,
@@ -75,8 +75,8 @@ impl Account {
             .await
     }
 
-    /// Create a new sub account. Returns a CreateAccountBuilder object that
-    /// we can make use of to fill out the rest of the details. The sub account
+    /// Create a new sub account. Returns a [`CreateAccountTransaction`] object
+    /// that we can make use of to fill out the rest of the details. The subaccount
     /// id will be in the form of: "{new_account_id}.{parent_account_id}"
     pub fn create_subaccount<'a, 'b, T: Network>(
         &self,
@@ -153,8 +153,8 @@ impl Contract {
     }
 
     /// Call the current contract's function using the contract's own account
-    /// details to do the signing. Returns a Builder object that we will make
-    /// use to populate the rest of the call details.
+    /// details to do the signing. Returns a [`CallTransaction`] object that
+    /// we will make use to populate the rest of the call details.
     ///
     /// If we want to make use of the contract's account to call into a
     /// different contract besides the current one, use
