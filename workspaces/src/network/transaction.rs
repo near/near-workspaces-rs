@@ -19,17 +19,17 @@ use crate::Account;
 /// the function name, arguments, the amount of gas to use and deposit.
 #[derive(Debug, Clone)]
 pub struct Function {
-    pub function: String,
+    pub name: String,
     pub args: Vec<u8>,
     pub deposit: Balance,
     pub gas: Gas,
 }
 
 impl Function {
-    pub fn new(function: &str) -> Self {
+    pub fn new(name: &str) -> Self {
         Self {
-            function: function.into(),
-            args: serde_json::json!({}).to_string().into_bytes(),
+            name: name.into(),
+            args: "{}".as_bytes().to_vec(),
             deposit: DEFAULT_CALL_DEPOSIT,
             gas: DEFAULT_CALL_FN_GAS,
         }
@@ -62,12 +62,12 @@ impl Function {
 }
 
 impl From<Function> for Action {
-    fn from(args: Function) -> Self {
+    fn from(function: Function) -> Self {
         Self::FunctionCall(FunctionCallAction {
-            method_name: args.function,
-            args: args.args,
-            deposit: args.deposit,
-            gas: args.gas,
+            method_name: function.name,
+            args: function.args,
+            deposit: function.deposit,
+            gas: function.gas,
         })
     }
 }
@@ -103,8 +103,8 @@ impl<'a> Transaction<'a> {
     }
 
     /// Call into the `receiver_id`'s contract with the specific function arguments.
-    pub fn call(mut self, call_args: Function) -> Self {
-        self.actions.push(call_args.into());
+    pub fn call(mut self, function: Function) -> Self {
+        self.actions.push(function.into());
         self
     }
 
@@ -170,7 +170,7 @@ pub struct CallTransaction<'a, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
     contract_id: AccountId,
-    call_args: Function,
+    function: Function,
 }
 
 impl<'a, T: Network> CallTransaction<'a, T> {
@@ -184,7 +184,7 @@ impl<'a, T: Network> CallTransaction<'a, T> {
             worker,
             signer,
             contract_id,
-            call_args: Function::new(function),
+            function: Function::new(function),
         }
     }
 
@@ -192,7 +192,7 @@ impl<'a, T: Network> CallTransaction<'a, T> {
     /// a JSON or Borsh serializable set of arguments. To use the more specific versions
     /// with better quality of life, use `args_json` or `args_borsh`.
     pub fn args(mut self, args: Vec<u8>) -> Self {
-        self.call_args = self.call_args.args(args);
+        self.function = self.function.args(args);
         self
     }
 
@@ -200,27 +200,27 @@ impl<'a, T: Network> CallTransaction<'a, T> {
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.call_args = self.call_args.args_json(args)?;
+        self.function = self.function.args_json(args)?;
         Ok(self)
     }
 
     /// Similiar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.call_args = self.call_args.args_borsh(args)?;
+        self.function = self.function.args_borsh(args)?;
         Ok(self)
     }
 
     /// Specify the amount of tokens to be deposited where `deposit` is the amount of
     /// tokens in yocto near.
     pub fn deposit(mut self, deposit: u128) -> Self {
-        self.call_args = self.call_args.deposit(deposit);
+        self.function = self.function.deposit(deposit);
         self
     }
 
     /// Specify the amount of gas to be used where `gas` is the amount of gas in yocto near.
     pub fn gas(mut self, gas: u64) -> Self {
-        self.call_args = self.call_args.gas(gas);
+        self.function = self.function.gas(gas);
         self
     }
 
@@ -233,10 +233,10 @@ impl<'a, T: Network> CallTransaction<'a, T> {
             .call(
                 &self.signer,
                 &self.contract_id,
-                self.call_args.function,
-                self.call_args.args,
-                self.call_args.gas,
-                self.call_args.deposit,
+                self.function.name,
+                self.function.args,
+                self.function.gas,
+                self.function.deposit,
             )
             .await
             .map(Into::into)
@@ -248,8 +248,8 @@ impl<'a, T: Network> CallTransaction<'a, T> {
             .client()
             .view(
                 self.contract_id,
-                self.call_args.function,
-                self.call_args.args,
+                self.function.name,
+                self.function.args,
             )
             .await
     }
