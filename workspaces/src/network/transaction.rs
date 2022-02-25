@@ -246,11 +246,7 @@ impl<'a, T: Network> CallTransaction<'a, T> {
     pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
         self.worker
             .client()
-            .view(
-                self.contract_id,
-                self.function.name,
-                self.function.args,
-            )
+            .view(self.contract_id, self.function.name, self.function.args)
             .await
     }
 }
