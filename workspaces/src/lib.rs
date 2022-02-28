@@ -6,6 +6,7 @@ mod worker;
 
 pub mod prelude;
 
+pub use cargo::compile_project;
 pub use network::{Account, Contract, DevNetwork, Network};
 pub use types::{AccountId, BlockHeight, CryptoHash, InMemorySigner};
 pub use worker::{
