@@ -19,10 +19,10 @@ use crate::Account;
 /// the function name, arguments, the amount of gas to use and deposit.
 #[derive(Debug, Clone)]
 pub struct Function {
-    pub name: String,
-    pub args: Vec<u8>,
-    pub deposit: Balance,
-    pub gas: Gas,
+    name: String,
+    args: Vec<u8>,
+    deposit: Balance,
+    gas: Gas,
 }
 
 impl Function {
