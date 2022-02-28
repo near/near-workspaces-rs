@@ -1,4 +1,8 @@
+#[cfg(feature = "unstable")]
 mod cargo;
+#[cfg(feature = "unstable")]
+pub use cargo::compile_project;
+
 mod network;
 mod rpc;
 mod types;
@@ -6,7 +10,6 @@ mod worker;
 
 pub mod prelude;
 
-pub use cargo::compile_project;
 pub use network::{Account, Contract, DevNetwork, Network};
 pub use types::{AccountId, BlockHeight, CryptoHash, InMemorySigner};
 pub use worker::{
