@@ -124,14 +124,14 @@ impl AccessKey {
 
     pub fn function_call_access(
         receiver_id: &AccountId,
-        method_names: Vec<&str>,
+        method_names: &[&str],
         allowance: Option<Balance>,
     ) -> Self {
         Self {
             nonce: 0,
             permission: AccessKeyPermission::FunctionCall(FunctionCallPermission {
                 receiver_id: receiver_id.clone().into(),
-                method_names: method_names.into_iter().map(|s| s.to_string()).collect(),
+                method_names: method_names.iter().map(|s| s.to_string()).collect(),
                 allowance,
             }),
         }
