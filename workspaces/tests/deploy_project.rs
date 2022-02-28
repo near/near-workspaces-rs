@@ -5,19 +5,22 @@ use workspaces::prelude::*;
 #[test(tokio::test)]
 async fn test_dev_deploy_project() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
-    let contract = worker
-        .dev_deploy_project("./tests/test-contracts/ft")
-        .await?;
+    let wasm = workspaces::compile_project("./tests/test-contracts/status-message").await?;
+    let contract = worker.dev_deploy(&wasm).await?;
 
     let _res = contract
-        .call(&worker, "new_default_meta")
-        .args_json((contract.id(), "100"))?
+        .call(&worker, "set_status")
+        .args_json(("foo",))?
         .gas(300_000_000_000_000)
         .transact()
         .await?;
 
-    let res = contract.call(&worker, "ft_total_supply").view().await?;
-    assert_eq!(res.json::<String>()?, "100");
+    let res = contract
+        .call(&worker, "get_status")
+        .args_json((contract.id(),))?
+        .view()
+        .await?;
+    assert_eq!(res.json::<String>()?, "foo");
 
     Ok(())
 }
