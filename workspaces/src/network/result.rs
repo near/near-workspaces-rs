@@ -1,14 +1,9 @@
-// Export errors and status type taken from near_primitives, so there's a mental
-// connection when importing `workspaces::result::{errors, status}`.
-pub use crate::types::errors;
-pub use crate::types::status;
-
 use near_account_id::AccountId;
 use near_primitives::views::{
     CallResult, ExecutionOutcomeWithIdView, ExecutionStatusView, FinalExecutionOutcomeView,
+    FinalExecutionStatus,
 };
 
-use crate::types::status::FinalExecutionStatus;
 use crate::types::{CryptoHash, Gas};
 
 /// Struct to hold a type we want to return along w/ the execution result view.
@@ -249,15 +244,17 @@ impl ExecutionOutcome {
         )
     }
 
-    /// Converts this `ExecutionOutcome` into a Result type, where the failure is converted
-    /// to an anyhow::Error object which can be downcasted later.
+    /// Converts this [`ExecutionOutcome`] into a Result type, where the failure is converted
+    /// to an [`anyhow::Error`] object which can be downcasted later.
     fn into_result(self) -> anyhow::Result<ValueOrReceiptId> {
         match self.status {
             ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(value)),
             ExecutionStatusView::SuccessReceiptId(hash) => {
                 Ok(ValueOrReceiptId::ReceiptId(CryptoHash(hash.0)))
             }
-            ExecutionStatusView::Failure(err) => Err(err.into()),
+            ExecutionStatusView::Failure(err) => {
+                Err(anyhow::anyhow!("Execution failed: {:?}", err))
+            }
             ExecutionStatusView::Unknown => anyhow::bail!("Execution pending or unknown"),
         }
     }
