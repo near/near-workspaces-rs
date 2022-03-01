@@ -53,7 +53,7 @@ impl<T> From<CallExecution<T>> for anyhow::Result<T> {
 #[non_exhaustive]
 pub struct CallExecutionDetails {
     /// Execution status. Contains the result in case of successful execution.
-    pub status: FinalExecutionStatus,
+    status: FinalExecutionStatus,
     /// Total gas burnt by the call execution
     pub total_gas_burnt: Gas,
 
