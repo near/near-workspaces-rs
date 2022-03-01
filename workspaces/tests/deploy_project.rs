@@ -1,3 +1,4 @@
+#![cfg(feature = "unstable")]
 #![recursion_limit = "256"]
 use test_log::test;
 use workspaces::prelude::*;

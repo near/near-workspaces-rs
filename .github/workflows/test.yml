@@ -38,6 +38,6 @@ jobs:
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --features unstable
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --verbose --features unstable
