@@ -4,9 +4,11 @@ pub use crate::types::errors;
 pub use crate::types::status;
 
 use near_account_id::AccountId;
-use near_primitives::views::{CallResult, ExecutionOutcomeWithIdView, FinalExecutionOutcomeView};
+use near_primitives::views::{
+    CallResult, ExecutionOutcomeWithIdView, ExecutionStatusView, FinalExecutionOutcomeView,
+};
 
-use crate::types::status::{ExecutionStatusView, FinalExecutionStatus};
+use crate::types::status::FinalExecutionStatus;
 use crate::types::{CryptoHash, Gas};
 
 /// Struct to hold a type we want to return along w/ the execution result view.
@@ -90,6 +92,11 @@ impl CallExecutionDetails {
             FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
         };
         base64::decode(result).map_err(Into::into)
+    }
+
+    /// Returns just the transaction outcome.
+    pub fn outcome(&self) -> &ExecutionOutcome {
+        &self.transaction
     }
 
     /// Grab all outcomes after the execution of the transaction. This includes outcomes
@@ -220,7 +227,49 @@ pub struct ExecutionOutcome {
     /// for receipt this is receiver_id.
     pub executor_id: AccountId,
     /// Execution status. Contains the result in case of successful execution.
-    pub status: ExecutionStatusView,
+    status: ExecutionStatusView,
+}
+
+impl ExecutionOutcome {
+    /// Checks whether this execution outcome was a success. Returns true if a success value or
+    /// receipt id is present.
+    fn is_success(&self) -> bool {
+        matches!(
+            self.status,
+            ExecutionStatusView::SuccessValue(_) | ExecutionStatusView::SuccessReceiptId(_)
+        )
+    }
+
+    /// Checks whether this execution outcome was a failure. Returns true if it failed with
+    /// an error or the execution state was unknown or pending.
+    fn is_failure(&self) -> bool {
+        matches!(
+            self.status,
+            ExecutionStatusView::Failure(_) | ExecutionStatusView::Unknown
+        )
+    }
+
+    /// Converts this `ExecutionOutcome` into a Result type, where the failure is converted
+    /// to an anyhow::Error object which can be downcasted later.
+    fn into_result(self) -> anyhow::Result<ValueOrReceiptId> {
+        match self.status {
+            ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(value)),
+            ExecutionStatusView::SuccessReceiptId(hash) => {
+                Ok(ValueOrReceiptId::ReceiptId(CryptoHash(hash.0)))
+            }
+            ExecutionStatusView::Failure(err) => Err(err.into()),
+            ExecutionStatusView::Unknown => anyhow::bail!("Execution pending or unknown"),
+        }
+    }
+}
+
+/// Value or ReceiptId from a successful execution.
+pub enum ValueOrReceiptId {
+    /// The final action succeeded and returned some value or an empty vec encoded in base64.
+    Value(String),
+    /// The final action of the receipt returned a promise or the signed transaction was converted
+    /// to a receipt. Contains the receipt_id of the generated receipt.
+    ReceiptId(CryptoHash),
 }
 
 impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {
