@@ -64,7 +64,7 @@ where
     async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: String,
+        key: Vec<u8>,
         value: Vec<u8>,
     ) -> anyhow::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await

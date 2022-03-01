@@ -101,7 +101,7 @@ pub trait StatePatcher {
     async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: String,
+        key: Vec<u8>,
         value: Vec<u8>,
     ) -> anyhow::Result<()>;
 
@@ -120,12 +120,12 @@ where
     async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: String,
+        key: Vec<u8>,
         value: Vec<u8>,
     ) -> anyhow::Result<()> {
         let state = StateRecord::Data {
             account_id: contract_id.to_owned(),
-            data_key: key.into(),
+            data_key: key,
             value,
         };
         let records = vec![state];
