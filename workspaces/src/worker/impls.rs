@@ -12,7 +12,7 @@ use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractBuilder;
 use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
-use crate::Network;
+use crate::{Network, AccountDetails};
 
 impl<T> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -147,6 +147,13 @@ where
     ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
+            .await
+            .map(Into::into)
+    }
+
+    pub async fn view_account(&self, account_id: &AccountId) -> anyhow::Result<AccountDetails> {
+        self.client()
+            .view_account(account_id.clone(), None)
             .await
             .map(Into::into)
     }
