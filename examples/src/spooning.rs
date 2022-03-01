@@ -99,7 +99,7 @@ async fn main() -> anyhow::Result<()> {
     worker
         .patch_state(
             sandbox_contract.id(),
-            "STATE".to_string(),
+            "STATE".into(),
             status_msg.try_to_vec()?,
         )
         .await?;
