@@ -12,7 +12,7 @@ use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractBuilder;
 use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
-use crate::{Network, AccountDetails};
+use crate::{AccountDetails, Network};
 
 impl<T> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -117,6 +117,12 @@ where
         self.client()
             .view(contract_id.clone(), function.into(), args)
             .await
+    }
+
+    /// View the WASM code bytes of a contract on the network.
+    pub async fn view_code(&self, contract_id: &AccountId) -> anyhow::Result<Vec<u8>> {
+        let code_view = self.client().view_code(contract_id.clone(), None).await?;
+        Ok(code_view.code)
     }
 
     pub async fn view_state(

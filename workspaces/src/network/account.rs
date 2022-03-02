@@ -171,6 +171,11 @@ impl Contract {
         worker.view(self.id(), function, args).await
     }
 
+    /// View the WASM code bytes of this contract.
+    pub async fn view_code<T: Network>(&self, worker: &Worker<T>) -> anyhow::Result<Vec<u8>> {
+        worker.view_code(self.id()).await
+    }
+
     /// Views the current contract's details such as balance and storage usage.
     pub async fn details<T: Network>(&self, worker: &Worker<T>) -> anyhow::Result<AccountDetails> {
         worker.view_account(self.id()).await
