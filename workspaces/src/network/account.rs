@@ -77,7 +77,10 @@ impl Account {
     }
 
     /// Views the current account's details such as balance and storage usage.
-    pub async fn details<T: Network>(&self, worker: &Worker<T>) -> anyhow::Result<AccountDetails> {
+    pub async fn viwe_account<T: Network>(
+        &self,
+        worker: &Worker<T>,
+    ) -> anyhow::Result<AccountDetails> {
         worker.view_account(&self.id).await
     }
 
@@ -177,7 +180,10 @@ impl Contract {
     }
 
     /// Views the current contract's details such as balance and storage usage.
-    pub async fn details<T: Network>(&self, worker: &Worker<T>) -> anyhow::Result<AccountDetails> {
+    pub async fn view_account<T: Network>(
+        &self,
+        worker: &Worker<T>,
+    ) -> anyhow::Result<AccountDetails> {
         worker.view_account(self.id()).await
     }
 
