@@ -87,6 +87,7 @@ where
         self.workspace.client()
     }
 
+    /// Call into a contract's change function.
     pub async fn call(
         &self,
         contract: &Contract,
@@ -108,6 +109,7 @@ where
             .map(Into::into)
     }
 
+    /// Call into a contract's view function.
     pub async fn view(
         &self,
         contract_id: &AccountId,
@@ -125,6 +127,9 @@ where
         Ok(code_view.code)
     }
 
+    /// View the state of a account/contract on the network. This will return the internal
+    /// state of the account in the form of a map of key-value pairs; where STATE contains
+    /// info on a contract's internal data.
     pub async fn view_state(
         &self,
         contract_id: &AccountId,
@@ -133,10 +138,13 @@ where
         self.client().view_state(contract_id.clone(), prefix).await
     }
 
+    /// View the latest block from the network
     pub async fn view_latest_block(&self) -> anyhow::Result<Block> {
         self.client().view_block(None).await.map(Into::into)
     }
 
+    /// Transfer tokens from one account to another. The signer is the account
+    /// that will be used to to send from.
     pub async fn transfer_near(
         &self,
         signer: &InMemorySigner,
@@ -149,6 +157,8 @@ where
             .map(Into::into)
     }
 
+    /// Deletes an account from the network. The beneficiary will receive the balance
+    /// of the account deleted.
     pub async fn delete_account(
         &self,
         account_id: &AccountId,
@@ -161,6 +171,7 @@ where
             .map(Into::into)
     }
 
+    /// View account details of a specific account on the network.
     pub async fn view_account(&self, account_id: &AccountId) -> anyhow::Result<AccountDetails> {
         self.client()
             .view_account(account_id.clone(), None)
