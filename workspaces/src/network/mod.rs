@@ -1,4 +1,5 @@
 mod account;
+mod block;
 mod info;
 mod mainnet;
 mod result;
@@ -18,6 +19,7 @@ use crate::types::{AccountId, KeyType, SecretKey};
 use crate::Worker;
 
 pub use crate::network::account::{Account, AccountDetails, Contract};
+pub use crate::network::block::Block;
 pub use crate::network::mainnet::Mainnet;
 pub use crate::network::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 pub use crate::network::sandbox::Sandbox;

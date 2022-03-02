@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use near_primitives::types::{Balance, StoreKey};
 
 use crate::network::{
-    Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
-    NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
+    Account, AllowDevAccountCreation, Block, CallExecution, CallExecutionDetails, Contract,
+    NetworkClient, NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
 };
 use crate::network::{Info, Sandbox};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
@@ -131,6 +131,10 @@ where
         prefix: Option<StoreKey>,
     ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
         self.client().view_state(contract_id.clone(), prefix).await
+    }
+
+    pub async fn view_latest_block(&self) -> anyhow::Result<Block> {
+        self.client().view_block(None).await.map(Into::into)
     }
 
     pub async fn transfer_near(
