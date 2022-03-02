@@ -81,6 +81,22 @@ impl CallExecutionDetails {
         };
         base64::decode(result).map_err(Into::into)
     }
+
+    /// Convert the execution details into a Result if its status is not a successful one.
+    /// Useful for checking if the call was successful and forwarding the error upwards.
+    fn try_into_result(self) -> anyhow::Result<Self> {
+        match self.status {
+            FinalExecutionStatus::Failure(ref err) => anyhow::bail!(err.clone()),
+            FinalExecutionStatus::NotStarted => anyhow::bail!("Transaction not started."),
+            FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
+            _ => (),
+        };
+        Ok(self)
+    }
+
+    pub(crate) fn from_outcome(outcome: FinalExecutionOutcomeView) -> anyhow::Result<Self> {
+        Self::from(outcome).try_into_result()
+    }
 }
 
 impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
