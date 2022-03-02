@@ -53,7 +53,7 @@ impl<T> From<CallExecution<T>> for anyhow::Result<T> {
 #[non_exhaustive]
 pub struct CallExecutionDetails {
     /// Execution status. Contains the result in case of successful execution.
-    status: FinalExecutionStatus,
+    pub(crate) status: FinalExecutionStatus,
     /// Total gas burnt by the call execution
     pub total_gas_burnt: Gas,
 
@@ -222,13 +222,13 @@ pub struct ExecutionOutcome {
     /// for receipt this is receiver_id.
     pub executor_id: AccountId,
     /// Execution status. Contains the result in case of successful execution.
-    status: ExecutionStatusView,
+    pub(crate) status: ExecutionStatusView,
 }
 
 impl ExecutionOutcome {
     /// Checks whether this execution outcome was a success. Returns true if a success value or
     /// receipt id is present.
-    fn is_success(&self) -> bool {
+    pub fn is_success(&self) -> bool {
         matches!(
             self.status,
             ExecutionStatusView::SuccessValue(_) | ExecutionStatusView::SuccessReceiptId(_)
@@ -237,7 +237,7 @@ impl ExecutionOutcome {
 
     /// Checks whether this execution outcome was a failure. Returns true if it failed with
     /// an error or the execution state was unknown or pending.
-    fn is_failure(&self) -> bool {
+    pub fn is_failure(&self) -> bool {
         matches!(
             self.status,
             ExecutionStatusView::Failure(_) | ExecutionStatusView::Unknown
@@ -246,7 +246,7 @@ impl ExecutionOutcome {
 
     /// Converts this [`ExecutionOutcome`] into a Result type, where the failure is converted
     /// to an [`anyhow::Error`] object which can be downcasted later.
-    fn into_result(self) -> anyhow::Result<ValueOrReceiptId> {
+    pub fn into_result(self) -> anyhow::Result<ValueOrReceiptId> {
         match self.status {
             ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(value)),
             ExecutionStatusView::SuccessReceiptId(hash) => {
