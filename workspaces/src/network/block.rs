@@ -9,20 +9,22 @@ pub struct Block {
 
 impl Block {
     /// The block timestamp in nanoseconds.
-    fn timestamp(&self) -> u64 {
+    pub fn timestamp(&self) -> u64 {
         self.header.timestamp_nanosec
     }
 
     /// Current height of this block.
-    fn height(&self) -> BlockHeight {
+    pub fn height(&self) -> BlockHeight {
         self.header.height
     }
 
-    fn hash(&self) -> &CryptoHash {
+    /// The hash of the block itself.
+    pub fn hash(&self) -> &CryptoHash {
         &self.header.hash
     }
 
-    fn epoch_id(&self) -> &CryptoHash {
+    /// The id of an epoch this block belongs to.
+    pub fn epoch_id(&self) -> &CryptoHash {
         &self.header.epoch_id
     }
 }
