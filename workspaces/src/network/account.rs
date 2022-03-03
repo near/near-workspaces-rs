@@ -242,7 +242,7 @@ impl<'a, T: Network> CallBuilder<'a, T> {
                 self.deposit,
             )
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 
     pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
