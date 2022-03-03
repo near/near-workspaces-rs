@@ -7,7 +7,6 @@ use std::path::Path;
 
 pub use near_account_id::AccountId;
 pub(crate) use near_crypto::{KeyType, Signer};
-pub use near_primitives::views::ExecutionStatusView;
 use near_primitives::{
     logging::pretty_hash,
     serialize::{from_base, to_base},
