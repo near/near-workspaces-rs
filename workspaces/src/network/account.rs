@@ -199,7 +199,7 @@ impl<'a, T: Network> CallBuilder<'a, T> {
             signer,
             contract_id,
             function,
-            args: serde_json::json!({}).to_string().into_bytes(),
+            args: vec![],
             deposit: DEFAULT_CALL_DEPOSIT,
             gas: DEFAULT_CALL_FN_GAS,
         }
