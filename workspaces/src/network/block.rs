@@ -3,6 +3,7 @@ use near_primitives::views::{BlockHeaderView, BlockView};
 use crate::{BlockHeight, CryptoHash};
 
 /// Struct containing information on block coming from the network
+#[derive(Debug, PartialEq)]
 pub struct Block {
     header: BlockHeader,
 }
@@ -31,7 +32,7 @@ impl Block {
 
 /// The block header info. This is a non-exhaustive list of items that
 /// could be present in a block header. More can be added in the future.
-#[non_exhaustive]
+#[derive(Debug, PartialEq)]
 struct BlockHeader {
     height: BlockHeight,
     epoch_id: CryptoHash,

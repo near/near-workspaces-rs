@@ -2,11 +2,13 @@
 /// and internal libraries like near-jsonrpc-client requires specific versions
 /// of these types which shouldn't be exposed either.
 use std::convert::TryFrom;
+use std::fmt;
 use std::path::Path;
 
 pub use near_account_id::AccountId;
 pub(crate) use near_crypto::{KeyType, Signer};
-use near_primitives::serialize::from_base;
+use near_primitives::logging::pretty_hash;
+use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
 pub type Gas = u64;
@@ -62,6 +64,7 @@ impl InMemorySigner {
 
 // type taken from near_primitives::hash::CryptoHash.
 /// CryptoHash is type for storing the hash of a specific block.
+#[derive(PartialEq)]
 pub struct CryptoHash(pub [u8; 32]);
 
 impl std::str::FromStr for CryptoHash {
@@ -91,5 +94,17 @@ impl TryFrom<Vec<u8>> for CryptoHash {
 
     fn try_from(v: Vec<u8>) -> Result<Self, Self::Error> {
         <Self as TryFrom<&[u8]>>::try_from(v.as_ref())
+    }
+}
+
+impl fmt::Debug for CryptoHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", pretty_hash(&self.to_string()))
+    }
+}
+
+impl fmt::Display for CryptoHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&to_base(&self.0), f)
     }
 }

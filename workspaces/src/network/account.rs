@@ -339,9 +339,10 @@ where
 
 /// Details of an Account or Contract. This is an non-exhaustive list of items
 /// that the account stores in the blockchain state.
+#[derive(Debug, PartialEq)]
 #[non_exhaustive]
 pub struct AccountDetails {
-    pub amount: Balance,
+    pub balance: Balance,
     pub locked: Balance,
     pub code_hash: CryptoHash,
     pub storage_usage: u64,
@@ -350,7 +351,7 @@ pub struct AccountDetails {
 impl From<AccountView> for AccountDetails {
     fn from(account: AccountView) -> Self {
         Self {
-            amount: account.amount,
+            balance: account.amount,
             locked: account.locked,
             code_hash: CryptoHash(account.code_hash.0),
             storage_usage: account.storage_usage,
