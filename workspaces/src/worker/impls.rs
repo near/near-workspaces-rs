@@ -64,8 +64,8 @@ where
     async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: Vec<u8>,
-        value: Vec<u8>,
+        key: &[u8],
+        value: &[u8],
     ) -> anyhow::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
     }
@@ -106,7 +106,7 @@ where
                 deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
             )
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 
     /// Call into a contract's view function.
@@ -154,7 +154,7 @@ where
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 
     /// Deletes an account from the network. The beneficiary will receive the balance
@@ -168,7 +168,7 @@ where
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 
     /// View account details of a specific account on the network.
