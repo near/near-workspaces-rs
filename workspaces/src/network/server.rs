@@ -78,9 +78,9 @@ impl Drop for SandboxServer {
 /// with similar named log targets.
 fn supress_sandbox_logs_if_required() {
     match std::env::var("NEAR_ENABLE_SANDBOX_LOG") {
-        Ok(val) if val == "on" => {},
+        Ok(val) if val == "on" => {}
         // non-exhaustive list of targets to supress, since choosing a default LogLevel
         // does nothing in this case, since nearcore seems to be overriding it somehow:
-        _ => std::env::set_var("NEAR_SANDBOX_LOG", "near=error,stats=error,network=error")
+        _ => std::env::set_var("NEAR_SANDBOX_LOG", "near=error,stats=error,network=error"),
     };
 }
