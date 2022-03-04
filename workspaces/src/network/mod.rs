@@ -1,7 +1,8 @@
 mod account;
+mod block;
 mod info;
 mod mainnet;
-mod result;
+pub mod result;
 mod sandbox;
 mod server;
 mod testnet;
@@ -19,7 +20,8 @@ use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, KeyType, SecretKey};
 use crate::Worker;
 
-pub use crate::network::account::{Account, Contract};
+pub use crate::network::account::{Account, AccountDetails, Contract};
+pub use crate::network::block::Block;
 pub use crate::network::mainnet::Mainnet;
 pub use crate::network::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 pub use crate::network::sandbox::Sandbox;
@@ -103,8 +105,8 @@ pub trait StatePatcher {
     async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: String,
-        value: Vec<u8>,
+        key: &[u8],
+        value: &[u8],
     ) -> anyhow::Result<()>;
 
     fn import_contract<'a, 'b>(
@@ -122,13 +124,13 @@ where
     async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: String,
-        value: Vec<u8>,
+        key: &[u8],
+        value: &[u8],
     ) -> anyhow::Result<()> {
         let state = StateRecord::Data {
             account_id: contract_id.to_owned(),
-            data_key: key.into(),
-            value,
+            data_key: key.to_vec(),
+            value: value.to_vec(),
         };
         let records = vec![state];
 

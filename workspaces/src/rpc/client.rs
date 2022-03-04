@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
@@ -14,7 +15,8 @@ use near_primitives::transaction::{
 };
 use near_primitives::types::{Balance, BlockId, Finality, Gas, StoreKey};
 use near_primitives::views::{
-    AccessKeyView, AccountView, ContractCodeView, FinalExecutionOutcomeView, QueryRequest,
+    AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
+    QueryRequest,
 };
 
 use crate::network::ViewResultDetails;
@@ -37,11 +39,67 @@ impl Client {
         Self { rpc_addr }
     }
 
-    pub(crate) async fn query<M: methods::RpcMethod>(
+    pub(crate) async fn query_broadcast_tx(
         &self,
-        method: &M,
-    ) -> MethodCallResult<M::Response, M::Error> {
-        retry(|| async { JsonRpcClient::connect(&self.rpc_addr).call(method).await }).await
+        method: &methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest,
+    ) -> MethodCallResult<
+        FinalExecutionOutcomeView,
+        near_jsonrpc_primitives::types::transactions::RpcTransactionError,
+    > {
+        retry(|| async {
+            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            match &result {
+                Ok(response) => {
+                    // When user sets logging level to INFO we only print one-liners with submitted
+                    // actions and the resulting status. If the level is DEBUG or lower, we print
+                    // the entire request and response structures.
+                    if tracing::level_enabled!(tracing::Level::DEBUG) {
+                        tracing::debug!(
+                            target: "workspaces",
+                            "Calling RPC method {:?} succeeded with {:?}",
+                            method,
+                            response
+                        );
+                    } else {
+                        tracing::info!(
+                            target: "workspaces",
+                            "Submitting transaction with actions {:?} succeeded with status {:?}",
+                            method.signed_transaction.transaction.actions,
+                            response.status
+                        );
+                    }
+                }
+                Err(error) => {
+                    tracing::error!(
+                        target: "workspaces",
+                        "Calling RPC method {:?} resulted in error {:?}",
+                        method,
+                        error
+                    );
+                }
+            };
+            result
+        })
+        .await
+    }
+
+    pub(crate) async fn query<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
+    where
+        M: methods::RpcMethod + Debug,
+        M::Response: Debug,
+        M::Error: Debug,
+    {
+        retry(|| async {
+            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            tracing::debug!(
+                target: "workspaces",
+                "Querying RPC with {:?} resulted in {:?}",
+                method,
+                result
+            );
+            result
+        })
+        .await
     }
 
     async fn send_tx_and_retry(
@@ -179,6 +237,18 @@ impl Client {
             QueryResponseKind::ViewCode(code) => Ok(code),
             _ => anyhow::bail!(ERR_INVALID_VARIANT),
         }
+    }
+
+    pub(crate) async fn view_block(&self, block_id: Option<BlockId>) -> anyhow::Result<BlockView> {
+        let block_reference = block_id
+            .map(Into::into)
+            .unwrap_or_else(|| Finality::None.into());
+
+        let block_view = self
+            .query(&methods::block::RpcBlockRequest { block_reference })
+            .await?;
+
+        Ok(block_view)
     }
 
     pub(crate) async fn deploy(
@@ -323,7 +393,7 @@ pub(crate) async fn send_tx(
     tx: SignedTransaction,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
     client
-        .query(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
+        .query_broadcast_tx(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
             signed_transaction: tx,
         })
         .await

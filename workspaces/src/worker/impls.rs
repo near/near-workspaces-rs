@@ -4,15 +4,15 @@ use async_trait::async_trait;
 use near_primitives::types::{Balance, StoreKey};
 
 use crate::network::{
-    Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, Contract, NetworkClient,
-    NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
+    Account, AllowDevAccountCreation, Block, CallExecution, CallExecutionDetails, Contract,
+    NetworkClient, NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
 };
 use crate::network::{Info, Sandbox};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
-use crate::Network;
+use crate::{AccountDetails, Network};
 
 impl<T> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -64,8 +64,8 @@ where
     async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: String,
-        value: Vec<u8>,
+        key: &[u8],
+        value: &[u8],
     ) -> anyhow::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
     }
@@ -87,6 +87,7 @@ where
         self.workspace.client()
     }
 
+    /// Call into a contract's change function.
     pub async fn call(
         &self,
         contract: &Contract,
@@ -105,9 +106,10 @@ where
                 deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
             )
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 
+    /// Call into a contract's view function.
     pub async fn view(
         &self,
         contract_id: &AccountId,
@@ -119,6 +121,15 @@ where
             .await
     }
 
+    /// View the WASM code bytes of a contract on the network.
+    pub async fn view_code(&self, contract_id: &AccountId) -> anyhow::Result<Vec<u8>> {
+        let code_view = self.client().view_code(contract_id.clone(), None).await?;
+        Ok(code_view.code)
+    }
+
+    /// View the state of a account/contract on the network. This will return the internal
+    /// state of the account in the form of a map of key-value pairs; where STATE contains
+    /// info on a contract's internal data.
     pub async fn view_state(
         &self,
         contract_id: &AccountId,
@@ -127,6 +138,13 @@ where
         self.client().view_state(contract_id.clone(), prefix).await
     }
 
+    /// View the latest block from the network
+    pub async fn view_latest_block(&self) -> anyhow::Result<Block> {
+        self.client().view_block(None).await.map(Into::into)
+    }
+
+    /// Transfer tokens from one account to another. The signer is the account
+    /// that will be used to to send from.
     pub async fn transfer_near(
         &self,
         signer: &InMemorySigner,
@@ -136,9 +154,11 @@ where
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 
+    /// Deletes an account from the network. The beneficiary will receive the balance
+    /// of the account deleted.
     pub async fn delete_account(
         &self,
         account_id: &AccountId,
@@ -147,6 +167,14 @@ where
     ) -> anyhow::Result<CallExecutionDetails> {
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
+            .await
+            .and_then(CallExecutionDetails::from_outcome)
+    }
+
+    /// View account details of a specific account on the network.
+    pub async fn view_account(&self, account_id: &AccountId) -> anyhow::Result<AccountDetails> {
+        self.client()
+            .view_account(account_id.clone(), None)
             .await
             .map(Into::into)
     }
