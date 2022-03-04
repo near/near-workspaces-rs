@@ -15,7 +15,8 @@ use near_primitives::transaction::{
 };
 use near_primitives::types::{Balance, BlockId, Finality, Gas, StoreKey};
 use near_primitives::views::{
-    AccessKeyView, AccountView, ContractCodeView, FinalExecutionOutcomeView, QueryRequest,
+    AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
+    QueryRequest,
 };
 
 use crate::network::ViewResultDetails;
@@ -236,6 +237,18 @@ impl Client {
             QueryResponseKind::ViewCode(code) => Ok(code),
             _ => anyhow::bail!(ERR_INVALID_VARIANT),
         }
+    }
+
+    pub(crate) async fn view_block(&self, block_id: Option<BlockId>) -> anyhow::Result<BlockView> {
+        let block_reference = block_id
+            .map(Into::into)
+            .unwrap_or_else(|| Finality::None.into());
+
+        let block_view = self
+            .query(&methods::block::RpcBlockRequest { block_reference })
+            .await?;
+
+        Ok(block_view)
     }
 
     pub(crate) async fn deploy(

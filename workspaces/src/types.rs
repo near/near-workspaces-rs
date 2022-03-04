@@ -7,10 +7,8 @@ use std::path::Path;
 
 pub use near_account_id::AccountId;
 pub(crate) use near_crypto::{KeyType, Signer};
-use near_primitives::{
-    logging::pretty_hash,
-    serialize::{from_base, to_base},
-};
+use near_primitives::logging::pretty_hash;
+use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
 pub type Gas = u64;
@@ -66,7 +64,7 @@ impl InMemorySigner {
 
 // type taken from near_primitives::hash::CryptoHash.
 /// CryptoHash is type for storing the hash of a specific block.
-#[derive(Copy, Clone, Default, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct CryptoHash(pub [u8; 32]);
 
 impl std::str::FromStr for CryptoHash {
