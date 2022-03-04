@@ -64,7 +64,7 @@ impl InMemorySigner {
 
 // type taken from near_primitives::hash::CryptoHash.
 /// CryptoHash is type for storing the hash of a specific block.
-#[derive(Hash, PartialEq)]
+#[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct CryptoHash(pub [u8; 32]);
 
 impl std::str::FromStr for CryptoHash {

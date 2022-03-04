@@ -5,6 +5,7 @@ mod worker;
 
 pub mod prelude;
 
+pub use network::result;
 pub use network::{Account, AccountDetails, Block, Contract, DevNetwork, Network};
 pub use types::{AccountId, BlockHeight, CryptoHash, InMemorySigner};
 pub use worker::{

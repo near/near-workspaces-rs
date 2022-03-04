@@ -2,7 +2,7 @@ mod account;
 mod block;
 mod info;
 mod mainnet;
-mod result;
+pub mod result;
 mod sandbox;
 mod server;
 mod testnet;
