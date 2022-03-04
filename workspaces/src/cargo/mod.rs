@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use async_process::Command;
 use cargo_metadata::Message;
+use std::env;
 use std::fmt::Debug;
 use std::fs;
 use std::path::Path;
@@ -10,13 +11,18 @@ use tracing::debug;
 async fn build_cargo_project<P: AsRef<Path> + Debug>(
     project_path: P,
 ) -> anyhow::Result<Vec<Message>> {
-    let output = Command::new("cargo")
+    let mut cmd = match env::var_os("CARGO") {
+        Some(cargo) => Command::new(cargo),
+        None => Command::new("cargo"),
+    };
+    let output = cmd
         .args([
             "build",
             "--target",
             "wasm32-unknown-unknown",
             "--release",
             "--message-format=json",
+            "--offline"
         ])
         .current_dir(&project_path)
         .stdout(Stdio::piped())
