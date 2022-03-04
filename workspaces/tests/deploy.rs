@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 use serde::{Deserialize, Serialize};
 use test_log::test;
 use workspaces::prelude::*;

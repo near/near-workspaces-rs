@@ -64,8 +64,8 @@ where
     async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: String,
-        value: Vec<u8>,
+        key: &[u8],
+        value: &[u8],
     ) -> anyhow::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
     }
@@ -105,7 +105,7 @@ where
                 deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
             )
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 
     pub async fn view(
@@ -136,7 +136,7 @@ where
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 
     pub async fn delete_account(
@@ -148,7 +148,7 @@ where
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 }
 
