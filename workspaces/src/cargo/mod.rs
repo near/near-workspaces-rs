@@ -22,7 +22,7 @@ async fn build_cargo_project<P: AsRef<Path> + Debug>(
             "wasm32-unknown-unknown",
             "--release",
             "--message-format=json",
-            "--offline"
+            "--offline",
         ])
         .current_dir(&project_path)
         .stdout(Stdio::piped())
