@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use async_process::Command;
-use cargo_metadata::Message;
+use cargo_metadata::{Message, Metadata, MetadataCommand};
 use std::env;
 use std::fmt::Debug;
 use std::fs;
@@ -8,20 +8,32 @@ use std::path::Path;
 use std::process::Stdio;
 use tracing::debug;
 
+fn cargo_bin() -> Command {
+    match env::var_os("CARGO") {
+        Some(cargo) => Command::new(cargo),
+        None => Command::new("cargo"),
+    }
+}
+
+fn cargo_metadata<P: AsRef<Path> + Debug>(project_path: P) -> anyhow::Result<Metadata> {
+    let mut metadata_command = MetadataCommand::new();
+    metadata_command.current_dir(project_path.as_ref());
+    Ok(metadata_command.exec()?)
+}
+
 async fn build_cargo_project<P: AsRef<Path> + Debug>(
     project_path: P,
 ) -> anyhow::Result<Vec<Message>> {
-    let mut cmd = match env::var_os("CARGO") {
-        Some(cargo) => Command::new(cargo),
-        None => Command::new("cargo"),
-    };
-    let output = cmd
+    let metadata = cargo_metadata(&project_path)?;
+    let output = cargo_bin()
         .args([
             "build",
             "--target",
             "wasm32-unknown-unknown",
             "--release",
             "--message-format=json",
+            "--target-dir",
+            metadata.target_directory.as_str(),
         ])
         .current_dir(&project_path)
         .stdout(Stdio::piped())
@@ -35,9 +47,7 @@ async fn build_cargo_project<P: AsRef<Path> + Debug>(
     );
     if output.status.success() {
         let reader = std::io::BufReader::new(output.stdout.as_slice());
-        Ok(cargo_metadata::Message::parse_stream(reader)
-            .map(|m| m.unwrap())
-            .collect())
+        Ok(Message::parse_stream(reader).map(|m| m.unwrap()).collect())
     } else {
         Err(anyhow!(
             "Failed to build project '{:?}'.\n\
