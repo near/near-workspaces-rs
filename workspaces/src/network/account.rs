@@ -1,10 +1,11 @@
 use std::convert::TryInto;
 
 use near_crypto::KeyType;
+use near_primitives::views::AccountView;
 
 use crate::rpc::client::{DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::types::{AccountId, Balance, Gas, InMemorySigner, SecretKey};
-use crate::{Network, Worker};
+use crate::{CryptoHash, Network, Worker};
 
 use super::{CallExecution, CallExecutionDetails, ViewResultDetails};
 
@@ -73,6 +74,14 @@ impl Account {
         worker
             .delete_account(&self.id, &self.signer, beneficiary_id)
             .await
+    }
+
+    /// Views the current account's details such as balance and storage usage.
+    pub async fn view_account<T: Network>(
+        &self,
+        worker: &Worker<T>,
+    ) -> anyhow::Result<AccountDetails> {
+        worker.view_account(&self.id).await
     }
 
     /// Create a new sub account. Returns a CreateAccountBuilder object that
@@ -163,6 +172,19 @@ impl Contract {
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
         worker.view(self.id(), function, args).await
+    }
+
+    /// View the WASM code bytes of this contract.
+    pub async fn view_code<T: Network>(&self, worker: &Worker<T>) -> anyhow::Result<Vec<u8>> {
+        worker.view_code(self.id()).await
+    }
+
+    /// Views the current contract's details such as balance and storage usage.
+    pub async fn view_account<T: Network>(
+        &self,
+        worker: &Worker<T>,
+    ) -> anyhow::Result<AccountDetails> {
+        worker.view_account(self.id()).await
     }
 
     /// Deletes the current contract, and returns the execution details of this
@@ -312,5 +334,27 @@ where
             result: account,
             details: outcome.into(),
         })
+    }
+}
+
+/// Details of an Account or Contract. This is an non-exhaustive list of items
+/// that the account stores in the blockchain state.
+#[derive(Debug, PartialEq)]
+#[non_exhaustive]
+pub struct AccountDetails {
+    pub balance: Balance,
+    pub locked: Balance,
+    pub code_hash: CryptoHash,
+    pub storage_usage: u64,
+}
+
+impl From<AccountView> for AccountDetails {
+    fn from(account: AccountView) -> Self {
+        Self {
+            balance: account.amount,
+            locked: account.locked,
+            code_hash: CryptoHash(account.code_hash.0),
+            storage_usage: account.storage_usage,
+        }
     }
 }
