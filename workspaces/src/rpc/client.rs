@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-use tokio_retry::strategy::{jitter, ExponentialBackoff};
+use tokio_retry::strategy::{jitter, FibonacciBackoff};
 use tokio_retry::Retry;
 
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
@@ -382,8 +382,9 @@ where
     F: FnMut() -> T,
     T: core::future::Future<Output = Result<R, E>>,
 {
-    // Exponential backoff starting w/ 10ms for maximum retry of 5 times:
-    let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(5);
+    // Fibonacci backoff starting w/ 100ms for maximum retry of 5 times:
+    //   100, 100, 200, 300, 500, 800,
+    let retry_strategy = FibonacciBackoff::from_millis(100).map(jitter).take(5);
 
     Retry::spawn(retry_strategy, task).await
 }
