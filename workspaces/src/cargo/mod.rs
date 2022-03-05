@@ -15,16 +15,16 @@ fn cargo_bin() -> Command {
     }
 }
 
-fn cargo_metadata<P: AsRef<Path> + Debug>(project_path: P) -> anyhow::Result<Metadata> {
-    let mut metadata_command = MetadataCommand::new();
-    metadata_command.current_dir(project_path.as_ref());
-    Ok(metadata_command.exec()?)
+/// Fetch current project's metadata (i.e. project invoking this method, not the one that we are
+/// trying to compile).
+fn root_cargo_metadata() -> anyhow::Result<Metadata> {
+    MetadataCommand::new().exec().map_err(Into::into)
 }
 
 async fn build_cargo_project<P: AsRef<Path> + Debug>(
     project_path: P,
 ) -> anyhow::Result<Vec<Message>> {
-    let metadata = cargo_metadata(&project_path)?;
+    let metadata = root_cargo_metadata()?;
     let output = cargo_bin()
         .args([
             "build",

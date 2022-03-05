@@ -1,6 +1,5 @@
 # Build files
 /target
-**/target/
 Cargo.lock
 
 # Code Editor related files
