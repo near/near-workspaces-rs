@@ -1,12 +1,15 @@
 use near_units::parse_near;
 use test_log::test;
-use workspaces::{Contract, DevNetwork, Worker};
 use workspaces::prelude::*;
+use workspaces::{Contract, DevNetwork, Worker};
 
 async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
-    let contract = worker.dev_deploy(include_bytes!("../../examples/res/fungible_token.wasm")).await?;
+    let contract = worker
+        .dev_deploy(include_bytes!("../../examples/res/fungible_token.wasm"))
+        .await?;
 
-    contract.call(&worker, "new_default_meta")
+    contract
+        .call(worker, "new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": contract.id(),
             "total_supply": parse_near!("1,000,000,000 N").to_string(),
@@ -28,8 +31,7 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
         .deposit(1)
         .transact()
         .await;
-    assert!(format!("{:?}", res.unwrap_err())
-        .contains("Failed to deserialize input from JSON"));
+    assert!(format!("{:?}", res.unwrap_err()).contains("Failed to deserialize input from JSON"));
 
     Ok(())
 }
