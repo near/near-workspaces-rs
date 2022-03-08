@@ -3,6 +3,7 @@ name = "workspaces"
 version = "0.1.1"
 edition = "2018"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
 repository = "https://github.com/near/workspaces-rs"
 description = """
 Library for automating workflows and testing NEAR smart contracts.
