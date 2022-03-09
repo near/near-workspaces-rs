@@ -142,13 +142,13 @@ impl<P: AsRef<Path>> __ContractCompiler<P> {
 ///
 /// - Relative paths:
 ///
-///   ```no_run
+///   ```ignore
 ///   let wasm = compile_contract!("../../contract");
 ///   ```
 ///
 /// - Absolute paths:
 ///
-///   ```no_run
+///   ```ignore
 ///   let wasm = compile_contract!("/workspace/contract");
 ///   ```
 fn resolve_path<P: AsRef<Path>>(caller: &Path, contract_path: P) -> anyhow::Result<PathBuf> {
