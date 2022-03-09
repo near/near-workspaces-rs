@@ -6,7 +6,7 @@ use workspaces::prelude::*;
 #[test(tokio::test)]
 async fn test_dev_deploy_project() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
-    let wasm = workspaces::compile_project("./tests/test-contracts/status-message").await?;
+    let wasm = workspaces::compile_contract!("./test-contracts/status-message").await?;
     let contract = worker.dev_deploy(&wasm).await?;
 
     let _res = contract

@@ -1,7 +1,7 @@
 #[cfg(feature = "unstable")]
 mod cargo;
 #[cfg(feature = "unstable")]
-pub use cargo::compile_project;
+pub use cargo::__ContractCompiler;
 
 mod network;
 mod rpc;
