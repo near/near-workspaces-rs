@@ -1,4 +1,5 @@
 mod impls;
+mod config;
 
 use std::sync::Arc;
 
@@ -22,6 +23,10 @@ where
 pub fn sandbox() -> Worker<Sandbox> {
     Worker::new(Sandbox::new())
 }
+
+// pub fn sandbox_with_config(conf: GenesisConfig) {
+
+// }
 
 pub fn testnet() -> Worker<Testnet> {
     Worker::new(Testnet::new())

@@ -31,3 +31,7 @@ path = "src/spooning.rs"
 [[example]]
 name = "ref_finance"
 path = "src/ref_finance.rs"
+
+[[example]]
+name = "high_level"
+path = "src/high_level.rs"

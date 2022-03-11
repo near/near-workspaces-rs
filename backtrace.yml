@@ -1,0 +1,143 @@
+BACKTRACE:    0: node_runtime::verifier::validate_actions
+             at /root/space/nearcore/runtime/runtime/src/verifier.rs:309:37
+   1: node_runtime::verifier::validate_transaction
+             at /root/space/nearcore/runtime/runtime/src/verifier.rs:58:5
+   2: <nearcore::runtime::NightshadeRuntime as near_chain::types::RuntimeAdapter>::validate_tx
+             at /root/space/nearcore/nearcore/src/runtime/mod.rs:748:19
+   3: near_client::client::Client::process_tx_internal
+             at /root/space/nearcore/chain/client/src/client.rs:1531:28
+   4: near_client::client::Client::process_tx
+             at /root/space/nearcore/chain/client/src/client.rs:1465:27
+   5: <near_client::client_actor::ClientActor as actix::handler::Handler<near_network::types::NetworkClientMessages>>::handle::{{closure}}
+             at /root/space/nearcore/chain/client/src/client_actor.rs:374:17
+   6: near_performance_metrics::stats_disabled::measure_performance_with_debug
+             at /root/space/nearcore/utils/near-performance-metrics/src/stats_disabled.rs:24:5
+   7: <near_client::client_actor::ClientActor as actix::handler::Handler<near_network::types::NetworkClientMessages>>::handle
+             at /root/space/nearcore/chain/client/src/client_actor.rs:249:5
+   8: <actix::address::envelope::SyncEnvelopeProxy<M> as actix::address::envelope::EnvelopeProxy<A>>::handle
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/actix-0.11.0-beta.2/src/address/envelope.rs:80:23
+   9: <actix::address::envelope::Envelope<A> as actix::address::envelope::EnvelopeProxy<A>>::handle
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/actix-0.11.0-beta.2/src/address/envelope.rs:53:9
+  10: actix::mailbox::Mailbox<A>::poll
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/actix-0.11.0-beta.2/src/mailbox.rs:102:25
+  11: <actix::contextimpl::ContextFut<A,C> as core::future::future::Future>::poll
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/actix-0.11.0-beta.2/src/contextimpl.rs:375:13
+  12: tokio::runtime::task::core::CoreStage<T>::poll::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/task/core.rs:161:17
+  13: tokio::loom::std::unsafe_cell::UnsafeCell<T>::with_mut
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/loom/std/unsafe_cell.rs:14:9
+  14: tokio::runtime::task::core::CoreStage<T>::poll
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/task/core.rs:151:13
+  15: tokio::runtime::task::harness::poll_future::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/task/harness.rs:461:19
+  16: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/core/src/panic/unwind_safe.rs:271:9
+  17: std::panicking::try::do_call
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/panicking.rs:406:40
+  18: __rust_try
+  19: std::panicking::try
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/panicking.rs:370:19
+  20: std::panic::catch_unwind
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/panic.rs:133:14
+  21: tokio::runtime::task::harness::poll_future
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/task/harness.rs:449:18
+  22: tokio::runtime::task::harness::Harness<T,S>::poll_inner
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/task/harness.rs:98:27
+  23: tokio::runtime::task::harness::Harness<T,S>::poll
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/task/harness.rs:53:15
+  24: tokio::runtime::task::raw::poll
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/task/raw.rs:113:5
+  25: tokio::runtime::task::raw::RawTask::poll
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/task/raw.rs:70:18
+  26: tokio::runtime::task::LocalNotified<S>::run
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/task/mod.rs:343:9
+  27: tokio::task::local::LocalSet::tick::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/task/local.rs:521:54
+  28: tokio::coop::with_budget::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/coop.rs:102:9
+  29: std::thread::local::LocalKey<T>::try_with
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/thread/local.rs:399:16
+  30: std::thread::local::LocalKey<T>::with
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/thread/local.rs:375:9
+  31: tokio::coop::with_budget
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/coop.rs:95:5
+      tokio::coop::budget
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/coop.rs:72:5
+      tokio::task::local::LocalSet::tick
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/task/local.rs:521:31
+  32: <tokio::task::local::RunUntil<T> as core::future::future::Future>::poll::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/task/local.rs:646:16
+  33: tokio::macros::scoped_tls::ScopedKey<T>::set
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/macros/scoped_tls.rs:61:9
+  34: tokio::task::local::LocalSet::with
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/task/local.rs:559:9
+  35: <tokio::task::local::RunUntil<T> as core::future::future::Future>::poll
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/task/local.rs:632:9
+  36: tokio::task::local::LocalSet::run_until::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/task/local.rs:505:9
+  37: <core::future::from_generator::GenFuture<T> as core::future::future::Future>::poll
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/core/src/future/mod.rs:80:19
+  38: <core::pin::Pin<P> as core::future::future::Future>::poll
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/core/src/future/future.rs:119:9
+  39: tokio::runtime::basic_scheduler::CoreGuard::block_on::{{closure}}::{{closure}}::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/basic_scheduler.rs:516:48
+  40: tokio::coop::with_budget::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/coop.rs:102:9
+  41: std::thread::local::LocalKey<T>::try_with
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/thread/local.rs:399:16
+  42: std::thread::local::LocalKey<T>::with
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/thread/local.rs:375:9
+  43: tokio::coop::with_budget
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/coop.rs:95:5
+      tokio::coop::budget
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/coop.rs:72:5
+      tokio::runtime::basic_scheduler::CoreGuard::block_on::{{closure}}::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/basic_scheduler.rs:516:25
+  44: tokio::runtime::basic_scheduler::Context::enter
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/basic_scheduler.rs:374:19
+  45: tokio::runtime::basic_scheduler::CoreGuard::block_on::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/basic_scheduler.rs:515:36
+  46: tokio::runtime::basic_scheduler::CoreGuard::enter::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/basic_scheduler.rs:582:57
+  47: tokio::macros::scoped_tls::ScopedKey<T>::set
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/macros/scoped_tls.rs:61:9
+  48: tokio::runtime::basic_scheduler::CoreGuard::enter
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/basic_scheduler.rs:582:27
+  49: tokio::runtime::basic_scheduler::CoreGuard::block_on
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/basic_scheduler.rs:506:9
+  50: tokio::runtime::basic_scheduler::BasicScheduler::block_on
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/basic_scheduler.rs:182:24
+  51: tokio::runtime::Runtime::block_on
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/runtime/mod.rs:475:46
+  52: tokio::task::local::LocalSet::block_on
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-1.16.1/src/task/local.rs:466:9
+  53: actix_rt::runtime::Runtime::block_on
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/actix-rt-2.3.0/src/runtime.rs:80:9
+  54: actix_rt::arbiter::Arbiter::with_tokio_rt::{{closure}}
+             at /root/.cargo/registry/src/github.com-1ecc6299db9ec823/actix-rt-2.3.0/src/arbiter.rs:145:21
+  55: std::sys_common::backtrace::__rust_begin_short_backtrace
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/sys_common/backtrace.rs:123:18
+  56: std::thread::Builder::spawn_unchecked::{{closure}}::{{closure}}
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/thread/mod.rs:484:17
+  57: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/core/src/panic/unwind_safe.rs:271:9
+  58: std::panicking::try::do_call
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/panicking.rs:406:40
+  59: __rust_try
+  60: std::panicking::try
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/panicking.rs:370:19
+  61: std::panic::catch_unwind
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/panic.rs:133:14
+  62: std::thread::Builder::spawn_unchecked::{{closure}}
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/thread/mod.rs:483:30
+  63: core::ops::function::FnOnce::call_once{{vtable.shim}}
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/core/src/ops/function.rs:227:5
+  64: <alloc::boxed::Box<F,A> as core::ops::function::FnOnce<Args>>::call_once
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/alloc/src/boxed.rs:1694:9
+      <alloc::boxed::Box<F,A> as core::ops::function::FnOnce<Args>>::call_once
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/alloc/src/boxed.rs:1694:9
+      std::sys::unix::thread::Thread::new::thread_start
+             at /rustc/db9d1b20bba1968c1ec1fc49616d4742c1725b4b/library/std/src/sys/unix/thread.rs:106:17
+  65: start_thread
+             at /build/glibc-sMfBJT/glibc-2.31/nptl/pthread_create.c:477:8
+  66: clone

@@ -30,11 +30,12 @@ near-account-id = "0.12.0"
 near-crypto = "0.12.0"
 near-primitives = "0.12.0"
 near-jsonrpc-primitives = "0.12.0"
-near-jsonrpc-client = { version = "0.3.0", features = ["sandbox"] }
-near-sandbox-utils = "0.1.2"
+# near-jsonrpc-client = { version = "0.3.0", features = ["sandbox"] }
+near-jsonrpc-client = { path = "../../near-jsonrpc-client-rs", features = ["sandbox"] }
+near-sandbox-utils = { path = "../../sandbox/crate/" }
 
 [build-dependencies]
-near-sandbox-utils = "0.1.2"
+near-sandbox-utils = { path = "../../sandbox/crate/" }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

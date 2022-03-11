@@ -27,7 +27,14 @@ impl SandboxServer {
 
         // Remove dir if it already exists:
         let _ = std::fs::remove_dir_all(&home_dir);
-        near_sandbox_utils::init(&home_dir)?.wait()?;
+        near_sandbox_utils::init_with_options(&[
+            "--home",
+            home_dir.as_os_str().to_str().unwrap(),
+            "init",
+            "--genesis",
+            "genesis.json",
+        ])?
+        .wait()?;
 
         let child = near_sandbox_utils::run(&home_dir, self.rpc_port, self.net_port)?;
         info!(target: "workspaces", "Started sandbox: pid={:?}", child.id());

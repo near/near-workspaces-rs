@@ -383,7 +383,7 @@ where
     T: core::future::Future<Output = Result<R, E>>,
 {
     // Exponential backoff starting w/ 10ms for maximum retry of 5 times:
-    let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(5);
+    let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
 
     Retry::spawn(retry_strategy, task).await
 }

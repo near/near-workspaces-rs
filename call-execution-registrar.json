@@ -1,0 +1,48 @@
+CallExecutionDetails {
+    status: SuccessValue(``),
+    total_gas_burnt: 11674386074085,
+    transaction: ExecutionOutcome {
+        block_hash: `BEjmkUUfiwKUfQUH8o8eCA7XomFwghJKZYpVcfvZxQBa`,
+        logs: [],
+        receipt_ids: [`3U7eVzp4WTSXgBoM5MKGefa2YRUPK4wQz7qCbmQ3nmLv`
+        ],
+        gas_burnt: 2428001493624,
+        executor_id: AccountId("test.near"),
+        status: SuccessReceiptId(3U7eVzp4WTSXgBoM5MKGefa2YRUPK4wQz7qCbmQ3nmLv)
+    },
+    receipts: [
+        ExecutionOutcome {
+            block_hash: `AuMSUg7wo862zvgZUj1f1JRn2xjtVuTsXBtVaj6A5XnR`,
+            logs: [],
+            receipt_ids: [`H6qS6gwn7Q5LG2HVHFBLQ1U4XqBAtoXN7kMGH1t8nFp4`
+            ],
+            gas_burnt: 8815535142961,
+            executor_id: AccountId("dev-20220310234008-28237182882254"),
+            status: SuccessValue(``)
+        },
+        ExecutionOutcome {
+            block_hash: `HYKRL8RTJJVKFoLSfKcHHErf22NxuytRd63mm615DVPD`,
+            logs: [],
+            receipt_ids: [`GmTouxdLDL4eWE6YaGv9VMq6TzmTz7pPZ2iswcndgt9s`
+            ],
+            gas_burnt: 207666875000,
+            executor_id: AccountId("status"),
+            status: Failure(ActionError(ActionError {
+                index: Some(0),
+                kind: CreateAccountOnlyByRegistrar {
+                    account_id: AccountId("status"),
+                    registrar_account_id: AccountId("registrar"),
+                    predecessor_id: AccountId("dev-20220310234008-28237182882254")
+                }
+            }))
+        },
+        ExecutionOutcome {
+            block_hash: `7R5B1Ct6rXoxCEeVttb25RSPqwQonRK26kT1t4ZQr8EL`,
+            logs: [],
+            receipt_ids: [],
+            gas_burnt: 223182562500,
+            executor_id: AccountId("dev-20220310234008-28237182882254"),
+            status: SuccessValue(``)
+        }
+    ]
+}
