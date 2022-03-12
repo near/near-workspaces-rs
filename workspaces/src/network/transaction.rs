@@ -29,7 +29,7 @@ impl Function {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.into(),
-            args: "{}".as_bytes().to_vec(),
+            args: vec![],
             deposit: DEFAULT_CALL_DEPOSIT,
             gas: DEFAULT_CALL_FN_GAS,
         }
@@ -160,7 +160,9 @@ impl<'a> Transaction<'a> {
 
     /// Process the trannsaction, and return the result of the execution.
     pub async fn transact(self) -> anyhow::Result<CallExecutionDetails> {
-        self.transact_raw().await.map(Into::into)
+        self.transact_raw()
+            .await
+            .and_then(CallExecutionDetails::from_outcome)
     }
 }
 
@@ -239,7 +241,7 @@ impl<'a, T: Network> CallTransaction<'a, T> {
                 self.function.deposit,
             )
             .await
-            .map(Into::into)
+            .and_then(CallExecutionDetails::from_outcome)
     }
 
     /// Instead of transacting the transaction, call into the specified view function.
