@@ -18,17 +18,17 @@ use crate::Account;
 /// A set of arguments we can provide to a transaction, containing
 /// the function name, arguments, the amount of gas to use and deposit.
 #[derive(Debug, Clone)]
-pub struct Function {
-    name: String,
+pub struct Function<'a> {
+    name: &'a str,
     args: Vec<u8>,
     deposit: Balance,
     gas: Gas,
 }
 
-impl Function {
-    pub fn new(name: &str) -> Self {
+impl<'a> Function<'a> {
+    pub fn new(name: &'a str) -> Self {
         Self {
-            name: name.into(),
+            name,
             args: vec![],
             deposit: DEFAULT_CALL_DEPOSIT,
             gas: DEFAULT_CALL_FN_GAS,
@@ -50,21 +50,21 @@ impl Function {
         Ok(self)
     }
 
-    pub fn deposit(mut self, deposit: u128) -> Self {
+    pub fn deposit(mut self, deposit: Balance) -> Self {
         self.deposit = deposit;
         self
     }
 
-    pub fn gas(mut self, gas: u64) -> Self {
+    pub fn gas(mut self, gas: Gas) -> Self {
         self.gas = gas;
         self
     }
 }
 
-impl From<Function> for Action {
-    fn from(function: Function) -> Self {
+impl From<Function<'_>> for Action {
+    fn from(function: Function<'_>) -> Self {
         Self::FunctionCall(FunctionCallAction {
-            method_name: function.name,
+            method_name: function.name.to_string(),
             args: function.args,
             deposit: function.deposit,
             gas: function.gas,
@@ -72,6 +72,9 @@ impl From<Function> for Action {
     }
 }
 
+/// A builder-like object that will allow specifying various actions to be performed
+/// in a single transaction. For details on each of the actions, find them in
+/// [NEAR transactions](https://docs.near.org/docs/concepts/transaction).
 pub struct Transaction<'a> {
     client: &'a Client,
     signer: InMemorySigner,
@@ -116,9 +119,13 @@ impl<'a> Transaction<'a> {
 
     /// Deletes the `receiver_id`'s account. The beneficiary specified by
     /// `beneficiary_id` will receive the funds of the account deleted.
-    pub fn delete_account(mut self, beneficiary_id: AccountId) -> Self {
-        self.actions
-            .push(DeleteAccountAction { beneficiary_id }.into());
+    pub fn delete_account(mut self, beneficiary_id: &AccountId) -> Self {
+        self.actions.push(
+            DeleteAccountAction {
+                beneficiary_id: beneficiary_id.clone(),
+            }
+            .into(),
+        );
         self
     }
 
@@ -131,8 +138,9 @@ impl<'a> Transaction<'a> {
     }
 
     /// Deploy contract code or WASM bytes to the `receiver_id`'s account.
-    pub fn deploy(mut self, code: Vec<u8>) -> Self {
-        self.actions.push(DeployContractAction { code }.into());
+    pub fn deploy(mut self, code: &[u8]) -> Self {
+        self.actions
+            .push(DeployContractAction { code: code.into() }.into());
         self
     }
 
@@ -168,19 +176,19 @@ impl<'a> Transaction<'a> {
 
 /// Similiar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
-pub struct CallTransaction<'a, T> {
+pub struct CallTransaction<'a, 'b, T> {
     worker: &'a Worker<T>,
     signer: InMemorySigner,
     contract_id: AccountId,
-    function: Function,
+    function: Function<'b>,
 }
 
-impl<'a, T: Network> CallTransaction<'a, T> {
+impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     pub(crate) fn new(
         worker: &'a Worker<T>,
         contract_id: AccountId,
         signer: InMemorySigner,
-        function: &str,
+        function: &'b str,
     ) -> Self {
         Self {
             worker,
@@ -235,7 +243,7 @@ impl<'a, T: Network> CallTransaction<'a, T> {
             .call(
                 &self.signer,
                 &self.contract_id,
-                self.function.name,
+                self.function.name.to_string(),
                 self.function.args,
                 self.function.gas,
                 self.function.deposit,
@@ -248,7 +256,11 @@ impl<'a, T: Network> CallTransaction<'a, T> {
     pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
         self.worker
             .client()
-            .view(self.contract_id, self.function.name, self.function.args)
+            .view(
+                self.contract_id,
+                self.function.name.to_string(),
+                self.function.args,
+            )
             .await
     }
 }

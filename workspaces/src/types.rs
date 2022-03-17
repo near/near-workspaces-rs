@@ -11,10 +11,11 @@ use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
-/// Nonce for transactions.
+/// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
 
-/// Gas is a type for storing amount of gas.
+/// Gas units used in the execution of transactions. For a more in depth description of
+/// how and where it can be used, visit [Gas](https://docs.near.org/docs/concepts/gas).
 pub type Gas = u64;
 
 /// Balance is type for storing amounts of tokens. Usually represents the amount of tokens

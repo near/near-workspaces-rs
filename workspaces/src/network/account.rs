@@ -34,12 +34,12 @@ impl Account {
     /// Call a contract on the network specified within `worker`, and return
     /// a [`CallTransaction`] object that we will make use to populate the
     /// rest of the call details.
-    pub fn call<'a, T: Network>(
+    pub fn call<'a, 'b, T: Network>(
         &self,
         worker: &'a Worker<T>,
         contract_id: &AccountId,
-        function: &str,
-    ) -> CallTransaction<'a, T> {
+        function: &'b str,
+    ) -> CallTransaction<'a, 'b, T> {
         CallTransaction::new(
             worker,
             contract_id.to_owned(),
@@ -165,11 +165,11 @@ impl Contract {
     /// If we want to make use of the contract's account to call into a
     /// different contract besides the current one, use
     /// `contract.as_account().call` instead.
-    pub fn call<'a, T: Network>(
+    pub fn call<'a, 'b, T: Network>(
         &self,
         worker: &'a Worker<T>,
-        function: &str,
-    ) -> CallTransaction<'a, T> {
+        function: &'b str,
+    ) -> CallTransaction<'a, 'b, T> {
         self.account.call(worker, self.id(), function)
     }
 
