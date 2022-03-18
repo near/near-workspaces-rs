@@ -9,7 +9,7 @@ use crate::network::{
 };
 use crate::network::{Info, Sandbox};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
-use crate::rpc::patch::ImportContractBuilder;
+use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
 use crate::{AccountDetails, Network};
@@ -74,7 +74,7 @@ where
         &'b self,
         id: &AccountId,
         worker: &'a Worker<impl Network>,
-    ) -> ImportContractBuilder<'a, 'b> {
+    ) -> ImportContractTransaction<'a, 'b> {
         self.workspace.import_contract(id, worker)
     }
 }
