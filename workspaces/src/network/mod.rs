@@ -115,7 +115,7 @@ pub trait StatePatcher {
         id: &AccountId,
         worker: &'a Worker<impl Network>,
     ) -> ImportContractTransaction<'a, 'b>;
-  
+
     async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()>;
 }
 
