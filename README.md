@@ -12,7 +12,6 @@ This software is in very early alpha (use at your own risk). Only local sandboxe
 [dependencies]
 workspaces = "0.1"
 ```
-Remember to grab the current revision since things are likely to change until published.
 
 ## Testing
 A simple test to get us going and familiar with the features:
