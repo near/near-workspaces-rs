@@ -58,3 +58,11 @@ where
 {
     task(mainnet()).await
 }
+
+pub async fn with_mainnet_archival<F, T>(task: F) -> T::Output
+where
+    F: Fn(Worker<Mainnet>) -> T,
+    T: core::future::Future,
+{
+    task(mainnet_archival()).await
+}
