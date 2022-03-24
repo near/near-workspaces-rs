@@ -19,26 +19,36 @@ where
     }
 }
 
+/// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
 pub fn sandbox() -> Worker<Sandbox> {
     Worker::new(Sandbox::new())
 }
 
+/// Connect to the [testnet](https://explorer.testnet.near.org/) network, and grab
+/// a [`Worker`] that can interact with it.
 pub fn testnet() -> Worker<Testnet> {
     Worker::new(Testnet::new())
 }
 
+/// Connect to the [testnet archival](https://near-nodes.io/intro/node-types#archival-node)
+/// network, and grab a [`Worker`] that can interact with it.
 pub fn testnet_archival() -> Worker<Testnet> {
     Worker::new(Testnet::archival())
 }
 
+/// Connect to the [mainnet](https://explorer.near.org/) network, and grab
+/// a [`Worker`] that can interact with it.
 pub fn mainnet() -> Worker<Mainnet> {
     Worker::new(Mainnet::new())
 }
 
+/// Connect to the [mainnet archival](https://near-nodes.io/intro/node-types#archival-node)
+/// network, and grab a [`Worker`] that can interact with it.
 pub fn mainnet_archival() -> Worker<Mainnet> {
     Worker::new(Mainnet::archival())
 }
 
+/// Run a locally scoped task with a [`sandbox`] instanced [`Worker`] is supplied.
 pub async fn with_sandbox<F, T>(task: F) -> T::Output
 where
     F: Fn(Worker<Sandbox>) -> T,
@@ -47,6 +57,7 @@ where
     task(sandbox()).await
 }
 
+/// Run a locally scoped task with a [`testnet`] instanced [`Worker`] is supplied.
 pub async fn with_testnet<F, T>(task: F) -> T::Output
 where
     F: Fn(Worker<Testnet>) -> T,
@@ -55,6 +66,7 @@ where
     task(testnet()).await
 }
 
+/// Run a locally scoped task with a [`testnet_archival`] instanced [`Worker`] is supplied.
 pub async fn with_testnet_archival<F, T>(task: F) -> T::Output
 where
     F: Fn(Worker<Testnet>) -> T,
@@ -63,6 +75,7 @@ where
     task(testnet_archival()).await
 }
 
+/// Run a locally scoped task with a [`mainnet`] instanced [`Worker`] is supplied.
 pub async fn with_mainnet<F, T>(task: F) -> T::Output
 where
     F: Fn(Worker<Mainnet>) -> T,
@@ -71,6 +84,7 @@ where
     task(mainnet()).await
 }
 
+/// Run a locally scoped task with a [`mainnet_archival`] instanced [`Worker`] is supplied.
 pub async fn with_mainnet_archival<F, T>(task: F) -> T::Output
 where
     F: Fn(Worker<Mainnet>) -> T,
