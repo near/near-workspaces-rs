@@ -9,6 +9,7 @@ mod testnet;
 
 use async_trait::async_trait;
 
+use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
 
@@ -112,6 +113,8 @@ pub trait StatePatcher {
         id: &AccountId,
         worker: &'a Worker<impl Network>,
     ) -> ImportContractBuilder<'a, 'b>;
+
+    async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()>;
 }
 
 #[async_trait]
@@ -148,6 +151,18 @@ where
         worker: &'a Worker<impl Network>,
     ) -> ImportContractBuilder<'a, 'b> {
         ImportContractBuilder::new(id.to_owned(), worker.client(), self.client())
+    }
+
+    async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
+        // NOTE: RpcSandboxFastForwardResponse is an empty struct with no fields, so don't do anything with it:
+        let _forward_resp = self
+            .client()
+            // TODO: replace this with the `query` variant when RpcSandboxFastForwardRequest impls Debug
+            .query_nolog(&RpcSandboxFastForwardRequest { delta_height })
+            .await
+            .map_err(|err| anyhow::anyhow!("Failed to fast forward: {:?}", err))?;
+
+        Ok(())
     }
 }
 

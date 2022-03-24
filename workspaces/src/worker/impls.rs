@@ -77,6 +77,10 @@ where
     ) -> ImportContractBuilder<'a, 'b> {
         self.workspace.import_contract(id, worker)
     }
+
+    async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
+        self.workspace.fast_forward(delta_height).await
+    }
 }
 
 impl<T> Worker<T>
