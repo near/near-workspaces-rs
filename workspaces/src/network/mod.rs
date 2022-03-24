@@ -7,6 +7,8 @@ mod sandbox;
 mod server;
 mod testnet;
 
+pub mod transaction;
+
 use async_trait::async_trait;
 
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
@@ -15,7 +17,7 @@ use near_primitives::state_record::StateRecord;
 
 pub(crate) use crate::network::info::Info;
 use crate::rpc::client::Client;
-use crate::rpc::patch::ImportContractBuilder;
+use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, KeyType, SecretKey};
 use crate::Worker;
 
@@ -112,8 +114,8 @@ pub trait StatePatcher {
         &'b self,
         id: &AccountId,
         worker: &'a Worker<impl Network>,
-    ) -> ImportContractBuilder<'a, 'b>;
-
+    ) -> ImportContractTransaction<'a, 'b>;
+  
     async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()>;
 }
 
@@ -149,8 +151,8 @@ where
         &'b self,
         id: &AccountId,
         worker: &'a Worker<impl Network>,
-    ) -> ImportContractBuilder<'a, 'b> {
-        ImportContractBuilder::new(id.to_owned(), worker.client(), self.client())
+    ) -> ImportContractTransaction<'a, 'b> {
+        ImportContractTransaction::new(id.to_owned(), worker.client(), self.client())
     }
 
     async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {

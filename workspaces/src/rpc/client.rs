@@ -419,7 +419,7 @@ where
     retry(|| async { send_tx(client, task().await?).await }).await
 }
 
-async fn send_batch_tx_and_retry(
+pub(crate) async fn send_batch_tx_and_retry(
     client: &Client,
     signer: &InMemorySigner,
     receiver_id: &AccountId,
