@@ -27,6 +27,10 @@ pub fn testnet() -> Worker<Testnet> {
     Worker::new(Testnet::new())
 }
 
+pub fn testnet_archival() -> Worker<Testnet> {
+    Worker::new(Testnet::archival())
+}
+
 pub fn mainnet() -> Worker<Mainnet> {
     Worker::new(Mainnet::new())
 }
@@ -49,6 +53,14 @@ where
     T: core::future::Future,
 {
     task(testnet()).await
+}
+
+pub async fn with_testnet_archival<F, T>(task: F) -> T::Output
+where
+    F: Fn(Worker<Testnet>) -> T,
+    T: core::future::Future,
+{
+    task(testnet_archival()).await
 }
 
 pub async fn with_mainnet<F, T>(task: F) -> T::Output
