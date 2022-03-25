@@ -7,7 +7,7 @@ pub struct Simple {}
 
 #[near_bindgen]
 impl Simple {
-    pub fn current_env_data(&self) -> (u64, u64) {
+    pub fn current_env_data() -> (u64, u64) {
         let now = env::block_timestamp();
         let eh = env::epoch_height();
         log!("Timestamp: {}", now);

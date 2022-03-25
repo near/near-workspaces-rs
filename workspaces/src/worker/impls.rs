@@ -5,7 +5,7 @@ use near_primitives::types::{Balance, StoreKey};
 
 use crate::network::{
     Account, AllowDevAccountCreation, Block, CallExecution, CallExecutionDetails, Contract,
-    NetworkClient, NetworkInfo, StatePatcher, TopLevelAccountCreator, ViewResultDetails,
+    NetworkClient, NetworkInfo, TopLevelAccountCreator, ViewResultDetails,
 };
 use crate::network::{Info, Sandbox};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
@@ -53,33 +53,6 @@ where
 {
     fn info(&self) -> &Info {
         self.workspace.info()
-    }
-}
-
-#[async_trait]
-impl<T> StatePatcher for Worker<T>
-where
-    T: StatePatcher + Send + Sync,
-{
-    async fn patch_state(
-        &self,
-        contract_id: &AccountId,
-        key: &[u8],
-        value: &[u8],
-    ) -> anyhow::Result<()> {
-        self.workspace.patch_state(contract_id, key, value).await
-    }
-
-    fn import_contract<'a, 'b>(
-        &'b self,
-        id: &AccountId,
-        worker: &'a Worker<impl Network>,
-    ) -> ImportContractTransaction<'a, 'b> {
-        self.workspace.import_contract(id, worker)
-    }
-
-    async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
-        self.workspace.fast_forward(delta_height).await
     }
 }
 
@@ -189,5 +162,26 @@ impl Worker<Sandbox> {
         let account_id = self.info().root_id.clone();
         let signer = self.workspace.root_signer();
         Account::new(account_id, signer)
+    }
+
+    pub fn import_contract<'a, 'b>(
+        &'b self,
+        id: &AccountId,
+        worker: &'a Worker<impl Network>,
+    ) -> ImportContractTransaction<'a, 'b> {
+        self.workspace.import_contract(id, worker)
+    }
+
+    pub async fn patch_state(
+        &self,
+        contract_id: &AccountId,
+        key: &[u8],
+        value: &[u8],
+    ) -> anyhow::Result<()> {
+        self.workspace.patch_state(contract_id, key, value).await
+    }
+
+    pub async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
+        self.workspace.fast_forward(delta_height).await
     }
 }

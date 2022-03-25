@@ -11,15 +11,9 @@ pub mod transaction;
 
 use async_trait::async_trait;
 
-use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
-use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
-use near_primitives::state_record::StateRecord;
-
 pub(crate) use crate::network::info::Info;
 use crate::rpc::client::Client;
-use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, KeyType, SecretKey};
-use crate::Worker;
 
 pub use crate::network::account::{Account, AccountDetails, Contract};
 pub use crate::network::block::Block;
@@ -96,75 +90,6 @@ where
         let (id, sk) = self.dev_generate().await;
         let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
         contract.into()
-    }
-}
-
-pub trait AllowStatePatching {}
-
-#[async_trait]
-pub trait StatePatcher {
-    async fn patch_state(
-        &self,
-        contract_id: &AccountId,
-        key: &[u8],
-        value: &[u8],
-    ) -> anyhow::Result<()>;
-
-    fn import_contract<'a, 'b>(
-        &'b self,
-        id: &AccountId,
-        worker: &'a Worker<impl Network>,
-    ) -> ImportContractTransaction<'a, 'b>;
-
-    async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()>;
-}
-
-#[async_trait]
-impl<T> StatePatcher for T
-where
-    T: AllowStatePatching + NetworkClient + Send + Sync,
-{
-    async fn patch_state(
-        &self,
-        contract_id: &AccountId,
-        key: &[u8],
-        value: &[u8],
-    ) -> anyhow::Result<()> {
-        let state = StateRecord::Data {
-            account_id: contract_id.to_owned(),
-            data_key: key.to_vec(),
-            value: value.to_vec(),
-        };
-        let records = vec![state];
-
-        // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
-        let _patch_resp = self
-            .client()
-            .query(&RpcSandboxPatchStateRequest { records })
-            .await
-            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
-
-        Ok(())
-    }
-
-    fn import_contract<'a, 'b>(
-        &'b self,
-        id: &AccountId,
-        worker: &'a Worker<impl Network>,
-    ) -> ImportContractTransaction<'a, 'b> {
-        ImportContractTransaction::new(id.to_owned(), worker.client(), self.client())
-    }
-
-    async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
-        // NOTE: RpcSandboxFastForwardResponse is an empty struct with no fields, so don't do anything with it:
-        let _forward_resp = self
-            .client()
-            // TODO: replace this with the `query` variant when RpcSandboxFastForwardRequest impls Debug
-            .query_nolog(&RpcSandboxFastForwardRequest { delta_height })
-            .await
-            .map_err(|err| anyhow::anyhow!("Failed to fast forward: {:?}", err))?;
-
-        Ok(())
     }
 }
 
