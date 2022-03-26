@@ -61,6 +61,40 @@ async fn build_cargo_project<P: AsRef<Path> + Debug>(
     }
 }
 
+async fn compile_project(project_path: &Path) -> anyhow::Result<Vec<u8>> {
+    let messages = build_cargo_project(project_path).await?;
+    // We find the last compiler artifact message which should contain information about the
+    // resulting .wasm file
+    let compile_artifact = messages
+        .iter()
+        .filter_map(|m| match m {
+            cargo_metadata::Message::CompilerArtifact(artifact) => Some(artifact),
+            _ => None,
+        })
+        .last()
+        .ok_or(anyhow!(
+            "Cargo failed to produce any compilation artifacts. \
+                 Please check that your project contains a NEAR smart contract."
+        ))?;
+    // The project could have generated many auxiliary files, we are only interested in .wasm files
+    let wasm_files = compile_artifact
+        .filenames
+        .iter()
+        .filter(|f| f.as_str().ends_with(".wasm"))
+        .collect::<Vec<_>>();
+    match wasm_files.as_slice() {
+        [] => Err(anyhow!(
+            "Compilation resulted in no '.wasm' target files. \
+                 Please check that your project contains a NEAR smart contract."
+        )),
+        [file] => Ok(tokio::fs::read(file.canonicalize()?).await?),
+        _ => Err(anyhow!(
+            "Compilation resulted in more than one '.wasm' target file: {:?}",
+            wasm_files
+        )),
+    }
+}
+
 /// Builds the cargo project located at `project_path` and returns the generated wasm file contents.
 ///
 /// NOTE: This macro does not check whether the resulting wasm file is a valid smart
@@ -89,38 +123,7 @@ impl<P: AsRef<Path>> __ContractCompiler<P> {
 
     pub async fn compile(self) -> anyhow::Result<Vec<u8>> {
         let contract_path = resolve_path(Path::new(self.caller), self.project_path)?;
-
-        let messages = build_cargo_project(contract_path).await?;
-        // We find the last compiler artifact message which should contain information about the
-        // resulting .wasm file
-        let compile_artifact = messages
-            .iter()
-            .filter_map(|m| match m {
-                cargo_metadata::Message::CompilerArtifact(artifact) => Some(artifact),
-                _ => None,
-            })
-            .last()
-            .ok_or(anyhow!(
-                "Cargo failed to produce any compilation artifacts. \
-                     Please check that your project contains a NEAR smart contract."
-            ))?;
-        // The project could have generated many auxiliary files, we are only interested in .wasm files
-        let wasm_files = compile_artifact
-            .filenames
-            .iter()
-            .filter(|f| f.as_str().ends_with(".wasm"))
-            .collect::<Vec<_>>();
-        match wasm_files.as_slice() {
-            [] => Err(anyhow!(
-                "Compilation resulted in no '.wasm' target files. \
-                     Please check that your project contains a NEAR smart contract."
-            )),
-            [file] => Ok(tokio::fs::read(file.canonicalize()?).await?),
-            _ => Err(anyhow!(
-                "Compilation resulted in more than one '.wasm' target file: {:?}",
-                wasm_files
-            )),
-        }
+        compile_project(&contract_path).await
     }
 }
 
