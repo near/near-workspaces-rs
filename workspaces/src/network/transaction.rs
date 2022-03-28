@@ -28,6 +28,8 @@ pub struct Function<'a> {
 }
 
 impl<'a> Function<'a> {
+    /// Initialize a new instance of [`Function`], tied to a specific function on a
+    /// contract that lives directly on a contract we've specified in [`Transaction`].
     pub fn new(name: &'a str) -> Self {
         Self {
             name,
@@ -37,26 +39,37 @@ impl<'a> Function<'a> {
         }
     }
 
+    /// Provide the arguments for the call. These args are serialized bytes from either
+    /// a JSON or Borsh serializable set of arguments. To use the more specific versions
+    /// with better quality of life, use `args_json` or `args_borsh`.
     pub fn args(mut self, args: Vec<u8>) -> Self {
         self.args = args;
         self
     }
 
+    /// Similiar to `args`, specify an argument that is JSON serializable and can be
+    /// accepted by the equivalent contract. Recommend to use something like
+    /// `serde_json::json!` macro to easily serialize the arguments.
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
         self.args = serde_json::to_vec(&args)?;
         Ok(self)
     }
 
+    /// Similiar to `args`, specify an argument that is borsh serializable and can be
+    /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
         self.args = args.try_to_vec()?;
         Ok(self)
     }
 
+    /// Specify the amount of tokens to be deposited where `deposit` is the amount of
+    /// tokens in yocto near.
     pub fn deposit(mut self, deposit: Balance) -> Self {
         self.deposit = deposit;
         self
     }
 
+    /// Specify the amount of gas to be used where `gas` is the amount of gas in yocto near.
     pub fn gas(mut self, gas: Gas) -> Self {
         self.gas = gas;
         self
