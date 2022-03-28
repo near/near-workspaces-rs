@@ -23,6 +23,7 @@ impl Account {
         Self { id, signer }
     }
 
+    /// Grab the current account identifier
     pub fn id(&self) -> &AccountId {
         &self.id
     }
@@ -146,10 +147,14 @@ impl Contract {
         Self { account }
     }
 
+    /// Grab the current contract identifier
     pub fn id(&self) -> &AccountId {
         &self.account.id
     }
 
+    /// Casts the current [`Contract`] into an [`Account`] type. This does
+    /// nothing on chain/network, and is merely allowing `Account::*` functions
+    /// to be used from this `Contract`.
     pub fn as_account(&self) -> &Account {
         &self.account
     }
