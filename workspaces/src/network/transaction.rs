@@ -69,7 +69,7 @@ impl<'a> Function<'a> {
         self
     }
 
-    /// Specify the amount of gas to be used where `gas` is the amount of gas in yocto near.
+    /// Specify the amount of gas to be used.
     pub fn gas(mut self, gas: Gas) -> Self {
         self.gas = gas;
         self
