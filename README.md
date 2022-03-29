@@ -36,21 +36,17 @@ use workspaces::prelude::*;
 async fn test_deploy_and_view() -> anyhow::Result<()> {
     let worker = workspaces::sandbox();
 
-    let contract = worker.dev_deploy(include_bytes!("path/to/file.wasm").to_vec())
+    let contract = worker.dev_deploy(include_bytes!("path/to/file.wasm"))
         .await
         .expect("could not dev-deploy contract");
 
-    let result: String = contract.view(
-        &worker,
-        "function_name",
-        serde_json::json!({
+    let result: String = contract.call(&worker, "function_name")
+        .args_json(serde_json::json!({
             "some_arg": "some_value",
-        })
-        .to_string()
-        .into_bytes(),
-    )
-    .await?
-    .json()?;
+        }))?
+        .view()
+        .await?
+        .json()?;
 
     assert_eq!(result, "OUR_EXPECTED_RESULT");
     Ok(())
@@ -58,9 +54,9 @@ async fn test_deploy_and_view() -> anyhow::Result<()> {
 ```
 
 ## Examples
-Some examples can be found `examples/src/*.rs` to run it standalone.
+Some examples can be found in `examples/src/*.rs` to run it standalone.
 
-To run the NFT example, run:
+To run the NFT example, execute:
 ```
 cargo run --example nft
 ```
@@ -103,6 +99,6 @@ async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyh
 // Create a helper function that deploys a specific contract
 // NOTE: `dev_deploy` is only available on `DevNetwork`s such sandbox and testnet.
 async fn deploy_my_contract(worker: Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
-    worker.dev_deploy(std::fs::read(CONTRACT_FILE)?).await
+    worker.dev_deploy(&std::fs::read(CONTRACT_FILE)?).await
 }
 ```
