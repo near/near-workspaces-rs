@@ -1,7 +1,17 @@
-# NEAR Workspaces (Rust Edition)
-A set of functions provided to automate workflows and write tests, such as the ability to deploy and run NEAR contracts, along with several other functions to aid in development and maintenance.
+<div align="center">
 
-This software is in very early alpha (use at your own risk). Only local sandboxed environments and testnet are available currently to run this library on.
+  <h1><code>NEAR Workspaces (Rust Edition)</code></h1>
+
+  <p>
+    <strong>Rust library for automating workflows and writing tests for NEAR smart contracts. This software is in early alpha (use at your own risk)</strong>
+  </p>
+
+  <p>
+    <a href="https://crates.io/crates/workspaces"><img src="https://img.shields.io/crates/v/workspaces.svg?style=flat-square" alt="Crates.io version" /></a>
+    <a href="https://crates.io/crates/workspaces"><img src="https://img.shields.io/crates/d/workspaces.svg?style=flat-square" alt="Download" /></a>
+    <a href="https://docs.rs/workspaces"><img src="https://docs.rs/workspaces/badge.svg" alt="Reference Documentation" /></a>
+  </p>
+</div>
 
 ## Requirements
 - rust v1.56 and up
@@ -12,14 +22,6 @@ To be able to use this library on an M1 Mac, we would need to setup rosetta plus
 ```
 softwareupdate --install-rosetta
 rustup default stable-x86_64-apple-darwin
-```
-Then we are good to go.
-
-
-## Include it in our project
-```
-[dependencies]
-workspaces = "0.1"
 ```
 
 ## Testing
