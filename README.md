@@ -5,7 +5,16 @@ This software is in very early alpha (use at your own risk). Only local sandboxe
 
 ## Requirements
 - rust v1.56 and up
-- MacOS (x86) or Linux (x86) for sandbox tests. Testnet is available regardless
+- MacOS (x86), M1 (thru rosetta) or Linux (x86) for sandbox tests. Testnet is available regardless
+
+### M1 MacOS Setup
+To be able to use this library on an M1 Mac, we would need to setup rosetta plus our cross compile target:
+```
+softwareupdate --install-rosetta
+rustup default stable-x86_64-apple-darwin
+```
+Then we are good to go.
+
 
 ## Include it in our project
 ```
