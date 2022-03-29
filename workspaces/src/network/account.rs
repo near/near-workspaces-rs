@@ -147,7 +147,7 @@ impl Contract {
         Self { account }
     }
 
-    /// Grab the current contract identifier
+    /// Grab the current contract's account identifier
     pub fn id(&self) -> &AccountId {
         &self.account.id
     }
