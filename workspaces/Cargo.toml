@@ -3,6 +3,7 @@ name = "workspaces"
 version = "0.1.1"
 edition = "2018"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
 repository = "https://github.com/near/workspaces-rs"
 description = """
 Library for automating workflows and testing NEAR smart contracts.
@@ -33,18 +34,21 @@ near-crypto = "0.12.0"
 near-primitives = "0.12.0"
 near-jsonrpc-primitives = "0.12.0"
 near-jsonrpc-client = { version = "0.3.0", features = ["sandbox"] }
-near-sandbox-utils = "0.1.1"
+near-sandbox-utils = "0.1.2"
 
 [build-dependencies]
-near-sandbox-utils = "0.1"
+near-sandbox-utils = "0.1.2"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
 [dev-dependencies]
 borsh = "0.9"
+near-units = "0.1.0"
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
 [features]
+default = ["install"]
+install = []  # Install the sandbox binary during compile time
 unstable = ["cargo_metadata"]

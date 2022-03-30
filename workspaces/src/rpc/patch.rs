@@ -8,7 +8,7 @@ use crate::rpc::client::Client;
 use crate::types::{BlockHeight, SecretKey};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner};
 
-pub struct ImportContractBuilder<'a, 'b> {
+pub struct ImportContractTransaction<'a, 'b> {
     account_id: AccountId,
     from_network: &'a Client,
     into_network: &'b Client,
@@ -23,13 +23,13 @@ pub struct ImportContractBuilder<'a, 'b> {
     block_id: Option<BlockId>,
 }
 
-impl<'a, 'b> ImportContractBuilder<'a, 'b> {
+impl<'a, 'b> ImportContractTransaction<'a, 'b> {
     pub(crate) fn new(
         account_id: AccountId,
         from_network: &'a Client,
         into_network: &'b Client,
     ) -> Self {
-        ImportContractBuilder {
+        ImportContractTransaction {
             account_id,
             from_network,
             into_network,

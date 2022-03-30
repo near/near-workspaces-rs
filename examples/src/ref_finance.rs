@@ -31,7 +31,7 @@ async fn create_ref(
         .transact()
         .await?;
 
-    // NOTE: We are not pulling down the contract's data here, so we'll need ot initalize
+    // NOTE: We are not pulling down the contract's data here, so we'll need to initalize
     // our own set of metadata. This is because the contract's data is too big for the rpc
     // service to pull down (i.e. greater than 50mb).
 
@@ -47,6 +47,7 @@ async fn create_ref(
 
     owner
         .call(&worker, ref_finance.id(), "storage_deposit")
+        .args_json(serde_json::json!({}))?
         .deposit(parse_near!("30 mN"))
         .transact()
         .await?;
@@ -78,6 +79,7 @@ async fn create_wnear(
 
     owner
         .call(&worker, wnear.id(), "storage_deposit")
+        .args_json(serde_json::json!({}))?
         .deposit(parse_near!("0.008 N"))
         .transact()
         .await?;

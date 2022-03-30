@@ -4,19 +4,21 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use url::Url;
 
-use near_primitives::views::FinalExecutionStatus;
+use near_primitives::views::{ExecutionStatusView, FinalExecutionStatus};
 
 use crate::network::Info;
 use crate::network::{
     Account, AllowDevAccountCreation, CallExecution, CallExecutionDetails, NetworkClient,
     NetworkInfo, TopLevelAccountCreator,
 };
+use crate::result::ExecutionOutcome;
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
-use crate::Contract;
+use crate::{Contract, CryptoHash};
 
 const RPC_URL: &str = "https://rpc.testnet.near.org";
 const HELPER_URL: &str = "https://helper.testnet.near.org";
+const ARCHIVAL_URL: &str = "https://archival-rpc.testnet.near.org";
 
 pub struct Testnet {
     client: Client,
@@ -35,6 +37,18 @@ impl Testnet {
             },
         }
     }
+
+    pub(crate) fn archival() -> Self {
+        Self {
+            client: Client::new(ARCHIVAL_URL.into()),
+            info: Info {
+                name: "testnet-archival".into(),
+                root_id: AccountId::from_str("testnet").unwrap(),
+                keystore_path: PathBuf::from(".near-credentials/testnet/"),
+                rpc_url: ARCHIVAL_URL.into(),
+            },
+        }
+    }
 }
 
 impl AllowDevAccountCreation for Testnet {}
@@ -45,6 +59,7 @@ impl TopLevelAccountCreator for Testnet {
         &self,
         id: AccountId,
         sk: SecretKey,
+        // TODO: return Account only, but then you don't get metadata info for it...
     ) -> anyhow::Result<CallExecution<Account>> {
         tool::url_create_account(Url::parse(HELPER_URL)?, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
@@ -57,6 +72,16 @@ impl TopLevelAccountCreator for Testnet {
                 total_gas_burnt: 0,
 
                 status: FinalExecutionStatus::SuccessValue(String::new()),
+
+                transaction: ExecutionOutcome {
+                    block_hash: CryptoHash::default(),
+                    logs: Vec::new(),
+                    receipt_ids: Vec::new(),
+                    gas_burnt: 0,
+                    executor_id: "testnet".parse()?,
+                    status: ExecutionStatusView::SuccessValue(String::new()),
+                },
+                receipts: Vec::new(),
             },
         })
     }

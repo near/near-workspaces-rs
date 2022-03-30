@@ -15,7 +15,8 @@ use near_primitives::transaction::{
 };
 use near_primitives::types::{Balance, BlockId, Finality, Gas, StoreKey};
 use near_primitives::views::{
-    AccessKeyView, AccountView, ContractCodeView, FinalExecutionOutcomeView, QueryRequest,
+    AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
+    QueryRequest,
 };
 
 use crate::network::ViewResultDetails;
@@ -238,6 +239,18 @@ impl Client {
         }
     }
 
+    pub(crate) async fn view_block(&self, block_id: Option<BlockId>) -> anyhow::Result<BlockView> {
+        let block_reference = block_id
+            .map(Into::into)
+            .unwrap_or_else(|| Finality::None.into());
+
+        let block_view = self
+            .query(&methods::block::RpcBlockRequest { block_reference })
+            .await?;
+
+        Ok(block_view)
+    }
+
     pub(crate) async fn deploy(
         &self,
         signer: &InMemorySigner,
@@ -369,8 +382,9 @@ where
     F: FnMut() -> T,
     T: core::future::Future<Output = Result<R, E>>,
 {
-    // Exponential backoff starting w/ 10ms for maximum retry of 5 times:
-    let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(5);
+    // Exponential backoff starting w/ 5ms for maximum retry of 4 times with the following delays:
+    //   5, 25, 125, 625 ms
+    let retry_strategy = ExponentialBackoff::from_millis(5).map(jitter).take(4);
 
     Retry::spawn(retry_strategy, task).await
 }
@@ -398,7 +412,7 @@ where
     retry(|| async { send_tx(client, task().await?).await }).await
 }
 
-async fn send_batch_tx_and_retry(
+pub(crate) async fn send_batch_tx_and_retry(
     client: &Client,
     signer: &InMemorySigner,
     receiver_id: &AccountId,
