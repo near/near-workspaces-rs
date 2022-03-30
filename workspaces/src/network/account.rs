@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use near_primitives::views::AccountView;
 
 use crate::types::{AccountId, Balance, InMemorySigner};
@@ -127,6 +129,19 @@ impl Account {
         contract_id: &AccountId,
     ) -> Transaction<'a> {
         Transaction::new(worker.client(), self.signer().clone(), contract_id.clone())
+    }
+
+    /// Store the credentials of this account locally in the directory provided.
+    pub fn store_credentials(&self, save_dir: impl AsRef<Path>) -> anyhow::Result<()> {
+        let savepath = save_dir.as_ref().to_path_buf();
+        std::fs::create_dir_all(save_dir)?;
+
+        let mut savepath = savepath.join(self.id.to_string());
+        savepath.set_extension("json");
+
+        crate::rpc::tool::write_cred_to_file(&savepath, &self.id, &self.signer.0.secret_key);
+
+        Ok(())
     }
 }
 
