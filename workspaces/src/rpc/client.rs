@@ -4,6 +4,8 @@ use std::fmt::Debug;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
+use near_jsonrpc_client::errors::JsonRpcError;
+use near_jsonrpc_client::methods::health::RpcStatusError;
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
@@ -16,7 +18,7 @@ use near_primitives::transaction::{
 use near_primitives::types::{Balance, BlockId, Finality, Gas, StoreKey};
 use near_primitives::views::{
     AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
-    QueryRequest,
+    QueryRequest, StatusResponse,
 };
 
 use crate::network::ViewResultDetails;
@@ -353,6 +355,12 @@ impl Client {
             DeleteAccountAction { beneficiary_id }.into(),
         )
         .await
+    }
+
+    pub(crate) async fn status(&self) -> Result<StatusResponse, JsonRpcError<RpcStatusError>> {
+        JsonRpcClient::connect(&self.rpc_addr)
+            .call(methods::status::RpcStatusRequest)
+            .await
     }
 }
 

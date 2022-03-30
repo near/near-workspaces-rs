@@ -90,7 +90,7 @@ async fn main() -> anyhow::Result<()> {
     info!(target: "spooning", "Testnet: {:?}", status_msg);
 
     // Create our sandboxed environment and grab a worker to do stuff in it:
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
 
     // Deploy with the following status_message state: sandbox_contract_id => "hello from sandbox"
     let sandbox_contract = deploy_status_contract(&worker, "hello from sandbox").await?;

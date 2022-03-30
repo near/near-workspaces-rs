@@ -38,11 +38,12 @@ impl Sandbox {
         InMemorySigner::from_file(&path)
     }
 
-    pub(crate) fn new() -> Self {
+    pub(crate) async fn new() -> anyhow::Result<Self> {
         let mut server = SandboxServer::default();
-        server.start().unwrap();
-
+        server.start()?;
         let client = Client::new(server.rpc_addr());
+        SandboxServer::wait_for_rpc(&client).await?;
+
         let info = Info {
             name: "sandbox".to_string(),
             root_id: AccountId::from_str("test.near").unwrap(),
@@ -50,11 +51,11 @@ impl Sandbox {
             rpc_url: server.rpc_addr(),
         };
 
-        Self {
+        Ok(Self {
             server,
             client,
             info,
-        }
+        })
     }
 }
 

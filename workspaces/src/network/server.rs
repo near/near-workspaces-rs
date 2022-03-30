@@ -1,6 +1,11 @@
-use crate::network::Sandbox;
-use portpicker::pick_unused_port;
 use std::process::Child;
+use std::time::Duration;
+
+use crate::network::Sandbox;
+use crate::rpc::client::Client;
+
+use portpicker::pick_unused_port;
+use tokio_retry::Retry;
 use tracing::info;
 
 pub struct SandboxServer {
@@ -38,6 +43,16 @@ impl SandboxServer {
 
     pub fn rpc_addr(&self) -> String {
         format!("http://localhost:{}", self.rpc_port)
+    }
+
+    pub(crate) async fn wait_for_rpc(client: &Client) -> anyhow::Result<()> {
+        let retry_six_times = std::iter::repeat_with(|| Duration::from_millis(500)).take(6);
+        Retry::spawn(retry_six_times, || async { client.status().await })
+            .await
+            .map_err(|e| {
+                anyhow::anyhow!("Sandbox failed to startup within three seconds: {:?}", e)
+            })?;
+        Ok(())
     }
 }
 

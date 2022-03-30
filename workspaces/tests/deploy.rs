@@ -31,7 +31,7 @@ fn expected() -> NftMetadata {
 
 #[test(tokio::test)]
 async fn test_dev_deploy() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 

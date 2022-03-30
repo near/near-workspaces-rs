@@ -20,8 +20,8 @@ where
 }
 
 /// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
-pub fn sandbox() -> Worker<Sandbox> {
-    Worker::new(Sandbox::new())
+pub async fn sandbox() -> anyhow::Result<Worker<Sandbox>> {
+    Ok(Worker::new(Sandbox::new().await?))
 }
 
 /// Connect to the [testnet](https://explorer.testnet.near.org/) network, and grab
@@ -49,12 +49,12 @@ pub fn mainnet_archival() -> Worker<Mainnet> {
 }
 
 /// Run a locally scoped task with a [`sandbox`] instanced [`Worker`] is supplied.
-pub async fn with_sandbox<F, T>(task: F) -> T::Output
+pub async fn with_sandbox<F, T>(task: F) -> anyhow::Result<T::Output>
 where
     F: Fn(Worker<Sandbox>) -> T,
     T: core::future::Future,
 {
-    task(sandbox()).await
+    Ok(task(sandbox().await?).await)
 }
 
 /// Run a locally scoped task with a [`testnet`] instanced [`Worker`] is supplied.
