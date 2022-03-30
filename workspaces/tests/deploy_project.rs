@@ -12,7 +12,7 @@ async fn test_dev_deploy_project() -> anyhow::Result<()> {
     let _res = contract
         .call(&worker, "set_status")
         .args_json(("foo",))?
-        .gas(300_000_000_000_000)
+        .max_gas()
         .transact()
         .await?;
 
