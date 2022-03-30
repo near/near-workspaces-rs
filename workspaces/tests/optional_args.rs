@@ -28,7 +28,7 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
 
     let res = contract
         .call(&worker, "storage_unregister")
-        .gas(300_000_000_000_000)
+        .max_gas()
         .deposit(1)
         .transact()
         .await;
@@ -47,7 +47,7 @@ async fn test_optional_args_present() -> anyhow::Result<()> {
         .args_json(serde_json::json!({
             "force": true
         }))?
-        .gas(300_000_000_000_000)
+        .max_gas()
         .deposit(1)
         .transact()
         .await?;
