@@ -72,16 +72,6 @@ where
     async fn dev_generate(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
-
-        let mut savepath = self.info().keystore_path.clone();
-
-        // TODO: potentially make this into the async version:
-        std::fs::create_dir_all(savepath.clone()).unwrap();
-
-        savepath = savepath.join(id.to_string());
-        savepath.set_extension("json");
-        crate::rpc::tool::write_cred_to_file(&savepath, id.clone(), sk.clone());
-
         (id, sk)
     }
 
