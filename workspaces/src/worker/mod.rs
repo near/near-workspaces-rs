@@ -26,25 +26,25 @@ pub async fn sandbox() -> anyhow::Result<Worker<Sandbox>> {
 
 /// Connect to the [testnet](https://explorer.testnet.near.org/) network, and grab
 /// a [`Worker`] that can interact with it.
-pub fn testnet() -> Worker<Testnet> {
+pub async fn testnet() -> Worker<Testnet> {
     Worker::new(Testnet::new())
 }
 
 /// Connect to the [testnet archival](https://near-nodes.io/intro/node-types#archival-node)
 /// network, and grab a [`Worker`] that can interact with it.
-pub fn testnet_archival() -> Worker<Testnet> {
+pub async fn testnet_archival() -> Worker<Testnet> {
     Worker::new(Testnet::archival())
 }
 
 /// Connect to the [mainnet](https://explorer.near.org/) network, and grab
 /// a [`Worker`] that can interact with it.
-pub fn mainnet() -> Worker<Mainnet> {
+pub async fn mainnet() -> Worker<Mainnet> {
     Worker::new(Mainnet::new())
 }
 
 /// Connect to the [mainnet archival](https://near-nodes.io/intro/node-types#archival-node)
 /// network, and grab a [`Worker`] that can interact with it.
-pub fn mainnet_archival() -> Worker<Mainnet> {
+pub async fn mainnet_archival() -> Worker<Mainnet> {
     Worker::new(Mainnet::archival())
 }
 
@@ -63,7 +63,7 @@ where
     F: Fn(Worker<Testnet>) -> T,
     T: core::future::Future,
 {
-    task(testnet()).await
+    task(testnet().await).await
 }
 
 /// Run a locally scoped task with a [`testnet_archival`] instanced [`Worker`] is supplied.
@@ -72,7 +72,7 @@ where
     F: Fn(Worker<Testnet>) -> T,
     T: core::future::Future,
 {
-    task(testnet_archival()).await
+    task(testnet_archival().await).await
 }
 
 /// Run a locally scoped task with a [`mainnet`] instanced [`Worker`] is supplied.
@@ -81,7 +81,7 @@ where
     F: Fn(Worker<Mainnet>) -> T,
     T: core::future::Future,
 {
-    task(mainnet()).await
+    task(mainnet().await).await
 }
 
 /// Run a locally scoped task with a [`mainnet_archival`] instanced [`Worker`] is supplied.
@@ -90,5 +90,5 @@ where
     F: Fn(Worker<Mainnet>) -> T,
     T: core::future::Future,
 {
-    task(mainnet_archival()).await
+    task(mainnet_archival().await).await
 }
