@@ -70,9 +70,9 @@ cargo run --example nft
 async fn main() {
     // Create a sandboxed environment.
     // NOTE: Each call will create a new sandboxed environment
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await;
     // or for testnet:
-    let worker = workspaces::testnet();
+    let worker = workspaces::testnet().await;
 }
 ```
 

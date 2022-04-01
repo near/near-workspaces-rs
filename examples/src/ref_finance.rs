@@ -19,7 +19,7 @@ async fn create_ref(
     owner: &Account,
     worker: &Worker<impl Network + StatePatcher>,
 ) -> anyhow::Result<Contract> {
-    let mainnet = workspaces::mainnet_archival();
+    let mainnet = workspaces::mainnet_archival().await;
     let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.parse()?;
 
     // This will pull down the relevant ref-finance contract from mainnet. We're going
@@ -60,7 +60,7 @@ async fn create_wnear(
     owner: &Account,
     worker: &Worker<impl Network + StatePatcher>,
 ) -> anyhow::Result<Contract> {
-    let mainnet = workspaces::mainnet_archival();
+    let mainnet = workspaces::mainnet_archival().await;
     let wnear_id: AccountId = "wrap.near".to_string().try_into()?;
     let wnear = worker
         .import_contract(&wnear_id, &mainnet)
