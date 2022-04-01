@@ -132,7 +132,7 @@ impl Account {
     }
 
     /// Store the credentials of this account locally in the directory provided.
-    pub fn store_credentials(&self, save_dir: impl AsRef<Path>) -> anyhow::Result<()> {
+    pub async fn store_credentials(&self, save_dir: impl AsRef<Path>) -> anyhow::Result<()> {
         let savepath = save_dir.as_ref().to_path_buf();
         std::fs::create_dir_all(save_dir)?;
 
