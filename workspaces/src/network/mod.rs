@@ -143,12 +143,12 @@ where
     }
 }
 
-pub trait Network: TopLevelAccountCreator + NetworkInfo + NetworkClient + Send + Sync {}
+pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 
-impl<T> Network for T where T: TopLevelAccountCreator + NetworkInfo + NetworkClient + Send + Sync {}
+impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: AllowDevAccountCreation + Network {}
+pub trait DevNetwork: AllowDevAccountCreation + Network + TopLevelAccountCreator {}
 
 // Implemented by default if we have `AllowDevAccountCreation`
-impl<T> DevNetwork for T where T: AllowDevAccountCreation + Network {}
+impl<T> DevNetwork for T where T: AllowDevAccountCreation + Network + TopLevelAccountCreator {}

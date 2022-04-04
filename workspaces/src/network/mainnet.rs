@@ -1,12 +1,7 @@
-use std::path::PathBuf;
-
-use async_trait::async_trait;
-
 use crate::network::Info;
-use crate::network::{Account, CallExecution, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::network::{NetworkClient, NetworkInfo};
 use crate::rpc::client::Client;
-use crate::types::{AccountId, SecretKey};
-use crate::Contract;
+use std::path::PathBuf;
 
 const RPC_URL: &str = "https://rpc.mainnet.near.org";
 const ARCHIVAL_URL: &str = "https://archival-rpc.mainnet.near.org";
@@ -39,26 +34,6 @@ impl Mainnet {
                 rpc_url: ARCHIVAL_URL.into(),
             },
         }
-    }
-}
-
-#[async_trait]
-impl TopLevelAccountCreator for Mainnet {
-    async fn create_tla(
-        &self,
-        _id: AccountId,
-        _sk: SecretKey,
-    ) -> anyhow::Result<CallExecution<Account>> {
-        panic!("Unsupported for now: https://github.com/near/workspaces-rs/issues/18");
-    }
-
-    async fn create_tla_and_deploy(
-        &self,
-        _id: AccountId,
-        _sk: SecretKey,
-        _wasm: &[u8],
-    ) -> anyhow::Result<CallExecution<Contract>> {
-        panic!("Unsupported for now: https://github.com/near/workspaces-rs/issues/18");
     }
 }
 
