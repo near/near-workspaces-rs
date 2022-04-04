@@ -1,11 +1,4 @@
-use std::convert::TryInto;
-
-use near_crypto::KeyType;
-use near_primitives::transaction::{
-    Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
-    DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
-};
-use near_primitives::views::FinalExecutionOutcomeView;
+//! All operation types that are generated/used when making transactions or view calls.
 
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{
@@ -15,6 +8,13 @@ use crate::types::{AccessKey, AccountId, Balance, Gas, InMemorySigner, PublicKey
 use crate::worker::Worker;
 use crate::Account;
 use crate::Network;
+use near_crypto::KeyType;
+use near_primitives::transaction::{
+    Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
+    DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
+};
+use near_primitives::views::FinalExecutionOutcomeView;
+use std::convert::TryInto;
 
 const MAX_GAS: Gas = 300_000_000_000_000;
 
