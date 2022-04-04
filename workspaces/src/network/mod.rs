@@ -1,5 +1,5 @@
 //! All builtin network types and traits.
-//! 
+//!
 //! Currently the builtin network types are [`Mainnet`], [`Testnet`], and [`Sandbox`].
 
 mod info;
