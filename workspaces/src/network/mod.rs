@@ -67,16 +67,6 @@ where
     async fn dev_generate(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
-
-        let mut savepath = self.info().keystore_path.clone();
-
-        // TODO: potentially make this into the async version:
-        std::fs::create_dir_all(savepath.clone()).unwrap();
-
-        savepath = savepath.join(id.to_string());
-        savepath.set_extension("json");
-        crate::rpc::tool::write_cred_to_file(&savepath, id.clone(), sk.clone());
-
         (id, sk)
     }
 
@@ -93,12 +83,12 @@ where
     }
 }
 
-pub trait Network: TopLevelAccountCreator + NetworkInfo + NetworkClient + Send + Sync {}
+pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 
-impl<T> Network for T where T: TopLevelAccountCreator + NetworkInfo + NetworkClient + Send + Sync {}
+impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: AllowDevAccountCreation + Network {}
+pub trait DevNetwork: AllowDevAccountCreation + Network + TopLevelAccountCreator {}
 
 // Implemented by default if we have `AllowDevAccountCreation`
-impl<T> DevNetwork for T where T: AllowDevAccountCreation + Network {}
+impl<T> DevNetwork for T where T: AllowDevAccountCreation + Network + TopLevelAccountCreator {}

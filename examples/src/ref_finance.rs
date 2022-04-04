@@ -28,7 +28,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
         .transact()
         .await?;
 
-    // NOTE: We are not pulling down the contract's data here, so we'll need ot initalize
+    // NOTE: We are not pulling down the contract's data here, so we'll need to initalize
     // our own set of metadata. This is because the contract's data is too big for the rpc
     // service to pull down (i.e. greater than 50mb).
 

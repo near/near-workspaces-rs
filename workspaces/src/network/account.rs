@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use near_primitives::views::AccountView;
 
 use crate::types::{AccountId, Balance, InMemorySigner};
@@ -23,6 +25,7 @@ impl Account {
         Self { id, signer }
     }
 
+    /// Grab the current account identifier
     pub fn id(&self) -> &AccountId {
         &self.id
     }
@@ -127,6 +130,19 @@ impl Account {
     ) -> Transaction<'a> {
         Transaction::new(worker.client(), self.signer().clone(), contract_id.clone())
     }
+
+    /// Store the credentials of this account locally in the directory provided.
+    pub async fn store_credentials(&self, save_dir: impl AsRef<Path>) -> anyhow::Result<()> {
+        let savepath = save_dir.as_ref().to_path_buf();
+        std::fs::create_dir_all(save_dir)?;
+
+        let mut savepath = savepath.join(self.id.to_string());
+        savepath.set_extension("json");
+
+        crate::rpc::tool::write_cred_to_file(&savepath, &self.id, &self.signer.0.secret_key);
+
+        Ok(())
+    }
 }
 
 // TODO: allow users to create Contracts so that they can call into
@@ -146,10 +162,14 @@ impl Contract {
         Self { account }
     }
 
+    /// Grab the current contract's account identifier
     pub fn id(&self) -> &AccountId {
         &self.account.id
     }
 
+    /// Casts the current [`Contract`] into an [`Account`] type. This does
+    /// nothing on chain/network, and is merely allowing `Account::*` functions
+    /// to be used from this `Contract`.
     pub fn as_account(&self) -> &Account {
         &self.account
     }

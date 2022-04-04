@@ -8,9 +8,10 @@ use chrono::Utc;
 use rand::Rng;
 use url::Url;
 
+use near_crypto::SecretKey;
 use near_primitives::views::StateItem;
 
-use crate::types::{AccountId, PublicKey, SecretKey};
+use crate::types::{AccountId, PublicKey};
 
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
 /// Assumes key and value are base64 encoded, so this also decodes them.
@@ -54,7 +55,7 @@ pub(crate) async fn url_create_account(
     Ok(())
 }
 
-pub(crate) fn write_cred_to_file(path: &Path, id: AccountId, sk: SecretKey) {
+pub(crate) fn write_cred_to_file(path: &Path, id: &AccountId, sk: &SecretKey) {
     let mut file = File::create(path).expect("Failed to create / write a key file.");
 
     #[cfg(unix)]
