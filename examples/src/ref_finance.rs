@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::TryInto};
 
 use near_units::{parse_gas, parse_near};
-use workspaces::{prelude::*, BlockHeight, DevNetwork};
+use workspaces::{prelude::*, BlockHeight, DevNetwork, Sandbox};
 use workspaces::{Account, AccountId, Contract, Network, Worker};
 
 const FT_CONTRACT_FILEPATH: &str = "./examples/res/fungible_token.wasm";
@@ -15,10 +15,7 @@ const BLOCK_HEIGHT: BlockHeight = 50_000_000;
 
 /// Pull down the ref-finance contract and deploy it to the sandbox network,
 /// initializing it with all data required to run the tests.
-async fn create_ref(
-    owner: &Account,
-    worker: &Worker<impl Network + StatePatcher>,
-) -> anyhow::Result<Contract> {
+async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
     let mainnet = workspaces::mainnet_archival();
     let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.parse()?;
 
@@ -56,10 +53,7 @@ async fn create_ref(
 }
 
 /// Pull down the WNear contract from mainnet and initilize it with our own metadata.
-async fn create_wnear(
-    owner: &Account,
-    worker: &Worker<impl Network + StatePatcher>,
-) -> anyhow::Result<Contract> {
+async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
     let mainnet = workspaces::mainnet_archival();
     let wnear_id: AccountId = "wrap.near".to_string().try_into()?;
     let wnear = worker

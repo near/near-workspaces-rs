@@ -12,6 +12,7 @@ pub mod prelude;
 
 pub use network::result;
 pub use network::transaction::Function;
+pub use network::Sandbox;
 pub use network::{Account, AccountDetails, Block, Contract, DevNetwork, Network};
 pub use types::{AccessKey, AccountId, BlockHeight, CryptoHash, InMemorySigner};
 pub use worker::{
