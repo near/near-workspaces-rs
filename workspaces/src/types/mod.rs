@@ -1,6 +1,5 @@
 pub(crate) mod account;
 pub(crate) mod block;
-pub(crate) mod transaction;
 
 /// Types copied over from near_primitives since those APIs are not yet stable.
 /// and internal libraries like near-jsonrpc-client requires specific versions

@@ -1,7 +1,7 @@
 use serde_json::json;
 use test_log::test;
 use workspaces::prelude::*;
-use workspaces::Function;
+use workspaces::operations::Function;
 
 #[test(tokio::test)]
 async fn test_batch_tx() -> anyhow::Result<()> {

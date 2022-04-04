@@ -8,13 +8,13 @@ mod types;
 mod worker;
 
 pub mod network;
+pub mod operations;
 pub mod prelude;
 pub mod result;
 
 pub use network::variants::{DevNetwork, Network};
 pub use types::account::{Account, AccountDetails, Contract};
 pub use types::block::Block;
-pub use types::transaction::Function;
 pub use types::{AccessKey, AccountId, BlockHeight, CryptoHash, InMemorySigner};
 pub use worker::{
     mainnet, mainnet_archival, sandbox, testnet, testnet_archival, with_mainnet,
