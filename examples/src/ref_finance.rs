@@ -2,6 +2,7 @@ use std::{collections::HashMap, convert::TryInto};
 
 use near_units::{parse_gas, parse_near};
 use workspaces::network::Sandbox;
+use workspaces::prelude::*;
 use workspaces::{Account, AccountId, Contract, Network, Worker};
 use workspaces::{BlockHeight, DevNetwork};
 
