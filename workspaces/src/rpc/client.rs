@@ -83,6 +83,13 @@ impl Client {
         .await
     }
 
+    pub(crate) async fn query_nolog<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
+    where
+        M: methods::RpcMethod,
+    {
+        retry(|| async { JsonRpcClient::connect(&self.rpc_addr).call(method).await }).await
+    }
+
     pub(crate) async fn query<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
     where
         M: methods::RpcMethod + Debug,

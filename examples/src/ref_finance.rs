@@ -2,8 +2,8 @@ use std::{collections::HashMap, convert::TryInto};
 
 use near_units::{parse_gas, parse_near};
 use workspaces::network::Sandbox;
-use workspaces::{prelude::*, BlockHeight, DevNetwork};
 use workspaces::{Account, AccountId, Contract, Network, Worker};
+use workspaces::{BlockHeight, DevNetwork};
 
 const FT_CONTRACT_FILEPATH: &str = "./examples/res/fungible_token.wasm";
 
