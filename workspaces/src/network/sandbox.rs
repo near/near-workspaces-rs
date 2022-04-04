@@ -3,15 +3,13 @@ use std::str::FromStr;
 
 use async_trait::async_trait;
 
-use super::{
-    Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkClient,
-    NetworkInfo, TopLevelAccountCreator,
-};
-
+use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::network::server::SandboxServer;
 use crate::network::Info;
+use crate::result::CallExecution;
 use crate::rpc::client::Client;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
+use crate::{Account, Contract};
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
@@ -57,8 +55,6 @@ impl Sandbox {
         }
     }
 }
-
-impl AllowStatePatching for Sandbox {}
 
 impl AllowDevAccountCreation for Sandbox {}
 

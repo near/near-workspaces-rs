@@ -6,7 +6,7 @@ use crate::types::{AccountId, Balance, InMemorySigner};
 use crate::{CryptoHash, Network, Worker};
 
 use super::transaction::{CallTransaction, CreateAccountTransaction, Transaction};
-use super::{CallExecution, CallExecutionDetails, ViewResultDetails};
+use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 
 pub struct Account {
     pub(crate) id: AccountId,

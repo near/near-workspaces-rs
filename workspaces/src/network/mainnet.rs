@@ -3,10 +3,11 @@ use std::path::PathBuf;
 use async_trait::async_trait;
 
 use crate::network::Info;
-use crate::network::{Account, CallExecution, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::network::{NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::result::CallExecution;
 use crate::rpc::client::Client;
 use crate::types::{AccountId, SecretKey};
-use crate::Contract;
+use crate::{Account, Contract};
 
 const RPC_URL: &str = "https://rpc.mainnet.near.org";
 const ARCHIVAL_URL: &str = "https://archival-rpc.mainnet.near.org";
