@@ -1,5 +1,4 @@
-use crate::network::Info;
-use crate::network::{NetworkClient, NetworkInfo};
+use crate::network::{Info, NetworkClient, NetworkInfo};
 use crate::rpc::client::Client;
 use std::path::PathBuf;
 

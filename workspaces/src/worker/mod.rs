@@ -2,7 +2,8 @@ mod impls;
 
 use std::sync::Arc;
 
-use crate::network::{Mainnet, Network, Sandbox, Testnet};
+use crate::network::{Mainnet, Sandbox, Testnet};
+use crate::Network;
 
 pub struct Worker<T> {
     workspace: Arc<T>,

@@ -1,3 +1,6 @@
+pub(crate) mod account;
+pub(crate) mod block;
+
 /// Types copied over from near_primitives since those APIs are not yet stable.
 /// and internal libraries like near-jsonrpc-client requires specific versions
 /// of these types which shouldn't be exposed either.

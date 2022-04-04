@@ -1,18 +1,15 @@
-use std::collections::HashMap;
-
-use async_trait::async_trait;
-use near_primitives::types::{Balance, StoreKey};
-
-use crate::network::{
-    Account, AllowDevAccountCreation, Block, CallExecution, CallExecutionDetails, Contract,
-    NetworkClient, NetworkInfo, TopLevelAccountCreator, ViewResultDetails,
-};
+use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::network::{Info, Sandbox};
+use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
+use crate::{Account, Block, Contract};
 use crate::{AccountDetails, Network};
+use async_trait::async_trait;
+use near_primitives::types::{Balance, StoreKey};
+use std::collections::HashMap;
 
 impl<T> Clone for Worker<T> {
     fn clone(&self) -> Self {

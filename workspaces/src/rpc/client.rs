@@ -19,7 +19,7 @@ use near_primitives::views::{
     QueryRequest,
 };
 
-use crate::network::ViewResultDetails;
+use crate::result::ViewResultDetails;
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
 

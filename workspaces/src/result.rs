@@ -1,3 +1,5 @@
+//! Result and execution types from results of RPC calls to the network.
+
 use near_account_id::AccountId;
 use near_primitives::views::{
     CallResult, ExecutionOutcomeWithIdView, ExecutionStatusView, FinalExecutionOutcomeView,
