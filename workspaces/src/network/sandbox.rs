@@ -13,7 +13,7 @@ use crate::result::CallExecution;
 use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
-use crate::{Account, Contract, Worker, Network};
+use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
