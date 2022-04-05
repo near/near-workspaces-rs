@@ -3,6 +3,10 @@ use portpicker::pick_unused_port;
 use std::process::Child;
 use tracing::info;
 
+// TODO: swap over the async version of this in the future. Won't be a breaking API
+//       since we already have async marked in the functions that we are exposing.
+use near_sandbox_utils::sync as sandbox;
+
 pub struct SandboxServer {
     pub(crate) rpc_port: u16,
     pub(crate) net_port: u16,
@@ -27,9 +31,9 @@ impl SandboxServer {
 
         // Remove dir if it already exists:
         let _ = std::fs::remove_dir_all(&home_dir);
-        near_sandbox_utils::init(&home_dir)?.wait()?;
+        sandbox::init(&home_dir)?.wait()?;
 
-        let child = near_sandbox_utils::run(&home_dir, self.rpc_port, self.net_port)?;
+        let child = sandbox::run(&home_dir, self.rpc_port, self.net_port)?;
         info!(target: "workspaces", "Started sandbox: pid={:?}", child.id());
         self.process = Some(child);
 
