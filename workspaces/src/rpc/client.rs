@@ -383,7 +383,11 @@ impl Client {
         Retry::spawn(retry_six_times, || async { self.status().await })
             .await
             .map_err(|e| {
-                anyhow::anyhow!("Failed to connect to RPC service {} within three seconds: {:?}", self.rpc_addr, e)
+                anyhow::anyhow!(
+                    "Failed to connect to RPC service {} within three seconds: {:?}",
+                    self.rpc_addr,
+                    e
+                )
             })?;
         Ok(())
     }
