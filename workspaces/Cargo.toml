@@ -51,4 +51,4 @@ tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 [features]
 default = ["install"]
 install = []  # Install the sandbox binary during compile time
-unstable = ["cargo_metadata", "async_process"]
+unstable = ["cargo_metadata", "async-process"]
