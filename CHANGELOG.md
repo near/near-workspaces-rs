@@ -2,9 +2,9 @@
 
 ## [unreleased]
 
-## `0.2.0` [04-05-2022]
+## [0.2.0] - 2022-04-05
 
-### Features
+### Added
 - Time-traveling - the ability to go forwards & backwards in block height within tests. This allows to test time specific data changing within contracts: https://github.com/near/workspaces-rs/pull/73
 - Credentials created from account/contract creation are now allowed to be stored and specified by users. https://github.com/near/workspaces-rs/pull/98
 - [Unstable] Allow users to compile contract projects within tests without having to manually go through this step. https://github.com/near/workspaces-rs/pull/77
@@ -28,7 +28,7 @@
 - Make `access_key` call do optimistic queries which led to better retry times. https://github.com/near/workspaces-rs/pull/60
 - Functions no longer take in owned but referenced `AccountId`s now. https://github.com/near/workspaces-rs/pull/52
 
-## `0.1.1` [01-24-2021]
+## [0.1.1] - 2021-01-24
 
 ### Fixes
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
