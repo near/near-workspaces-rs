@@ -59,7 +59,7 @@ async fn create_ref(
 
 /// Pull down the WNear contract from mainnet and initilize it with our own metadata.
 async fn create_wnear(
-    owner: &Account,
+    owner: &Account<Sandbox>,
     worker: &Worker<Sandbox>,
 ) -> anyhow::Result<Contract<Sandbox>> {
     let mainnet = workspaces::mainnet_archival().await?;
@@ -98,12 +98,14 @@ async fn create_wnear(
 /// Create a liquidity pool on Ref-Finance, registering the tokens we provide it.
 /// Add's the amount in `tokens` we set for liquidity. This will return us the
 /// pool_id after the pool has been created.
-async fn create_pool_with_liquidity(
-    worker: &Worker<impl Network>,
-    owner: &Account,
-    ref_finance: &Contract,
+async fn create_pool_with_liquidity<N>(
+    owner: &Account<N>,
+    ref_finance: &Contract<N>,
     tokens: HashMap<&AccountId, u128>,
-) -> anyhow::Result<u64> {
+) -> anyhow::Result<u64>
+where
+    N: Network,
+{
     let (token_ids, token_amounts): (Vec<String>, Vec<String>) = tokens
         .iter()
         .map(|(id, amount)| (id.to_string(), amount.to_string()))
@@ -135,7 +137,7 @@ async fn create_pool_with_liquidity(
         .transact()
         .await?;
 
-    deposit_tokens(worker, owner, &ref_finance, tokens).await?;
+    deposit_tokens(owner, &ref_finance, tokens).await?;
 
     owner
         .call(ref_finance.id(), "add_liquidity")
@@ -151,12 +153,14 @@ async fn create_pool_with_liquidity(
 }
 
 /// Deposit tokens into Ref-Finance
-async fn deposit_tokens(
-    worker: &Worker<impl Network>,
-    owner: &Account,
-    ref_finance: &Contract,
+async fn deposit_tokens<N>(
+    owner: &Account<N>,
+    ref_finance: &Contract<N>,
     tokens: HashMap<&AccountId, u128>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()>
+where
+    N: Network,
+{
     for (contract_id, amount) in tokens {
         ref_finance
             .as_account()
@@ -187,9 +191,9 @@ async fn deposit_tokens(
 /// Create our own custom Fungible Token contract and setup the initial state.
 async fn create_custom_ft<N: DevNetwork>(
     owner: &Account<N>,
-    worker: &Worker<N>,
+    worker: &impl DevAccountDeployer<Network = N>,
 ) -> anyhow::Result<Contract<N>> {
-    let ft: Contract = worker
+    let ft: Contract<N> = worker
         .dev_deploy(&std::fs::read(FT_CONTRACT_FILEPATH)?)
         .await?;
 
@@ -225,7 +229,6 @@ async fn main() -> anyhow::Result<()> {
     ///////////////////////////////////////////////////////////////////////////
 
     let pool_id = create_pool_with_liquidity(
-        &worker,
         &owner,
         &ref_finance,
         maplit::hashmap! {
@@ -241,7 +244,6 @@ async fn main() -> anyhow::Result<()> {
     );
 
     deposit_tokens(
-        &worker,
         &owner,
         &ref_finance,
         maplit::hashmap! {

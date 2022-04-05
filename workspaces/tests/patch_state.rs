@@ -22,6 +22,7 @@ struct StatusMessage {
 
 async fn view_status_state<N>(worker: Worker<N>) -> anyhow::Result<(AccountId, StatusMessage)>
 where
+    Worker<N>: DevAccountDeployer<Network = N>,
     N: DevNetwork,
 {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;

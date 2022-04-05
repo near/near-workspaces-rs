@@ -3,7 +3,6 @@ mod impls;
 use std::sync::Arc;
 
 use crate::network::{Mainnet, Sandbox, Testnet};
-use crate::Network;
 
 pub struct Worker<T> {
     pub(crate) workspace: Arc<T>,
@@ -17,10 +16,7 @@ impl<T> Clone for Worker<T> {
     }
 }
 
-impl<T> Worker<T>
-where
-    T: Network,
-{
+impl<T> Worker<T> {
     pub(crate) fn new(network: T) -> Self {
         Self {
             workspace: Arc::new(network),

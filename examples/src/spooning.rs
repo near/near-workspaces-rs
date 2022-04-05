@@ -42,10 +42,13 @@ struct StatusMessage {
 ///
 /// For example, our predeployed testnet contract has already done this:
 ///    set_status(TESTNET_PREDEPLOYED_CONTRACT_ID) = "hello from testnet"
-async fn deploy_status_contract(
-    worker: &Worker<impl DevNetwork>,
+async fn deploy_status_contract<N: DevNetwork>(
+    worker: &Worker<N>,
     msg: &str,
-) -> anyhow::Result<Contract> {
+) -> anyhow::Result<Contract<N>>
+where
+    Worker<N>: DevAccountDeployer<Network = N>,
+{
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 

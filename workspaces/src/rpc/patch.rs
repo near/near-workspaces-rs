@@ -63,7 +63,7 @@ impl<'a, 'b, N> ImportContractTransaction<'a, 'b, N> {
 
     pub async fn transact(self) -> anyhow::Result<Contract<N>>
     where
-        N: NetworkClient,
+        Worker<N>: NetworkClient,
     {
         let account_id = self.account_id;
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);

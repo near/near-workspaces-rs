@@ -1,12 +1,10 @@
 use std::path::Path;
 
-use near_primitives::views::AccountView;
-
-use crate::types::{AccountId, Balance, InMemorySigner};
-use crate::{CryptoHash, Network, Worker};
-
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
+use crate::types::{AccountId, Balance, InMemorySigner};
+use crate::{CryptoHash, Network, Worker};
+use near_primitives::views::AccountView;
 
 pub struct Account<N> {
     worker: Worker<N>,

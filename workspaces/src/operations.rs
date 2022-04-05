@@ -204,7 +204,10 @@ pub struct CallTransaction<'a, 'b, N> {
     function: Function<'b>,
 }
 
-impl<'a, 'b, N: Network> CallTransaction<'a, 'b, N> {
+impl<'a, 'b, N> CallTransaction<'a, 'b, N>
+where
+    N: Network,
+{
     pub(crate) fn new(
         worker: &'a Worker<N>,
         contract_id: AccountId,

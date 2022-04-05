@@ -4,7 +4,11 @@ use test_log::test;
 use workspaces::prelude::*;
 use workspaces::{Contract, DevNetwork, Worker};
 
-async fn init<N: DevNetwork>(worker: &Worker<N>) -> anyhow::Result<Contract<N>> {
+async fn init<N>(worker: &Worker<N>) -> anyhow::Result<Contract<N>>
+where
+    Worker<N>: DevAccountDeployer<Network = N>,
+    N: DevNetwork,
+{
     let contract = worker
         .dev_deploy(include_bytes!("../../examples/res/fungible_token.wasm"))
         .await?;

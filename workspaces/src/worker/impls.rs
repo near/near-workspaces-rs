@@ -1,64 +1,37 @@
-use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::network::{Info, Sandbox};
-use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
+use crate::network::Info;
+use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
+use crate::result::{CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
-use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
+use crate::types::{AccountId, Gas, InMemorySigner};
 use crate::worker::Worker;
-use crate::{Account, Block, Contract};
-use crate::{AccountDetails, Network};
-use async_trait::async_trait;
+use crate::AccountDetails;
+use crate::{Block, Contract};
 use near_primitives::types::{Balance, StoreKey};
 use std::collections::HashMap;
 
-// impl<T> AllowDevAccountCreation for Worker<T> where T: AllowDevAccountCreation {}
+impl<T> AllowDevAccountCreation for Worker<T> where T: AllowDevAccountCreation {}
 
 impl<T> NetworkClient for Worker<T>
 where
     T: NetworkClient,
 {
-    type Network = T;
-
     fn client(&self) -> &Client {
         self.workspace.client()
     }
 }
 
-// #[async_trait]
-// impl<T> TopLevelAccountCreator for Worker<T>
-// where
-//     T: TopLevelAccountCreator + Send + Sync,
-// {
-//     async fn create_tla(
-//         &self,
-//         id: AccountId,
-//         sk: SecretKey,
-//     ) -> anyhow::Result<CallExecution<Account>> {
-//         self.workspace.create_tla(id, sk).await
-//     }
-
-//     async fn create_tla_and_deploy(
-//         &self,
-//         id: AccountId,
-//         sk: SecretKey,
-//         wasm: &[u8],
-//     ) -> anyhow::Result<CallExecution<Contract>> {
-//         self.workspace.create_tla_and_deploy(id, sk, wasm).await
-//     }
-// }
-
-impl<T> NetworkInfo for Worker<T>
+impl<N> NetworkInfo for Worker<N>
 where
-    T: NetworkInfo,
+    N: NetworkInfo,
 {
     fn info(&self) -> &Info {
         self.workspace.info()
     }
 }
 
-impl<T> Worker<T>
+impl<N> Worker<N>
 where
-    T: NetworkClient,
+    N: NetworkClient,
 {
     pub(crate) fn client(&self) -> &Client {
         self.workspace.client()
@@ -67,7 +40,7 @@ where
     /// Call into a contract's change function.
     pub async fn call(
         &self,
-        contract: &Contract<T>,
+        contract: &Contract<N>,
         function: &str,
         args: Vec<u8>,
         gas: Option<Gas>,

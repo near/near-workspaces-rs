@@ -71,6 +71,8 @@ impl AllowDevAccountCreation for Sandbox {}
 
 #[async_trait]
 impl TopLevelAccountCreator for Worker<Sandbox> {
+    type Network = Sandbox;
+
     async fn create_tla(
         &self,
         id: AccountId,
@@ -116,8 +118,6 @@ impl TopLevelAccountCreator for Worker<Sandbox> {
 }
 
 impl NetworkClient for Sandbox {
-    type Network = Self;
-
     fn client(&self) -> &Client {
         &self.client
     }

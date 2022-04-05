@@ -8,8 +8,6 @@ use async_trait::async_trait;
 pub(crate) const DEV_ACCOUNT_SEED: &str = "testificate";
 
 pub trait NetworkClient {
-    type Network;
-
     fn client(&self) -> &Client;
 }
 
@@ -18,7 +16,9 @@ pub trait NetworkInfo {
 }
 
 #[async_trait]
-pub trait TopLevelAccountCreator: NetworkClient {
+pub trait TopLevelAccountCreator: NetworkInfo {
+    type Network;
+
     async fn create_tla(
         &self,
         id: AccountId,
@@ -38,17 +38,16 @@ pub trait TopLevelAccountCreator: NetworkClient {
 pub trait AllowDevAccountCreation {}
 
 #[async_trait]
-pub trait DevAccountDeployer: NetworkClient {
+pub trait DevAccountDeployer: NetworkInfo + TopLevelAccountCreator {
     async fn dev_generate(&self) -> (AccountId, SecretKey);
     async fn dev_create_account(&self) -> anyhow::Result<Account<Self::Network>>;
     async fn dev_deploy(&self, wasm: &[u8]) -> anyhow::Result<Contract<Self::Network>>;
 }
 
 #[async_trait]
-impl<T> DevAccountDeployer for Worker<T>
+impl<T> DevAccountDeployer for T
 where
-    Worker<T>: TopLevelAccountCreator + NetworkInfo,
-    T: AllowDevAccountCreation + Send + Sync,
+    T: TopLevelAccountCreator + AllowDevAccountCreation + Send + Sync,
 {
     async fn dev_generate(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
@@ -74,7 +73,12 @@ pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: TopLevelAccountCreator + AllowDevAccountCreation + Network {}
+pub trait DevNetwork: AllowDevAccountCreation + Network {}
 
 // Implemented by default if we have `AllowDevAccountCreation`
-impl<T> DevNetwork for T where T: TopLevelAccountCreator + AllowDevAccountCreation + Network {}
+impl<T> DevNetwork for T
+where
+    Worker<T>: TopLevelAccountCreator + DevAccountDeployer,
+    T: AllowDevAccountCreation + Network,
+{
+}

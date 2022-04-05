@@ -58,6 +58,8 @@ impl AllowDevAccountCreation for Worker<Testnet> {}
 
 #[async_trait]
 impl TopLevelAccountCreator for Worker<Testnet> {
+    type Network = Testnet;
+
     async fn create_tla(
         &self,
         id: AccountId,
@@ -109,8 +111,6 @@ impl TopLevelAccountCreator for Worker<Testnet> {
 }
 
 impl NetworkClient for Testnet {
-    type Network = Self;
-
     fn client(&self) -> &Client {
         &self.client
     }
