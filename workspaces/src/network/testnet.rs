@@ -23,28 +23,34 @@ pub struct Testnet {
 }
 
 impl Testnet {
-    pub(crate) fn new() -> Self {
-        Self {
-            client: Client::new(RPC_URL.into()),
+    pub(crate) async fn new() -> anyhow::Result<Self> {
+        let client = Client::new(RPC_URL.into());
+        client.wait_for_rpc().await?;
+
+        Ok(Self {
+            client,
             info: Info {
                 name: "testnet".into(),
                 root_id: AccountId::from_str("testnet").unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/testnet/"),
                 rpc_url: RPC_URL.into(),
             },
-        }
+        })
     }
 
-    pub(crate) fn archival() -> Self {
-        Self {
-            client: Client::new(ARCHIVAL_URL.into()),
+    pub(crate) async fn archival() -> anyhow::Result<Self> {
+        let client = Client::new(ARCHIVAL_URL.into());
+        client.wait_for_rpc().await?;
+
+        Ok(Self {
+            client,
             info: Info {
                 name: "testnet-archival".into(),
                 root_id: AccountId::from_str("testnet").unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/testnet/"),
                 rpc_url: ARCHIVAL_URL.into(),
             },
-        }
+        })
     }
 }
 
