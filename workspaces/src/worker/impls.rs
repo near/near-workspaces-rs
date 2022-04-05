@@ -109,7 +109,9 @@ where
         contract_id: &AccountId,
         prefix: Option<&[u8]>,
     ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
-        self.client().view_state(contract_id.clone(), prefix).await
+        self.client()
+            .view_state(contract_id.clone(), prefix, None)
+            .await
     }
 
     /// View the latest block from the network

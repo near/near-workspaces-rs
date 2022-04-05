@@ -171,14 +171,6 @@ impl Client {
         &self,
         contract_id: AccountId,
         prefix: Option<&[u8]>,
-    ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
-        self.view_state_raw(contract_id, prefix, None).await
-    }
-
-    pub(crate) async fn view_state_raw(
-        &self,
-        contract_id: AccountId,
-        prefix: Option<&[u8]>,
         block_id: Option<BlockId>,
     ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
         let block_reference = block_id
