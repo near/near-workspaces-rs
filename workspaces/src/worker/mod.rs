@@ -6,7 +6,15 @@ use crate::network::{Mainnet, Sandbox, Testnet};
 use crate::Network;
 
 pub struct Worker<T> {
-    workspace: Arc<T>,
+    pub(crate) workspace: Arc<T>,
+}
+
+impl<T> Clone for Worker<T> {
+    fn clone(&self) -> Self {
+        Self {
+            workspace: Arc::clone(&self.workspace),
+        }
+    }
 }
 
 impl<T> Worker<T>

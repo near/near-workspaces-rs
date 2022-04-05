@@ -197,16 +197,16 @@ impl<'a> Transaction<'a> {
 
 /// Similiar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
-pub struct CallTransaction<'a, 'b, T> {
-    worker: &'a Worker<T>,
+pub struct CallTransaction<'a, 'b, N> {
+    worker: &'a Worker<N>,
     signer: InMemorySigner,
     contract_id: AccountId,
     function: Function<'b>,
 }
 
-impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
+impl<'a, 'b, N: Network> CallTransaction<'a, 'b, N> {
     pub(crate) fn new(
-        worker: &'a Worker<T>,
+        worker: &'a Worker<N>,
         contract_id: AccountId,
         signer: InMemorySigner,
         function: &'b str,
@@ -293,8 +293,8 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
 
 /// Similiar to a [`Transaction`], but more specific to creating an account.
 /// This transaction will create a new account with the specified `receiver_id`
-pub struct CreateAccountTransaction<'a, 'b, T> {
-    worker: &'a Worker<T>,
+pub struct CreateAccountTransaction<'a, 'b, N> {
+    worker: &'a Worker<N>,
     signer: InMemorySigner,
     parent_id: AccountId,
     new_account_id: &'b str,
@@ -303,12 +303,9 @@ pub struct CreateAccountTransaction<'a, 'b, T> {
     secret_key: Option<SecretKey>,
 }
 
-impl<'a, 'b, T> CreateAccountTransaction<'a, 'b, T>
-where
-    T: Network,
-{
+impl<'a, 'b, N> CreateAccountTransaction<'a, 'b, N> {
     pub(crate) fn new(
-        worker: &'a Worker<T>,
+        worker: &'a Worker<N>,
         signer: InMemorySigner,
         parent_id: AccountId,
         new_account_id: &'b str,
@@ -338,7 +335,10 @@ where
 
     /// Send the transaction to the network. This will consume the `CreateAccountTransaction`
     /// and give us back the details of the execution and finally the new [`Account`] object.
-    pub async fn transact(self) -> anyhow::Result<CallExecution<Account>> {
+    pub async fn transact(self) -> anyhow::Result<CallExecution<Account<N>>>
+    where
+        N: Network,
+    {
         let sk = self
             .secret_key
             .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
@@ -351,7 +351,7 @@ where
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        let account = Account::new(id, signer);
+        let account = Account::new(self.worker.clone(), id, signer);
 
         Ok(CallExecution {
             result: account,

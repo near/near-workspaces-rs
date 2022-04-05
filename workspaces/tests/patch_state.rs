@@ -20,14 +20,15 @@ struct StatusMessage {
     records: Vec<Record>,
 }
 
-async fn view_status_state(
-    worker: Worker<impl DevNetwork>,
-) -> anyhow::Result<(AccountId, StatusMessage)> {
+async fn view_status_state<N>(worker: Worker<N>) -> anyhow::Result<(AccountId, StatusMessage)>
+where
+    N: DevNetwork,
+{
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await.unwrap();
 
     contract
-        .call(&worker, "set_status")
+        .call("set_status")
         .args_json(json!({
                 "message": "hello",
         }))?

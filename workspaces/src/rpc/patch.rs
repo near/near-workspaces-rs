@@ -3,15 +3,15 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::types::BlockId;
 use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
-use crate::network::DEV_ACCOUNT_SEED;
+use crate::network::{NetworkClient, DEV_ACCOUNT_SEED};
 use crate::rpc::client::Client;
 use crate::types::{BlockHeight, SecretKey};
-use crate::{AccountId, Contract, CryptoHash, InMemorySigner};
+use crate::{AccountId, Contract, CryptoHash, InMemorySigner, Worker};
 
-pub struct ImportContractTransaction<'a, 'b> {
+pub struct ImportContractTransaction<'a, 'b, N> {
     account_id: AccountId,
     from_network: &'a Client,
-    into_network: &'b Client,
+    into_network: &'b Worker<N>,
 
     /// Whether to grab data down from the other contract or not
     import_data: bool,
@@ -23,11 +23,11 @@ pub struct ImportContractTransaction<'a, 'b> {
     block_id: Option<BlockId>,
 }
 
-impl<'a, 'b> ImportContractTransaction<'a, 'b> {
+impl<'a, 'b, N> ImportContractTransaction<'a, 'b, N> {
     pub(crate) fn new(
         account_id: AccountId,
         from_network: &'a Client,
-        into_network: &'b Client,
+        into_network: &'b Worker<N>,
     ) -> Self {
         ImportContractTransaction {
             account_id,
@@ -61,7 +61,10 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         self
     }
 
-    pub async fn transact(self) -> anyhow::Result<Contract> {
+    pub async fn transact(self) -> anyhow::Result<Contract<N>>
+    where
+        N: NetworkClient,
+    {
         let account_id = self.account_id;
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();
@@ -115,6 +118,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         // NOTE: For some reason, patching anything with account/contract related items takes two patches
         // otherwise its super non-deterministic and mostly just fails to locate the account afterwards: ¯\_(ツ)_/¯
         self.into_network
+            .client()
             .query(&RpcSandboxPatchStateRequest {
                 records: records.clone(),
             })
@@ -122,10 +126,11 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
             .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
 
         self.into_network
+            .client()
             .query(&RpcSandboxPatchStateRequest { records })
             .await
             .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
 
-        Ok(Contract::new(account_id, signer))
+        Ok(Contract::new(self.into_network.clone(), account_id, signer))
     }
 }

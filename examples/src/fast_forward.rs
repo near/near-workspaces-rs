@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
         .await?;
 
     let (timestamp, epoch_height): (u64, u64) = contract
-        .call(&worker, "current_env_data")
+        .call("current_env_data")
         .view()
         .await?
         .json()?;
@@ -31,7 +31,7 @@ async fn main() -> anyhow::Result<()> {
     worker.fast_forward(10000).await?;
 
     let (timestamp, epoch_height): (u64, u64) = contract
-        .call(&worker, "current_env_data")
+        .call("current_env_data")
         .view()
         .await?
         .json()?;

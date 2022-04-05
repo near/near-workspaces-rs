@@ -43,6 +43,8 @@ impl Mainnet {
 }
 
 impl NetworkClient for Mainnet {
+    type Network = Self;
+    
     fn client(&self) -> &Client {
         &self.client
     }

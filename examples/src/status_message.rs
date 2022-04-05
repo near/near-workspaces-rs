@@ -10,7 +10,7 @@ async fn main() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(&wasm).await?;
 
     let outcome = contract
-        .call(&worker, "set_status")
+        .call("set_status")
         .args_json(json!({
             "message": "hello_world",
         }))?
@@ -20,7 +20,6 @@ async fn main() -> anyhow::Result<()> {
 
     let result: String = contract
         .view(
-            &worker,
             "get_status",
             json!({
                 "account_id": contract.id(),

@@ -51,7 +51,7 @@ async fn deploy_status_contract(
 
     // This will `call` into `set_status` with the message we want to set.
     contract
-        .call(worker, "set_status")
+        .call("set_status")
         .args_json(serde_json::json!({
             "message": msg,
         }))?
@@ -107,7 +107,6 @@ async fn main() -> anyhow::Result<()> {
     // Now grab the state to see that it has indeed been patched:
     let status: String = sandbox_contract
         .view(
-            &worker,
             "get_status",
             serde_json::json!({
                 "account_id": testnet_contract_id,
@@ -124,7 +123,6 @@ async fn main() -> anyhow::Result<()> {
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
     let result: Option<String> = sandbox_contract
         .view(
-            &worker,
             "get_status",
             serde_json::json!({
                 "account_id": sandbox_contract.id(),

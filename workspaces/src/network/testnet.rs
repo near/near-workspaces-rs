@@ -11,7 +11,7 @@ use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLev
 use crate::result::{CallExecution, CallExecutionDetails, ExecutionOutcome};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
-use crate::{Account, Contract, CryptoHash};
+use crate::{Account, Contract, CryptoHash, Worker};
 
 const RPC_URL: &str = "https://rpc.testnet.near.org";
 const HELPER_URL: &str = "https://helper.testnet.near.org";
@@ -54,21 +54,21 @@ impl Testnet {
     }
 }
 
-impl AllowDevAccountCreation for Testnet {}
+impl AllowDevAccountCreation for Worker<Testnet> {}
 
 #[async_trait]
-impl TopLevelAccountCreator for Testnet {
+impl TopLevelAccountCreator for Worker<Testnet> {
     async fn create_tla(
         &self,
         id: AccountId,
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
-    ) -> anyhow::Result<CallExecution<Account>> {
+    ) -> anyhow::Result<CallExecution<Account<Testnet>>> {
         tool::url_create_account(Url::parse(HELPER_URL)?, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
 
         Ok(CallExecution {
-            result: Account::new(id, signer),
+            result: Account::new(self.clone(), id, signer),
             details: CallExecutionDetails {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.
@@ -94,12 +94,12 @@ impl TopLevelAccountCreator for Testnet {
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> anyhow::Result<CallExecution<Contract>> {
+    ) -> anyhow::Result<CallExecution<Contract<Testnet>>> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
         let account = self.create_tla(id.clone(), sk).await?;
         let account = account.into_result()?;
 
-        let outcome = self.client.deploy(&signer, &id, wasm.into()).await?;
+        let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;
 
         Ok(CallExecution {
             result: Contract::account(account),
@@ -109,6 +109,8 @@ impl TopLevelAccountCreator for Testnet {
 }
 
 impl NetworkClient for Testnet {
+    type Network = Self;
+
     fn client(&self) -> &Client {
         &self.client
     }
