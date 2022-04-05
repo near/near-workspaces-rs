@@ -31,15 +31,17 @@ pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 
-/// A client that wraps around JsonRpcClient, and provides more capabilities such
+/// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
 pub struct Client {
-    rpc_addr: String,
+    rpc_client: JsonRpcClient,
 }
 
 impl Client {
-    pub(crate) fn new(rpc_addr: String) -> Self {
-        Self { rpc_addr }
+    pub(crate) fn new(rpc_addr: &str) -> Self {
+        Self {
+            rpc_client: JsonRpcClient::connect(rpc_addr),
+        }
     }
 
     pub(crate) async fn query_broadcast_tx(
@@ -50,7 +52,7 @@ impl Client {
         near_jsonrpc_primitives::types::transactions::RpcTransactionError,
     > {
         retry(|| async {
-            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            let result = self.rpc_client.call(method).await;
             match &result {
                 Ok(response) => {
                     // When user sets logging level to INFO we only print one-liners with submitted
@@ -90,7 +92,7 @@ impl Client {
     where
         M: methods::RpcMethod,
     {
-        retry(|| async { JsonRpcClient::connect(&self.rpc_addr).call(method).await }).await
+        retry(|| async { self.rpc_client.call(method).await }).await
     }
 
     pub(crate) async fn query<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
@@ -100,7 +102,7 @@ impl Client {
         M::Error: Debug,
     {
         retry(|| async {
-            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            let result = self.rpc_client.call(method).await;
             tracing::debug!(
                 target: "workspaces",
                 "Querying RPC with {:?} resulted in {:?}",
