@@ -167,19 +167,15 @@ impl Client {
     pub(crate) async fn view_state(
         &self,
         contract_id: AccountId,
-        prefix: Option<StoreKey>,
-    ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
-        self.view_state_raw(contract_id, prefix, None)
-            .await?
-            .into_iter()
-            .map(|(k, v)| Ok((String::from_utf8(k)?, v.to_vec())))
-            .collect()
+        prefix: Option<&[u8]>,
+    ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
+        self.view_state_raw(contract_id, prefix, None).await
     }
 
     pub(crate) async fn view_state_raw(
         &self,
         contract_id: AccountId,
-        prefix: Option<StoreKey>,
+        prefix: Option<&[u8]>,
         block_id: Option<BlockId>,
     ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
         let block_reference = block_id
@@ -191,7 +187,7 @@ impl Client {
                 block_reference,
                 request: QueryRequest::ViewState {
                     account_id: contract_id,
-                    prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
+                    prefix: StoreKey::from(prefix.map(Vec::from).unwrap_or_default()),
                 },
             })
             .await?;

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::Path;
 
 use near_primitives::views::AccountView;
@@ -207,6 +208,15 @@ impl Contract {
     /// View the WASM code bytes of this contract.
     pub async fn view_code<T: Network>(&self, worker: &Worker<T>) -> anyhow::Result<Vec<u8>> {
         worker.view_code(self.id()).await
+    }
+
+    /// View a contract's state map of key value pairs.
+    pub async fn view_state<T: Network>(
+        &self,
+        worker: &Worker<T>,
+        prefix: Option<&[u8]>,
+    ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
+        worker.view_state(self.id(), prefix).await
     }
 
     /// Views the current contract's details such as balance and storage usage.
