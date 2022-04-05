@@ -13,7 +13,7 @@ pub struct Mainnet {
 impl Mainnet {
     pub(crate) fn new() -> Self {
         Self {
-            client: Client::new(RPC_URL.into()),
+            client: Client::new(RPC_URL),
             info: Info {
                 name: "mainnet".into(),
                 root_id: "near".parse().unwrap(),
@@ -25,7 +25,7 @@ impl Mainnet {
 
     pub(crate) fn archival() -> Self {
         Self {
-            client: Client::new(ARCHIVAL_URL.into()),
+            client: Client::new(ARCHIVAL_URL),
             info: Info {
                 name: "mainnet-archival".into(),
                 root_id: "near".parse().unwrap(),

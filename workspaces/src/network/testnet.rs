@@ -25,7 +25,7 @@ pub struct Testnet {
 impl Testnet {
     pub(crate) fn new() -> Self {
         Self {
-            client: Client::new(RPC_URL.into()),
+            client: Client::new(RPC_URL),
             info: Info {
                 name: "testnet".into(),
                 root_id: AccountId::from_str("testnet").unwrap(),
@@ -37,7 +37,7 @@ impl Testnet {
 
     pub(crate) fn archival() -> Self {
         Self {
-            client: Client::new(ARCHIVAL_URL.into()),
+            client: Client::new(ARCHIVAL_URL),
             info: Info {
                 name: "testnet-archival".into(),
                 root_id: AccountId::from_str("testnet").unwrap(),

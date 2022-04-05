@@ -44,7 +44,7 @@ impl Sandbox {
         let mut server = SandboxServer::default();
         server.start().unwrap();
 
-        let client = Client::new(server.rpc_addr());
+        let client = Client::new(&server.rpc_addr());
         let info = Info {
             name: "sandbox".to_string(),
             root_id: AccountId::from_str("test.near").unwrap(),
