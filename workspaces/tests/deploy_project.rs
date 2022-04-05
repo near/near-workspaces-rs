@@ -10,14 +10,14 @@ async fn test_dev_deploy_project() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(&wasm).await?;
 
     let _res = contract
-        .call(&worker, "set_status")
+        .call("set_status")
         .args_json(("foo",))?
         .max_gas()
         .transact()
         .await?;
 
     let res = contract
-        .call(&worker, "get_status")
+        .call("get_status")
         .args_json((contract.id(),))?
         .view()
         .await?;

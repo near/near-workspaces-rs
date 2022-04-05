@@ -1,17 +1,19 @@
+use std::sync::Arc;
+
 use near_crypto::KeyType;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::types::BlockId;
 use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
-use crate::network::DEV_ACCOUNT_SEED;
+use crate::network::{DEV_ACCOUNT_SEED, NetworkClient};
 use crate::rpc::client::Client;
 use crate::types::{BlockHeight, SecretKey};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner};
 
-pub struct ImportContractTransaction<'a, 'b> {
+pub struct ImportContractTransaction<'a, N> {
     account_id: AccountId,
     from_network: &'a Client,
-    into_network: &'b Client,
+    into_network: Arc<N>,
 
     /// Whether to grab data down from the other contract or not
     import_data: bool,
@@ -23,11 +25,14 @@ pub struct ImportContractTransaction<'a, 'b> {
     block_id: Option<BlockId>,
 }
 
-impl<'a, 'b> ImportContractTransaction<'a, 'b> {
+impl<'a, N> ImportContractTransaction<'a, N>
+where
+    N: NetworkClient,
+{
     pub(crate) fn new(
         account_id: AccountId,
         from_network: &'a Client,
-        into_network: &'b Client,
+        into_network: Arc<N>,
     ) -> Self {
         ImportContractTransaction {
             account_id,
@@ -61,7 +66,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         self
     }
 
-    pub async fn transact(self) -> anyhow::Result<Contract> {
+    pub async fn transact(self) -> anyhow::Result<Contract<N>> {
         let account_id = self.account_id;
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();
@@ -69,7 +74,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
 
         let mut account_view = self
             .from_network
-            .view_account(account_id.clone(), self.block_id.clone())
+            .view_account(&account_id, self.block_id.clone())
             .await?;
         if let Some(initial_balance) = self.initial_balance {
             account_view.amount = initial_balance;
@@ -90,7 +95,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         if account_view.code_hash != near_primitives::hash::CryptoHash::default() {
             let code_view = self
                 .from_network
-                .view_code(account_id.clone(), self.block_id.clone())
+                .view_code(&account_id, self.block_id.clone())
                 .await?;
             records.push(StateRecord::Contract {
                 account_id: account_id.clone(),
@@ -115,6 +120,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         // NOTE: For some reason, patching anything with account/contract related items takes two patches
         // otherwise its super non-deterministic and mostly just fails to locate the account afterwards: ¯\_(ツ)_/¯
         self.into_network
+            .client()
             .query(&RpcSandboxPatchStateRequest {
                 records: records.clone(),
             })
@@ -122,10 +128,11 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
             .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
 
         self.into_network
+            .client()
             .query(&RpcSandboxPatchStateRequest { records })
             .await
             .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
 
-        Ok(Contract::new(account_id, signer))
+        Ok(Contract::new(self.into_network, account_id, signer))
     }
 }

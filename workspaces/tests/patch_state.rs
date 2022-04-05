@@ -1,11 +1,14 @@
 // Required since `test_log` adds more recursion than the standard recursion limit of 128
 #![recursion_limit = "256"]
 
+use std::sync::Arc;
+
 use borsh::{self, BorshDeserialize, BorshSerialize};
 use serde_json::json;
 use test_log::test;
+use workspaces::network::Sandbox;
 use workspaces::prelude::*;
-use workspaces::{AccountId, DevNetwork, Worker};
+use workspaces::AccountId;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
 
@@ -20,14 +23,12 @@ struct StatusMessage {
     records: Vec<Record>,
 }
 
-async fn view_status_state(
-    worker: Worker<impl DevNetwork>,
-) -> anyhow::Result<(AccountId, StatusMessage)> {
+async fn view_status_state(worker: &Arc<Sandbox>) -> anyhow::Result<(AccountId, StatusMessage)> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await.unwrap();
 
     contract
-        .call(&worker, "set_status")
+        .call("set_status")
         .args_json(json!({
                 "message": "hello",
         }))?
@@ -46,7 +47,7 @@ async fn view_status_state(
 #[test(tokio::test)]
 async fn test_view_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let (contract_id, status_msg) = view_status_state(worker).await?;
+    let (contract_id, status_msg) = view_status_state(&worker).await?;
 
     assert_eq!(
         status_msg,
@@ -64,7 +65,7 @@ async fn test_view_state() -> anyhow::Result<()> {
 #[test(tokio::test)]
 async fn test_patch_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let (contract_id, mut status_msg) = view_status_state(worker.clone()).await?;
+    let (contract_id, mut status_msg) = view_status_state(&worker).await?;
     status_msg.records.push(Record {
         k: "alice.near".to_string(),
         v: "hello world".to_string(),

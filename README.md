@@ -40,7 +40,7 @@ async fn test_deploy_and_view() -> anyhow::Result<()> {
         .await
         .expect("could not dev-deploy contract");
 
-    let result: String = contract.call(&worker, "function_name")
+    let result: String = contract.call("function_name")
         .args_json(serde_json::json!({
             "some_arg": "some_value",
         }))?
@@ -82,12 +82,12 @@ Need to make a helper function regardless of whatever Network?
 
 ```rust
 use workspaces::prelude::*;
-use workspaces::{Contract, DevNetwork, Network, Worker};
+use workspaces::{Contract, DevNetwork, Network};
 
 // Helper function that calls into a contract we give it
-async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyhow::Result<()> {
+async fn call_my_func(worker: impl Network, contract: &Contract) -> anyhow::Result<()> {
     // Call into the function `contract_function` with args:
-    contract.call(&worker, "contract_function")
+    contract.call("contract_function")
         .args_json(serde_json::json!({
             "message": msg,
         })?
@@ -98,7 +98,7 @@ async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyh
 
 // Create a helper function that deploys a specific contract
 // NOTE: `dev_deploy` is only available on `DevNetwork`s such sandbox and testnet.
-async fn deploy_my_contract(worker: Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
+async fn deploy_my_contract<N: DevNetwork>(worker: N) -> anyhow::Result<Contract<N>> {
     worker.dev_deploy(&std::fs::read(CONTRACT_FILE)?).await
 }
 ```

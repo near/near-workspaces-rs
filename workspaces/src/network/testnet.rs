@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use url::Url;
@@ -59,16 +60,16 @@ impl AllowDevAccountCreation for Testnet {}
 #[async_trait]
 impl TopLevelAccountCreator for Testnet {
     async fn create_tla(
-        &self,
+        self: &Arc<Self>,
         id: AccountId,
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
-    ) -> anyhow::Result<CallExecution<Account>> {
+    ) -> anyhow::Result<CallExecution<Account<Testnet>>> {
         tool::url_create_account(Url::parse(HELPER_URL)?, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
 
         Ok(CallExecution {
-            result: Account::new(id, signer),
+            result: Account::new(Arc::clone(self), id, signer),
             details: CallExecutionDetails {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.
@@ -90,11 +91,11 @@ impl TopLevelAccountCreator for Testnet {
     }
 
     async fn create_tla_and_deploy(
-        &self,
+        self: &Arc<Self>,
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> anyhow::Result<CallExecution<Contract>> {
+    ) -> anyhow::Result<CallExecution<Contract<Testnet>>> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
         let account = self.create_tla(id.clone(), sk).await?;
         let account = account.into_result()?;

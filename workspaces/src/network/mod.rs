@@ -2,6 +2,7 @@
 //!
 //! Currently the builtin network types are [`Mainnet`], [`Testnet`], and [`Sandbox`].
 
+mod impls;
 mod info;
 mod mainnet;
 mod sandbox;

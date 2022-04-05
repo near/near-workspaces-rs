@@ -1,10 +1,11 @@
 use borsh::{self, BorshDeserialize, BorshSerialize};
 use std::env;
+use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
 use workspaces::prelude::*;
-use workspaces::{AccountId, Contract, DevNetwork, Worker};
+use workspaces::{AccountId, Contract, DevNetwork};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 
@@ -16,7 +17,7 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 /// async fn deploy_testnet() -> anyhow::Result<()> {
 ///     let worker = worspaces::testnet().await?;
 ///
-///     let contract = deploy_status_contract(worker, "hello from testnet").await?;
+///     let contract = deploy_status_contract("hello from testnet").await?;
 ///     println!("{}", contract.id());
 /// }
 /// ```
@@ -42,16 +43,16 @@ struct StatusMessage {
 ///
 /// For example, our predeployed testnet contract has already done this:
 ///    set_status(TESTNET_PREDEPLOYED_CONTRACT_ID) = "hello from testnet"
-async fn deploy_status_contract(
-    worker: &Worker<impl DevNetwork>,
+async fn deploy_status_contract<N: DevNetwork>(
+    worker: &Arc<N>,
     msg: &str,
-) -> anyhow::Result<Contract> {
+) -> anyhow::Result<Contract<N>> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 
     // This will `call` into `set_status` with the message we want to set.
     contract
-        .call(worker, "set_status")
+        .call("set_status")
         .args_json(serde_json::json!({
             "message": msg,
         }))?
@@ -107,7 +108,6 @@ async fn main() -> anyhow::Result<()> {
     // Now grab the state to see that it has indeed been patched:
     let status: String = sandbox_contract
         .view(
-            &worker,
             "get_status",
             serde_json::json!({
                 "account_id": testnet_contract_id,
@@ -124,7 +124,6 @@ async fn main() -> anyhow::Result<()> {
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
     let result: Option<String> = sandbox_contract
         .view(
-            &worker,
             "get_status",
             serde_json::json!({
                 "account_id": sandbox_contract.id(),

@@ -146,16 +146,16 @@ impl Client {
 
     pub(crate) async fn view(
         &self,
-        contract_id: AccountId,
-        method_name: String,
+        contract_id: &AccountId,
+        method_name: &str,
         args: Vec<u8>,
     ) -> anyhow::Result<ViewResultDetails> {
         let query_resp = self
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
                 request: QueryRequest::CallFunction {
-                    account_id: contract_id,
-                    method_name,
+                    account_id: contract_id.clone(),
+                    method_name: method_name.to_string(),
                     args: args.into(),
                 },
             })
@@ -207,13 +207,14 @@ impl Client {
 
     pub(crate) async fn view_account(
         &self,
-        account_id: AccountId,
+        account_id: &AccountId,
         block_id: Option<BlockId>,
     ) -> anyhow::Result<AccountView> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
 
+        let account_id = account_id.clone();
         let query_resp = self
             .query(&methods::query::RpcQueryRequest {
                 block_reference,
@@ -229,13 +230,14 @@ impl Client {
 
     pub(crate) async fn view_code(
         &self,
-        account_id: AccountId,
+        account_id: &AccountId,
         block_id: Option<BlockId>,
     ) -> anyhow::Result<ContractCodeView> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
 
+        let account_id = account_id.clone();
         let query_resp = self
             .query(&methods::query::RpcQueryRequest {
                 block_reference,

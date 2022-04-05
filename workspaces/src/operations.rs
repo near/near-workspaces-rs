@@ -1,13 +1,12 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
+use crate::network::NetworkClient;
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
 };
 use crate::types::{AccessKey, AccountId, Balance, Gas, InMemorySigner, PublicKey, SecretKey};
-use crate::worker::Worker;
 use crate::Account;
-use crate::Network;
 use near_crypto::KeyType;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
@@ -15,6 +14,7 @@ use near_primitives::transaction::{
 };
 use near_primitives::views::FinalExecutionOutcomeView;
 use std::convert::TryInto;
+use std::sync::Arc;
 
 const MAX_GAS: Gas = 300_000_000_000_000;
 
@@ -198,15 +198,18 @@ impl<'a> Transaction<'a> {
 /// Similiar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
 pub struct CallTransaction<'a, 'b, T> {
-    worker: &'a Worker<T>,
+    worker: &'a T,
     signer: InMemorySigner,
     contract_id: AccountId,
     function: Function<'b>,
 }
 
-impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
+impl<'a, 'b, T> CallTransaction<'a, 'b, T>
+where
+    T: NetworkClient,
+{
     pub(crate) fn new(
-        worker: &'a Worker<T>,
+        worker: &'a T,
         contract_id: AccountId,
         signer: InMemorySigner,
         function: &'b str,
@@ -282,19 +285,15 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
         self.worker
             .client()
-            .view(
-                self.contract_id,
-                self.function.name.to_string(),
-                self.function.args,
-            )
+            .view(&self.contract_id, &self.function.name, self.function.args)
             .await
     }
 }
 
 /// Similiar to a [`Transaction`], but more specific to creating an account.
 /// This transaction will create a new account with the specified `receiver_id`
-pub struct CreateAccountTransaction<'a, 'b, T> {
-    worker: &'a Worker<T>,
+pub struct CreateAccountTransaction<'b, T> {
+    network: Arc<T>,
     signer: InMemorySigner,
     parent_id: AccountId,
     new_account_id: &'b str,
@@ -303,18 +302,18 @@ pub struct CreateAccountTransaction<'a, 'b, T> {
     secret_key: Option<SecretKey>,
 }
 
-impl<'a, 'b, T> CreateAccountTransaction<'a, 'b, T>
+impl<'b, T> CreateAccountTransaction<'b, T>
 where
-    T: Network,
+    T: NetworkClient,
 {
     pub(crate) fn new(
-        worker: &'a Worker<T>,
+        network: Arc<T>,
         signer: InMemorySigner,
         parent_id: AccountId,
         new_account_id: &'b str,
     ) -> Self {
         Self {
-            worker,
+            network,
             signer,
             parent_id,
             new_account_id,
@@ -338,20 +337,20 @@ where
 
     /// Send the transaction to the network. This will consume the `CreateAccountTransaction`
     /// and give us back the details of the execution and finally the new [`Account`] object.
-    pub async fn transact(self) -> anyhow::Result<CallExecution<Account>> {
+    pub async fn transact(self) -> anyhow::Result<CallExecution<Account<T>>> {
         let sk = self
             .secret_key
             .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
         let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id).try_into()?;
 
         let outcome = self
-            .worker
+            .network
             .client()
             .create_account(&self.signer, &id, sk.public_key(), self.initial_balance)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        let account = Account::new(id, signer);
+        let account = Account::new(self.network, id, signer);
 
         Ok(CallExecution {
             result: account,
