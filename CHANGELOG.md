@@ -19,6 +19,7 @@
 
 
 ### Fixes
+- key type for `patch_state` now a slice and no longer require `StoreKey`. https://github.com/near/workspaces-rs/pull/109
 - No longer running into non-deterministic query failures if RPC isn't available, but this is a breaking API. All `workspaces::{sandbox, testnet, mainnet}` now require `.await?` at the end. https://github.com/near/workspaces-rs/pull/99
 - TLA trait no longer apart of all networks -- only dev-networks (sandbox, testnet). https://github.com/near/workspaces-rs/pull/101
 - Retry times have now been shorten and should take a maximum of 1 second. https://github.com/near/workspaces-rs/pull/92
@@ -34,7 +35,7 @@
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
 
-[Unreleased]: https://github.com/near/near-sdk-rs/compare/0.2.0...HEAD
-[0.2.0]: https://github.com/near/near-sdk-rs/compare/0.1.1...0.2.0
-[0.1.1]: https://github.com/near/near-sdk-rs/compare/0.1.0...0.1.1
-[0.1.0]: https://github.com/near/near-sdk-rs/releases/tag/0.1.0
+[Unreleased]: https://github.com/near/workspaces-rs/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/near/workspaces-rs/compare/0.1.1...0.2.0
+[0.1.1]: https://github.com/near/workspaces-rs/compare/0.1.0...0.1.1
+[0.1.0]: https://github.com/near/workspaces-rs/releases/tag/0.1.0
