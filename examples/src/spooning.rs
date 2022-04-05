@@ -14,7 +14,7 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 /// If you'd like a different account to deploy it to, run the following:
 /// ```norun
 /// async fn deploy_testnet() -> anyhow::Result<()> {
-///     let worker = worspaces::testnet().await;
+///     let worker = worspaces::testnet().await?;
 ///
 ///     let contract = deploy_status_contract(worker, "hello from testnet").await?;
 ///     println!("{}", contract.id());
@@ -74,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
     // Grab STATE from the testnet status_message contract. This contract contains the following data:
     //   get_status(dev-20211013002148-59466083160385) => "hello from testnet"
     let (testnet_contract_id, status_msg) = {
-        let worker = workspaces::testnet().await;
+        let worker = workspaces::testnet().await?;
         let contract_id: AccountId = TESTNET_PREDEPLOYED_CONTRACT_ID
             .parse()
             .map_err(anyhow::Error::msg)?;

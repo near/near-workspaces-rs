@@ -42,7 +42,7 @@ impl Sandbox {
         let mut server = SandboxServer::default();
         server.start()?;
         let client = Client::new(server.rpc_addr());
-        SandboxServer::wait_for_rpc(&client).await?;
+        client.wait_for_rpc().await?;
 
         let info = Info {
             name: "sandbox".to_string(),

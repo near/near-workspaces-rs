@@ -67,12 +67,12 @@ cargo run --example nft
 
 ```rust
 #[tokio::main]  # or whatever runtime we want
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     // Create a sandboxed environment.
     // NOTE: Each call will create a new sandboxed environment
-    let worker = workspaces::sandbox().await;
+    let worker = workspaces::sandbox().await?;
     // or for testnet:
-    let worker = workspaces::testnet().await;
+    let worker = workspaces::testnet().await?;
 }
 ```
 

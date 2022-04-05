@@ -44,17 +44,6 @@ impl SandboxServer {
     pub fn rpc_addr(&self) -> String {
         format!("http://localhost:{}", self.rpc_port)
     }
-
-    /// Wait until the RPC is available for sandbox. Will error out if this exceeds the amount of retries.
-    pub(crate) async fn wait_for_rpc(client: &Client) -> anyhow::Result<()> {
-        let retry_six_times = std::iter::repeat_with(|| Duration::from_millis(500)).take(6);
-        Retry::spawn(retry_six_times, || async { client.status().await })
-            .await
-            .map_err(|e| {
-                anyhow::anyhow!("Sandbox failed to startup within three seconds: {:?}", e)
-            })?;
-        Ok(())
-    }
 }
 
 impl Default for SandboxServer {
