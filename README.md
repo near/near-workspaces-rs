@@ -13,6 +13,9 @@
   </p>
 </div>
 
+## Release notes
+**Release notes and unreleased changes can be found in the [CHANGELOG](CHANGELOG.md)**
+
 ## Requirements
 - rust v1.56 and up
 - MacOS (x86), M1 (through rosetta) or Linux (x86) for sandbox tests. Testnet is available regardless
@@ -23,6 +26,9 @@ To be able to use this library on an M1 Mac, we would need to setup rosetta plus
 softwareupdate --install-rosetta
 rustup default stable-x86_64-apple-darwin
 ```
+
+### Note about compiling with contract
+`workspaces-rs` does not currently support compiling to WASM. So, if we are compiling this library alongside a `wasm32` target such as compiling alongside a NEAR contract, it is best if we put this dependency in `[dev-dependencies]` section to avoid any conflicts.
 
 ## Testing
 A simple test to get us going and familiar with the features:
