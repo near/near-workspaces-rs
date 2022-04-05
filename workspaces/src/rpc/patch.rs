@@ -101,7 +101,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         if self.import_data {
             records.extend(
                 self.from_network
-                    .view_state_raw(account_id.clone(), None, self.block_id)
+                    .view_state(account_id.clone(), None, self.block_id)
                     .await?
                     .into_iter()
                     .map(|(key, value)| StateRecord::Data {

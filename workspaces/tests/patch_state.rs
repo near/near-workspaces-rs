@@ -34,9 +34,9 @@ async fn view_status_state(
         .transact()
         .await?;
 
-    let mut state_items = worker.view_state(contract.id(), None).await?;
+    let mut state_items = contract.view_state(&worker, None).await?;
     let state = state_items
-        .remove("STATE")
+        .remove(b"STATE".as_slice())
         .ok_or_else(|| anyhow::anyhow!("Could not retrieve STATE"))?;
     let status_msg: StatusMessage = StatusMessage::try_from_slice(&state)?;
 
@@ -45,7 +45,7 @@ async fn view_status_state(
 
 #[test(tokio::test)]
 async fn test_view_state() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     let (contract_id, status_msg) = view_status_state(worker).await?;
 
     assert_eq!(
@@ -63,7 +63,7 @@ async fn test_view_state() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_patch_state() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     let (contract_id, mut status_msg) = view_status_state(worker.clone()).await?;
     status_msg.records.push(Record {
         k: "alice.near".to_string(),

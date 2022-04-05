@@ -23,7 +23,7 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
 
 #[test(tokio::test)]
 async fn test_empty_args_error() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     let contract = init(&worker).await?;
 
     let res = contract
@@ -39,7 +39,7 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_optional_args_present() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     let contract = init(&worker).await?;
 
     let res = contract

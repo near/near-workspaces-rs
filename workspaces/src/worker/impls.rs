@@ -8,7 +8,7 @@ use crate::worker::Worker;
 use crate::{Account, Block, Contract};
 use crate::{AccountDetails, Network};
 use async_trait::async_trait;
-use near_primitives::types::{Balance, StoreKey};
+use near_primitives::types::Balance;
 use std::collections::HashMap;
 
 impl<T> Clone for Worker<T> {
@@ -107,9 +107,11 @@ where
     pub async fn view_state(
         &self,
         contract_id: &AccountId,
-        prefix: Option<StoreKey>,
-    ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
-        self.client().view_state(contract_id.clone(), prefix).await
+        prefix: Option<&[u8]>,
+    ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
+        self.client()
+            .view_state(contract_id.clone(), prefix, None)
+            .await
     }
 
     /// View the latest block from the network

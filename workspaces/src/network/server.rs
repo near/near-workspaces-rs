@@ -1,6 +1,8 @@
-use crate::network::Sandbox;
-use portpicker::pick_unused_port;
 use std::process::Child;
+
+use crate::network::Sandbox;
+
+use portpicker::pick_unused_port;
 use tracing::info;
 
 // TODO: swap over the async version of this in the future. Won't be a breaking API

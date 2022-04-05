@@ -61,9 +61,9 @@ This includes launching our sandbox, loading our wasm file and deploying that wa
 
 ```rust
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+#[tokio::test]
+async fn test_nft_contract() -> anyhow::Result<()> {
+    let worker = workspaces::sandbox().await?;
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 ```
@@ -137,12 +137,12 @@ cargo run --example nft
 
 ```rust
 #[tokio::main]  // or whatever runtime we want
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     // Create a sandboxed environment.
     // NOTE: Each call will create a new sandboxed environment
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     // or for testnet:
-    let worker = workspaces::testnet();
+    let worker = workspaces::testnet().await?;
 }
 ```
 

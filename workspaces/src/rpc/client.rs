@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::time::Duration;
 
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
+use near_jsonrpc_client::errors::JsonRpcError;
+use near_jsonrpc_client::methods::health::RpcStatusError;
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
@@ -16,7 +19,7 @@ use near_primitives::transaction::{
 use near_primitives::types::{Balance, BlockId, Finality, Gas, StoreKey};
 use near_primitives::views::{
     AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
-    QueryRequest,
+    QueryRequest, StatusResponse,
 };
 
 use crate::result::ViewResultDetails;
@@ -167,19 +170,7 @@ impl Client {
     pub(crate) async fn view_state(
         &self,
         contract_id: AccountId,
-        prefix: Option<StoreKey>,
-    ) -> anyhow::Result<HashMap<String, Vec<u8>>> {
-        self.view_state_raw(contract_id, prefix, None)
-            .await?
-            .into_iter()
-            .map(|(k, v)| Ok((String::from_utf8(k)?, v.to_vec())))
-            .collect()
-    }
-
-    pub(crate) async fn view_state_raw(
-        &self,
-        contract_id: AccountId,
-        prefix: Option<StoreKey>,
+        prefix: Option<&[u8]>,
         block_id: Option<BlockId>,
     ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
         let block_reference = block_id
@@ -191,7 +182,7 @@ impl Client {
                 block_reference,
                 request: QueryRequest::ViewState {
                     account_id: contract_id,
-                    prefix: prefix.clone().unwrap_or_else(|| vec![].into()),
+                    prefix: StoreKey::from(prefix.map(Vec::from).unwrap_or_default()),
                 },
             })
             .await?;
@@ -360,6 +351,33 @@ impl Client {
             DeleteAccountAction { beneficiary_id }.into(),
         )
         .await
+    }
+
+    pub(crate) async fn status(&self) -> Result<StatusResponse, JsonRpcError<RpcStatusError>> {
+        let result = JsonRpcClient::connect(&self.rpc_addr)
+            .call(methods::status::RpcStatusRequest)
+            .await;
+
+        tracing::debug!(
+            target: "workspaces",
+            "Querying RPC with RpcStatusRequest resulted in {:?}",
+            result,
+        );
+        result
+    }
+
+    pub(crate) async fn wait_for_rpc(&self) -> anyhow::Result<()> {
+        let retry_six_times = std::iter::repeat_with(|| Duration::from_millis(500)).take(6);
+        Retry::spawn(retry_six_times, || async { self.status().await })
+            .await
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "Failed to connect to RPC service {} within three seconds: {:?}",
+                    self.rpc_addr,
+                    e
+                )
+            })?;
+        Ok(())
     }
 }
 

@@ -18,7 +18,7 @@ const BLOCK_HEIGHT: BlockHeight = 50_000_000;
 /// Pull down the ref-finance contract and deploy it to the sandbox network,
 /// initializing it with all data required to run the tests.
 async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
-    let mainnet = workspaces::mainnet_archival();
+    let mainnet = workspaces::mainnet_archival().await?;
     let ref_finance_id: AccountId = REF_FINANCE_ACCOUNT_ID.parse()?;
 
     // This will pull down the relevant ref-finance contract from mainnet. We're going
@@ -56,7 +56,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
 
 /// Pull down the WNear contract from mainnet and initilize it with our own metadata.
 async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
-    let mainnet = workspaces::mainnet_archival();
+    let mainnet = workspaces::mainnet_archival().await?;
     let wnear_id: AccountId = "wrap.near".to_string().try_into()?;
     let wnear = worker
         .import_contract(&wnear_id, &mainnet)
@@ -202,7 +202,7 @@ async fn create_custom_ft(
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     let owner = worker.root_account();
 
     ///////////////////////////////////////////////////////////////////////////

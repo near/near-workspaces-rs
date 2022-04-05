@@ -5,7 +5,7 @@ use workspaces::prelude::*;
 
 #[test(tokio::test)]
 async fn test_batch_tx() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     let contract = worker
         .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
         .await?;
