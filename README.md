@@ -34,7 +34,7 @@ use workspaces::prelude::*;
 
 #[tokio::test]
 async fn test_deploy_and_view() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
 
     let contract = worker.dev_deploy(include_bytes!("path/to/file.wasm"))
         .await
