@@ -34,9 +34,9 @@ async fn view_status_state(
         .transact()
         .await?;
 
-    let mut state_items = worker.view_state(contract.id(), None).await?;
+    let mut state_items = contract.view_state(&worker, None).await?;
     let state = state_items
-        .remove("STATE")
+        .remove(b"STATE".as_slice())
         .ok_or_else(|| anyhow::anyhow!("Could not retrieve STATE"))?;
     let status_msg: StatusMessage = StatusMessage::try_from_slice(&state)?;
 
