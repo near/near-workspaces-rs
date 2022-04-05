@@ -100,7 +100,7 @@ where
     /// Create a new sub account. Returns a [`CreateAccountTransaction`] object
     /// that we can make use of to fill out the rest of the details. The subaccount
     /// id will be in the form of: "{new_account_id}.{parent_account_id}"
-    pub fn create_subaccount<'a, 'b>(
+    pub fn create_subaccount<'b>(
         &self,
         new_account_id: &'b str,
     ) -> CreateAccountTransaction<'b, T> {
@@ -136,7 +136,7 @@ where
     /// [`Transaction`] object that we can use to add Actions to the batched
     /// transaction. Call `transact` to send the batched transaction to the
     /// network.
-    pub fn batch<'a>(&'a self, contract_id: &AccountId) -> Transaction<'a> {
+    pub fn batch(&self, contract_id: &AccountId) -> Transaction {
         Transaction::new(
             self.network.client(),
             self.signer().clone(),
@@ -245,7 +245,7 @@ where
     /// making calls into this contract. Returns a [`Transaction`] object that
     /// we can use to add Actions to the batched transaction. Call `transact`
     /// to send the batched transaction to the network.
-    pub fn batch<'a>(&'a self) -> Transaction<'a> {
+    pub fn batch(&self) -> Transaction {
         Transaction::new(self.client(), self.signer().clone(), self.id().clone())
     }
 }

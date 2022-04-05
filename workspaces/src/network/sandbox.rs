@@ -126,7 +126,7 @@ impl Sandbox {
     pub fn root_account(self: &Arc<Self>) -> Account<Sandbox> {
         let account_id = self.info().root_id.clone();
         let signer = self.root_signer();
-        Account::new(Arc::clone(&self), account_id, signer)
+        Account::new(Arc::clone(self), account_id, signer)
     }
     /// Import a contract from the the given network, and return us a [`ImportContractTransaction`]
     /// which allows to specify further details, such as being able to import contract data and

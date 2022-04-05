@@ -5,7 +5,7 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::types::BlockId;
 use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
-use crate::network::{DEV_ACCOUNT_SEED, NetworkClient};
+use crate::network::{NetworkClient, DEV_ACCOUNT_SEED};
 use crate::rpc::client::Client;
 use crate::types::{BlockHeight, SecretKey};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner};
