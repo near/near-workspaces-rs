@@ -2,16 +2,18 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use async_trait::async_trait;
+use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
+use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
+use near_primitives::state_record::StateRecord;
 
-use super::{
-    Account, AllowDevAccountCreation, AllowStatePatching, CallExecution, Contract, NetworkClient,
-    NetworkInfo, TopLevelAccountCreator,
-};
-
+use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::network::server::SandboxServer;
 use crate::network::Info;
+use crate::result::CallExecution;
 use crate::rpc::client::Client;
+use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
+use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
@@ -58,8 +60,6 @@ impl Sandbox {
         })
     }
 }
-
-impl AllowStatePatching for Sandbox {}
 
 impl AllowDevAccountCreation for Sandbox {}
 
@@ -118,5 +118,49 @@ impl NetworkClient for Sandbox {
 impl NetworkInfo for Sandbox {
     fn info(&self) -> &Info {
         &self.info
+    }
+}
+
+impl Sandbox {
+    pub(crate) fn import_contract<'a, 'b>(
+        &'b self,
+        id: &AccountId,
+        worker: &'a Worker<impl Network>,
+    ) -> ImportContractTransaction<'a, 'b> {
+        ImportContractTransaction::new(id.to_owned(), worker.client(), self.client())
+    }
+
+    pub(crate) async fn patch_state(
+        &self,
+        contract_id: &AccountId,
+        key: &[u8],
+        value: &[u8],
+    ) -> anyhow::Result<()> {
+        let state = StateRecord::Data {
+            account_id: contract_id.to_owned(),
+            data_key: key.to_vec(),
+            value: value.to_vec(),
+        };
+        let records = vec![state];
+
+        // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
+        let _patch_resp = self
+            .client()
+            .query(&RpcSandboxPatchStateRequest { records })
+            .await
+            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
+
+        Ok(())
+    }
+
+    pub(crate) async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
+        // NOTE: RpcSandboxFastForwardResponse is an empty struct with no fields, so don't do anything with it:
+        self.client()
+            // TODO: replace this with the `query` variant when RpcSandboxFastForwardRequest impls Debug
+            .query_nolog(&RpcSandboxFastForwardRequest { delta_height })
+            .await
+            .map_err(|err| anyhow::anyhow!("Failed to fast forward: {:?}", err))?;
+
+        Ok(())
     }
 }

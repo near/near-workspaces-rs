@@ -22,7 +22,7 @@ use near_primitives::views::{
     QueryRequest, StatusResponse,
 };
 
-use crate::network::ViewResultDetails;
+use crate::result::ViewResultDetails;
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
 
@@ -84,6 +84,13 @@ impl Client {
             result
         })
         .await
+    }
+
+    pub(crate) async fn query_nolog<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
+    where
+        M: methods::RpcMethod,
+    {
+        retry(|| async { JsonRpcClient::connect(&self.rpc_addr).call(method).await }).await
     }
 
     pub(crate) async fn query<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>

@@ -1,6 +1,6 @@
 <div align="center">
 
-  <h1><code>NEAR Workspaces (Rust Edition)</code></h1>
+  <h1>NEAR Workspaces (Rust Edition)</h1>
 
   <p>
     <strong>Rust library for automating workflows and writing tests for NEAR smart contracts. This software is in early alpha (use at your own risk)</strong>
