@@ -11,7 +11,7 @@ const SIMPLE_WASM_FILEPATH: &str = "./examples/res/simple_contract.wasm";
 /// to be produced, which could take hours with the default genesis configuration.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     let contract = worker
         .dev_deploy(&std::fs::read(SIMPLE_WASM_FILEPATH)?)
         .await?;

@@ -34,7 +34,7 @@ use workspaces::prelude::*;
 
 #[tokio::test]
 async fn test_deploy_and_view() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
 
     let contract = worker.dev_deploy(include_bytes!("path/to/file.wasm"))
         .await
@@ -67,12 +67,12 @@ cargo run --example nft
 
 ```rust
 #[tokio::main]  # or whatever runtime we want
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     // Create a sandboxed environment.
     // NOTE: Each call will create a new sandboxed environment
-    let worker = workspaces::sandbox();
+    let worker = workspaces::sandbox().await?;
     // or for testnet:
-    let worker = workspaces::testnet();
+    let worker = workspaces::testnet().await?;
 }
 ```
 

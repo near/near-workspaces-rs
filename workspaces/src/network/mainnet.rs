@@ -11,28 +11,34 @@ pub struct Mainnet {
 }
 
 impl Mainnet {
-    pub(crate) fn new() -> Self {
-        Self {
-            client: Client::new(RPC_URL.into()),
+    pub(crate) async fn new() -> anyhow::Result<Self> {
+        let client = Client::new(RPC_URL.into());
+        client.wait_for_rpc().await?;
+
+        Ok(Self {
+            client,
             info: Info {
                 name: "mainnet".into(),
                 root_id: "near".parse().unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/mainnet/"),
                 rpc_url: RPC_URL.into(),
             },
-        }
+        })
     }
 
-    pub(crate) fn archival() -> Self {
-        Self {
-            client: Client::new(ARCHIVAL_URL.into()),
+    pub(crate) async fn archival() -> anyhow::Result<Self> {
+        let client = Client::new(ARCHIVAL_URL.into());
+        client.wait_for_rpc().await?;
+
+        Ok(Self {
+            client,
             info: Info {
                 name: "mainnet-archival".into(),
                 root_id: "near".parse().unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/mainnet/"),
                 rpc_url: ARCHIVAL_URL.into(),
             },
-        }
+        })
     }
 }
 
