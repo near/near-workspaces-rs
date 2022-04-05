@@ -5,7 +5,7 @@
 ## [0.2.0] - 2022-04-05
 
 ### Added
-- Time-traveling - the ability to go forwards & backwards in block height within tests. This allows to test time specific data changing within contracts: https://github.com/near/workspaces-rs/pull/73
+- Time-traveling - the ability to go forwards in block height within tests. This allows to test time specific data changing within contracts: https://github.com/near/workspaces-rs/pull/73
 - Credentials created from account/contract creation are now allowed to be stored and specified by users. https://github.com/near/workspaces-rs/pull/98
 - [Unstable] Allow users to compile contract projects within tests without having to manually go through this step. https://github.com/near/workspaces-rs/pull/77
 - Batch transactions or transactions with multiple actions are now possible. https://github.com/near/workspaces-rs/pull/72
