@@ -17,20 +17,35 @@
 **Release notes and unreleased changes can be found in the [CHANGELOG](CHANGELOG.md)**
 
 ## Requirements
-- rust v1.56 and up
+- Rust v1.56 and up
 - MacOS (x86) or Linux (x86) for sandbox tests. Testnet is available regardless
 
 ### M1 MacOS
-NOTE: Current version of workspaces does not provide support for M1 macbooks, due to some internal upgrades with wasmer. Look at using for workspaces version `0.1.1` for now until we get this settled out or check the progress of it with this [issue](https://github.com/near/workspaces-rs/issues/110).
+NOTE: Current version of `workspaces-rs` does not support use on M1 chip devices due to internal upgrades with wasmer. M1 users should use `workspaces-rs` version `0.1.1` until this problem gets resolved. Check the progress on this issue [here](https://github.com/near/workspaces-rs/issues/110).
 
-To be able to use this library on an M1 Mac, we would need to setup rosetta plus our cross compile target:
+Even with the above note, we can use `workspaces-rs` with version `0.1.1` on M1 by setting up rosetta plus our cross compile target:
 ```
 softwareupdate --install-rosetta
 rustup default stable-x86_64-apple-darwin
 ```
 
-### Note about compiling with contract
-`workspaces-rs` does not currently support compiling to WASM. So, if we are compiling this library alongside a `wasm32` target such as compiling alongside a NEAR contract, it is best if we put this dependency in `[dev-dependencies]` section to avoid any conflicts.
+### Note about compiling with NEAR Contracts
+`workspaces-rs`, the library itself, does not currently compile to WASM. So, if we were compiling it alongside a `wasm32` target, such as compiling alongside a NEAR contract:
+```toml
+# Cargo.toml
+[dependencies]
+workspaces = "*"
+near-sdk = "*"
+```
+It would throw an error when we run `cargo build --target wasm32-unknown-unknown`. Instead, we should add `workspaces-rs` into `[dev-dependencies]` for testing contracts:
+```toml
+# Cargo.toml
+[dependencies]
+near-sdk = "*"
+
+[dev-dependencies]
+workspaces = "*"
+```
 
 ## Simple Testing Case
 A simple test to get us going and familiar with `workspaces` framework. Here, we will be going through the NFT contract and how we can test it with `workspaces-rs`.
@@ -67,7 +82,7 @@ async fn test_nft_contract() -> anyhow::Result<()> {
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 ```
-where
+Where
 * `anyhow` - A crate that deals with error handling, making it more robust for developers.
 * `worker` - Our gateway towards interacting with our sandbox environment.
 * `contract`- The deployed contract on sandbox the developer interacts with.
@@ -124,7 +139,7 @@ Then later on, we can view our minted NFT's metadata via our `view` call into `n
 ```
 
 ## Examples
-Some further examples can be found in `examples/src/*.rs` to be ran standalone.
+More standalone examples can be found in `examples/src/*.rs`.
 
 To run the above NFT example, execute:
 ```
@@ -189,13 +204,13 @@ Then specify the contract name from testnet we want to be pulling:
 const CONTRACT_ACCOUNT: &str = "contract_account_name_on_testnet.testnet";
 ```
 
-Let's also specify a specific block ID referencing back to a specific time. Just in case your contract or the one we're referencing has been changed or updated:
+Let's also specify a specific block ID referencing back to a specific time. Just in case our contract or the one we're referencing has been changed or updated:
 
 ```rust
 const BLOCK_HEIGHT: BlockHeight = 12345;
 ```
 
-Create a function called `pull_contract` which will pull the contracts `.wasm` file from the chain and deploy it onto our local sandbox. We'll have to re-initialize it with all the data to run tests.
+Create a function called `pull_contract` which will pull the contract's `.wasm` file from the chain and deploy it onto our local sandbox. We'll have to re-initialize it with all the data to run tests.
 ```rust
 async fn pull_contract(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
     let testnet = workspaces::testnet_archival();
@@ -240,7 +255,7 @@ async fn test_contract() -> anyhow::Result<()> {
     let blocks_to_advance = 10000;
     worker.fast_forward(blocks_to_advance);
 
-    // Now, if "do_something_with_time" will be in the future can act on future time-related state.
+    // Now, "do_something_with_time" will be in the future and can act on future time-related state.
     contract.call(&worker, "do_something_with_time")
         .transact()
         .await?;
