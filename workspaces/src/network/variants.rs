@@ -66,6 +66,8 @@ where
     }
 }
 
+/// Network trait specifies the functionality of a network type such as mainnet, testnet or any
+/// other networks that are not specified in this library.
 pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}

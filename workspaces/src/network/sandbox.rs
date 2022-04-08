@@ -20,6 +20,11 @@ pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 
 const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
 
+/// Local sandboxed environment/network, which can be used to test without interacting with
+/// networks that are online such as mainnet and testnet. Look at [`workspaces::sandbox`]
+/// for how to spin up a sandboxed network and interact with it.
+///
+/// [`workspaces::sandbox`]: crate::sandbox
 pub struct Sandbox {
     server: SandboxServer,
     client: Client,
