@@ -8,6 +8,11 @@ use crate::rpc::client::Client;
 use crate::types::{BlockHeight, SecretKey};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner};
 
+/// A [`Transaction`]-like object that allows us to specify details about importing
+/// a contract from a different network into our sandbox local network. This creates
+/// a new [`Transaction`] to be committed to the sandbox network once `transact()`
+/// has been called. This does not commit any new transactions from the network
+/// this object is importing from.
 pub struct ImportContractTransaction<'a, 'b> {
     account_id: AccountId,
     from_network: &'a Client,
@@ -39,11 +44,19 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         }
     }
 
+    /// Specify at which block height to import the contract from. This is usable with
+    /// any network this object is importing from, but be aware that only archival
+    /// networks will have the full history while networks like mainnet or testnet
+    /// only has the history from 5 or less epochs ago.
     pub fn block_height(mut self, block_height: BlockHeight) -> Self {
         self.block_id = Some(BlockId::Height(block_height));
         self
     }
 
+    /// Specify at which block hash to import the contract from. This is usable with
+    /// any network this object is importing from, but be aware that only archival
+    /// networks will have the full history while networks like mainnet or testnet
+    /// only has the history from 5 or less epochs ago.
     pub fn block_hash(mut self, block_hash: CryptoHash) -> Self {
         self.block_id = Some(BlockId::Hash(near_primitives::hash::CryptoHash(
             block_hash.0,
@@ -51,16 +64,24 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         self
     }
 
+    /// Along with importing the contract code, this will import the state from the
+    /// contract itself. This is useful for testing current network state or state
+    /// at a specific block. Note that there is a limit of 50mb of state data that
+    /// can be pulled down using the usual RPC service. To get beyond this, our own
+    /// RPC node has to be spun up and used instead.
     pub fn with_data(mut self) -> Self {
         self.import_data = true;
         self
     }
 
+    /// Specifies the balance of the contract. This will override the balance currently
+    /// on the network this transaction is importing from.
     pub fn initial_balance(mut self, initial_balance: Balance) -> Self {
         self.initial_balance = Some(initial_balance);
         self
     }
 
+    /// Process the trannsaction, and return the result of the execution.
     pub async fn transact(self) -> anyhow::Result<Contract> {
         let account_id = self.account_id;
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
