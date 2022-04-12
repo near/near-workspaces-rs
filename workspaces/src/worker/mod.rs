@@ -2,7 +2,7 @@ mod impls;
 
 use std::sync::Arc;
 
-use crate::network::{Mainnet, Sandbox, Testnet};
+use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
 use crate::Network;
 
 pub struct Worker<T> {
@@ -47,6 +47,11 @@ pub async fn mainnet() -> anyhow::Result<Worker<Mainnet>> {
 /// network, and grab a [`Worker`] that can interact with it.
 pub async fn mainnet_archival() -> anyhow::Result<Worker<Mainnet>> {
     Ok(Worker::new(Mainnet::archival().await?))
+}
+
+/// Connect to the betanet network, and grab a [`Worker`] that can interact with it.
+pub async fn betanet() -> anyhow::Result<Worker<Betanet>> {
+    Ok(Worker::new(Betanet::new().await?))
 }
 
 /// Run a locally scoped task with a [`sandbox`] instanced [`Worker`] is supplied.

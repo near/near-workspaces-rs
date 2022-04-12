@@ -2,6 +2,7 @@
 //!
 //! Currently the builtin network types are [`Mainnet`], [`Testnet`], and [`Sandbox`].
 
+mod betanet;
 mod info;
 mod mainnet;
 mod sandbox;
@@ -11,6 +12,7 @@ pub(crate) mod variants;
 
 pub(crate) use variants::DEV_ACCOUNT_SEED;
 
+pub use self::betanet::Betanet;
 pub use self::info::Info;
 pub use self::mainnet::Mainnet;
 pub use self::sandbox::Sandbox;
