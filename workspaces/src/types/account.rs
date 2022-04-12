@@ -9,6 +9,9 @@ use crate::{CryptoHash, Network, Worker};
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 
+/// `Account` is directly associated to an account in the network provided by the
+/// [`Worker`] that creates it. This type offers methods to interact with any
+/// network, such as creating transactions and calling into contract functions.
 pub struct Account {
     pub(crate) id: AccountId,
     pub(crate) signer: InMemorySigner,
@@ -148,6 +151,9 @@ impl Account {
 
 // TODO: allow users to create Contracts so that they can call into
 // them without deploying the contract themselves.
+/// `Contract` is directly associated to a contract in the network provided by the
+/// [`Worker`] that creates it. This type offers methods to interact with any
+/// network, such as creating transactions and calling into contract functions.
 pub struct Contract {
     pub(crate) account: Account,
 }

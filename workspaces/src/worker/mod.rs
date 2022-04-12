@@ -5,6 +5,10 @@ use std::sync::Arc;
 use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
 use crate::Network;
 
+/// The `Worker` type allows us to interact with any NEAR related networks, such
+/// as mainnet and testnet. This controls where the environment the worker is
+/// running on top of is. Refer to this for all network related actions such as
+/// deploying a contract, or interacting with transactions.
 pub struct Worker<T> {
     workspace: Arc<T>,
 }
@@ -54,7 +58,7 @@ pub async fn betanet() -> anyhow::Result<Worker<Betanet>> {
     Ok(Worker::new(Betanet::new().await?))
 }
 
-/// Run a locally scoped task with a [`sandbox`] instanced [`Worker`] is supplied.
+/// Run a locally scoped task where a [`sandbox`] instanced [`Worker`] is supplied.
 pub async fn with_sandbox<F, T>(task: F) -> anyhow::Result<T::Output>
 where
     F: Fn(Worker<Sandbox>) -> T,
@@ -63,7 +67,7 @@ where
     Ok(task(sandbox().await?).await)
 }
 
-/// Run a locally scoped task with a [`testnet`] instanced [`Worker`] is supplied.
+/// Run a locally scoped task where a [`testnet`] instanced [`Worker`] is supplied.
 pub async fn with_testnet<F, T>(task: F) -> anyhow::Result<T::Output>
 where
     F: Fn(Worker<Testnet>) -> T,
@@ -72,7 +76,7 @@ where
     Ok(task(testnet().await?).await)
 }
 
-/// Run a locally scoped task with a [`testnet_archival`] instanced [`Worker`] is supplied.
+/// Run a locally scoped task where a [`testnet_archival`] instanced [`Worker`] is supplied.
 pub async fn with_testnet_archival<F, T>(task: F) -> anyhow::Result<T::Output>
 where
     F: Fn(Worker<Testnet>) -> T,
@@ -81,7 +85,7 @@ where
     Ok(task(testnet_archival().await?).await)
 }
 
-/// Run a locally scoped task with a [`mainnet`] instanced [`Worker`] is supplied.
+/// Run a locally scoped task where a [`mainnet`] instanced [`Worker`] is supplied.
 pub async fn with_mainnet<F, T>(task: F) -> anyhow::Result<T::Output>
 where
     F: Fn(Worker<Mainnet>) -> T,
@@ -90,7 +94,7 @@ where
     Ok(task(mainnet().await?).await)
 }
 
-/// Run a locally scoped task with a [`mainnet_archival`] instanced [`Worker`] is supplied.
+/// Run a locally scoped task where a [`mainnet_archival`] instanced [`Worker`] is supplied.
 pub async fn with_mainnet_archival<F, T>(task: F) -> anyhow::Result<T::Output>
 where
     F: Fn(Worker<Mainnet>) -> T,

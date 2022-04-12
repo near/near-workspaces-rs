@@ -1,3 +1,8 @@
+//! # NEAR Workspaces
+//!
+//! A library for automating workflows and writing tests for NEAR smart contracts.
+//! This software is not final, and will likely change.
+
 #[cfg(feature = "unstable")]
 mod cargo;
 #[cfg(feature = "unstable")]
