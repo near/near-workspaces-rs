@@ -29,23 +29,8 @@ softwareupdate --install-rosetta
 rustup default stable-x86_64-apple-darwin
 ```
 
-### Note about compiling with NEAR Contracts
-`workspaces-rs`, the library itself, does not currently compile to WASM. So, if we were compiling it alongside a `wasm32` target, such as compiling alongside a NEAR contract:
-```toml
-# Cargo.toml
-[dependencies]
-workspaces = "*"
-near-sdk = "*"
-```
-It would throw an error when we run `cargo build --target wasm32-unknown-unknown`. Instead, we should add `workspaces-rs` into `[dev-dependencies]` for testing contracts:
-```toml
-# Cargo.toml
-[dependencies]
-near-sdk = "*"
-
-[dev-dependencies]
-workspaces = "*"
-```
+### WASM compilation not supported
+`workspaces-rs`, the library itself, does not currently compile to WASM. Best to put this dependency in `[dev-dependencies]` section of `Cargo.toml` if we were trying to run this library alongside something that already does compile to WASM, such as `near-sdk-rs`.
 
 ## Simple Testing Case
 A simple test to get us going and familiar with `workspaces` framework. Here, we will be going through the NFT contract and how we can test it with `workspaces-rs`.

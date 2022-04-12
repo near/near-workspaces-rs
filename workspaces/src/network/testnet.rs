@@ -17,6 +17,13 @@ const RPC_URL: &str = "https://rpc.testnet.near.org";
 const HELPER_URL: &str = "https://helper.testnet.near.org";
 const ARCHIVAL_URL: &str = "https://archival-rpc.testnet.near.org";
 
+/// Testnet related configuration for interacting with testnet. Look at
+/// [`workspaces::testnet`] and [`workspaces::testnet_archival`] for how
+/// to spin up a [`Worker`] that can be used to run tests in testnet.
+///
+/// [`workspaces::testnet`]: crate::testnet
+/// [`workspaces::testnet_archival`]: crate::testnet_archival
+/// [`Worker`]: crate::Worker
 pub struct Testnet {
     client: Client,
     info: Info,
