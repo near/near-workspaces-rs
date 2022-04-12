@@ -2,6 +2,14 @@
 
 ## [unreleased]
 
+## [0.2.1] - 2022-04-12
+
+### Added
+- Added more docs to top level or exposed types/functions: https://github.com/near/workspaces-rs/pull/115
+
+### Fixed
+- Fix `docs.rs` builds failing on sandbox install: https://github.com/near/workspaces-rs/pull/115
+
 ## [0.2.0] - 2022-04-05
 
 ### Added
