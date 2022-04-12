@@ -3,7 +3,6 @@ use crate::rpc::client::Client;
 use std::path::PathBuf;
 
 const RPC_URL: &str = "https://rpc.betanet.near.org";
-const ARCHIVAL_URL: &str = "https://archival-rpc.betanet.near.org";
 
 /// Betanet related configuration for interacting with betanet. Look at
 /// [`workspaces::betanet`] for how to spin up a [`Worker`] that can be
