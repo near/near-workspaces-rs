@@ -2,6 +2,14 @@
 
 ## [unreleased]
 
+## [0.2.1] - 2022-04-12
+
+### Added
+- Added more docs to top level or exposed types/functions: https://github.com/near/workspaces-rs/pull/115
+
+### Fixed
+- Fix `docs.rs` builds failing on sandbox install: https://github.com/near/workspaces-rs/pull/115
+
 ## [0.2.0] - 2022-04-05
 
 ### Added
@@ -38,7 +46,8 @@
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
 
-[Unreleased]: https://github.com/near/workspaces-rs/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/near/workspaces-rs/compare/0.2.1...HEAD
+[0.2.1]: https://github.com/near/workspaces-rs/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/near/workspaces-rs/compare/0.1.1...0.2.0
 [0.1.1]: https://github.com/near/workspaces-rs/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/near/workspaces-rs/releases/tag/0.1.0
