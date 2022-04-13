@@ -102,3 +102,12 @@ where
 {
     Ok(task(mainnet_archival().await?).await)
 }
+
+/// Run a locally scoped task where a [`betanet`] instanced [`Worker`] is supplied.
+pub async fn with_betanet<F, T>(task: F) -> anyhow::Result<T::Output>
+where
+    F: Fn(Worker<Betanet>) -> T,
+    T: core::future::Future,
+{
+    Ok(task(betanet().await?).await)
+}

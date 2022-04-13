@@ -22,6 +22,6 @@ pub use types::account::{Account, AccountDetails, Contract};
 pub use types::block::Block;
 pub use types::{AccessKey, AccountId, BlockHeight, CryptoHash, InMemorySigner};
 pub use worker::{
-    betanet, mainnet, mainnet_archival, sandbox, testnet, testnet_archival, with_mainnet,
-    with_mainnet_archival, with_sandbox, with_testnet, with_testnet_archival, Worker,
+    betanet, mainnet, mainnet_archival, sandbox, testnet, testnet_archival, with_betanet,
+    with_mainnet, with_mainnet_archival, with_sandbox, with_testnet, with_testnet_archival, Worker,
 };
