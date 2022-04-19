@@ -17,7 +17,7 @@ async fn cross_contract_create_contract(
     contract: &Contract,
 ) -> anyhow::Result<CallExecutionDetails> {
     contract
-        .call(&worker, "deploy_status_message")
+        .call(worker, "deploy_status_message")
         .args_json((status_id.clone(), status_amt))?
         .deposit(parse_near!("50 N"))
         .max_gas()
