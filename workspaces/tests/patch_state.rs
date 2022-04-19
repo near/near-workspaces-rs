@@ -21,20 +21,20 @@ struct StatusMessage {
 }
 
 async fn view_status_state(
-    worker: Worker<impl DevNetwork>,
+    worker: &Worker<impl DevNetwork>,
 ) -> anyhow::Result<(AccountId, StatusMessage)> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await.unwrap();
 
     contract
-        .call(&worker, "set_status")
+        .call(worker, "set_status")
         .args_json(json!({
                 "message": "hello",
         }))?
         .transact()
         .await?;
 
-    let mut state_items = contract.view_state(&worker, None).await?;
+    let mut state_items = contract.view_state(worker, None).await?;
     let state = state_items
         .remove(b"STATE".as_slice())
         .ok_or_else(|| anyhow::anyhow!("Could not retrieve STATE"))?;
@@ -46,7 +46,7 @@ async fn view_status_state(
 #[test(tokio::test)]
 async fn test_view_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let (contract_id, status_msg) = view_status_state(worker).await?;
+    let (contract_id, status_msg) = view_status_state(&worker).await?;
 
     assert_eq!(
         status_msg,
@@ -64,14 +64,14 @@ async fn test_view_state() -> anyhow::Result<()> {
 #[test(tokio::test)]
 async fn test_patch_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let (contract_id, mut status_msg) = view_status_state(worker.clone()).await?;
+    let (contract_id, mut status_msg) = view_status_state(&worker).await?;
     status_msg.records.push(Record {
         k: "alice.near".to_string(),
         v: "hello world".to_string(),
     });
 
     worker
-        .patch_state(&contract_id, "STATE".as_bytes(), &status_msg.try_to_vec()?)
+        .patch_state(&contract_id, "STATE", status_msg.try_to_vec()?)
         .await?;
 
     let status: String = worker

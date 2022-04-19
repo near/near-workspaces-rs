@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -5,6 +6,7 @@ use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
+use std::iter::IntoIterator;
 
 use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::network::server::SandboxServer;
@@ -138,13 +140,13 @@ impl Sandbox {
     pub(crate) async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: &[u8],
-        value: &[u8],
+        key: impl Into<Vec<u8>>,
+        value: impl Into<Vec<u8>>,
     ) -> anyhow::Result<()> {
         let state = StateRecord::Data {
             account_id: contract_id.to_owned(),
-            data_key: key.to_vec(),
-            value: value.to_vec(),
+            data_key: key.into(),
+            value: value.into(),
         };
         let records = vec![state];
 
@@ -167,5 +169,62 @@ impl Sandbox {
             .map_err(|err| anyhow::anyhow!("Failed to fast forward: {:?}", err))?;
 
         Ok(())
+    }
+}
+
+#[must_use = "don't forget to .send() this `PatchStateBuilder`"]
+struct PatchStateBuilder<'s> {
+    sandbox: &'s mut Sandbox,
+    records: Vec<StateRecord>,
+}
+
+impl<'s> PatchStateBuilder<'s> {
+    pub fn new(sandbox: &'s mut Sandbox) -> Self {
+        PatchStateBuilder {
+            sandbox,
+            records: Vec::with_capacity(4),
+        }
+    }
+
+    pub fn data(
+        mut self,
+        contract_id: &AccountId, //todo: borrowed or owned? (or Into<> or smth)
+        key: impl Into<Vec<u8>>,
+        value: impl Into<Vec<u8>>,
+    ) -> Self {
+        let state = StateRecord::Data {
+            account_id: contract_id.to_owned(),
+            data_key: key.into(),
+            value: value.into(),
+        };
+        self.records.push(state);
+        self
+    }
+
+    pub fn data_many(
+        mut self,
+        contract_id: &AccountId, //todo: borrowed or owned? (or Into<> or smth)
+        kvs: impl IntoIterator<Item = (Vec<u8>, Vec<u8>)>,
+        key: impl Into<Vec<u8>>,
+        value: impl Into<Vec<u8>>,
+    ) -> Self {
+        self.records.extend(kvs.into_iter().map(|(key, value)|StateRecord::Data {
+            account_id: contract_id.to_owned(),
+            data_key: key.into(),
+            value: value.into(),
+        }));
+        self
+    }
+
+    pub async fn send(self)->anyhow::Result<()>{
+        let records = self.records;
+                // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
+                let _patch_resp = self.sandbox
+                .client()
+                .query(&RpcSandboxPatchStateRequest { records })
+                .await
+                .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
+    
+            Ok(())
     }
 }

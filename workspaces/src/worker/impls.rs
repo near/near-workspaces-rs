@@ -180,8 +180,8 @@ impl Worker<Sandbox> {
     pub async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: &[u8],
-        value: &[u8],
+        key: impl Into<Vec<u8>>,
+        value: impl Into<Vec<u8>>,
     ) -> anyhow::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
     }
