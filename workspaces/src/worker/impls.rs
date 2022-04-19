@@ -8,7 +8,8 @@ use crate::worker::Worker;
 use crate::{Account, Block, Contract};
 use crate::{AccountDetails, Network};
 use async_trait::async_trait;
-use near_primitives::types::Balance;
+use near_primitives::hash::CryptoHash;
+use near_primitives::types::{Balance, StorageUsage};
 use std::collections::HashMap;
 
 impl<T> Clone for Worker<T> {
@@ -184,6 +185,21 @@ impl Worker<Sandbox> {
         value: &[u8],
     ) -> anyhow::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
+    }
+
+    /// Patch account into the sandbox network, given an optional Account fields. This will allow
+    /// us to set amount or locked amount of NEAR tokens, change code hash, and storage usage.
+    pub async fn patch_account(
+        &self,
+        account_id: &AccountId,
+        amount: Option<Balance>,
+        locked: Option<Balance>,
+        code_hash: Option<CryptoHash>,
+        storage_usage: Option<StorageUsage>,
+    ) -> anyhow::Result<()> {
+        self.workspace
+            .patch_account(account_id, amount, locked, code_hash, storage_usage)
+            .await
     }
 
     /// Fast forward to a point in the future. The delta block height is supplied to tell the
