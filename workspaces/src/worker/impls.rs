@@ -1,5 +1,5 @@
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::network::{Info, Sandbox};
+use crate::network::{Info, Sandbox, SandboxPatchStateBuilder};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
@@ -174,6 +174,13 @@ impl Worker<Sandbox> {
         self.workspace.import_contract(id, worker)
     }
 
+    /// Patch state into the sandbox network, using builder pattern. This will allow us to set
+    /// state that we have acquired in some manner. This allows us to test random cases that
+    /// are hard to come up naturally as state evolves.
+    pub fn patch_state_builder(&self) -> SandboxPatchStateBuilder {
+        self.workspace.patch_state()
+    }
+
     /// Patch state into the sandbox network, given a key and value. This will allow us to set
     /// state that we have acquired in some manner. This allows us to test random cases that
     /// are hard to come up naturally as state evolves.
@@ -183,7 +190,30 @@ impl Worker<Sandbox> {
         key: impl Into<Vec<u8>>,
         value: impl Into<Vec<u8>>,
     ) -> anyhow::Result<()> {
-        self.workspace.patch_state(contract_id, key, value).await
+        self.workspace
+            .patch_state()
+            .data(contract_id, key, value)
+            .send()
+            .await?;
+        Ok(())
+    }
+
+    //todo: add more patch state methods like the previous one
+
+    /// Patch state into the sandbox network, given a key and value. This will allow us to set
+    /// state that we have acquired in some manner. This allows us to test random cases that
+    /// are hard to come up naturally as state evolves.
+    pub async fn patch_state_many(
+        &self,
+        contract_id: &AccountId,
+        kvs: impl IntoIterator<Item = (impl Into<Vec<u8>>, impl Into<Vec<u8>>)>,
+    ) -> anyhow::Result<()> {
+        self.workspace
+            .patch_state()
+            .data_many(contract_id, kvs)
+            .send()
+            .await?;
+        Ok(())
     }
 
     /// Fast forward to a point in the future. The delta block height is supplied to tell the

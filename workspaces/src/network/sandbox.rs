@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -137,27 +136,8 @@ impl Sandbox {
         ImportContractTransaction::new(id.to_owned(), worker.client(), self.client())
     }
 
-    pub(crate) async fn patch_state(
-        &self,
-        contract_id: &AccountId,
-        key: impl Into<Vec<u8>>,
-        value: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<()> {
-        let state = StateRecord::Data {
-            account_id: contract_id.to_owned(),
-            data_key: key.into(),
-            value: value.into(),
-        };
-        let records = vec![state];
-
-        // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
-        let _patch_resp = self
-            .client()
-            .query(&RpcSandboxPatchStateRequest { records })
-            .await
-            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
-
-        Ok(())
+    pub(crate) fn patch_state(&self) -> SandboxPatchStateBuilder {
+        SandboxPatchStateBuilder::new(self)
     }
 
     pub(crate) async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
@@ -172,15 +152,17 @@ impl Sandbox {
     }
 }
 
+//todo: review naming
 #[must_use = "don't forget to .send() this `PatchStateBuilder`"]
-struct PatchStateBuilder<'s> {
-    sandbox: &'s mut Sandbox,
+pub struct SandboxPatchStateBuilder<'s> {
+    sandbox: &'s Sandbox,
     records: Vec<StateRecord>,
 }
 
-impl<'s> PatchStateBuilder<'s> {
-    pub fn new(sandbox: &'s mut Sandbox) -> Self {
-        PatchStateBuilder {
+//todo: add more methods
+impl<'s> SandboxPatchStateBuilder<'s> {
+    pub fn new(sandbox: &'s Sandbox) -> Self {
+        SandboxPatchStateBuilder {
             sandbox,
             records: Vec::with_capacity(4),
         }
@@ -197,6 +179,7 @@ impl<'s> PatchStateBuilder<'s> {
             data_key: key.into(),
             value: value.into(),
         };
+
         self.records.push(state);
         self
     }
@@ -204,27 +187,27 @@ impl<'s> PatchStateBuilder<'s> {
     pub fn data_many(
         mut self,
         contract_id: &AccountId, //todo: borrowed or owned? (or Into<> or smth)
-        kvs: impl IntoIterator<Item = (Vec<u8>, Vec<u8>)>,
-        key: impl Into<Vec<u8>>,
-        value: impl Into<Vec<u8>>,
+        kvs: impl IntoIterator<Item = (impl Into<Vec<u8>>, impl Into<Vec<u8>>)>,
     ) -> Self {
-        self.records.extend(kvs.into_iter().map(|(key, value)|StateRecord::Data {
-            account_id: contract_id.to_owned(),
-            data_key: key.into(),
-            value: value.into(),
-        }));
+        self.records
+            .extend(kvs.into_iter().map(|(key, value)| StateRecord::Data {
+                account_id: contract_id.to_owned(),
+                data_key: key.into(),
+                value: value.into(),
+            }));
         self
     }
 
-    pub async fn send(self)->anyhow::Result<()>{
+    pub async fn send(self) -> anyhow::Result<()> {
         let records = self.records;
-                // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
-                let _patch_resp = self.sandbox
-                .client()
-                .query(&RpcSandboxPatchStateRequest { records })
-                .await
-                .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
-    
-            Ok(())
+        // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
+        let _patch_resp = self
+            .sandbox
+            .client()
+            .query(&RpcSandboxPatchStateRequest { records })
+            .await
+            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
+
+        Ok(())
     }
 }

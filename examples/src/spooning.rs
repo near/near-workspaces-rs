@@ -104,6 +104,15 @@ async fn main() -> anyhow::Result<()> {
         )
         .await?;
 
+    // build pattern equivalent
+
+    // worker
+    //     .patch_state_builder()
+    //     .data(sandbox_contract.id(), "STATE", status_msg.try_to_vec()?)
+    //     // .data_many(sandbox_contract.id(), [("hello", "world"), ("goodbye", "putin")])
+    //     .send()
+    //     .await?;
+
     // Now grab the state to see that it has indeed been patched:
     let status: String = sandbox_contract
         .view(
