@@ -200,7 +200,7 @@ impl Worker<Sandbox> {
 
     //todo: add more patch state methods like the previous one
 
-    /// Patch state into the sandbox network, given a key and value. This will allow us to set
+    /// Patch state into the sandbox network, given a sequence of key value pairs. This will allow us to set
     /// state that we have acquired in some manner. This allows us to test random cases that
     /// are hard to come up naturally as state evolves.
     pub async fn patch_state_many(
