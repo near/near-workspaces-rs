@@ -177,8 +177,8 @@ impl Worker<Sandbox> {
     /// Patch state into the sandbox network, using builder pattern. This will allow us to set
     /// state that we have acquired in some manner. This allows us to test random cases that
     /// are hard to come up naturally as state evolves.
-    pub fn patch_state_builder(&self) -> SandboxPatchStateBuilder {
-        self.workspace.patch_state()
+    pub fn patch_state_builder(&self, account_id: &AccountId) -> SandboxPatchStateBuilder {
+        self.workspace.patch_state(account_id.clone())
     }
 
     /// Patch state into the sandbox network, given a key and value. This will allow us to set
@@ -191,8 +191,8 @@ impl Worker<Sandbox> {
         value: impl Into<Vec<u8>>,
     ) -> anyhow::Result<()> {
         self.workspace
-            .patch_state()
-            .data(contract_id, key, value)
+            .patch_state(contract_id.clone())
+            .data(key, value)
             .apply()
             .await?;
         Ok(())
@@ -200,17 +200,15 @@ impl Worker<Sandbox> {
 
     //todo: add more patch state methods like the previous one
 
-    /// Patch state into the sandbox network, given a sequence of key value pairs. This will allow us to set
-    /// state that we have acquired in some manner. This allows us to test random cases that
-    /// are hard to come up naturally as state evolves.
-    pub async fn patch_state_many(
+    /// Patch state into the sandbox network. Same as `patch_state` but accepts a sequence of key value pairs
+    pub async fn patch_state_multiple(
         &self,
         contract_id: &AccountId,
         kvs: impl IntoIterator<Item = (impl Into<Vec<u8>>, impl Into<Vec<u8>>)>,
     ) -> anyhow::Result<()> {
         self.workspace
-            .patch_state()
-            .data_many(contract_id, kvs)
+            .patch_state(contract_id.clone())
+            .data_many(kvs)
             .apply()
             .await?;
         Ok(())

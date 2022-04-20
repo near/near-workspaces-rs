@@ -4,6 +4,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
+use near_primitives::account::AccessKey;
 use near_primitives::state_record::StateRecord;
 use std::iter::IntoIterator;
 
@@ -13,7 +14,7 @@ use crate::network::Info;
 use crate::result::CallExecution;
 use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
+use crate::types::{AccountId, Balance, InMemorySigner, SecretKey, PublicKey};
 use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency
@@ -136,8 +137,8 @@ impl Sandbox {
         ImportContractTransaction::new(id.to_owned(), worker.client(), self.client())
     }
 
-    pub(crate) fn patch_state(&self) -> SandboxPatchStateBuilder {
-        SandboxPatchStateBuilder::new(self)
+    pub(crate) fn patch_state(&self, account_id: AccountId) -> SandboxPatchStateBuilder {
+        SandboxPatchStateBuilder::new(self, account_id)
     }
 
     pub(crate) async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
@@ -153,48 +154,64 @@ impl Sandbox {
 }
 
 //todo: review naming
-#[must_use = "don't forget to .apply() this `PatchStateBuilder`"]
+#[must_use = "don't forget to .apply() this `SandboxPatchStateBuilder`"]
 pub struct SandboxPatchStateBuilder<'s> {
     sandbox: &'s Sandbox,
+    account_id: AccountId,
     records: Vec<StateRecord>,
 }
 
 //todo: add more methods
 impl<'s> SandboxPatchStateBuilder<'s> {
-    pub fn new(sandbox: &'s Sandbox) -> Self {
+    //AsRef allows for both &AccountId and AccountId
+    pub fn new(sandbox: &'s Sandbox, account_id: AccountId) -> Self {
         SandboxPatchStateBuilder {
             sandbox,
+            account_id: account_id,
             records: Vec::with_capacity(4),
         }
     }
 
     pub fn data(
         mut self,
-        contract_id: &AccountId, //todo: borrowed or owned? (or Into<> or smth)
         key: impl Into<Vec<u8>>,
         value: impl Into<Vec<u8>>,
     ) -> Self {
-        let state = StateRecord::Data {
-            account_id: contract_id.to_owned(),
+        let data = StateRecord::Data {
+            account_id: self.account_id.clone(),
             data_key: key.into(),
             value: value.into(),
         };
 
-        self.records.push(state);
+        self.records.push(data);
         self
     }
 
     pub fn data_many(
         mut self,
-        contract_id: &AccountId, //todo: borrowed or owned? (or Into<> or smth)
         kvs: impl IntoIterator<Item = (impl Into<Vec<u8>>, impl Into<Vec<u8>>)>,
     ) -> Self {
-        self.records
+        let Self{ref mut records, ref account_id, ..} = self;
+        records
             .extend(kvs.into_iter().map(|(key, value)| StateRecord::Data {
-                account_id: contract_id.to_owned(),
+                account_id: account_id.clone(),
                 data_key: key.into(),
                 value: value.into(),
             }));
+        self
+    }
+
+    pub fn access_key(
+        mut self,
+        public_key: &PublicKey,
+        access_key: &AccessKey,
+    ) -> Self {
+        let access_key = StateRecord::AccessKey {
+            account_id: self.account_id.clone(),
+            public_key: public_key.0.clone(),
+            access_key: access_key.clone(),
+        };
+        self.records.push(access_key);
         self
     }
 
