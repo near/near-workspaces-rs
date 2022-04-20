@@ -193,7 +193,7 @@ impl Worker<Sandbox> {
         self.workspace
             .patch_state()
             .data(contract_id, key, value)
-            .send()
+            .apply()
             .await?;
         Ok(())
     }
@@ -211,7 +211,7 @@ impl Worker<Sandbox> {
         self.workspace
             .patch_state()
             .data_many(contract_id, kvs)
-            .send()
+            .apply()
             .await?;
         Ok(())
     }

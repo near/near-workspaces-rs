@@ -110,7 +110,7 @@ async fn main() -> anyhow::Result<()> {
     //     .patch_state_builder()
     //     .data(sandbox_contract.id(), "STATE", status_msg.try_to_vec()?)
     //     // .data_many(sandbox_contract.id(), [("hello", "world"), ("goodbye", "putin")])
-    //     .send()
+    //     .apply()
     //     .await?;
 
     // Now grab the state to see that it has indeed been patched:

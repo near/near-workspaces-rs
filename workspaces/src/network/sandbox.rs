@@ -153,7 +153,7 @@ impl Sandbox {
 }
 
 //todo: review naming
-#[must_use = "don't forget to .send() this `PatchStateBuilder`"]
+#[must_use = "don't forget to .apply() this `PatchStateBuilder`"]
 pub struct SandboxPatchStateBuilder<'s> {
     sandbox: &'s Sandbox,
     records: Vec<StateRecord>,
@@ -198,7 +198,7 @@ impl<'s> SandboxPatchStateBuilder<'s> {
         self
     }
 
-    pub async fn send(self) -> anyhow::Result<()> {
+    pub async fn apply(self) -> anyhow::Result<()> {
         let records = self.records;
         // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
         let _patch_resp = self
