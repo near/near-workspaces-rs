@@ -91,3 +91,18 @@ async fn test_patch_state() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test(tokio::test)]
+#[ignore]
+async fn patch_state_builder() -> anyhow::Result<()> {
+    let worker = workspaces::sandbox().await?;
+    let id: AccountId = "nino.near".parse()?;
+    worker
+        .patch_account(&id)
+        .amount(1)
+        .locked(0)
+        .apply()
+        .await?;
+
+    Ok(())
+}

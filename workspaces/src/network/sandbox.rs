@@ -5,7 +5,10 @@ use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::account::AccessKey;
+use near_primitives::hash::CryptoHash;
 use near_primitives::state_record::StateRecord;
+use near_primitives::types::StorageUsage;
+use near_primitives::views::AccountView;
 use std::iter::IntoIterator;
 
 use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
@@ -14,7 +17,7 @@ use crate::network::Info;
 use crate::result::CallExecution;
 use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Balance, InMemorySigner, SecretKey, PublicKey};
+use crate::types::{AccountId, Balance, InMemorySigner, PublicKey, SecretKey};
 use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency
@@ -141,6 +144,12 @@ impl Sandbox {
         SandboxPatchStateBuilder::new(self, account_id)
     }
 
+    pub(crate) fn patch_account(&self, account_id: AccountId) -> SandboxPatchStateAccountBuilder {
+        SandboxPatchStateAccountBuilder::new(self, account_id)
+    }
+
+    // shall we expose convenience patch methods here for consistent API?
+
     pub(crate) async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
         // NOTE: RpcSandboxFastForwardResponse is an empty struct with no fields, so don't do anything with it:
         self.client()
@@ -167,16 +176,12 @@ impl<'s> SandboxPatchStateBuilder<'s> {
     pub fn new(sandbox: &'s Sandbox, account_id: AccountId) -> Self {
         SandboxPatchStateBuilder {
             sandbox,
-            account_id: account_id,
+            account_id,
             records: Vec::with_capacity(4),
         }
     }
 
-    pub fn data(
-        mut self,
-        key: impl Into<Vec<u8>>,
-        value: impl Into<Vec<u8>>,
-    ) -> Self {
+    pub fn data(mut self, key: impl Into<Vec<u8>>, value: impl Into<Vec<u8>>) -> Self {
         let data = StateRecord::Data {
             account_id: self.account_id.clone(),
             data_key: key.into(),
@@ -187,25 +192,24 @@ impl<'s> SandboxPatchStateBuilder<'s> {
         self
     }
 
-    pub fn data_many(
+    pub fn data_multiple(
         mut self,
         kvs: impl IntoIterator<Item = (impl Into<Vec<u8>>, impl Into<Vec<u8>>)>,
     ) -> Self {
-        let Self{ref mut records, ref account_id, ..} = self;
-        records
-            .extend(kvs.into_iter().map(|(key, value)| StateRecord::Data {
-                account_id: account_id.clone(),
-                data_key: key.into(),
-                value: value.into(),
-            }));
+        let Self {
+            ref mut records,
+            ref account_id,
+            ..
+        } = self;
+        records.extend(kvs.into_iter().map(|(key, value)| StateRecord::Data {
+            account_id: account_id.clone(),
+            data_key: key.into(),
+            value: value.into(),
+        }));
         self
     }
 
-    pub fn access_key(
-        mut self,
-        public_key: &PublicKey,
-        access_key: &AccessKey,
-    ) -> Self {
+    pub fn access_key(mut self, public_key: &PublicKey, access_key: &AccessKey) -> Self {
         let access_key = StateRecord::AccessKey {
             account_id: self.account_id.clone(),
             public_key: public_key.0.clone(),
@@ -215,8 +219,98 @@ impl<'s> SandboxPatchStateBuilder<'s> {
         self
     }
 
+    // pub fn account(self) -> SandboxPatchStateAccountBuilder<'s> {
+    //     SandboxPatchStateAccountBuilder::new(self)
+    // }
+
     pub async fn apply(self) -> anyhow::Result<()> {
         let records = self.records;
+        // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
+        let _patch_resp = self
+            .sandbox
+            .client()
+            .query(&RpcSandboxPatchStateRequest { records })
+            .await
+            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
+
+        Ok(())
+    }
+}
+
+#[must_use = "don't forget to .apply() this `SandboxPatchStateAccountBuilder`"]
+pub struct SandboxPatchStateAccountBuilder<'s> {
+    sandbox: &'s Sandbox,
+    account_id: AccountId,
+    amount: Option<Balance>,
+    locked: Option<Balance>,
+    code_hash: Option<CryptoHash>,
+    storage_usage: Option<StorageUsage>,
+}
+
+impl<'s> SandboxPatchStateAccountBuilder<'s> {
+    pub const fn new(sandbox: &'s Sandbox, account_id: AccountId) -> Self {
+        Self {
+            sandbox,
+            account_id,
+            amount: None,
+            locked: None,
+            code_hash: None,
+            storage_usage: None,
+        }
+    }
+
+    pub const fn amount(mut self, amount: Balance) -> Self {
+        // a little experiment, wonder if it can produce compile-time errors
+        if let Some(_amount) = self.amount {
+            panic!("'amount' field has already been set");
+        }
+        self.amount = Some(amount);
+        self
+    }
+
+    pub const fn locked(mut self, locked: Balance) -> Self {
+        self.locked = Some(locked);
+        self
+    }
+
+    pub const fn code_hash(mut self, code_hash: CryptoHash) -> Self {
+        self.code_hash = Some(code_hash);
+        self
+    }
+
+    pub const fn storage_usage(mut self, storage_usage: StorageUsage) -> Self {
+        self.storage_usage = Some(storage_usage);
+        self
+    }
+
+    pub async fn apply(self) -> anyhow::Result<()> {
+        let account_view = self
+            .sandbox
+            .client()
+            .view_account(self.account_id.clone(), None);
+
+        let AccountView {
+            amount: previous_amount,
+            locked: previous_locked,
+            code_hash: previous_code_hash,
+            storage_usage: previous_storage_usage,
+            ..
+        } = account_view
+            .await
+            .map_err(|err| anyhow::anyhow!("Failed to read account: {:?}", err))?;
+
+        let account = StateRecord::Account {
+            account_id: self.account_id.clone(),
+            account: near_primitives::account::Account::new(
+                self.amount.unwrap_or(previous_amount),
+                self.locked.unwrap_or(previous_locked),
+                self.code_hash.unwrap_or(previous_code_hash),
+                self.storage_usage.unwrap_or(previous_storage_usage),
+            ),
+        };
+
+        let records = vec![account];
+
         // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
         let _patch_resp = self
             .sandbox

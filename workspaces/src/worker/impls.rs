@@ -1,13 +1,14 @@
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::network::{Info, Sandbox, SandboxPatchStateBuilder};
+use crate::network::{Info, Sandbox, SandboxPatchStateAccountBuilder, SandboxPatchStateBuilder};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
+use crate::types::{AccountId, Gas, InMemorySigner, PublicKey, SecretKey};
 use crate::worker::Worker;
 use crate::{Account, Block, Contract};
 use crate::{AccountDetails, Network};
 use async_trait::async_trait;
+use near_primitives::account::AccessKey;
 use near_primitives::types::Balance;
 use std::collections::HashMap;
 
@@ -181,6 +182,11 @@ impl Worker<Sandbox> {
         self.workspace.patch_state(account_id.clone())
     }
 
+    /// Patch account state using builder pattern
+    pub fn patch_account(&self, account_id: &AccountId) -> SandboxPatchStateAccountBuilder {
+        self.workspace.patch_account(account_id.clone())
+    }
+
     /// Patch state into the sandbox network, given a key and value. This will allow us to set
     /// state that we have acquired in some manner. This allows us to test random cases that
     /// are hard to come up naturally as state evolves.
@@ -203,12 +209,26 @@ impl Worker<Sandbox> {
     /// Patch state into the sandbox network. Same as `patch_state` but accepts a sequence of key value pairs
     pub async fn patch_state_multiple(
         &self,
-        contract_id: &AccountId,
+        account_id: &AccountId,
         kvs: impl IntoIterator<Item = (impl Into<Vec<u8>>, impl Into<Vec<u8>>)>,
     ) -> anyhow::Result<()> {
         self.workspace
-            .patch_state(contract_id.clone())
-            .data_many(kvs)
+            .patch_state(account_id.clone())
+            .data_multiple(kvs)
+            .apply()
+            .await?;
+        Ok(())
+    }
+
+    pub async fn patch_access_key(
+        &self,
+        account_id: &AccountId,
+        public_key: &PublicKey,
+        access_key: &AccessKey,
+    ) -> anyhow::Result<()> {
+        self.workspace
+            .patch_state(account_id.clone())
+            .access_key(public_key, access_key)
             .apply()
             .await?;
         Ok(())

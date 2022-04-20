@@ -97,19 +97,15 @@ async fn main() -> anyhow::Result<()> {
 
     // Patch our testnet STATE into our local sandbox:
     worker
-        .patch_state(
-            sandbox_contract.id(),
-            "STATE",
-            status_msg.try_to_vec()?,
-        )
+        .patch_state(sandbox_contract.id(), "STATE", status_msg.try_to_vec()?)
         .await?;
 
     // build pattern equivalent
 
     // worker
-    //     .patch_state_builder()
-    //     .data(sandbox_contract.id(), "STATE", status_msg.try_to_vec()?)
-    //     // .data_many(sandbox_contract.id(), [("hello", "world"), ("goodbye", "putin")])
+    //     .patch_state_builder(sandbox_contract.id())
+    //     .data( "STATE", status_msg.try_to_vec()?)
+    //     // .data_multiple([("hello", "world"), ("goodbye", "putin")])
     //     .apply()
     //     .await?;
 
