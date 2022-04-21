@@ -170,9 +170,7 @@ pub struct SandboxPatchStateBuilder<'s> {
     records: Vec<StateRecord>,
 }
 
-//todo: add more methods
 impl<'s> SandboxPatchStateBuilder<'s> {
-    //AsRef allows for both &AccountId and AccountId
     pub fn new(sandbox: &'s Sandbox, account_id: AccountId) -> Self {
         SandboxPatchStateBuilder {
             sandbox,
@@ -219,10 +217,6 @@ impl<'s> SandboxPatchStateBuilder<'s> {
         self
     }
 
-    // pub fn account(self) -> SandboxPatchStateAccountBuilder<'s> {
-    //     SandboxPatchStateAccountBuilder::new(self)
-    // }
-
     pub async fn apply(self) -> anyhow::Result<()> {
         let records = self.records;
         // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
@@ -260,10 +254,6 @@ impl<'s> SandboxPatchStateAccountBuilder<'s> {
     }
 
     pub const fn amount(mut self, amount: Balance) -> Self {
-        // a little experiment, wonder if it can produce compile-time errors
-        if let Some(_amount) = self.amount {
-            panic!("'amount' field has already been set");
-        }
         self.amount = Some(amount);
         self
     }
