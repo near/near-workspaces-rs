@@ -369,7 +369,7 @@ impl<'s> SandboxPatchAcessKeyBuilder<'s> {
         Ok(())
     }
 
-    pub async fn function_call(
+    pub async fn function_call_access(
         self,
         receiver_id: &AccountId,
         method_names: &[&str],
