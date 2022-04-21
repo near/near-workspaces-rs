@@ -4,7 +4,6 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
-use near_primitives::account::AccessKey;
 use near_primitives::hash::CryptoHash;
 use near_primitives::state_record::StateRecord;
 use near_primitives::types::StorageUsage;
@@ -17,7 +16,7 @@ use crate::network::Info;
 use crate::result::CallExecution;
 use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Balance, InMemorySigner, PublicKey, SecretKey};
+use crate::types::{AccountId, Balance, InMemorySigner, Nonce, SecretKey};
 use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency
@@ -148,6 +147,14 @@ impl Sandbox {
         SandboxPatchStateAccountBuilder::new(self, account_id)
     }
 
+    pub(crate) fn patch_access_key(
+        &self,
+        account_id: AccountId,
+        public_key: crate::types::PublicKey,
+    ) -> SandboxPatchAcessKeyBuilder {
+        SandboxPatchAcessKeyBuilder::new(self, account_id, public_key)
+    }
+
     // shall we expose convenience patch methods here for consistent API?
 
     pub(crate) async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
@@ -207,15 +214,15 @@ impl<'s> SandboxPatchStateBuilder<'s> {
         self
     }
 
-    pub fn access_key(mut self, public_key: &PublicKey, access_key: &AccessKey) -> Self {
-        let access_key = StateRecord::AccessKey {
-            account_id: self.account_id.clone(),
-            public_key: public_key.0.clone(),
-            access_key: access_key.clone(),
-        };
-        self.records.push(access_key);
-        self
-    }
+    // pub fn access_key(mut self, public_key: &PublicKey, access_key: &AccessKey) -> Self {
+    //     let access_key = StateRecord::AccessKey {
+    //         account_id: self.account_id.clone(),
+    //         public_key: public_key.0.clone(),
+    //         access_key: access_key.clone(),
+    //     };
+    //     self.records.push(access_key);
+    //     self
+    // }
 
     pub async fn apply(self) -> anyhow::Result<()> {
         let records = self.records;
@@ -300,6 +307,85 @@ impl<'s> SandboxPatchStateAccountBuilder<'s> {
         };
 
         let records = vec![account];
+
+        // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
+        let _patch_resp = self
+            .sandbox
+            .client()
+            .query(&RpcSandboxPatchStateRequest { records })
+            .await
+            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
+
+        Ok(())
+    }
+}
+
+#[must_use = "don't forget to .apply() this `SandboxPatchStateAccountBuilder`"]
+pub struct SandboxPatchAcessKeyBuilder<'s> {
+    sandbox: &'s Sandbox,
+    account_id: AccountId,
+    public_key: crate::types::PublicKey,
+    nonce: Nonce,
+}
+
+impl<'s> SandboxPatchAcessKeyBuilder<'s> {
+    pub const fn new(
+        sandbox: &'s Sandbox,
+        account_id: AccountId,
+        public_key: crate::types::PublicKey,
+    ) -> Self {
+        Self {
+            sandbox,
+            account_id,
+            public_key,
+            nonce: 0,
+        }
+    }
+
+    pub const fn nonce(mut self, nonce: Nonce) -> Self {
+        self.nonce = nonce;
+        self
+    }
+
+    pub async fn full_access(self) -> anyhow::Result<()> {
+        let mut access_key = near_primitives::account::AccessKey::full_access();
+        access_key.nonce = self.nonce;
+        let access_key = StateRecord::AccessKey {
+            account_id: self.account_id,
+            public_key: self.public_key.into(),
+            access_key,
+        };
+
+        let records = vec![access_key];
+
+        // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
+        let _patch_resp = self
+            .sandbox
+            .client()
+            .query(&RpcSandboxPatchStateRequest { records })
+            .await
+            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
+
+        Ok(())
+    }
+
+    pub async fn function_call(
+        self,
+        receiver_id: &AccountId,
+        method_names: &[&str],
+        allowance: Option<Balance>,
+    ) -> anyhow::Result<()> {
+        let mut access_key: near_primitives::account::AccessKey =
+            crate::types::AccessKey::function_call_access(receiver_id, method_names, allowance)
+                .into();
+        access_key.nonce = self.nonce;
+        let access_key = StateRecord::AccessKey {
+            account_id: self.account_id,
+            public_key: self.public_key.into(),
+            access_key,
+        };
+
+        let records = vec![access_key];
 
         // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
         let _patch_resp = self

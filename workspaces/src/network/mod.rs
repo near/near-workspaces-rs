@@ -10,6 +10,7 @@ mod server;
 mod testnet;
 pub(crate) mod variants;
 
+pub(crate) use sandbox::SandboxPatchAcessKeyBuilder; //not needed directly outside of the crate
 pub(crate) use sandbox::SandboxPatchStateAccountBuilder; //not needed directly outside of the crate
 pub(crate) use sandbox::SandboxPatchStateBuilder; //not needed directly outside of the crate
 pub(crate) use variants::DEV_ACCOUNT_SEED;

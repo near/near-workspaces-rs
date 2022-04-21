@@ -1,4 +1,7 @@
-use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::network::{
+    AllowDevAccountCreation, NetworkClient, NetworkInfo, SandboxPatchAcessKeyBuilder,
+    TopLevelAccountCreator,
+};
 use crate::network::{Info, Sandbox, SandboxPatchStateAccountBuilder, SandboxPatchStateBuilder};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
@@ -8,7 +11,6 @@ use crate::worker::Worker;
 use crate::{Account, Block, Contract};
 use crate::{AccountDetails, Network};
 use async_trait::async_trait;
-use near_primitives::account::AccessKey;
 use near_primitives::types::Balance;
 use std::collections::HashMap;
 
@@ -220,18 +222,13 @@ impl Worker<Sandbox> {
         Ok(())
     }
 
-    pub async fn patch_access_key(
+    pub fn patch_access_key(
         &self,
         account_id: &AccountId,
         public_key: &PublicKey,
-        access_key: &AccessKey,
-    ) -> anyhow::Result<()> {
+    ) -> SandboxPatchAcessKeyBuilder {
         self.workspace
-            .patch_state(account_id.clone())
-            .access_key(public_key, access_key)
-            .apply()
-            .await?;
-        Ok(())
+            .patch_access_key(account_id.clone(), public_key.clone())
     }
 
     /// Fast forward to a point in the future. The delta block height is supplied to tell the
