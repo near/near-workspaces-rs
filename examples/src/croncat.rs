@@ -1,21 +1,26 @@
-use borsh::BorshDeserialize;
-use borsh::BorshSerialize;
+// This example will go over the croncat contracts found
+// [here](https://github.com/CronCats/contracts/blob/cafd3caafb91b45abb6e811ce0fa2819980d6f96/manager/src/lib.rs)
+// This will demonstrate a more involved example for fast-forwarding the blockchain to a future
+// state/time. This is useful for testing anything that is time dependent such as scheduling
+// This is perfect to showcase cron.cat which will schedule calling into contract functions
+// at a set amount of time we supply.
+
+use borsh::{BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
-use near_units::parse_gas;
-use near_units::parse_near;
+use near_units::{parse_gas, parse_near};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use workspaces::network::Sandbox;
 use workspaces::prelude::*;
-use workspaces::Account;
-use workspaces::AccountId;
-use workspaces::Contract;
-use workspaces::Worker;
+use workspaces::{Account, AccountId, Contract, Worker};
 
 const MANAGER_CONTRACT: &[u8] = include_bytes!("../res/manager.wasm");
 const COUNTER_CONTRACT: &[u8] = include_bytes!("../res/counter.wasm");
 
+/// `AgentStatus` struct taken from [croncat repo](github.com/CronCats/contracts/) to
+/// deserialize into after we get the result of a transaction and converting over to
+/// this particular type.
 #[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub enum AgentStatus {
@@ -23,6 +28,11 @@ pub enum AgentStatus {
     Pending,
 }
 
+/// `Agent` struct taken from [croncat repo](github.com/CronCats/contracts/) to
+/// deserialize into after we get the result of a transaction and converting over to
+/// this particular type. Helpful for understanding what our output is from a
+/// contract call. Refer to the [croncat docs](https://docs.cron.cat/docs/) to understand
+/// what agents are for and how we can use them.
 #[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Agent {
@@ -35,41 +45,26 @@ pub struct Agent {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Spawn sandbox as normal. This will spin up a sandbox for us to use.
     let worker = workspaces::sandbox().await?;
 
     // Initialize counter contract, which will be pointed to in the manager contract to schedule
     // a task later to increment the counter, inside counter contract.
     let counter_contract = worker.dev_deploy(COUNTER_CONTRACT).await?;
 
+    // deploy the manager contract so we can schedule tasks via our agents.
     let manager_contract = worker.dev_deploy(MANAGER_CONTRACT).await?;
     manager_contract.call(&worker, "new").transact().await?;
 
+    // Create a root croncat account with agent subaccounts to schedule tasks.
     let croncat = worker.dev_create_account().await?;
-    let agent_1 = croncat
-        .create_subaccount(&worker, "agent_1")
-        .initial_balance(parse_near!("10 N"))
-        .transact()
-        .await?
-        .into_result()?;
 
-    // With all the setup work done, we can try to schedule the `counter.increment` contract
-    // operation to happen about once every hour via the `cadence` paramter
-    run_scheduling(&worker, &manager_contract, &agent_1, counter_contract.id()).await?;
-
-    Ok(())
-}
-
-pub async fn run_scheduling(
-    worker: &Worker<Sandbox>,
-    contract: &Contract,
-    agent: &Account,
-    counter_id: &AccountId,
-) -> anyhow::Result<()> {
+    // This will setup a task to call into the counter contract, with a cadence of 1 hour.
     println!("Creating task for `counter.increment`");
-    let outcome = agent
-        .call(&worker, contract.id(), "create_task")
+    let outcome = croncat
+        .call(&worker, manager_contract.id(), "create_task")
         .args_json(json!({
-            "contract_id": counter_id,
+            "contract_id": counter_contract.id(),
             "function_id": "increment",
             "cadence": "*/1 * * * * *"
         }))?
@@ -79,7 +74,29 @@ pub async fn run_scheduling(
         .await?;
     println!("-- outcome: {:#?}\n", outcome);
 
-    // register the agent to execute
+    // Let's create an agent that will eventually execute the above task and get rewards
+    // for executing it:
+    let agent_1 = croncat
+        .create_subaccount(&worker, "agent_1")
+        .initial_balance(parse_near!("10 N"))
+        .transact()
+        .await?
+        .into_result()?;
+
+    // Now with all the above setup complete, we can now have the agent run our task:
+    run_scheduled_tasks(&worker, &manager_contract, &agent_1).await?;
+
+    Ok(())
+}
+
+/// This function will schedule a particular task (`counter.increment`) and a single agent
+/// will run that task to eventually get rewards.
+pub async fn run_scheduled_tasks(
+    worker: &Worker<Sandbox>,
+    contract: &Contract,
+    agent: &Account,
+) -> anyhow::Result<()> {
+    // Register the agent to eventually execute the task
     let outcome = agent
         .call(&worker, contract.id(), "register_agent")
         .args_json(json!({}))?
@@ -96,52 +113,61 @@ pub async fn run_scheduling(
         .await?
         .json::<Option<Agent>>()?
         .unwrap();
-    println!("Registered agent: {:#?}", registered_agent);
+    println!("Registered agent details: {:#?}", registered_agent);
     assert_eq!(registered_agent.status, AgentStatus::Active);
     assert_eq!(&registered_agent.payable_account_id, agent.id());
 
+    let bal_before_running_task = worker.view_account(agent.id()).await?.balance;
+
     // Advance 4500 blocks in the chain. 1 block takes approx 1.5 seconds to be produced, but we
     // don't actually wait that long since we are time travelling to the future via `fast_forward`!
+    // After this `fast_forward` call, we should be ahead by about an hour, and it is expected for
+    // our agents to be able to execute the task we scheduled.
     println!("Waiting until next slot occurs...");
     worker.fast_forward(4500).await?;
 
-    // TODO:
-    // Quick proxy call to earn a reward
+    // Quick proxy call to earn a reward. Essentially telling the agent to execute the task
+    // if it can. The time based conditions are checked right in the contract. We are in the future
+    // here, so the agent should be executing the task.
     agent
         .call(&worker, contract.id(), "proxy_call")
         .gas(parse_gas!("200 Tgas") as u64)
         .transact()
         .await?;
 
-    // Check accumulated agent balance
-    let bal_agent = contract
+    // Check accumulated agent balance after completing our task. This value is held within
+    // the manager contract, and we want to eventually withdraw this amount.
+    let agent_details = contract
         .call(&worker, "get_agent")
         .args_json(json!({"account_id": agent.id()}))?
         .view()
         .await?
         .json::<Option<Agent>>()?
         .unwrap();
-    println!("Agent details: {:#?}", bal_agent);
-    assert_eq!(bal_agent.balance.0, parse_near!("0.00306 N"));
+    println!("Agent details after completing task: {:#?}", agent_details);
+    assert_eq!(agent_details.balance.0, parse_near!("0.00306 N"));
 
-    // Withdraw reward
+    // Withdraw the reward from completing the task to our agent's account
     agent
         .call(&worker, contract.id(), "withdraw_task_balance")
         .transact()
         .await?;
 
-    // Check accumulated agent balance
-    let bal_done_agent: Option<Agent> = contract
+    let bal_after_running_task = worker.view_account(agent.id()).await?.balance;
+
+    // Check accumulated agent balance to see that the amount has been taken out of the manager
+    // contract:
+    let agent_details = contract
         .call(&worker, "get_agent")
         .args_json(json!({"account_id": agent.id() }))?
         .view()
         .await?
-        .json()?;
-    println!("bal_done_agent {:#?}", bal_done_agent);
-    assert!(bal_done_agent.is_some());
-    assert_eq!(bal_done_agent.unwrap().balance.0, parse_near!("0.00226 N"));
+        .json::<Option<Agent>>()?
+        .unwrap();
+    println!("Agent details after withdrawing task: {:#?}", agent_details);
+    assert_eq!(agent_details.balance.0, parse_near!("0.00226 N"));
 
-    // Unregister the agent from doing anything
+    // Not that everything is done, let's unregister the agent from doing anything.
     agent
         .call(&worker, contract.id(), "unregister_agent")
         .deposit(parse_near!("1y"))
@@ -160,9 +186,12 @@ pub async fn run_scheduling(
         "Agent should have been removed via `unregister_agent`"
     );
 
+    // Now check how much we profited from running a single task:
     println!(
-        "Balance after completing tasks: {:?}",
-        worker.view_account(agent.id()).await?
+        "Balance after completing tasks: {} vs {:#?}. Profitted: {} N",
+        bal_before_running_task,
+        bal_after_running_task,
+        bal_after_running_task - bal_before_running_task,
     );
 
     Ok(())
