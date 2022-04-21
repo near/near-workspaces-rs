@@ -118,8 +118,6 @@ pub async fn run_scheduled_tasks(
     assert_eq!(registered_agent.status, AgentStatus::Active);
     assert_eq!(&registered_agent.payable_account_id, agent.id());
 
-    let bal_before_running_task = worker.view_account(agent.id()).await?.balance;
-
     // Advance 4500 blocks in the chain. 1 block takes approx 1.5 seconds to be produced, but we
     // don't actually wait that long since we are time travelling to the future via `fast_forward`!
     // After this `fast_forward` call, we should be ahead by about an hour, and it is expected for
@@ -147,14 +145,13 @@ pub async fn run_scheduled_tasks(
         .unwrap();
     println!("Agent details after completing task: {:#?}", agent_details);
     assert_eq!(agent_details.balance.0, parse_near!("0.00306 N"));
+    let before_withdraw = agent_details.balance.0;
 
     // Withdraw the reward from completing the task to our agent's account
     agent
         .call(&worker, contract.id(), "withdraw_task_balance")
         .transact()
         .await?;
-
-    let bal_after_running_task = worker.view_account(agent.id()).await?.balance;
 
     // Check accumulated agent balance to see that the amount has been taken out of the manager
     // contract:
@@ -167,6 +164,12 @@ pub async fn run_scheduled_tasks(
         .unwrap();
     println!("Agent details after withdrawing task: {:#?}", agent_details);
     assert_eq!(agent_details.balance.0, parse_near!("0.00226 N"));
+
+    // This show how much the agent has profitted from executing the task:
+    println!(
+        "Agent profitted {} yN and has been transferred to the agent's account",
+        before_withdraw - agent_details.balance.0
+    );
 
     // Not that everything is done, let's unregister the agent from doing anything.
     agent
@@ -185,14 +188,6 @@ pub async fn run_scheduled_tasks(
     assert!(
         removed_agent.is_none(),
         "Agent should have been removed via `unregister_agent`"
-    );
-
-    // Now check how much we profited from running a single task:
-    println!(
-        "Balance after completing tasks: {} vs {:#?}. Profitted: {} N",
-        bal_before_running_task,
-        bal_after_running_task,
-        bal_after_running_task - bal_before_running_task,
     );
 
     Ok(())
