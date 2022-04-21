@@ -28,11 +28,12 @@ pub enum AgentStatus {
     Pending,
 }
 
-/// `Agent` struct taken from [croncat repo](github.com/CronCats/contracts/) to
-/// deserialize into after we get the result of a transaction and converting over to
-/// this particular type. Helpful for understanding what our output is from a
-/// contract call. Refer to the [croncat docs](https://docs.cron.cat/docs/) to understand
-/// what agents are for and how we can use them.
+/// `Agent` struct taken from [croncat repo](github.com/CronCats/contracts/) to deserialize
+/// into after we get the result of a transaction and converting over to this particular type.
+/// Helpful for understanding what our output is from a contract call. For a more in depth
+/// look at what an `Agent` is all about, refer to the [croncat docs](https://docs.cron.cat/docs/)
+/// to understand further, but for this example all we care about is that an Agent is something
+/// that can run scheduled tasks once it is time and collect rewards thereafter.
 #[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Agent {
@@ -45,7 +46,7 @@ pub struct Agent {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Spawn sandbox as normal. This will spin up a sandbox for us to use.
+    // Spawn sandbox as normal and get us a local blockchain for us to interact and toy with:
     let worker = workspaces::sandbox().await?;
 
     // Initialize counter contract, which will be pointed to in the manager contract to schedule
