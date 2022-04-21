@@ -165,13 +165,13 @@ pub async fn run_scheduled_tasks(
     println!("Agent details after withdrawing task: {:#?}", agent_details);
     assert_eq!(agent_details.balance.0, parse_near!("0.00226 N"));
 
-    // This show how much the agent has profitted from executing the task:
+    // This shows how much the agent has profitted from executing the task:
     println!(
         "Agent profitted {} yN and has been transferred to the agent's account",
         before_withdraw - agent_details.balance.0
     );
 
-    // Not that everything is done, let's unregister the agent from doing anything.
+    // Not that everything is done, let's cleanup and unregister the agent from doing anything.
     agent
         .call(&worker, contract.id(), "unregister_agent")
         .deposit(parse_near!("1y"))
