@@ -34,6 +34,7 @@ const ERR_INVALID_VARIANT: &str =
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
 pub struct Client {
+    rpc_addr: String,
     rpc_client: JsonRpcClient,
 }
 
@@ -41,6 +42,7 @@ impl Client {
     pub(crate) fn new(rpc_addr: &str) -> Self {
         Self {
             rpc_client: JsonRpcClient::connect(rpc_addr),
+            rpc_addr: rpc_addr.into(),
         }
     }
 
@@ -356,7 +358,8 @@ impl Client {
     }
 
     pub(crate) async fn status(&self) -> Result<StatusResponse, JsonRpcError<RpcStatusError>> {
-        let result = JsonRpcClient::connect(&self.rpc_addr)
+        let result = self
+            .rpc_client
             .call(methods::status::RpcStatusRequest)
             .await;
 
