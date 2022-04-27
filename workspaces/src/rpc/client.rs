@@ -40,8 +40,11 @@ pub struct Client {
 
 impl Client {
     pub(crate) fn new(rpc_addr: &str) -> Self {
+        let connector = JsonRpcClient::new_client();
+        let rpc_client = connector.connect(rpc_addr);
+
         Self {
-            rpc_client: JsonRpcClient::connect(rpc_addr),
+            rpc_client,
             rpc_addr: rpc_addr.into(),
         }
     }
