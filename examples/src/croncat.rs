@@ -67,7 +67,8 @@ async fn main() -> anyhow::Result<()> {
         .args_json(json!({
             "contract_id": counter_contract.id(),
             "function_id": "increment",
-            "cadence": "*/1 * * * * *"
+            "cadence": "*/1 * * * * *",
+            "recurring": true,
         }))?
         .max_gas()
         .deposit(parse_near!("1 N"))
@@ -134,6 +135,15 @@ pub async fn run_scheduled_tasks(
         .transact()
         .await?;
 
+    // Do it again, just to show that this can be done multiple times since our task is a
+    // recurring one that happens every hour:
+    worker.fast_forward(4500).await?;
+    agent
+        .call(&worker, contract.id(), "proxy_call")
+        .gas(parse_gas!("200 Tgas") as u64)
+        .transact()
+        .await?;
+
     // Check accumulated agent balance after completing our task. This value is held within
     // the manager contract, and we want to eventually withdraw this amount.
     let agent_details = contract
@@ -144,7 +154,7 @@ pub async fn run_scheduled_tasks(
         .json::<Option<Agent>>()?
         .unwrap();
     println!("Agent details after completing task: {:#?}", agent_details);
-    assert_eq!(agent_details.balance.0, parse_near!("0.00306 N"));
+    assert_eq!(agent_details.balance.0, parse_near!("0.00386 N"));
     let before_withdraw = agent_details.balance.0;
 
     // Withdraw the reward from completing the task to our agent's account
