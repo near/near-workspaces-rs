@@ -215,7 +215,7 @@ impl From<AccessKey> for near_primitives::account::AccessKey {
     }
 }
 
-/// Type representing the `block_id` paramter of an RPC query  that can be supplied into
+/// Type representing the `block_id` parameter of an RPC query that can be supplied into
 /// viewing blocks or chunks from the network.
 #[derive(Debug)]
 #[non_exhaustive]
@@ -233,6 +233,8 @@ impl From<BlockId> for near_primitives::types::BlockId {
     }
 }
 
+/// Finality of a transaction or block in which transaction is included in. For more info
+/// go to the [NEAR finality](https://docs.near.org/docs/concepts/transaction#finality) docs
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Finality {
@@ -254,28 +256,13 @@ impl From<Finality> for near_primitives::types::Finality {
     }
 }
 
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum SyncCheckpoint {
-    Genesis,
-    EarliestAvailable,
-}
-
-impl From<SyncCheckpoint> for near_primitives::types::SyncCheckpoint {
-    fn from(checkpoint: SyncCheckpoint) -> Self {
-        match checkpoint {
-            SyncCheckpoint::Genesis => Self::Genesis,
-            SyncCheckpoint::EarliestAvailable => Self::EarliestAvailable,
-        }
-    }
-}
-
+/// The block reference into the chain. This can be something like [`Finality`] or
+/// [`BlockId`] to allow querying into the chain at that specific block reference.
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum BlockReference {
     BlockId(BlockId),
     Finality(Finality),
-    SyncCheckpoint(SyncCheckpoint),
 }
 
 impl BlockReference {
@@ -298,18 +285,11 @@ impl From<Finality> for BlockReference {
     }
 }
 
-impl From<SyncCheckpoint> for BlockReference {
-    fn from(checkpoint: SyncCheckpoint) -> Self {
-        Self::SyncCheckpoint(checkpoint)
-    }
-}
-
 impl From<BlockReference> for near_primitives::types::BlockReference {
     fn from(block_ref: BlockReference) -> Self {
         match block_ref {
             BlockReference::BlockId(id) => Self::BlockId(id.into()),
             BlockReference::Finality(finality) => Self::Finality(finality.into()),
-            BlockReference::SyncCheckpoint(checkpoint) => Self::SyncCheckpoint(checkpoint.into()),
         }
     }
 }
