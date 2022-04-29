@@ -5,10 +5,9 @@
 // This is perfect to showcase cron.cat which will schedule calling into contract functions
 // at a set amount of time we supply.
 
-use borsh::{BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_units::{parse_gas, parse_near};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 
 use workspaces::network::Sandbox;
@@ -21,8 +20,7 @@ const COUNTER_CONTRACT: &[u8] = include_bytes!("../res/counter.wasm");
 /// `AgentStatus` struct taken from [croncat repo](github.com/CronCats/contracts/) to
 /// deserialize into after we get the result of a transaction and converting over to
 /// this particular type.
-#[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, Deserialize, PartialEq)]
-#[serde(crate = "near_sdk::serde")]
+#[derive(Debug, Deserialize, PartialEq)]
 pub enum AgentStatus {
     Active,
     Pending,
@@ -34,8 +32,7 @@ pub enum AgentStatus {
 /// look at what an `Agent` is all about, refer to the [croncat docs](https://docs.cron.cat/docs/)
 /// to understand further, but for this example all we care about is that an Agent is something
 /// that can run scheduled tasks once it is time and collect rewards thereafter.
-#[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, Deserialize, PartialEq)]
-#[serde(crate = "near_sdk::serde")]
+#[derive(Debug, Deserialize)]
 pub struct Agent {
     pub status: AgentStatus,
     pub payable_account_id: AccountId,
