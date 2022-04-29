@@ -5,7 +5,6 @@
 // This is perfect to showcase cron.cat which will schedule calling into contract functions
 // at a set amount of time we supply.
 
-use near_sdk::json_types::U128;
 use near_units::{parse_gas, parse_near};
 use serde::Deserialize;
 use serde_json::json;
@@ -36,8 +35,10 @@ pub enum AgentStatus {
 pub struct Agent {
     pub status: AgentStatus,
     pub payable_account_id: AccountId,
-    pub balance: U128,
-    pub total_tasks_executed: U128,
+    #[serde(with = "workspaces::serde::str")]
+    pub balance: u128,
+    #[serde(with = "workspaces::serde::str")]
+    pub total_tasks_executed: u128,
     pub last_missed_slot: u128,
 }
 
@@ -151,8 +152,8 @@ pub async fn run_scheduled_tasks(
         .json::<Option<Agent>>()?
         .unwrap();
     println!("Agent details after completing task: {:#?}", agent_details);
-    assert_eq!(agent_details.balance.0, parse_near!("0.00386 N"));
-    let before_withdraw = agent_details.balance.0;
+    assert_eq!(agent_details.balance, parse_near!("0.00386 N"));
+    let before_withdraw = agent_details.balance;
 
     // Withdraw the reward from completing the task to our agent's account
     agent
@@ -170,12 +171,12 @@ pub async fn run_scheduled_tasks(
         .json::<Option<Agent>>()?
         .unwrap();
     println!("Agent details after withdrawing task: {:#?}", agent_details);
-    assert_eq!(agent_details.balance.0, parse_near!("0.00226 N"));
+    assert_eq!(agent_details.balance, parse_near!("0.00226 N"));
 
     // This shows how much the agent has profitted from executing the task:
     println!(
         "Agent profitted {} yN and has been transferred to the agent's account",
-        before_withdraw - agent_details.balance.0
+        before_withdraw - agent_details.balance
     );
 
     // Not that everything is done, let's cleanup and unregister the agent from doing anything.

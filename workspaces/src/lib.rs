@@ -16,6 +16,7 @@ pub mod network;
 pub mod operations;
 pub mod prelude;
 pub mod result;
+pub mod serde;
 
 pub use network::variants::{DevNetwork, Network};
 pub use types::account::{Account, AccountDetails, Contract};
