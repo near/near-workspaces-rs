@@ -8,9 +8,9 @@ use crate::network::{
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Balance, BlockReference, Gas, InMemorySigner, SecretKey, BlockId};
+use crate::types::{AccountId, Balance, BlockId, BlockReference, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
-use crate::{Account, AccountDetails, Block, Contract, Network, CryptoHash, BlockHeight};
+use crate::{Account, AccountDetails, Block, BlockHeight, Contract, CryptoHash, Network};
 
 impl<T> Clone for Worker<T> {
     fn clone(&self) -> Self {
