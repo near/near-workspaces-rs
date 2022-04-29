@@ -120,6 +120,7 @@ where
         self.view_block(BlockReference::latest()).await
     }
 
+    /// View the block from the network given the block reference to it.
     pub async fn view_block(&self, block_ref: BlockReference) -> anyhow::Result<Block> {
         self.client()
             .view_block(block_ref.into())
