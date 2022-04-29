@@ -16,7 +16,7 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{Balance, BlockId, Finality, Gas, StoreKey};
+use near_primitives::types::{Balance, BlockId, BlockReference, Finality, Gas, StoreKey};
 use near_primitives::views::{
     AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
     QueryRequest, StatusResponse,
@@ -237,13 +237,11 @@ impl Client {
         }
     }
 
-    pub(crate) async fn view_block(&self, block_id: Option<BlockId>) -> anyhow::Result<BlockView> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
+    pub(crate) async fn view_block(&self, block_ref: BlockReference) -> anyhow::Result<BlockView> {
         let block_view = self
-            .query(&methods::block::RpcBlockRequest { block_reference })
+            .query(&methods::block::RpcBlockRequest {
+                block_reference: block_ref,
+            })
             .await?;
 
         Ok(block_view)

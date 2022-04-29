@@ -1,15 +1,16 @@
-use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::network::{Info, Sandbox};
+use async_trait::async_trait;
+
+use std::collections::HashMap;
+
+use crate::network::{
+    AllowDevAccountCreation, Info, NetworkClient, NetworkInfo, Sandbox, TopLevelAccountCreator,
+};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
+use crate::types::{AccountId, Balance, BlockReference, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
-use crate::{Account, Block, Contract};
-use crate::{AccountDetails, Network};
-use async_trait::async_trait;
-use near_primitives::types::Balance;
-use std::collections::HashMap;
+use crate::{Account, AccountDetails, Block, Contract, Network};
 
 impl<T> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -116,7 +117,14 @@ where
 
     /// View the latest block from the network
     pub async fn view_latest_block(&self) -> anyhow::Result<Block> {
-        self.client().view_block(None).await.map(Into::into)
+        self.view_block(BlockReference::latest()).await
+    }
+
+    pub async fn view_block(&self, block_ref: BlockReference) -> anyhow::Result<Block> {
+        self.client()
+            .view_block(block_ref.into())
+            .await
+            .map(Into::into)
     }
 
     /// Transfer tokens from one account to another. The signer is the account

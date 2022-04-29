@@ -214,3 +214,102 @@ impl From<AccessKey> for near_primitives::account::AccessKey {
         }
     }
 }
+
+/// Type representing the `block_id` paramter of an RPC query  that can be supplied into
+/// viewing blocks or chunks from the network.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum BlockId {
+    Height(BlockHeight),
+    Hash(CryptoHash),
+}
+
+impl From<BlockId> for near_primitives::types::BlockId {
+    fn from(id: BlockId) -> Self {
+        match id {
+            BlockId::Height(height) => Self::Height(height),
+            BlockId::Hash(hash) => Self::Hash(near_primitives::hash::CryptoHash(hash.0)),
+        }
+    }
+}
+
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum Finality {
+    /// Optimistic finality
+    None,
+    /// Near-final finality
+    DoomSlug,
+    /// Final finality
+    Final,
+}
+
+impl From<Finality> for near_primitives::types::Finality {
+    fn from(finality: Finality) -> Self {
+        match finality {
+            Finality::None => Self::None,
+            Finality::DoomSlug => Self::DoomSlug,
+            Finality::Final => Self::Final,
+        }
+    }
+}
+
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum SyncCheckpoint {
+    Genesis,
+    EarliestAvailable,
+}
+
+impl From<SyncCheckpoint> for near_primitives::types::SyncCheckpoint {
+    fn from(checkpoint: SyncCheckpoint) -> Self {
+        match checkpoint {
+            SyncCheckpoint::Genesis => Self::Genesis,
+            SyncCheckpoint::EarliestAvailable => Self::EarliestAvailable,
+        }
+    }
+}
+
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum BlockReference {
+    BlockId(BlockId),
+    Finality(Finality),
+    SyncCheckpoint(SyncCheckpoint),
+}
+
+impl BlockReference {
+    /// The latest block produced in the blockchain, but not necessarily the latest
+    /// finalized block.
+    pub fn latest() -> Self {
+        Self::Finality(Finality::None)
+    }
+}
+
+impl From<BlockId> for BlockReference {
+    fn from(block_id: BlockId) -> Self {
+        Self::BlockId(block_id)
+    }
+}
+
+impl From<Finality> for BlockReference {
+    fn from(finality: Finality) -> Self {
+        Self::Finality(finality)
+    }
+}
+
+impl From<SyncCheckpoint> for BlockReference {
+    fn from(checkpoint: SyncCheckpoint) -> Self {
+        Self::SyncCheckpoint(checkpoint)
+    }
+}
+
+impl From<BlockReference> for near_primitives::types::BlockReference {
+    fn from(block_ref: BlockReference) -> Self {
+        match block_ref {
+            BlockReference::BlockId(id) => Self::BlockId(id.into()),
+            BlockReference::Finality(finality) => Self::Finality(finality.into()),
+            BlockReference::SyncCheckpoint(checkpoint) => Self::SyncCheckpoint(checkpoint.into()),
+        }
+    }
+}
