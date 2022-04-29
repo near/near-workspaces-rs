@@ -8,9 +8,9 @@ use crate::network::{
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Balance, BlockReference, Gas, InMemorySigner, SecretKey};
+use crate::types::{AccountId, Balance, BlockReference, Gas, InMemorySigner, SecretKey, BlockId};
 use crate::worker::Worker;
-use crate::{Account, AccountDetails, Block, Contract, Network};
+use crate::{Account, AccountDetails, Block, Contract, Network, CryptoHash, BlockHeight};
 
 impl<T> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -118,6 +118,16 @@ where
     /// View the latest block from the network
     pub async fn view_latest_block(&self) -> anyhow::Result<Block> {
         self.view_block(BlockReference::latest()).await
+    }
+
+    /// View the block at the supplied height
+    pub async fn view_block_at_height(&self, height: BlockHeight) -> anyhow::Result<Block> {
+        self.view_block(BlockId::Height(height).into()).await
+    }
+
+    /// View the block at the supplied hash
+    pub async fn view_block_at_hash(&self, hash: CryptoHash) -> anyhow::Result<Block> {
+        self.view_block(BlockId::Hash(hash).into()).await
     }
 
     /// View the block from the network given the block reference to it.
