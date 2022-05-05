@@ -139,20 +139,20 @@ impl Sandbox {
         ImportContractTransaction::new(id.to_owned(), worker.client(), self.client())
     }
 
-    pub(crate) fn patch_state(&self, account_id: AccountId) -> SandboxPatchStateBuilder {
-        SandboxPatchStateBuilder::new(self, account_id)
+    pub(crate) fn patch_state(&self, account_id: AccountId) -> PatchStateTransaction {
+        PatchStateTransaction::new(self, account_id)
     }
 
-    pub(crate) fn patch_account(&self, account_id: AccountId) -> SandboxPatchStateAccountBuilder {
-        SandboxPatchStateAccountBuilder::new(self, account_id)
+    pub(crate) fn patch_account(&self, account_id: AccountId) -> PatchStateAccountTransaction {
+        PatchStateAccountTransaction::new(self, account_id)
     }
 
     pub(crate) fn patch_access_key(
         &self,
         account_id: AccountId,
         public_key: crate::types::PublicKey,
-    ) -> SandboxPatchAcessKeyBuilder {
-        SandboxPatchAcessKeyBuilder::new(self, account_id, public_key)
+    ) -> PatchAccessKeyTransaction {
+        PatchAccessKeyTransaction::new(self, account_id, public_key)
     }
 
     // shall we expose convenience patch methods here for consistent API?
@@ -171,15 +171,15 @@ impl Sandbox {
 
 //todo: review naming
 #[must_use = "don't forget to .apply() this `SandboxPatchStateBuilder`"]
-pub struct SandboxPatchStateBuilder<'s> {
+pub struct PatchStateTransaction<'s> {
     sandbox: &'s Sandbox,
     account_id: AccountId,
     records: Vec<StateRecord>,
 }
 
-impl<'s> SandboxPatchStateBuilder<'s> {
+impl<'s> PatchStateTransaction<'s> {
     pub fn new(sandbox: &'s Sandbox, account_id: AccountId) -> Self {
-        SandboxPatchStateBuilder {
+        PatchStateTransaction {
             sandbox,
             account_id,
             records: Vec::with_capacity(4),
@@ -224,7 +224,7 @@ impl<'s> SandboxPatchStateBuilder<'s> {
     //     self
     // }
 
-    pub async fn apply(self) -> anyhow::Result<()> {
+    pub async fn transact(self) -> anyhow::Result<()> {
         let records = self.records;
         // NOTE: RpcSandboxPatchStateResponse is an empty struct with no fields, so don't do anything with it:
         let _patch_resp = self
@@ -239,7 +239,7 @@ impl<'s> SandboxPatchStateBuilder<'s> {
 }
 
 #[must_use = "don't forget to .apply() this `SandboxPatchStateAccountBuilder`"]
-pub struct SandboxPatchStateAccountBuilder<'s> {
+pub struct PatchStateAccountTransaction<'s> {
     sandbox: &'s Sandbox,
     account_id: AccountId,
     amount: Option<Balance>,
@@ -248,7 +248,7 @@ pub struct SandboxPatchStateAccountBuilder<'s> {
     storage_usage: Option<StorageUsage>,
 }
 
-impl<'s> SandboxPatchStateAccountBuilder<'s> {
+impl<'s> PatchStateAccountTransaction<'s> {
     pub const fn new(sandbox: &'s Sandbox, account_id: AccountId) -> Self {
         Self {
             sandbox,
@@ -321,14 +321,14 @@ impl<'s> SandboxPatchStateAccountBuilder<'s> {
 }
 
 #[must_use = "don't forget to .apply() this `SandboxPatchStateAccountBuilder`"]
-pub struct SandboxPatchAcessKeyBuilder<'s> {
+pub struct PatchAccessKeyTransaction<'s> {
     sandbox: &'s Sandbox,
     account_id: AccountId,
     public_key: crate::types::PublicKey,
     nonce: Nonce,
 }
 
-impl<'s> SandboxPatchAcessKeyBuilder<'s> {
+impl<'s> PatchAccessKeyTransaction<'s> {
     pub const fn new(
         sandbox: &'s Sandbox,
         account_id: AccountId,

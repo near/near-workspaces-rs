@@ -10,16 +10,16 @@ mod server;
 mod testnet;
 pub(crate) mod variants;
 
-pub(crate) use sandbox::SandboxPatchAcessKeyBuilder; //not needed directly outside of the crate
-pub(crate) use sandbox::SandboxPatchStateAccountBuilder; //not needed directly outside of the crate
-pub(crate) use sandbox::SandboxPatchStateBuilder; //not needed directly outside of the crate
+pub(crate) use sandbox::PatchAccessKeyTransaction;
+pub(crate) use sandbox::PatchStateAccountTransaction;
+pub(crate) use sandbox::PatchStateTransaction;
 pub(crate) use variants::DEV_ACCOUNT_SEED;
 
-pub use betanet::Betanet;
-pub use info::Info;
-pub use mainnet::Mainnet;
-pub use sandbox::Sandbox;
-pub use testnet::Testnet;
-pub use variants::{
+pub use self::betanet::Betanet;
+pub use self::info::Info;
+pub use self::mainnet::Mainnet;
+pub use self::sandbox::Sandbox;
+pub use self::testnet::Testnet;
+pub use self::variants::{
     AllowDevAccountCreation, DevAccountDeployer, NetworkClient, NetworkInfo, TopLevelAccountCreator,
 };

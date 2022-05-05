@@ -1,8 +1,8 @@
 use crate::network::{
-    AllowDevAccountCreation, NetworkClient, NetworkInfo, SandboxPatchAcessKeyBuilder,
+    AllowDevAccountCreation, NetworkClient, NetworkInfo, PatchAccessKeyTransaction,
     TopLevelAccountCreator,
 };
-use crate::network::{Info, Sandbox, SandboxPatchStateAccountBuilder, SandboxPatchStateBuilder};
+use crate::network::{Info, Sandbox, PatchStateAccountTransaction, PatchStateTransaction};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
@@ -180,12 +180,12 @@ impl Worker<Sandbox> {
     /// Patch state into the sandbox network, using builder pattern. This will allow us to set
     /// state that we have acquired in some manner. This allows us to test random cases that
     /// are hard to come up naturally as state evolves.
-    pub fn patch_state_builder(&self, account_id: &AccountId) -> SandboxPatchStateBuilder {
+    pub fn patch_state_builder(&self, account_id: &AccountId) -> PatchStateTransaction {
         self.workspace.patch_state(account_id.clone())
     }
 
     /// Patch account state using builder pattern
-    pub fn patch_account(&self, account_id: &AccountId) -> SandboxPatchStateAccountBuilder {
+    pub fn patch_account(&self, account_id: &AccountId) -> PatchStateAccountTransaction {
         self.workspace.patch_account(account_id.clone())
     }
 
@@ -201,7 +201,7 @@ impl Worker<Sandbox> {
         self.workspace
             .patch_state(contract_id.clone())
             .data(key, value)
-            .apply()
+            .transact()
             .await?;
         Ok(())
     }
@@ -217,7 +217,7 @@ impl Worker<Sandbox> {
         self.workspace
             .patch_state(account_id.clone())
             .data_multiple(kvs)
-            .apply()
+            .transact()
             .await?;
         Ok(())
     }
@@ -226,7 +226,7 @@ impl Worker<Sandbox> {
         &self,
         account_id: &AccountId,
         public_key: &PublicKey,
-    ) -> SandboxPatchAcessKeyBuilder {
+    ) -> PatchAccessKeyTransaction {
         self.workspace
             .patch_access_key(account_id.clone(), public_key.clone())
     }
