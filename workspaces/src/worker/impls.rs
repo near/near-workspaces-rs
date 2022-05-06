@@ -195,8 +195,8 @@ impl Worker<Sandbox> {
     pub async fn patch_state(
         &self,
         contract_id: &AccountId,
-        key: impl Into<Vec<u8>>,
-        value: impl Into<Vec<u8>>,
+        key: &[u8],
+        value: &[u8],
     ) -> anyhow::Result<()> {
         self.workspace
             .patch_state(contract_id.clone())
@@ -206,13 +206,11 @@ impl Worker<Sandbox> {
         Ok(())
     }
 
-    //todo: add more patch state methods like the previous one
-
     /// Patch state into the sandbox network. Same as `patch_state` but accepts a sequence of key value pairs
-    pub async fn patch_state_multiple(
-        &self,
+    pub async fn patch_state_multiple<'s>(
+        &'s self,
         account_id: &AccountId,
-        kvs: impl IntoIterator<Item = (impl Into<Vec<u8>>, impl Into<Vec<u8>>)>,
+        kvs: impl IntoIterator<Item = (&'s [u8], &'s [u8])>,
     ) -> anyhow::Result<()> {
         self.workspace
             .patch_state(account_id.clone())

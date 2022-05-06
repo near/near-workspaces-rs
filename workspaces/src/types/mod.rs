@@ -28,6 +28,9 @@ pub type Balance = u128;
 /// Height of a specific block
 pub type BlockHeight = u64;
 
+/// StorageUsage is used to count the amount of storage used by a contract.
+pub type StorageUsage = u64;
+
 impl From<PublicKey> for near_crypto::PublicKey {
     fn from(pk: PublicKey) -> Self {
         pk.0

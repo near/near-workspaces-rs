@@ -6,7 +6,6 @@ use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardReq
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::hash::CryptoHash;
 use near_primitives::state_record::StateRecord;
-use near_primitives::types::StorageUsage;
 use near_primitives::views::AccountView;
 use std::iter::IntoIterator;
 
@@ -16,7 +15,7 @@ use crate::network::Info;
 use crate::result::CallExecution;
 use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Balance, InMemorySigner, Nonce, SecretKey};
+use crate::types::{AccountId, Balance, InMemorySigner, Nonce, SecretKey, StorageUsage};
 use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency
@@ -186,11 +185,11 @@ impl<'s> PatchStateTransaction<'s> {
         }
     }
 
-    pub fn data(mut self, key: impl Into<Vec<u8>>, value: impl Into<Vec<u8>>) -> Self {
+    pub fn data(mut self, key: &[u8], value: &[u8]) -> Self {
         let data = StateRecord::Data {
             account_id: self.account_id.clone(),
-            data_key: key.into(),
-            value: value.into(),
+            data_key: key.to_vec(),
+            value: value.to_vec(),
         };
 
         self.records.push(data);
@@ -199,18 +198,9 @@ impl<'s> PatchStateTransaction<'s> {
 
     pub fn data_multiple(
         mut self,
-        kvs: impl IntoIterator<Item = (impl Into<Vec<u8>>, impl Into<Vec<u8>>)>,
+        kvs: impl IntoIterator<Item = (&'s [u8], &'s [u8])>,
     ) -> Self {
-        let Self {
-            ref mut records,
-            ref account_id,
-            ..
-        } = self;
-        records.extend(kvs.into_iter().map(|(key, value)| StateRecord::Data {
-            account_id: account_id.clone(),
-            data_key: key.into(),
-            value: value.into(),
-        }));
+        self.extend(kvs);
         self
     }
 
@@ -226,6 +216,21 @@ impl<'s> PatchStateTransaction<'s> {
             .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
 
         Ok(())
+    }
+}
+
+impl<'s> std::iter::Extend<(&'s [u8], &'s [u8])> for PatchStateTransaction<'s>{
+    fn extend<T: IntoIterator<Item = (&'s [u8], &'s [u8])>>(&mut self, iter: T) {
+        let Self {
+            ref mut records,
+            ref account_id,
+            ..
+        } = self;
+        records.extend(iter.into_iter().map(|(key, value)| StateRecord::Data {
+            account_id: account_id.clone(),
+            data_key: key.to_vec(),
+            value: value.to_vec(),
+        }));
     }
 }
 
