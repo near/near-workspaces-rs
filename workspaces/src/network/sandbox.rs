@@ -214,15 +214,6 @@ impl<'s> PatchStateTransaction<'s> {
         self
     }
 
-    // pub fn access_key(mut self, public_key: &PublicKey, access_key: &AccessKey) -> Self {
-    //     let access_key = StateRecord::AccessKey {
-    //         account_id: self.account_id.clone(),
-    //         public_key: public_key.0.clone(),
-    //         access_key: access_key.clone(),
-    //     };
-    //     self.records.push(access_key);
-    //     self
-    // }
 
     pub async fn transact(self) -> anyhow::Result<()> {
         let records = self.records;
