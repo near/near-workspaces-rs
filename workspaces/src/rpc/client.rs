@@ -16,7 +16,7 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{Balance, BlockId, BlockReference, Finality, Gas, StoreKey};
+use near_primitives::types::{Balance, BlockReference, Finality, Gas, StoreKey};
 use near_primitives::views::{
     AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
     QueryRequest, StatusResponse,
@@ -171,12 +171,8 @@ impl Client {
         &self,
         contract_id: AccountId,
         prefix: Option<&[u8]>,
-        block_id: Option<BlockId>,
+        block_reference: BlockReference,
     ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
         let query_resp = self
             .query(&methods::query::RpcQueryRequest {
                 block_reference,
@@ -196,12 +192,8 @@ impl Client {
     pub(crate) async fn view_account(
         &self,
         account_id: AccountId,
-        block_id: Option<BlockId>,
+        block_reference: BlockReference,
     ) -> anyhow::Result<AccountView> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
         let query_resp = self
             .query(&methods::query::RpcQueryRequest {
                 block_reference,
@@ -218,12 +210,8 @@ impl Client {
     pub(crate) async fn view_code(
         &self,
         account_id: AccountId,
-        block_id: Option<BlockId>,
+        block_reference: BlockReference,
     ) -> anyhow::Result<ContractCodeView> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
         let query_resp = self
             .query(&methods::query::RpcQueryRequest {
                 block_reference,

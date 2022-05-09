@@ -98,7 +98,10 @@ where
 
     /// View the WASM code bytes of a contract on the network.
     pub async fn view_code(&self, contract_id: &AccountId) -> anyhow::Result<Vec<u8>> {
-        let code_view = self.client().view_code(contract_id.clone(), None).await?;
+        let code_view = self
+            .client()
+            .view_code(contract_id.clone(), BlockReference::latest().into())
+            .await?;
         Ok(code_view.code)
     }
 
@@ -111,7 +114,7 @@ where
         prefix: Option<&[u8]>,
     ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
         self.client()
-            .view_state(contract_id.clone(), prefix, None)
+            .view_state(contract_id.clone(), prefix, BlockReference::latest().into())
             .await
     }
 
@@ -159,7 +162,7 @@ where
     /// View account details of a specific account on the network.
     pub async fn view_account(&self, account_id: &AccountId) -> anyhow::Result<AccountDetails> {
         self.client()
-            .view_account(account_id.clone(), None)
+            .view_account(account_id.clone(), BlockReference::latest().into())
             .await
             .map(Into::into)
     }

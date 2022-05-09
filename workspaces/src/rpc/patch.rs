@@ -1,11 +1,10 @@
 use near_crypto::KeyType;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
-use near_primitives::types::BlockId;
 use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
 use crate::network::DEV_ACCOUNT_SEED;
 use crate::rpc::client::Client;
-use crate::types::{BlockHeight, SecretKey};
+use crate::types::{BlockHeight, BlockId, BlockReference, SecretKey};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner};
 
 /// A [`Transaction`]-like object that allows us to specify details about importing
@@ -25,7 +24,7 @@ pub struct ImportContractTransaction<'a, 'b> {
     /// from the other account instead.
     initial_balance: Option<Balance>,
 
-    block_id: Option<BlockId>,
+    block_ref: Option<BlockReference>,
 }
 
 impl<'a, 'b> ImportContractTransaction<'a, 'b> {
@@ -40,7 +39,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
             into_network,
             import_data: false,
             initial_balance: None,
-            block_id: None,
+            block_ref: None,
         }
     }
 
@@ -48,19 +47,24 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
     /// any network this object is importing from, but be aware that only archival
     /// networks will have the full history while networks like mainnet or testnet
     /// only has the history from 5 or less epochs ago.
-    pub fn block_height(mut self, block_height: BlockHeight) -> Self {
-        self.block_id = Some(BlockId::Height(block_height));
-        self
+    pub fn block_height(self, block_height: BlockHeight) -> Self {
+        self.block_reference(BlockId::Height(block_height).into())
     }
 
     /// Specify at which block hash to import the contract from. This is usable with
     /// any network this object is importing from, but be aware that only archival
     /// networks will have the full history while networks like mainnet or testnet
     /// only has the history from 5 or less epochs ago.
-    pub fn block_hash(mut self, block_hash: CryptoHash) -> Self {
-        self.block_id = Some(BlockId::Hash(near_primitives::hash::CryptoHash(
-            block_hash.0,
-        )));
+    pub fn block_hash(self, block_hash: CryptoHash) -> Self {
+        self.block_reference(BlockId::Hash(block_hash).into())
+    }
+
+    /// Specify at which block reference to import the contract from. This is usable with
+    /// any network this object is importing from, but be aware that only archival
+    /// networks will have the full history while networks like mainnet or testnet
+    /// only has the history from 5 or less epochs ago.
+    pub fn block_reference(mut self, block_ref: BlockReference) -> Self {
+        self.block_ref = Some(block_ref);
         self
     }
 
@@ -87,10 +91,12 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();
         let signer = InMemorySigner::from_secret_key(account_id.clone(), sk);
+        let block_ref: near_primitives::types::BlockReference =
+            self.block_ref.unwrap_or_else(BlockReference::latest).into();
 
         let mut account_view = self
             .from_network
-            .view_account(account_id.clone(), self.block_id.clone())
+            .view_account(account_id.clone(), block_ref.clone())
             .await?;
         if let Some(initial_balance) = self.initial_balance {
             account_view.amount = initial_balance;
@@ -111,7 +117,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         if account_view.code_hash != near_primitives::hash::CryptoHash::default() {
             let code_view = self
                 .from_network
-                .view_code(account_id.clone(), self.block_id.clone())
+                .view_code(account_id.clone(), block_ref.clone())
                 .await?;
             records.push(StateRecord::Contract {
                 account_id: account_id.clone(),
@@ -122,7 +128,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         if self.import_data {
             records.extend(
                 self.from_network
-                    .view_state(account_id.clone(), None, self.block_id)
+                    .view_state(account_id.clone(), None, block_ref)
                     .await?
                     .into_iter()
                     .map(|(key, value)| StateRecord::Data {
