@@ -2,6 +2,9 @@
 
 ## [unreleased]
 
+### Added
+- Added `worker.view_block` method for viewing block data on-chain: https://github.com/near/workspaces-rs/pull/129
+
 ## [0.2.1] - 2022-04-12
 
 ### Added
