@@ -35,9 +35,11 @@ pub enum AgentStatus {
 pub struct Agent {
     pub status: AgentStatus,
     pub payable_account_id: AccountId,
-    #[serde(with = "workspaces::serde::str")]
+    // NOTE: display_fromstr is used to deserialize from a U128 type returned from the contract
+    // which is represented as a string there, and then converted into a rust u128 here.
+    #[serde(with = "serde_with::rust::display_fromstr")]
     pub balance: u128,
-    #[serde(with = "workspaces::serde::str")]
+    #[serde(with = "serde_with::rust::display_fromstr")]
     pub total_tasks_executed: u128,
     pub last_missed_slot: u128,
 }
