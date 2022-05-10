@@ -81,6 +81,13 @@ impl CallExecutionDetails {
         borsh::BorshDeserialize::try_from_slice(&buf).map_err(Into::into)
     }
 
+    /// Grab the underlying raw bytes returned from calling into a contract's function.
+    /// If we want to deserialize these bytes into a rust datatype, use [`CallExecutionDetails::json`]
+    /// or [`CallExecutionDetails::borsh`] instead.
+    pub fn raw_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        self.try_into_bytes()
+    }
+
     fn try_into_bytes(&self) -> anyhow::Result<Vec<u8>> {
         let result: &str = match self.status {
             FinalExecutionStatus::SuccessValue(ref val) => val,
