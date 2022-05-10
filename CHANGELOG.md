@@ -2,9 +2,6 @@
 
 ## [unreleased]
 
-### Added
-- Added additional example called `croncat.rs` to showcase more in depth `fast_forward` feature: https://github.com/near/workspaces-rs/pull/126
-
 ## [0.2.1] - 2022-04-12
 
 ### Added
