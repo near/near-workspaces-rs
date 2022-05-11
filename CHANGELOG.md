@@ -2,6 +2,9 @@
 
 ## [unreleased]
 
+### Changed
+- Updated default sandbox version to `97c0410de519ecaca369aaee26f0ca5eb9e7de06` commit of nearcore to include 1.26 protocol changes
+
 ## [0.2.1] - 2022-04-12
 
 ### Added
