@@ -2,6 +2,9 @@
 
 ## [unreleased]
 
+### Changed
+- Updated default sandbox version to `1.26.0-rc.2` of nearcore
+
 ## [0.2.1] - 2022-04-12
 
 ### Added
