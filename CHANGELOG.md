@@ -1,9 +1,14 @@
 # Changelog
 
-## [unreleased]
+## [Unreleased]
+
+## [0.3.0] - 2022-05-10
+
+### Added
+- Added betanet support https://github.com/near/workspaces-rs/pull/116
 
 ### Changed
-- Updated default sandbox version to `97c0410de519ecaca369aaee26f0ca5eb9e7de06` commit of nearcore to include 1.26 protocol changes
+- Updated default sandbox version to `97c0410de519ecaca369aaee26f0ca5eb9e7de06` commit of nearcore to include 1.26 protocol changes https://github.com/near/workspaces-rs/pull/134
 
 ## [0.2.1] - 2022-04-12
 
@@ -49,7 +54,8 @@
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
 
-[Unreleased]: https://github.com/near/workspaces-rs/compare/0.2.1...HEAD
+[Unreleased]: https://github.com/near/workspaces-rs/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/near/workspaces-rs/compare/0.2.1...0.3.0
 [0.2.1]: https://github.com/near/workspaces-rs/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/near/workspaces-rs/compare/0.1.1...0.2.0
 [0.1.1]: https://github.com/near/workspaces-rs/compare/0.1.0...0.1.1
