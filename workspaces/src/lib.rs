@@ -9,13 +9,13 @@ mod cargo;
 pub use cargo::compile_project;
 
 mod rpc;
-mod types;
 mod worker;
 
 pub mod network;
 pub mod operations;
 pub mod prelude;
 pub mod result;
+pub mod types;
 
 pub use network::variants::{DevNetwork, Network};
 pub use types::account::{Account, AccountDetails, Contract};
