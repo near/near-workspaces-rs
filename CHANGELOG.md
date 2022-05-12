@@ -2,6 +2,8 @@
 
 ## [unreleased]
 
+- Exposed `CallExecutionDetails::raw_bytes` API: https://github.com/near/workspaces-rs/pull/133
+
 ## [0.2.1] - 2022-04-12
 
 ### Added
