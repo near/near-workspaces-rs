@@ -69,7 +69,7 @@ impl CallExecutionDetails {
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
     pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
-        let buf = self.try_into_bytes()?;
+        let buf = self.raw_bytes()?;
         serde_json::from_slice(&buf).map_err(Into::into)
     }
 
@@ -77,7 +77,7 @@ impl CallExecutionDetails {
     /// result. This conversion can fail if the structure of the internal state does
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
     pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
-        let buf = self.try_into_bytes()?;
+        let buf = self.raw_bytes()?;
         borsh::BorshDeserialize::try_from_slice(&buf).map_err(Into::into)
     }
 
@@ -85,10 +85,6 @@ impl CallExecutionDetails {
     /// If we want to deserialize these bytes into a rust datatype, use [`CallExecutionDetails::json`]
     /// or [`CallExecutionDetails::borsh`] instead.
     pub fn raw_bytes(&self) -> anyhow::Result<Vec<u8>> {
-        self.try_into_bytes()
-    }
-
-    fn try_into_bytes(&self) -> anyhow::Result<Vec<u8>> {
         let result: &str = match self.status {
             FinalExecutionStatus::SuccessValue(ref val) => val,
             FinalExecutionStatus::Failure(ref err) => anyhow::bail!(err.clone()),
