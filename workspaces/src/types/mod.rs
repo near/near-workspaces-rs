@@ -36,17 +36,15 @@ pub enum KeyType {
     SECP256K1,
 }
 
-impl From<KeyType> for near_crypto::KeyType {
-    fn from(key_type: KeyType) -> Self {
-        match key_type {
-            KeyType::ED25519 => Self::ED25519,
-            KeyType::SECP256K1 => Self::SECP256K1,
+impl KeyType {
+    const fn into_near_keytype(self) -> near_crypto::KeyType {
+        match self {
+            Self::ED25519 => near_crypto::KeyType::ED25519,
+            Self::SECP256K1 => near_crypto::KeyType::SECP256K1,
         }
     }
-}
 
-impl From<near_crypto::KeyType> for KeyType {
-    fn from(key_type: near_crypto::KeyType) -> Self {
+    const fn from_near_keytype(key_type: near_crypto::KeyType) -> Self {
         match key_type {
             near_crypto::KeyType::ED25519 => Self::ED25519,
             near_crypto::KeyType::SECP256K1 => Self::SECP256K1,
@@ -62,24 +60,24 @@ impl From<PublicKey> for near_crypto::PublicKey {
 
 /// Public key of an account on chain. Usually created along with a [`SecretKey`]
 /// to form a keypair associated to the account.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PublicKey(pub(crate) near_crypto::PublicKey);
 
 impl PublicKey {
     pub fn key_type(&self) -> KeyType {
-        self.0.key_type().into()
+        KeyType::from_near_keytype(self.0.key_type())
     }
 }
 
 /// Secret key of an account on chain. Usually created along with a [`PublicKey`]
 /// to form a keypair associated to the account. To generate a new keypair, use
 /// one of the creation methods found here, such as [`SecretKey::from_seed`]
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SecretKey(near_crypto::SecretKey);
 
 impl SecretKey {
     pub fn key_type(&self) -> KeyType {
-        self.0.key_type().into()
+        KeyType::from_near_keytype(self.0.key_type())
     }
 
     pub fn public_key(&self) -> PublicKey {
@@ -87,11 +85,13 @@ impl SecretKey {
     }
 
     pub fn from_seed(key_type: KeyType, seed: &str) -> Self {
-        Self(near_crypto::SecretKey::from_seed(key_type.into(), seed))
+        let key_type = key_type.into_near_keytype();
+        Self(near_crypto::SecretKey::from_seed(key_type, seed))
     }
 
     pub fn from_random(key_type: KeyType) -> Self {
-        Self(near_crypto::SecretKey::from_random(key_type.into()))
+        let key_type = key_type.into_near_keytype();
+        Self(near_crypto::SecretKey::from_random(key_type))
     }
 }
 
