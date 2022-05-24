@@ -25,6 +25,10 @@ impl SandboxServer {
     }
 
     pub fn start(&mut self) -> anyhow::Result<()> {
+        if self.process.is_some() {
+            anyhow::bail!("Sandbox server already started");
+        }
+
         info!(target: "workspaces", "Starting up sandbox at localhost:{}", self.rpc_port);
         let home_dir = Sandbox::home_dir(self.rpc_port);
 

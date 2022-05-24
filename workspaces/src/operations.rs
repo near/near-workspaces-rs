@@ -4,11 +4,12 @@ use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
 };
-use crate::types::{AccessKey, AccountId, Balance, Gas, InMemorySigner, PublicKey, SecretKey};
+use crate::types::{
+    AccessKey, AccountId, Balance, Gas, InMemorySigner, KeyType, PublicKey, SecretKey,
+};
 use crate::worker::Worker;
-use crate::Account;
-use crate::Network;
-use near_crypto::KeyType;
+use crate::{Account, Network};
+
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
     DeployContractAction, FunctionCallAction, StakeAction, TransferAction,

@@ -1,6 +1,6 @@
 [package]
 name = "workspaces"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2018"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -45,6 +45,7 @@ libc = "0.2"
 [dev-dependencies]
 borsh = "0.9"
 near-units = "0.1.0"
+near-sdk = "4.0.0-pre.7"
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 

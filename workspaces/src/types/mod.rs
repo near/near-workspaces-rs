@@ -9,7 +9,7 @@ use std::fmt;
 use std::path::Path;
 
 pub use near_account_id::AccountId;
-pub(crate) use near_crypto::{KeyType, Signer};
+pub(crate) use near_crypto::Signer;
 use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
@@ -30,6 +30,29 @@ pub type BlockHeight = u64;
 
 /// StorageUsage is used to count the amount of storage used by a contract.
 pub type StorageUsage = u64;
+/// Key types supported for either a [`SecretKey`] or [`PublicKey`]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
+pub enum KeyType {
+    ED25519,
+    SECP256K1,
+}
+
+impl KeyType {
+    const fn into_near_keytype(self) -> near_crypto::KeyType {
+        match self {
+            Self::ED25519 => near_crypto::KeyType::ED25519,
+            Self::SECP256K1 => near_crypto::KeyType::SECP256K1,
+        }
+    }
+
+    const fn from_near_keytype(key_type: near_crypto::KeyType) -> Self {
+        match key_type {
+            near_crypto::KeyType::ED25519 => Self::ED25519,
+            near_crypto::KeyType::SECP256K1 => Self::SECP256K1,
+        }
+    }
+}
 
 impl From<PublicKey> for near_crypto::PublicKey {
     fn from(pk: PublicKey) -> Self {
@@ -37,19 +60,49 @@ impl From<PublicKey> for near_crypto::PublicKey {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+/// Public key of an account on chain. Usually created along with a [`SecretKey`]
+/// to form a keypair associated to the account.
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PublicKey(pub(crate) near_crypto::PublicKey);
 
-#[derive(Clone, Serialize, Deserialize)]
+impl PublicKey {
+    pub fn key_type(&self) -> KeyType {
+        KeyType::from_near_keytype(self.0.key_type())
+    }
+}
+
+/// Secret key of an account on chain. Usually created along with a [`PublicKey`]
+/// to form a keypair associated to the account. To generate a new keypair, use
+/// one of the creation methods found here, such as [`SecretKey::from_seed`]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SecretKey(near_crypto::SecretKey);
 
 impl SecretKey {
+    pub fn key_type(&self) -> KeyType {
+        KeyType::from_near_keytype(self.0.key_type())
+    }
+
     pub fn public_key(&self) -> PublicKey {
         PublicKey(self.0.public_key())
     }
 
     pub fn from_seed(key_type: KeyType, seed: &str) -> Self {
+        let key_type = key_type.into_near_keytype();
         Self(near_crypto::SecretKey::from_seed(key_type, seed))
+    }
+
+    pub fn from_random(key_type: KeyType) -> Self {
+        let key_type = key_type.into_near_keytype();
+        Self(near_crypto::SecretKey::from_random(key_type))
+    }
+}
+
+impl std::str::FromStr for SecretKey {
+    // FIXME: deferred specific error impl to https://github.com/near/workspaces-rs/issues/100
+    type Err = anyhow::Error;
+
+    fn from_str(value: &str) -> anyhow::Result<Self> {
+        Ok(Self(near_crypto::SecretKey::from_str(value)?))
     }
 }
 

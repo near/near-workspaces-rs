@@ -1,11 +1,10 @@
-use near_crypto::KeyType;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::types::BlockId;
 use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
 use crate::network::DEV_ACCOUNT_SEED;
 use crate::rpc::client::Client;
-use crate::types::{BlockHeight, SecretKey};
+use crate::types::{BlockHeight, KeyType, SecretKey};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner};
 
 /// A [`Transaction`]-like object that allows us to specify details about importing
