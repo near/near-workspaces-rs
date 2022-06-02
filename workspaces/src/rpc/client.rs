@@ -5,6 +5,7 @@ use std::time::Duration;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
+use near_crypto::Signer;
 use near_jsonrpc_client::errors::JsonRpcError;
 use near_jsonrpc_client::methods::health::RpcStatusError;
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
@@ -24,7 +25,7 @@ use near_primitives::views::{
 
 use crate::result::ViewResultDetails;
 use crate::rpc::tool;
-use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
+use crate::types::{AccountId, InMemorySigner, PublicKey};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
@@ -443,19 +444,16 @@ pub(crate) async fn send_batch_tx_and_retry(
     receiver_id: &AccountId,
     actions: Vec<Action>,
 ) -> anyhow::Result<FinalExecutionOutcomeView> {
+    let signer = signer.inner();
     send_tx_and_retry(client, || async {
-        let (AccessKeyView { nonce, .. }, block_hash) = access_key(
-            client,
-            signer.inner().account_id.clone(),
-            signer.inner().public_key(),
-        )
-        .await?;
+        let (AccessKeyView { nonce, .. }, block_hash) =
+            access_key(client, signer.account_id.clone(), signer.public_key()).await?;
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
-            signer.inner().account_id.clone(),
+            signer.account_id.clone(),
             receiver_id.clone(),
-            signer.inner() as &dyn Signer,
+            &signer as &dyn Signer,
             actions.clone(),
             block_hash,
         ))

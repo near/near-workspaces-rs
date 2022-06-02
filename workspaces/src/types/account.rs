@@ -21,7 +21,7 @@ impl Account {
     /// Create a new account with the given path to the credentials JSON file
     pub fn from_file(path: impl AsRef<std::path::Path>) -> Self {
         let signer = InMemorySigner::from_file(path.as_ref());
-        let id = signer.0.account_id.clone();
+        let id = signer.account_id.clone();
         Self::new(id, signer)
     }
 
@@ -143,14 +143,14 @@ impl Account {
         let mut savepath = savepath.join(self.id.to_string());
         savepath.set_extension("json");
 
-        crate::rpc::tool::write_cred_to_file(&savepath, &self.id, &self.signer.0.secret_key);
+        crate::rpc::tool::write_cred_to_file(&savepath, &self.id, &self.secret_key().0);
 
         Ok(())
     }
 
     /// Get the keys of this account. The public key can be retrieved from the secret key.
-    pub fn keys(&self) -> SecretKey {
-        SecretKey(self.signer.0.secret_key.clone())
+    pub fn secret_key(&self) -> &SecretKey {
+        &self.signer.secret_key
     }
 }
 

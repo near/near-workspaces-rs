@@ -9,7 +9,6 @@ use std::fmt;
 use std::path::Path;
 
 pub use near_account_id::AccountId;
-pub(crate) use near_crypto::Signer;
 use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
@@ -105,22 +104,29 @@ impl std::str::FromStr for SecretKey {
 }
 
 #[derive(Clone)]
-pub struct InMemorySigner(pub(crate) near_crypto::InMemorySigner);
+pub struct InMemorySigner {
+    pub(crate) account_id: AccountId,
+    pub(crate) secret_key: SecretKey,
+}
 
 impl InMemorySigner {
     pub fn from_secret_key(account_id: AccountId, secret_key: SecretKey) -> Self {
-        Self(near_crypto::InMemorySigner::from_secret_key(
+        Self {
             account_id,
-            secret_key.0,
-        ))
+            secret_key,
+        }
     }
 
     pub fn from_file(path: &Path) -> Self {
-        Self(near_crypto::InMemorySigner::from_file(path))
+        let signer = near_crypto::InMemorySigner::from_file(path);
+        Self::from_secret_key(signer.account_id, SecretKey(signer.secret_key))
     }
 
-    pub(crate) fn inner(&self) -> &near_crypto::InMemorySigner {
-        &self.0
+    pub(crate) fn inner(&self) -> near_crypto::InMemorySigner {
+        near_crypto::InMemorySigner::from_secret_key(
+            self.account_id.clone(),
+            self.secret_key.0.clone(),
+        )
     }
 }
 
