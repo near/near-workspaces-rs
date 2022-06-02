@@ -267,3 +267,9 @@ async fn test_contract() -> anyhow::Result<()> {
 }
 ```
 For a full example, take a look at [workspaces/tests/deploy_project.rs](https://github.com/near/workspaces-rs/blob/main/workspaces/tests/deploy_project.rs).
+
+
+### Environment Variables
+These environment variables will be useful if there was ever a snag hit:
+- `NEAR_RPC_TIMEOUT_SECS`: The default is 10 seconds, but this is the amount of time beforing timing out waiting for a RPC service when talking to the sandbox or any other network such as testnet.
+- `NEAR_SANDBOX_BIN_PATH`: Set this to our own prebuilt `neard-sandbox` bin path if we want to use a non-default version of the sandbox or configure nearcore with our own custom features that we want to test in workspaces.

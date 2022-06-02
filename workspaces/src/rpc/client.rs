@@ -367,13 +367,20 @@ impl Client {
     }
 
     pub(crate) async fn wait_for_rpc(&self) -> anyhow::Result<()> {
-        let retry_six_times = std::iter::repeat_with(|| Duration::from_millis(500)).take(6);
-        Retry::spawn(retry_six_times, || async { self.status().await })
+        let timeout_secs = match std::env::var("NEAR_RPC_TIMEOUT_SECS") {
+            Ok(secs) => secs.parse::<usize>()?,
+            Err(_) => 10,
+        };
+
+        let retry_strategy =
+            std::iter::repeat_with(|| Duration::from_millis(500)).take(2 * timeout_secs);
+        Retry::spawn(retry_strategy, || async { self.status().await })
             .await
             .map_err(|e| {
                 anyhow::anyhow!(
-                    "Failed to connect to RPC service {} within three seconds: {:?}",
+                    "Failed to connect to RPC service {} within {} seconds: {:?}",
                     self.rpc_addr,
+                    timeout_secs,
                     e
                 )
             })?;
