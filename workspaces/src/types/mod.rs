@@ -73,7 +73,7 @@ impl PublicKey {
 /// to form a keypair associated to the account. To generate a new keypair, use
 /// one of the creation methods found here, such as [`SecretKey::from_seed`]
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct SecretKey(near_crypto::SecretKey);
+pub struct SecretKey(pub(crate) near_crypto::SecretKey);
 
 impl SecretKey {
     pub fn key_type(&self) -> KeyType {

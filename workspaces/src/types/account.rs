@@ -3,7 +3,7 @@ use std::path::Path;
 
 use near_primitives::views::AccountView;
 
-use crate::types::{AccountId, Balance, InMemorySigner};
+use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{CryptoHash, Network, Worker};
 
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
@@ -146,6 +146,11 @@ impl Account {
         crate::rpc::tool::write_cred_to_file(&savepath, &self.id, &self.signer.0.secret_key);
 
         Ok(())
+    }
+
+    /// Get the keys of this account. The public key can be retrieved from the secret key.
+    pub fn keys(&self) -> SecretKey {
+        SecretKey(self.signer.0.secret_key.clone())
     }
 }
 
