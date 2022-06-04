@@ -3,6 +3,7 @@ mod impls;
 use std::sync::Arc;
 
 use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
+use crate::result::Result;
 use crate::Network;
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
@@ -25,7 +26,7 @@ where
 }
 
 /// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
-pub async fn sandbox() -> anyhow::Result<Worker<Sandbox>> {
+pub async fn sandbox() -> Result<Worker<Sandbox>> {
     Ok(Worker::new(Sandbox::new().await?))
 }
 
@@ -59,7 +60,7 @@ pub async fn betanet() -> anyhow::Result<Worker<Betanet>> {
 }
 
 /// Run a locally scoped task where a [`sandbox`] instanced [`Worker`] is supplied.
-pub async fn with_sandbox<F, T>(task: F) -> anyhow::Result<T::Output>
+pub async fn with_sandbox<F, T>(task: F) -> Result<T::Output>
 where
     F: Fn(Worker<Sandbox>) -> T,
     T: core::future::Future,

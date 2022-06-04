@@ -22,6 +22,7 @@ use near_primitives::views::{
     QueryRequest, StatusResponse,
 };
 
+use crate::error::{WorkspaceError, WorkspaceErrorKind};
 use crate::result::ViewResultDetails;
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
@@ -366,23 +367,26 @@ impl Client {
         result
     }
 
-    pub(crate) async fn wait_for_rpc(&self) -> anyhow::Result<()> {
+    pub(crate) async fn wait_for_rpc(&self) -> crate::result::Result<()> {
         let timeout_secs = match std::env::var("NEAR_RPC_TIMEOUT_SECS") {
-            Ok(secs) => secs.parse::<usize>()?,
+            Ok(secs) => secs
+                .parse::<usize>()
+                .map_err(|e| WorkspaceError::other(e.into()))?,
             Err(_) => 10,
         };
 
+        // TODO: proper way to handle JsonRpcError inside workspace error
         let retry_strategy =
             std::iter::repeat_with(|| Duration::from_millis(500)).take(2 * timeout_secs);
         Retry::spawn(retry_strategy, || async { self.status().await })
             .await
             .map_err(|e| {
-                anyhow::anyhow!(
+                WorkspaceErrorKind::RpcConnectFail.into_error_with_repr(anyhow::anyhow!(
                     "Failed to connect to RPC service {} within {} seconds: {:?}",
                     self.rpc_addr,
                     timeout_secs,
                     e
-                )
+                ))
             })?;
         Ok(())
     }

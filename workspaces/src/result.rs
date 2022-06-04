@@ -8,6 +8,8 @@ use near_primitives::views::{
 
 use crate::types::{CryptoHash, Gas};
 
+pub type Result<T, E = crate::error::WorkspaceError> = core::result::Result<T, E>;
+
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
 /// the transaction failed to be processed on the chain.

@@ -45,7 +45,7 @@ impl Sandbox {
         InMemorySigner::from_file(&path)
     }
 
-    pub(crate) async fn new() -> anyhow::Result<Self> {
+    pub(crate) async fn new() -> crate::result::Result<Self> {
         let mut server = SandboxServer::default();
         server.start()?;
         let client = Client::new(server.rpc_addr());

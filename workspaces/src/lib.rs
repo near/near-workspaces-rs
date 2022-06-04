@@ -11,12 +11,12 @@ pub use cargo::compile_project;
 mod rpc;
 mod worker;
 
+pub mod error;
 pub mod network;
 pub mod operations;
 pub mod prelude;
 pub mod result;
 pub mod types;
-pub mod error;
 
 pub use network::variants::{DevNetwork, Network};
 pub use types::account::{Account, AccountDetails, Contract};
