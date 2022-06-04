@@ -14,6 +14,8 @@ use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
+use crate::error::{WorkspaceError, WorkspaceErrorKind};
+
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
 
@@ -96,11 +98,13 @@ impl SecretKey {
 }
 
 impl std::str::FromStr for SecretKey {
-    // FIXME: deferred specific error impl to https://github.com/near/workspaces-rs/issues/100
-    type Err = anyhow::Error;
+    type Err = WorkspaceError;
 
-    fn from_str(value: &str) -> anyhow::Result<Self> {
-        Ok(Self(near_crypto::SecretKey::from_str(value)?))
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let sk = near_crypto::SecretKey::from_str(value)
+            .map_err(|e| WorkspaceError::parse_error(Box::new(e)))?;
+
+        Ok(Self(sk))
     }
 }
 
@@ -130,20 +134,23 @@ impl InMemorySigner {
 pub struct CryptoHash(pub [u8; 32]);
 
 impl std::str::FromStr for CryptoHash {
-    type Err = Box<dyn std::error::Error>;
+    type Err = WorkspaceError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = from_base(s).map_err::<Self::Err, _>(|e| e.to_string().into())?;
+        let bytes = from_base(s).map_err(WorkspaceError::parse_error)?;
         Self::try_from(bytes)
     }
 }
 
 impl TryFrom<&[u8]> for CryptoHash {
-    type Error = Box<dyn std::error::Error>;
+    type Error = WorkspaceError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 32 {
-            return Err("incorrect length for hash".into());
+            return Err(WorkspaceError::simple(
+                WorkspaceErrorKind::Other,
+                "incorrect length for hash",
+            ));
         }
         let mut buf = [0; 32];
         buf.copy_from_slice(bytes);
@@ -152,7 +159,7 @@ impl TryFrom<&[u8]> for CryptoHash {
 }
 
 impl TryFrom<Vec<u8>> for CryptoHash {
-    type Error = Box<dyn std::error::Error>;
+    type Error = WorkspaceError;
 
     fn try_from(v: Vec<u8>) -> Result<Self, Self::Error> {
         <Self as TryFrom<&[u8]>>::try_from(v.as_ref())
