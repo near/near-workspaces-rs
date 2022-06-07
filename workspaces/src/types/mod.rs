@@ -14,7 +14,7 @@ use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
-use crate::error::{WorkspaceError, WorkspaceErrorKind};
+use crate::error::WorkspaceError;
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
@@ -102,7 +102,7 @@ impl std::str::FromStr for SecretKey {
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let sk = near_crypto::SecretKey::from_str(value)
-            .map_err(|e| WorkspaceError::parse_error(Box::new(e)))?;
+            .map_err(|e| WorkspaceError::Other(Box::new(e)))?;
 
         Ok(Self(sk))
     }
@@ -137,7 +137,7 @@ impl std::str::FromStr for CryptoHash {
     type Err = WorkspaceError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = from_base(s).map_err(WorkspaceError::parse_error)?;
+        let bytes = from_base(s).map_err(WorkspaceError::Other)?;
         Self::try_from(bytes)
     }
 }
@@ -147,9 +147,8 @@ impl TryFrom<&[u8]> for CryptoHash {
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 32 {
-            return Err(WorkspaceError::simple(
-                WorkspaceErrorKind::Other,
-                "incorrect length for hash",
+            return Err(WorkspaceError::Other(
+                anyhow::anyhow!("incorrect length for hash").into(),
             ));
         }
         let mut buf = [0; 32];

@@ -22,7 +22,7 @@ use near_primitives::views::{
     QueryRequest, StatusResponse,
 };
 
-use crate::error::{WorkspaceError, WorkspaceErrorKind};
+use crate::error::WorkspaceError;
 use crate::result::ViewResultDetails;
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
@@ -371,7 +371,7 @@ impl Client {
         let timeout_secs = match std::env::var("NEAR_RPC_TIMEOUT_SECS") {
             Ok(secs) => secs
                 .parse::<usize>()
-                .map_err(|e| WorkspaceError::other(e.into()))?,
+                .map_err(|e| WorkspaceError::Other(e.into()))?,
             Err(_) => 10,
         };
 
@@ -381,11 +381,9 @@ impl Client {
         Retry::spawn(retry_strategy, || async { self.status().await })
             .await
             .map_err(|e| {
-                WorkspaceErrorKind::RpcConnectFail.into_error_with_repr(anyhow::anyhow!(
+                WorkspaceError::RpcConnectFail(format!(
                     "Failed to connect to RPC service {} within {} seconds: {:?}",
-                    self.rpc_addr,
-                    timeout_secs,
-                    e
+                    self.rpc_addr, timeout_secs, e
                 ))
             })?;
         Ok(())
