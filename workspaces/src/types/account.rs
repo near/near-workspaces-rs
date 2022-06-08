@@ -62,7 +62,7 @@ impl Account {
         worker: &Worker<T>,
         receiver_id: &AccountId,
         amount: Balance,
-    ) -> anyhow::Result<CallExecutionDetails> {
+    ) -> crate::result::Result<CallExecutionDetails> {
         worker
             .transfer_near(self.signer(), receiver_id, amount)
             .await
@@ -74,7 +74,7 @@ impl Account {
         self,
         worker: &Worker<T>,
         beneficiary_id: &AccountId,
-    ) -> anyhow::Result<CallExecutionDetails> {
+    ) -> crate::result::Result<CallExecutionDetails> {
         worker
             .delete_account(&self.id, &self.signer, beneficiary_id)
             .await
@@ -239,7 +239,7 @@ impl Contract {
         self,
         worker: &Worker<T>,
         beneficiary_id: &AccountId,
-    ) -> anyhow::Result<CallExecutionDetails> {
+    ) -> crate::result::Result<CallExecutionDetails> {
         self.account.delete_account(worker, beneficiary_id).await
     }
 

@@ -11,8 +11,10 @@ pub enum Error {
 pub enum WorkspaceError {
     #[error("failed to connect to rpc service")]
     RpcConnectFail(String),
-    #[error("execution error")]
-    ExecutionError,
+    #[error("RPC errored out: {0}")]
+    RpcError(anyhow::Error),
+    #[error("Execution error: {0}")]
+    ExecutionError(String),
     #[error("sandbox has already been started")]
     SandboxAlreadyStarted,
     #[error("IO error from {0}")]

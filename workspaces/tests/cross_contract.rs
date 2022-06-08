@@ -23,6 +23,7 @@ async fn cross_contract_create_contract(
         .max_gas()
         .transact()
         .await
+        .map_err(Into::into)
 }
 
 #[tokio::test]

@@ -118,7 +118,7 @@ impl Client {
         signer: &InMemorySigner,
         receiver_id: &AccountId,
         action: Action,
-    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+    ) -> crate::result::Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(self, signer, receiver_id, vec![action]).await
     }
 
@@ -130,7 +130,7 @@ impl Client {
         args: Vec<u8>,
         gas: Gas,
         deposit: Balance,
-    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+    ) -> crate::result::Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             contract_id,
@@ -255,7 +255,7 @@ impl Client {
         signer: &InMemorySigner,
         contract_id: &AccountId,
         wasm: Vec<u8>,
-    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+    ) -> crate::result::Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             contract_id,
@@ -270,7 +270,7 @@ impl Client {
         signer: &InMemorySigner,
         receiver_id: &AccountId,
         amount_yocto: Balance,
-    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+    ) -> crate::result::Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             receiver_id,
@@ -288,7 +288,7 @@ impl Client {
         new_account_id: &AccountId,
         new_account_pk: PublicKey,
         amount: Balance,
-    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+    ) -> crate::result::Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(
             self,
             signer,
@@ -316,7 +316,7 @@ impl Client {
         new_account_pk: PublicKey,
         amount: Balance,
         code: Vec<u8>,
-    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+    ) -> crate::result::Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(
             self,
             signer,
@@ -344,7 +344,7 @@ impl Client {
         signer: &InMemorySigner,
         account_id: &AccountId,
         beneficiary_id: &AccountId,
-    ) -> anyhow::Result<FinalExecutionOutcomeView> {
+    ) -> crate::result::Result<FinalExecutionOutcomeView> {
         let beneficiary_id = beneficiary_id.to_owned();
         self.send_tx_and_retry(
             signer,
@@ -394,7 +394,7 @@ pub(crate) async fn access_key(
     client: &Client,
     account_id: near_primitives::account::id::AccountId,
     public_key: near_crypto::PublicKey,
-) -> anyhow::Result<(AccessKeyView, CryptoHash)> {
+) -> crate::result::Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::None.into(),
@@ -403,11 +403,14 @@ pub(crate) async fn access_key(
                 public_key,
             },
         })
-        .await?;
+        .await
+        .map_err(|e| WorkspaceError::RpcError(e.into()))?;
 
     match query_resp.kind {
         QueryResponseKind::AccessKey(access_key) => Ok((access_key, query_resp.block_hash)),
-        _ => Err(anyhow::anyhow!("Could not retrieve access key")),
+        _ => Err(WorkspaceError::RpcError(anyhow::anyhow!(
+            "Could not retrieve access key"
+        ))),
     }
 }
 
@@ -426,22 +429,22 @@ where
 pub(crate) async fn send_tx(
     client: &Client,
     tx: SignedTransaction,
-) -> anyhow::Result<FinalExecutionOutcomeView> {
+) -> crate::result::Result<FinalExecutionOutcomeView> {
     client
         .query_broadcast_tx(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
             signed_transaction: tx,
         })
         .await
-        .map_err(|e| anyhow::anyhow!(e))
+        .map_err(|e| WorkspaceError::RpcError(e.into()))
 }
 
 pub(crate) async fn send_tx_and_retry<T, F>(
     client: &Client,
     task: F,
-) -> anyhow::Result<FinalExecutionOutcomeView>
+) -> crate::result::Result<FinalExecutionOutcomeView>
 where
     F: Fn() -> T,
-    T: core::future::Future<Output = anyhow::Result<SignedTransaction>>,
+    T: core::future::Future<Output = crate::result::Result<SignedTransaction>>,
 {
     retry(|| async { send_tx(client, task().await?).await }).await
 }
@@ -451,7 +454,7 @@ pub(crate) async fn send_batch_tx_and_retry(
     signer: &InMemorySigner,
     receiver_id: &AccountId,
     actions: Vec<Action>,
-) -> anyhow::Result<FinalExecutionOutcomeView> {
+) -> crate::result::Result<FinalExecutionOutcomeView> {
     send_tx_and_retry(client, || async {
         let (AccessKeyView { nonce, .. }, block_hash) = access_key(
             client,

@@ -6,6 +6,7 @@ use near_primitives::views::{
     FinalExecutionStatus,
 };
 
+use crate::error::WorkspaceError;
 use crate::types::{CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::WorkspaceError> = core::result::Result<T, E>;
@@ -98,17 +99,27 @@ impl CallExecutionDetails {
 
     /// Convert the execution details into a Result if its status is not a successful one.
     /// Useful for checking if the call was successful and forwarding the error upwards.
-    fn try_into_result(self) -> anyhow::Result<Self> {
+    fn try_into_result(self) -> crate::result::Result<Self> {
         match self.status {
-            FinalExecutionStatus::Failure(ref err) => anyhow::bail!(err.clone()),
-            FinalExecutionStatus::NotStarted => anyhow::bail!("Transaction not started."),
-            FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
+            FinalExecutionStatus::Failure(ref err) => {
+                return Err(WorkspaceError::ExecutionError(err.to_string()))
+            }
+            FinalExecutionStatus::NotStarted => {
+                return Err(WorkspaceError::ExecutionError(
+                    "Transaction not started.".into(),
+                ))
+            }
+            FinalExecutionStatus::Started => {
+                return Err(WorkspaceError::ExecutionError(
+                    "Transaction still being processed.".into(),
+                ))
+            }
             _ => (),
         };
         Ok(self)
     }
 
-    pub(crate) fn from_outcome(outcome: FinalExecutionOutcomeView) -> anyhow::Result<Self> {
+    pub(crate) fn from_outcome(outcome: FinalExecutionOutcomeView) -> crate::result::Result<Self> {
         Self::from(outcome).try_into_result()
     }
 

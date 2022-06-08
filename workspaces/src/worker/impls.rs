@@ -69,7 +69,7 @@ where
         args: Vec<u8>,
         gas: Option<Gas>,
         deposit: Option<Balance>,
-    ) -> anyhow::Result<CallExecutionDetails> {
+    ) -> crate::result::Result<CallExecutionDetails> {
         self.client()
             .call(
                 contract.signer(),
@@ -126,7 +126,7 @@ where
         signer: &InMemorySigner,
         receiver_id: &AccountId,
         amount_yocto: Balance,
-    ) -> anyhow::Result<CallExecutionDetails> {
+    ) -> crate::result::Result<CallExecutionDetails> {
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
@@ -140,7 +140,7 @@ where
         account_id: &AccountId,
         signer: &InMemorySigner,
         beneficiary_id: &AccountId,
-    ) -> anyhow::Result<CallExecutionDetails> {
+    ) -> crate::result::Result<CallExecutionDetails> {
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
             .await

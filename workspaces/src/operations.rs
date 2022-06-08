@@ -188,12 +188,12 @@ impl<'a> Transaction<'a> {
         self
     }
 
-    async fn transact_raw(self) -> anyhow::Result<FinalExecutionOutcomeView> {
+    async fn transact_raw(self) -> crate::result::Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions).await
     }
 
     /// Process the trannsaction, and return the result of the execution.
-    pub async fn transact(self) -> anyhow::Result<CallExecutionDetails> {
+    pub async fn transact(self) -> crate::result::Result<CallExecutionDetails> {
         self.transact_raw()
             .await
             .and_then(CallExecutionDetails::from_outcome)
@@ -271,7 +271,7 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     /// Finally, send the transaction to the network. This will consume the `CallTransaction`
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
-    pub async fn transact(self) -> anyhow::Result<CallExecutionDetails> {
+    pub async fn transact(self) -> crate::result::Result<CallExecutionDetails> {
         self.worker
             .client()
             .call(
