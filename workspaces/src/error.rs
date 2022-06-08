@@ -6,6 +6,8 @@ pub enum Error {
     SerializationError(SerializationError),
 }
 
+// TODO:
+// - RpcError is a little unwieldy
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum WorkspaceError {
@@ -13,6 +15,8 @@ pub enum WorkspaceError {
     RpcConnectFail(String),
     #[error("RPC errored out: {0}")]
     RpcError(anyhow::Error),
+    #[error("access key was unstable to retrieved")]
+    UnableToRetrieveAccessKey,
     #[error("Execution error: {0}")]
     ExecutionError(String),
     #[error("sandbox has already been started")]
@@ -22,6 +26,8 @@ pub enum WorkspaceError {
     // TODO: Add Parse specific error
     #[error("Parse error")]
     ParseError,
+    #[error("failed to decode base64 due to {0}")]
+    DecodeError(#[from] base64::DecodeError),
     #[error("other error")]
     Other(#[from] Box<dyn std::error::Error>),
 }

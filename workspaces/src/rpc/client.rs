@@ -32,6 +32,10 @@ pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 const ERR_INVALID_VARIANT: &str =
     "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
 
+fn invalid_variant_error() -> WorkspaceError {
+    WorkspaceError::RpcError(anyhow::anyhow!(ERR_INVALID_VARIANT))
+}
+
 /// A client that wraps around JsonRpcClient, and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
 pub struct Client {
@@ -165,7 +169,7 @@ impl Client {
 
         match query_resp.kind {
             QueryResponseKind::CallResult(result) => Ok(result.into()),
-            _ => Err(WorkspaceError::RpcError(anyhow::anyhow!(ERR_INVALID_VARIANT))),
+            _ => Err(invalid_variant_error()),
         }
     }
 
@@ -174,7 +178,7 @@ impl Client {
         contract_id: AccountId,
         prefix: Option<&[u8]>,
         block_id: Option<BlockId>,
-    ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
+    ) -> crate::result::Result<HashMap<Vec<u8>, Vec<u8>>> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
@@ -187,11 +191,12 @@ impl Client {
                     prefix: StoreKey::from(prefix.map(Vec::from).unwrap_or_default()),
                 },
             })
-            .await?;
+            .await
+            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
 
         match query_resp.kind {
             QueryResponseKind::ViewState(state) => tool::into_state_map(&state.values),
-            _ => anyhow::bail!(ERR_INVALID_VARIANT),
+            _ => Err(invalid_variant_error()),
         }
     }
 
@@ -199,7 +204,7 @@ impl Client {
         &self,
         account_id: AccountId,
         block_id: Option<BlockId>,
-    ) -> anyhow::Result<AccountView> {
+    ) -> crate::result::Result<AccountView> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
@@ -209,11 +214,12 @@ impl Client {
                 block_reference,
                 request: QueryRequest::ViewAccount { account_id },
             })
-            .await?;
+            .await
+            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
 
         match query_resp.kind {
             QueryResponseKind::ViewAccount(account) => Ok(account),
-            _ => anyhow::bail!(ERR_INVALID_VARIANT),
+            _ => Err(invalid_variant_error()),
         }
     }
 
@@ -221,7 +227,7 @@ impl Client {
         &self,
         account_id: AccountId,
         block_id: Option<BlockId>,
-    ) -> anyhow::Result<ContractCodeView> {
+    ) -> crate::result::Result<ContractCodeView> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
@@ -231,22 +237,27 @@ impl Client {
                 block_reference,
                 request: QueryRequest::ViewCode { account_id },
             })
-            .await?;
+            .await
+            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
 
         match query_resp.kind {
             QueryResponseKind::ViewCode(code) => Ok(code),
-            _ => anyhow::bail!(ERR_INVALID_VARIANT),
+            _ => Err(invalid_variant_error()),
         }
     }
 
-    pub(crate) async fn view_block(&self, block_id: Option<BlockId>) -> anyhow::Result<BlockView> {
+    pub(crate) async fn view_block(
+        &self,
+        block_id: Option<BlockId>,
+    ) -> crate::result::Result<BlockView> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
 
         let block_view = self
             .query(&methods::block::RpcBlockRequest { block_reference })
-            .await?;
+            .await
+            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
 
         Ok(block_view)
     }
@@ -409,9 +420,7 @@ pub(crate) async fn access_key(
 
     match query_resp.kind {
         QueryResponseKind::AccessKey(access_key) => Ok((access_key, query_resp.block_hash)),
-        _ => Err(WorkspaceError::RpcError(anyhow::anyhow!(
-            "Could not retrieve access key"
-        ))),
+        _ => Err(WorkspaceError::UnableToRetrieveAccessKey),
     }
 }
 

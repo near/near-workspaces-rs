@@ -84,7 +84,7 @@ impl Account {
     pub async fn view_account<T: Network>(
         &self,
         worker: &Worker<T>,
-    ) -> anyhow::Result<AccountDetails> {
+    ) -> crate::result::Result<AccountDetails> {
         worker.view_account(&self.id).await
     }
 
@@ -221,7 +221,7 @@ impl Contract {
         &self,
         worker: &Worker<T>,
         prefix: Option<&[u8]>,
-    ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
+    ) -> crate::result::Result<HashMap<Vec<u8>, Vec<u8>>> {
         worker.view_state(self.id(), prefix).await
     }
 
@@ -229,7 +229,7 @@ impl Contract {
     pub async fn view_account<T: Network>(
         &self,
         worker: &Worker<T>,
-    ) -> anyhow::Result<AccountDetails> {
+    ) -> crate::result::Result<AccountDetails> {
         worker.view_account(self.id()).await
     }
 

@@ -108,14 +108,14 @@ where
         &self,
         contract_id: &AccountId,
         prefix: Option<&[u8]>,
-    ) -> anyhow::Result<HashMap<Vec<u8>, Vec<u8>>> {
+    ) -> crate::result::Result<HashMap<Vec<u8>, Vec<u8>>> {
         self.client()
             .view_state(contract_id.clone(), prefix, None)
             .await
     }
 
     /// View the latest block from the network
-    pub async fn view_latest_block(&self) -> anyhow::Result<Block> {
+    pub async fn view_latest_block(&self) -> crate::result::Result<Block> {
         self.client().view_block(None).await.map(Into::into)
     }
 
@@ -148,7 +148,10 @@ where
     }
 
     /// View account details of a specific account on the network.
-    pub async fn view_account(&self, account_id: &AccountId) -> anyhow::Result<AccountDetails> {
+    pub async fn view_account(
+        &self,
+        account_id: &AccountId,
+    ) -> crate::result::Result<AccountDetails> {
         self.client()
             .view_account(account_id.clone(), None)
             .await
