@@ -89,7 +89,7 @@ where
         contract_id: &AccountId,
         function: &str,
         args: Vec<u8>,
-    ) -> anyhow::Result<ViewResultDetails> {
+    ) -> crate::result::Result<ViewResultDetails> {
         self.client()
             .view(contract_id.clone(), function.into(), args)
             .await

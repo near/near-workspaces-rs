@@ -287,7 +287,7 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     }
 
     /// Instead of transacting the transaction, call into the specified view function.
-    pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
+    pub async fn view(self) -> crate::result::Result<ViewResultDetails> {
         self.worker
             .client()
             .view(

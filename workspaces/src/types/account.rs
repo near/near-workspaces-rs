@@ -207,7 +207,7 @@ impl Contract {
         worker: &Worker<T>,
         function: &str,
         args: Vec<u8>,
-    ) -> anyhow::Result<ViewResultDetails> {
+    ) -> crate::result::Result<ViewResultDetails> {
         worker.view(self.id(), function, args).await
     }
 

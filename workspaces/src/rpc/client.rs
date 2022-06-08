@@ -150,7 +150,7 @@ impl Client {
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-    ) -> anyhow::Result<ViewResultDetails> {
+    ) -> crate::result::Result<ViewResultDetails> {
         let query_resp = self
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
@@ -160,11 +160,12 @@ impl Client {
                     args: args.into(),
                 },
             })
-            .await?;
+            .await
+            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
 
         match query_resp.kind {
             QueryResponseKind::CallResult(result) => Ok(result.into()),
-            _ => anyhow::bail!(ERR_INVALID_VARIANT),
+            _ => Err(WorkspaceError::RpcError(anyhow::anyhow!(ERR_INVALID_VARIANT))),
         }
     }
 
