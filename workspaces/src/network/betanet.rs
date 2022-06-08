@@ -21,7 +21,7 @@ pub struct Betanet {
 }
 
 impl Betanet {
-    pub(crate) async fn new() -> anyhow::Result<Self> {
+    pub(crate) async fn new() -> crate::result::Result<Self> {
         let client = Client::new(RPC_URL.into());
         client.wait_for_rpc().await?;
 

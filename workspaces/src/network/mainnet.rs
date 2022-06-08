@@ -1,4 +1,5 @@
 use crate::network::{Info, NetworkClient, NetworkInfo};
+use crate::result::Result;
 use crate::rpc::client::Client;
 use std::path::PathBuf;
 
@@ -21,7 +22,7 @@ pub struct Mainnet {
 }
 
 impl Mainnet {
-    pub(crate) async fn new() -> anyhow::Result<Self> {
+    pub(crate) async fn new() -> Result<Self> {
         let client = Client::new(RPC_URL.into());
         client.wait_for_rpc().await?;
 
@@ -36,7 +37,7 @@ impl Mainnet {
         })
     }
 
-    pub(crate) async fn archival() -> anyhow::Result<Self> {
+    pub(crate) async fn archival() -> Result<Self> {
         let client = Client::new(ARCHIVAL_URL.into());
         client.wait_for_rpc().await?;
 

@@ -8,6 +8,7 @@ use near_primitives::views::{ExecutionStatusView, FinalExecutionStatus};
 
 use crate::network::Info;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::result::Result;
 use crate::result::{CallExecution, CallExecutionDetails, ExecutionOutcome};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
@@ -30,7 +31,7 @@ pub struct Testnet {
 }
 
 impl Testnet {
-    pub(crate) async fn new() -> anyhow::Result<Self> {
+    pub(crate) async fn new() -> Result<Self> {
         let client = Client::new(RPC_URL.into());
         client.wait_for_rpc().await?;
 
@@ -45,7 +46,7 @@ impl Testnet {
         })
     }
 
-    pub(crate) async fn archival() -> anyhow::Result<Self> {
+    pub(crate) async fn archival() -> Result<Self> {
         let client = Client::new(ARCHIVAL_URL.into());
         client.wait_for_rpc().await?;
 
