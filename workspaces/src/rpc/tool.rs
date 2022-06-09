@@ -11,13 +11,14 @@ use url::Url;
 use near_crypto::SecretKey;
 use near_primitives::views::StateItem;
 
+use crate::error::{SerializationError, WorkspaceError};
 use crate::types::{AccountId, PublicKey};
 
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
 /// Assumes key and value are base64 encoded, so this also decodes them.
 pub(crate) fn into_state_map(
     state_items: &[StateItem],
-) -> crate::result::Result<HashMap<Vec<u8>, Vec<u8>>> {
+) -> Result<HashMap<Vec<u8>, Vec<u8>>, WorkspaceError> {
     let decode = |s: &StateItem| Ok((base64::decode(&s.key)?, base64::decode(&s.value)?));
 
     state_items.iter().map(decode).collect()
@@ -38,19 +39,23 @@ pub(crate) async fn url_create_account(
     helper_url: Url,
     account_id: AccountId,
     pk: PublicKey,
-) -> anyhow::Result<()> {
-    let helper_addr = helper_url.join("account")?;
+) -> crate::result::Result<()> {
+    let helper_url = helper_url.join("account").unwrap();
 
     // TODO(maybe): need this in near-jsonrpc-client as well:
     let _resp = reqwest::Client::new()
-        .post(helper_addr)
+        .post(helper_url)
         .header("Content-Type", "application/json")
-        .body(serde_json::to_vec(&serde_json::json!({
-            "newAccountId": account_id,
-            "newAccountPublicKey": pk,
-        }))?)
+        .body(
+            serde_json::to_vec(&serde_json::json!({
+                "newAccountId": account_id,
+                "newAccountPublicKey": pk,
+            }))
+            .map_err(SerializationError::SerdeError)?,
+        )
         .send()
-        .await?;
+        .await
+        .map_err(|e| WorkspaceError::Other(Box::new(e)))?;
 
     Ok(())
 }

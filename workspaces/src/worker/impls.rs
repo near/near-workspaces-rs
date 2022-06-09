@@ -30,7 +30,7 @@ where
         &self,
         id: AccountId,
         sk: SecretKey,
-    ) -> anyhow::Result<CallExecution<Account>> {
+    ) -> crate::result::Result<CallExecution<Account>> {
         self.workspace.create_tla(id, sk).await
     }
 
@@ -39,7 +39,7 @@ where
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> anyhow::Result<CallExecution<Contract>> {
+    ) -> crate::result::Result<CallExecution<Contract>> {
         self.workspace.create_tla_and_deploy(id, sk, wasm).await
     }
 }
@@ -80,6 +80,7 @@ where
                 deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
             )
             .await
+            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 
@@ -93,6 +94,7 @@ where
         self.client()
             .view(contract_id.clone(), function.into(), args)
             .await
+            .map_err(crate::error::Error::from)
     }
 
     /// View the WASM code bytes of a contract on the network.
@@ -112,6 +114,7 @@ where
         self.client()
             .view_state(contract_id.clone(), prefix, None)
             .await
+            .map_err(crate::error::Error::from)
     }
 
     /// View the latest block from the network
@@ -130,6 +133,7 @@ where
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
+            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 
@@ -144,6 +148,7 @@ where
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
             .await
+            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 
@@ -155,6 +160,7 @@ where
         self.client()
             .view_account(account_id.clone(), None)
             .await
+            .map_err(crate::error::Error::from)
             .map(Into::into)
     }
 }

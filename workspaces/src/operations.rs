@@ -1,6 +1,6 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
-use crate::error::SerializationError;
+use crate::error::{SerializationError, WorkspaceError};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
@@ -11,6 +11,7 @@ use crate::types::{
 use crate::worker::Worker;
 use crate::{Account, Network};
 
+use near_account_id::ParseAccountError;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
     DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
@@ -188,7 +189,7 @@ impl<'a> Transaction<'a> {
         self
     }
 
-    async fn transact_raw(self) -> crate::result::Result<FinalExecutionOutcomeView> {
+    async fn transact_raw(self) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
         send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions).await
     }
 
@@ -196,6 +197,7 @@ impl<'a> Transaction<'a> {
     pub async fn transact(self) -> crate::result::Result<CallExecutionDetails> {
         self.transact_raw()
             .await
+            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 }
@@ -283,6 +285,7 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
                 self.function.deposit,
             )
             .await
+            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 
@@ -296,6 +299,7 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
                 self.function.args,
             )
             .await
+            .map_err(crate::error::Error::from)
     }
 }
 
@@ -346,11 +350,13 @@ where
 
     /// Send the transaction to the network. This will consume the `CreateAccountTransaction`
     /// and give us back the details of the execution and finally the new [`Account`] object.
-    pub async fn transact(self) -> anyhow::Result<CallExecution<Account>> {
+    pub async fn transact(self) -> crate::result::Result<CallExecution<Account>> {
         let sk = self
             .secret_key
             .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
-        let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id).try_into()?;
+        let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id)
+            .try_into()
+            .map_err(|e: ParseAccountError| WorkspaceError::AccountError(e.to_string()))?;
 
         let outcome = self
             .worker

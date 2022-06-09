@@ -1,13 +1,14 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("workspace error from {0}")]
-    WorkspaceError(WorkspaceError),
+    WorkspaceError(#[from] WorkspaceError),
     #[error("workspace error from {0}")]
-    SerializationError(SerializationError),
+    SerializationError(#[from] SerializationError),
 }
 
 // TODO:
 // - RpcError is a little unwieldy
+// - since account id is public, maybe expose it as-is
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum WorkspaceError {
@@ -23,6 +24,8 @@ pub enum WorkspaceError {
     SandboxAlreadyStarted,
     #[error("IO error from {0}")]
     IoError(#[from] std::io::Error),
+    #[error("account error from {0}")]
+    AccountError(String),
     // TODO: Add Parse specific error
     #[error("Parse error")]
     ParseError,

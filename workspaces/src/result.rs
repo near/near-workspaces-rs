@@ -9,7 +9,7 @@ use near_primitives::views::{
 use crate::error::WorkspaceError;
 use crate::types::{CryptoHash, Gas};
 
-pub type Result<T, E = crate::error::WorkspaceError> = core::result::Result<T, E>;
+pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
 
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
@@ -24,8 +24,8 @@ impl<T> CallExecution<T> {
         self.into_result().unwrap()
     }
 
-    pub fn into_result(self) -> anyhow::Result<T> {
-        Into::<anyhow::Result<_>>::into(self)
+    pub fn into_result(self) -> Result<T> {
+        Into::<Result<_>>::into(self)
     }
 
     /// Checks whether the transaction was successful. Returns true if
@@ -41,16 +41,10 @@ impl<T> CallExecution<T> {
     }
 }
 
-impl<T> From<CallExecution<T>> for anyhow::Result<T> {
-    fn from(value: CallExecution<T>) -> anyhow::Result<T> {
-        match value.details.status {
-            FinalExecutionStatus::SuccessValue(_) => Ok(value.result),
-            FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
-            FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started.")),
-            FinalExecutionStatus::Started => {
-                Err(anyhow::anyhow!("Transaction still being processed."))
-            }
-        }
+impl<T> From<CallExecution<T>> for Result<T> {
+    fn from(value: CallExecution<T>) -> Result<T> {
+        value.details.try_into_result()?;
+        Ok(value.result)
     }
 }
 
@@ -87,35 +81,33 @@ impl CallExecutionDetails {
     /// Grab the underlying raw bytes returned from calling into a contract's function.
     /// If we want to deserialize these bytes into a rust datatype, use [`CallExecutionDetails::json`]
     /// or [`CallExecutionDetails::borsh`] instead.
-    pub fn raw_bytes(&self) -> anyhow::Result<Vec<u8>> {
-        let result: &str = match self.status {
-            FinalExecutionStatus::SuccessValue(ref val) => val,
-            FinalExecutionStatus::Failure(ref err) => anyhow::bail!(err.clone()),
-            FinalExecutionStatus::NotStarted => anyhow::bail!("Transaction not started."),
-            FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
-        };
-        base64::decode(result).map_err(Into::into)
+    pub fn raw_bytes(&self) -> Result<Vec<u8>> {
+        let result = self.try_into_success_value()?;
+        base64::decode(result)
+            .map_err(WorkspaceError::DecodeError)
+            .map_err(Into::into)
+    }
+
+    fn try_into_success_value(&self) -> Result<&str> {
+        match self.status {
+            FinalExecutionStatus::SuccessValue(ref val) => Ok(val),
+            FinalExecutionStatus::Failure(ref err) => {
+                Err(WorkspaceError::ExecutionError(err.to_string()).into())
+            }
+            FinalExecutionStatus::NotStarted => {
+                Err(WorkspaceError::ExecutionError("Transaction not started.".into()).into())
+            }
+            FinalExecutionStatus::Started => Err(WorkspaceError::ExecutionError(
+                "Transaction still being processed.".into(),
+            )
+            .into()),
+        }
     }
 
     /// Convert the execution details into a Result if its status is not a successful one.
     /// Useful for checking if the call was successful and forwarding the error upwards.
-    fn try_into_result(self) -> crate::result::Result<Self> {
-        match self.status {
-            FinalExecutionStatus::Failure(ref err) => {
-                return Err(WorkspaceError::ExecutionError(err.to_string()))
-            }
-            FinalExecutionStatus::NotStarted => {
-                return Err(WorkspaceError::ExecutionError(
-                    "Transaction not started.".into(),
-                ))
-            }
-            FinalExecutionStatus::Started => {
-                return Err(WorkspaceError::ExecutionError(
-                    "Transaction still being processed.".into(),
-                ))
-            }
-            _ => (),
-        };
+    fn try_into_result(self) -> Result<Self> {
+        self.try_into_success_value()?;
         Ok(self)
     }
 

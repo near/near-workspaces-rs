@@ -25,7 +25,7 @@ impl SandboxServer {
         }
     }
 
-    pub fn start(&mut self) -> crate::result::Result<()> {
+    pub fn start(&mut self) -> Result<(), WorkspaceError> {
         if self.process.is_some() {
             return Err(WorkspaceError::SandboxAlreadyStarted);
         }
@@ -39,12 +39,13 @@ impl SandboxServer {
         // Remove dir if it already exists:
         let _ = std::fs::remove_dir_all(&home_dir);
         sandbox::init(&home_dir)
-            .map_err(WorkspaceError::Other)?
+            .map_err(|e| WorkspaceError::Other(e.into()))?
             .wait()
             .map_err(WorkspaceError::IoError)?;
 
-        let child =
-            sandbox::run(&home_dir, self.rpc_port, self.net_port).map_err(WorkspaceError::Other)?;
+        let child = sandbox::run(&home_dir, self.rpc_port, self.net_port)
+            .map_err(|e| WorkspaceError::Other(e.into()))?;
+
         info!(target: "workspaces", "Started sandbox: pid={:?}", child.id());
         self.process = Some(child);
 

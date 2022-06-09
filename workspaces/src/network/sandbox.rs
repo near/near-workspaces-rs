@@ -9,7 +9,7 @@ use near_primitives::state_record::StateRecord;
 use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::network::server::SandboxServer;
 use crate::network::Info;
-use crate::result::CallExecution;
+use crate::result::{CallExecution, Result};
 use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
@@ -45,7 +45,7 @@ impl Sandbox {
         InMemorySigner::from_file(&path)
     }
 
-    pub(crate) async fn new() -> crate::result::Result<Self> {
+    pub(crate) async fn new() -> Result<Self> {
         let mut server = SandboxServer::default();
         server.start()?;
         let client = Client::new(server.rpc_addr());
@@ -70,11 +70,7 @@ impl AllowDevAccountCreation for Sandbox {}
 
 #[async_trait]
 impl TopLevelAccountCreator for Sandbox {
-    async fn create_tla(
-        &self,
-        id: AccountId,
-        sk: SecretKey,
-    ) -> anyhow::Result<CallExecution<Account>> {
+    async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
         let root_signer = self.root_signer();
         let outcome = self
             .client
@@ -93,7 +89,7 @@ impl TopLevelAccountCreator for Sandbox {
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> anyhow::Result<CallExecution<Contract>> {
+    ) -> Result<CallExecution<Contract>> {
         let root_signer = self.root_signer();
         let outcome = self
             .client
