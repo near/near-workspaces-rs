@@ -1,3 +1,4 @@
+use crate::error::WorkspaceError;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::network::{Info, Sandbox};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
@@ -191,7 +192,7 @@ impl Worker<Sandbox> {
         contract_id: &AccountId,
         key: &[u8],
         value: &[u8],
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), WorkspaceError> {
         self.workspace.patch_state(contract_id, key, value).await
     }
 
@@ -201,7 +202,7 @@ impl Worker<Sandbox> {
     ///
     /// Estimate as to how long it takes: if our delta_height crosses `X` epochs, then it would
     /// roughly take `X * 5` seconds for the fast forward request to be processed.
-    pub async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
+    pub async fn fast_forward(&self, delta_height: u64) -> Result<(), WorkspaceError> {
         self.workspace.fast_forward(delta_height).await
     }
 }

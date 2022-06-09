@@ -23,6 +23,10 @@ pub enum WorkspaceError {
     ExecutionError(String),
     #[error("sandbox has already been started")]
     SandboxAlreadyStarted,
+    #[error("sandbox failed to patch state: {0}")]
+    SandboxPatchStateFailure(String),
+    #[error("sandbox failed to fast forward: {0}")]
+    SandboxFastForwardFailure(String),
     #[error("IO error from {0}")]
     IoError(#[from] std::io::Error),
     #[error("account error from {0}")]
