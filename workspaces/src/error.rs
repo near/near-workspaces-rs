@@ -9,6 +9,7 @@ pub enum Error {
 // TODO:
 // - RpcError is a little unwieldy
 // - since account id is public, maybe expose it as-is
+// - decide where DecodeError should live. It kind fits in with serialization error
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum WorkspaceError {

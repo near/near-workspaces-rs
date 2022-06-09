@@ -6,7 +6,7 @@ use near_primitives::views::{
     FinalExecutionStatus,
 };
 
-use crate::error::WorkspaceError;
+use crate::error::{SerializationError, WorkspaceError};
 use crate::types::{CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
@@ -65,17 +65,21 @@ impl CallExecutionDetails {
     /// execution result of this call. This conversion can fail if the structure of
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
-    pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
-        serde_json::from_slice(&buf).map_err(Into::into)
+        serde_json::from_slice(&buf)
+            .map_err(SerializationError::SerdeError)
+            .map_err(Into::into)
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from the execution
     /// result. This conversion can fail if the structure of the internal state does
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
-    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
-        borsh::BorshDeserialize::try_from_slice(&buf).map_err(Into::into)
+        borsh::BorshDeserialize::try_from_slice(&buf)
+            .map_err(SerializationError::BorshError)
+            .map_err(Into::into)
     }
 
     /// Grab the underlying raw bytes returned from calling into a contract's function.
