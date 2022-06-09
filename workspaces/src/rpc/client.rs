@@ -22,19 +22,13 @@ use near_primitives::views::{
     QueryRequest, StatusResponse,
 };
 
-use crate::error::WorkspaceError;
+use crate::error::{RpcErrorKind, WorkspaceError};
 use crate::result::ViewResultDetails;
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
-const ERR_INVALID_VARIANT: &str =
-    "Incorrect variant retrieved while querying: maybe a bug in RPC code?";
-
-fn invalid_variant_error() -> WorkspaceError {
-    WorkspaceError::RpcError(anyhow::anyhow!(ERR_INVALID_VARIANT))
-}
 
 /// A client that wraps around JsonRpcClient, and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
@@ -165,11 +159,13 @@ impl Client {
                 },
             })
             .await
-            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
+            .map_err(|e| RpcErrorKind::ViewFunctionFailure.with_repr(e.into()))?;
 
         match query_resp.kind {
             QueryResponseKind::CallResult(result) => Ok(result.into()),
-            _ => Err(invalid_variant_error()),
+            _ => Err(RpcErrorKind::QueryReturnedInvalidData
+                .with_msg("while calling into view function")
+                .into()),
         }
     }
 
@@ -192,11 +188,13 @@ impl Client {
                 },
             })
             .await
-            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
+            .map_err(|e| RpcErrorKind::QueryFailure.with_repr(e.into()))?;
 
         match query_resp.kind {
             QueryResponseKind::ViewState(state) => tool::into_state_map(&state.values),
-            _ => Err(invalid_variant_error()),
+            _ => Err(RpcErrorKind::QueryReturnedInvalidData
+                .with_msg("while querying state")
+                .into()),
         }
     }
 
@@ -215,11 +213,13 @@ impl Client {
                 request: QueryRequest::ViewAccount { account_id },
             })
             .await
-            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
+            .map_err(|e| RpcErrorKind::QueryFailure.with_repr(e.into()))?;
 
         match query_resp.kind {
             QueryResponseKind::ViewAccount(account) => Ok(account),
-            _ => Err(invalid_variant_error()),
+            _ => Err(RpcErrorKind::QueryReturnedInvalidData
+                .with_msg("while querying account")
+                .into()),
         }
     }
 
@@ -238,18 +238,20 @@ impl Client {
                 request: QueryRequest::ViewCode { account_id },
             })
             .await
-            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
+            .map_err(|e| RpcErrorKind::QueryFailure.with_repr(e.into()))?;
 
         match query_resp.kind {
             QueryResponseKind::ViewCode(code) => Ok(code),
-            _ => Err(invalid_variant_error()),
+            _ => Err(RpcErrorKind::QueryReturnedInvalidData
+                .with_msg("while querying code")
+                .into()),
         }
     }
 
     pub(crate) async fn view_block(
         &self,
         block_id: Option<BlockId>,
-    ) -> crate::result::Result<BlockView> {
+    ) -> Result<BlockView, WorkspaceError> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
@@ -257,7 +259,7 @@ impl Client {
         let block_view = self
             .query(&methods::block::RpcBlockRequest { block_reference })
             .await
-            .map_err(|e| WorkspaceError::RpcError(e.into()))?;
+            .map_err(|e| RpcErrorKind::QueryBlockFailure.with_repr(e.into()))?;
 
         Ok(block_view)
     }
@@ -393,10 +395,12 @@ impl Client {
         Retry::spawn(retry_strategy, || async { self.status().await })
             .await
             .map_err(|e| {
-                WorkspaceError::RpcConnectFail(format!(
+                let err = RpcErrorKind::ConnectionFailure.with_repr(anyhow::anyhow!(format!(
                     "Failed to connect to RPC service {} within {} seconds: {:?}",
                     self.rpc_addr, timeout_secs, e
-                ))
+                )));
+
+                Into::<WorkspaceError>::into(err)
             })?;
         Ok(())
     }
@@ -416,11 +420,13 @@ pub(crate) async fn access_key(
             },
         })
         .await
-        .map_err(|e| WorkspaceError::RpcError(e.into()))?;
+        .map_err(|e| RpcErrorKind::UnableToRetrieveAccessKey.with_repr(e.into()))?;
 
     match query_resp.kind {
         QueryResponseKind::AccessKey(access_key) => Ok((access_key, query_resp.block_hash)),
-        _ => Err(WorkspaceError::UnableToRetrieveAccessKey),
+        _ => Err(RpcErrorKind::QueryReturnedInvalidData
+            .with_msg("while querying access key")
+            .into()),
     }
 }
 
@@ -445,7 +451,8 @@ pub(crate) async fn send_tx(
             signed_transaction: tx,
         })
         .await
-        .map_err(|e| WorkspaceError::RpcError(e.into()))
+        .map_err(|e| RpcErrorKind::BroadcastTxFailure.with_repr(e.into()))
+        .map_err(Into::into)
 }
 
 pub(crate) async fn send_tx_and_retry<T, F>(

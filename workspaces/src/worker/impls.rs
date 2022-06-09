@@ -120,7 +120,11 @@ where
 
     /// View the latest block from the network
     pub async fn view_latest_block(&self) -> crate::result::Result<Block> {
-        self.client().view_block(None).await.map(Into::into)
+        self.client()
+            .view_block(None)
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     /// Transfer tokens from one account to another. The signer is the account
