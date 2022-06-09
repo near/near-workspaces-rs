@@ -215,15 +215,19 @@ impl ViewResultDetails {
     /// execution result of this call. This conversion can fail if the structure of
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
-    pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
-        serde_json::from_slice(&self.result).map_err(Into::into)
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
+        serde_json::from_slice(&self.result)
+            .map_err(SerializationError::SerdeError)
+            .map_err(Into::into)
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from this view call's
     /// result. This conversion can fail if the structure of the internal state does
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
-    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
-        borsh::BorshDeserialize::try_from_slice(&self.result).map_err(Into::into)
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
+        borsh::BorshDeserialize::try_from_slice(&self.result)
+            .map_err(SerializationError::BorshError)
+            .map_err(Into::into)
     }
 }
 
@@ -274,18 +278,20 @@ impl ExecutionOutcome {
         )
     }
 
-    /// Converts this [`ExecutionOutcome`] into a Result type, where the failure is converted
-    /// to an [`anyhow::Error`] object which can be downcasted later.
-    pub fn into_result(self) -> anyhow::Result<ValueOrReceiptId> {
+    /// Converts this [`ExecutionOutcome`] into a Result type to match against whether the
+    /// particular outcome has failed or not.
+    pub fn into_result(self) -> Result<ValueOrReceiptId, WorkspaceError> {
         match self.status {
             ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(value)),
             ExecutionStatusView::SuccessReceiptId(hash) => {
                 Ok(ValueOrReceiptId::ReceiptId(CryptoHash(hash.0)))
             }
             ExecutionStatusView::Failure(err) => {
-                Err(anyhow::anyhow!("Execution failed: {:?}", err))
+                Err(WorkspaceError::ExecutionError(err.to_string()))
             }
-            ExecutionStatusView::Unknown => anyhow::bail!("Execution pending or unknown"),
+            ExecutionStatusView::Unknown => Err(WorkspaceError::ExecutionError(
+                "Execution pending or unknown".to_string(),
+            )),
         }
     }
 }

@@ -39,8 +39,6 @@ pub enum WorkspaceError {
 unsafe impl Sync for WorkspaceError {}
 unsafe impl Send for WorkspaceError {}
 
-impl WorkspaceError {}
-
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum SerializationError {
