@@ -99,7 +99,7 @@ where
     }
 
     /// View the WASM code bytes of a contract on the network.
-    pub async fn view_code(&self, contract_id: &AccountId) -> anyhow::Result<Vec<u8>> {
+    pub async fn view_code(&self, contract_id: &AccountId) -> Result<Vec<u8>, WorkspaceError> {
         let code_view = self.client().view_code(contract_id.clone(), None).await?;
         Ok(code_view.code)
     }

@@ -3,6 +3,7 @@ use std::path::Path;
 
 use near_primitives::views::AccountView;
 
+use crate::error::WorkspaceError;
 use crate::types::{AccountId, Balance, InMemorySigner};
 use crate::{CryptoHash, Network, Worker};
 
@@ -110,7 +111,7 @@ impl Account {
         &self,
         worker: &Worker<T>,
         wasm: &[u8],
-    ) -> anyhow::Result<CallExecution<Contract>> {
+    ) -> Result<CallExecution<Contract>, WorkspaceError> {
         let outcome = worker
             .client()
             .deploy(&self.signer, self.id(), wasm.as_ref().into())
@@ -136,7 +137,10 @@ impl Account {
     }
 
     /// Store the credentials of this account locally in the directory provided.
-    pub async fn store_credentials(&self, save_dir: impl AsRef<Path>) -> anyhow::Result<()> {
+    pub async fn store_credentials(
+        &self,
+        save_dir: impl AsRef<Path>,
+    ) -> Result<(), WorkspaceError> {
         let savepath = save_dir.as_ref().to_path_buf();
         std::fs::create_dir_all(save_dir)?;
 
@@ -212,7 +216,10 @@ impl Contract {
     }
 
     /// View the WASM code bytes of this contract.
-    pub async fn view_code<T: Network>(&self, worker: &Worker<T>) -> anyhow::Result<Vec<u8>> {
+    pub async fn view_code<T: Network>(
+        &self,
+        worker: &Worker<T>,
+    ) -> Result<Vec<u8>, WorkspaceError> {
         worker.view_code(self.id()).await
     }
 
