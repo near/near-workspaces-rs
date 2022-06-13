@@ -5,7 +5,7 @@ pub enum Error {
     #[error("workspace error from {0}")]
     WorkspaceError(#[from] WorkspaceError),
     #[error("workspace error from {0}")]
-    SerializationError(#[from] SerializationError),
+    BytesError(#[from] BytesError),
 }
 
 // TODO:
@@ -28,11 +28,10 @@ pub enum WorkspaceError {
     IoError(#[from] std::io::Error),
     #[error("account error from {0}")]
     AccountError(String),
-    // TODO: Add Parse specific error
-    #[error("Parse error")]
-    ParseError,
     #[error("failed to decode base64 due to {0}")]
-    DecodeError(#[from] base64::DecodeError),
+    DecodeBase64Error(#[from] base64::DecodeError),
+    #[error("parse error from {0}")]
+    ParseError(#[from] crate::types::error::ParseError),
     #[error("other error")]
     Other(#[from] Box<dyn std::error::Error>),
 }
@@ -42,7 +41,7 @@ unsafe impl Send for WorkspaceError {}
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
-pub enum SerializationError {
+pub enum BytesError {
     #[error("serde error: {0}")]
     SerdeError(#[from] serde_json::Error),
     #[error("borsh error: {0}")]
@@ -125,10 +124,7 @@ impl RpcError {
     }
 
     pub(crate) fn from_msg(kind: RpcErrorKind, msg: &'static str) -> Self {
-        Self {
-            kind,
-            repr: Some(anyhow::anyhow!(msg)),
-        }
+        Self::from_repr(kind, anyhow::anyhow!(msg))
     }
 
     pub fn kind(&self) -> &RpcErrorKind {

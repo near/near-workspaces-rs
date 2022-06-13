@@ -11,7 +11,7 @@ use url::Url;
 use near_crypto::SecretKey;
 use near_primitives::views::StateItem;
 
-use crate::error::{SerializationError, WorkspaceError};
+use crate::error::{BytesError, WorkspaceError};
 use crate::types::{AccountId, PublicKey};
 
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
@@ -51,7 +51,7 @@ pub(crate) async fn url_create_account(
                 "newAccountId": account_id,
                 "newAccountPublicKey": pk,
             }))
-            .map_err(SerializationError::SerdeError)?,
+            .map_err(BytesError::SerdeError)?,
         )
         .send()
         .await

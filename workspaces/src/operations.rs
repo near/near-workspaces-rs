@@ -1,6 +1,6 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
-use crate::error::{SerializationError, WorkspaceError};
+use crate::error::{BytesError, WorkspaceError};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
@@ -54,18 +54,15 @@ impl<'a> Function<'a> {
     /// Similiar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
-    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self, SerializationError> {
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self, BytesError> {
         self.args = serde_json::to_vec(&args)?;
         Ok(self)
     }
 
     /// Similiar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
-    pub fn args_borsh<U: borsh::BorshSerialize>(
-        mut self,
-        args: U,
-    ) -> Result<Self, SerializationError> {
-        self.args = args.try_to_vec().map_err(SerializationError::BorshError)?;
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Result<Self, BytesError> {
+        self.args = args.try_to_vec().map_err(BytesError::BorshError)?;
         Ok(self)
     }
 
@@ -237,17 +234,14 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     /// Similiar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
-    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self, SerializationError> {
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self, BytesError> {
         self.function = self.function.args_json(args)?;
         Ok(self)
     }
 
     /// Similiar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
-    pub fn args_borsh<U: borsh::BorshSerialize>(
-        mut self,
-        args: U,
-    ) -> Result<Self, SerializationError> {
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Result<Self, BytesError> {
         self.function = self.function.args_borsh(args)?;
         Ok(self)
     }

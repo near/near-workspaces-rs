@@ -1,5 +1,6 @@
 pub(crate) mod account;
 pub(crate) mod block;
+pub(crate) mod error;
 
 /// Types copied over from near_primitives since those APIs are not yet stable.
 /// and internal libraries like near-jsonrpc-client requires specific versions
@@ -14,7 +15,7 @@ use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
-use crate::error::WorkspaceError;
+use self::error::ParseErrorKind;
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
@@ -98,11 +99,10 @@ impl SecretKey {
 }
 
 impl std::str::FromStr for SecretKey {
-    type Err = WorkspaceError;
+    type Err = self::error::ParseError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let sk = near_crypto::SecretKey::from_str(value)
-            .map_err(|e| WorkspaceError::Other(Box::new(e)))?;
+        let sk = near_crypto::SecretKey::from_str(value)?;
 
         Ok(Self(sk))
     }
@@ -134,22 +134,24 @@ impl InMemorySigner {
 pub struct CryptoHash(pub [u8; 32]);
 
 impl std::str::FromStr for CryptoHash {
-    type Err = WorkspaceError;
+    type Err = self::error::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = from_base(s).map_err(WorkspaceError::Other)?;
+        let bytes = from_base(s).map_err(|e| Self::Err::from_repr(ParseErrorKind::Unknown, e))?;
         Self::try_from(bytes)
     }
 }
 
 impl TryFrom<&[u8]> for CryptoHash {
-    type Error = WorkspaceError;
+    type Error = self::error::ParseError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 32 {
-            return Err(WorkspaceError::Other(
-                anyhow::anyhow!("incorrect length for hash").into(),
-            ));
+            return Err(ParseErrorKind::IncorrectHashLength {
+                expected_length: 32,
+                received_length: bytes.len(),
+            }
+            .into());
         }
         let mut buf = [0; 32];
         buf.copy_from_slice(bytes);
@@ -158,7 +160,7 @@ impl TryFrom<&[u8]> for CryptoHash {
 }
 
 impl TryFrom<Vec<u8>> for CryptoHash {
-    type Error = WorkspaceError;
+    type Error = self::error::ParseError;
 
     fn try_from(v: Vec<u8>) -> Result<Self, Self::Error> {
         <Self as TryFrom<&[u8]>>::try_from(v.as_ref())
