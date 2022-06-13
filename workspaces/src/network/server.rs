@@ -1,6 +1,6 @@
 use std::process::Child;
 
-use crate::error::WorkspaceError;
+use crate::error::Error;
 use crate::network::Sandbox;
 
 use portpicker::pick_unused_port;
@@ -25,9 +25,9 @@ impl SandboxServer {
         }
     }
 
-    pub fn start(&mut self) -> Result<(), WorkspaceError> {
+    pub fn start(&mut self) -> Result<(), Error> {
         if self.process.is_some() {
-            return Err(WorkspaceError::SandboxAlreadyStarted);
+            return Err(Error::SandboxAlreadyStarted);
         }
 
         info!(target: "workspaces", "Starting up sandbox at localhost:{}", self.rpc_port);
@@ -39,12 +39,12 @@ impl SandboxServer {
         // Remove dir if it already exists:
         let _ = std::fs::remove_dir_all(&home_dir);
         sandbox::init(&home_dir)
-            .map_err(|e| WorkspaceError::Other(e.into()))?
+            .map_err(|e| Error::SandboxUnknownError(e.to_string()))?
             .wait()
-            .map_err(WorkspaceError::IoError)?;
+            .map_err(Error::IoError)?;
 
         let child = sandbox::run(&home_dir, self.rpc_port, self.net_port)
-            .map_err(|e| WorkspaceError::Other(e.into()))?;
+            .map_err(|e| Error::SandboxUnknownError(e.to_string()))?;
 
         info!(target: "workspaces", "Started sandbox: pid={:?}", child.id());
         self.process = Some(child);

@@ -1,6 +1,6 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
-use crate::error::{BytesError, WorkspaceError};
+use crate::error::{BytesError, Error};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
@@ -186,7 +186,7 @@ impl<'a> Transaction<'a> {
         self
     }
 
-    async fn transact_raw(self) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+    async fn transact_raw(self) -> Result<FinalExecutionOutcomeView, Error> {
         send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions).await
     }
 
@@ -350,7 +350,7 @@ where
             .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
         let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id)
             .try_into()
-            .map_err(|e: ParseAccountError| WorkspaceError::AccountError(e.to_string()))?;
+            .map_err(|e: ParseAccountError| Error::AccountError(e.to_string()))?;
 
         let outcome = self
             .worker

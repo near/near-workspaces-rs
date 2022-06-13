@@ -1,19 +1,10 @@
 use std::fmt;
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("workspace error from {0}")]
-    WorkspaceError(#[from] WorkspaceError),
-    #[error("workspace error from {0}")]
-    BytesError(#[from] BytesError),
-}
-
 // TODO:
 // - since account id is public, maybe expose it as-is
-// - decide where DecodeError should live. It kind fits in with serialization error
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
-pub enum WorkspaceError {
+pub enum Error {
     #[error("RPC errored out: {0}")]
     RpcError(#[from] RpcError),
     #[error("Execution error: {0}")]
@@ -24,20 +15,22 @@ pub enum WorkspaceError {
     SandboxPatchStateFailure(String),
     #[error("sandbox failed to fast forward: {0}")]
     SandboxFastForwardFailure(String),
+    #[error("sandbox failed due to: {0}")]
+    SandboxUnknownError(String),
     #[error("IO error from {0}")]
     IoError(#[from] std::io::Error),
     #[error("account error from {0}")]
     AccountError(String),
-    #[error("failed to decode base64 due to {0}")]
-    DecodeBase64Error(#[from] base64::DecodeError),
     #[error("parse error from {0}")]
     ParseError(#[from] crate::types::error::ParseError),
+    #[error("bytes error from {0}")]
+    BytesError(#[from] BytesError),
     #[error("other error")]
     Other(#[from] Box<dyn std::error::Error>),
 }
 
-unsafe impl Sync for WorkspaceError {}
-unsafe impl Send for WorkspaceError {}
+unsafe impl Sync for Error {}
+unsafe impl Send for Error {}
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -46,6 +39,8 @@ pub enum BytesError {
     SerdeError(#[from] serde_json::Error),
     #[error("borsh error: {0}")]
     BorshError(std::io::Error),
+    #[error("failed to decode to base64 due to {0}")]
+    DecodeBase64Error(#[from] base64::DecodeError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -85,7 +80,7 @@ impl From<RpcErrorKind> for RpcError {
     }
 }
 
-impl From<RpcErrorKind> for WorkspaceError {
+impl From<RpcErrorKind> for Error {
     fn from(kind: RpcErrorKind) -> Self {
         RpcError::from_kind(kind).into()
     }

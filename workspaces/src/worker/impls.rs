@@ -1,4 +1,4 @@
-use crate::error::WorkspaceError;
+use crate::error::Error;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::network::{Info, Sandbox};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
@@ -99,7 +99,7 @@ where
     }
 
     /// View the WASM code bytes of a contract on the network.
-    pub async fn view_code(&self, contract_id: &AccountId) -> Result<Vec<u8>, WorkspaceError> {
+    pub async fn view_code(&self, contract_id: &AccountId) -> Result<Vec<u8>, Error> {
         let code_view = self.client().view_code(contract_id.clone(), None).await?;
         Ok(code_view.code)
     }
@@ -196,7 +196,7 @@ impl Worker<Sandbox> {
         contract_id: &AccountId,
         key: &[u8],
         value: &[u8],
-    ) -> Result<(), WorkspaceError> {
+    ) -> Result<(), Error> {
         self.workspace.patch_state(contract_id, key, value).await
     }
 
@@ -206,7 +206,7 @@ impl Worker<Sandbox> {
     ///
     /// Estimate as to how long it takes: if our delta_height crosses `X` epochs, then it would
     /// roughly take `X * 5` seconds for the fast forward request to be processed.
-    pub async fn fast_forward(&self, delta_height: u64) -> Result<(), WorkspaceError> {
+    pub async fn fast_forward(&self, delta_height: u64) -> Result<(), Error> {
         self.workspace.fast_forward(delta_height).await
     }
 }

@@ -11,14 +11,14 @@ use url::Url;
 use near_crypto::SecretKey;
 use near_primitives::views::StateItem;
 
-use crate::error::{BytesError, WorkspaceError};
+use crate::error::{BytesError, Error};
 use crate::types::{AccountId, PublicKey};
 
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
 /// Assumes key and value are base64 encoded, so this also decodes them.
 pub(crate) fn into_state_map(
     state_items: &[StateItem],
-) -> Result<HashMap<Vec<u8>, Vec<u8>>, WorkspaceError> {
+) -> Result<HashMap<Vec<u8>, Vec<u8>>, BytesError> {
     let decode = |s: &StateItem| Ok((base64::decode(&s.key)?, base64::decode(&s.value)?));
 
     state_items.iter().map(decode).collect()
@@ -55,7 +55,7 @@ pub(crate) async fn url_create_account(
         )
         .send()
         .await
-        .map_err(|e| WorkspaceError::Other(Box::new(e)))?;
+        .map_err(|e| Error::Other(Box::new(e)))?;
 
     Ok(())
 }

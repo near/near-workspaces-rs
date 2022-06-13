@@ -22,8 +22,8 @@ use near_primitives::views::{
     QueryRequest, StatusResponse,
 };
 
-use crate::error::{RpcErrorKind, WorkspaceError};
-use crate::result::ViewResultDetails;
+use crate::error::{Error, RpcErrorKind};
+use crate::result::{Result, ViewResultDetails};
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
 
@@ -116,7 +116,7 @@ impl Client {
         signer: &InMemorySigner,
         receiver_id: &AccountId,
         action: Action,
-    ) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+    ) -> Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(self, signer, receiver_id, vec![action]).await
     }
 
@@ -128,7 +128,7 @@ impl Client {
         args: Vec<u8>,
         gas: Gas,
         deposit: Balance,
-    ) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+    ) -> Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             contract_id,
@@ -148,7 +148,7 @@ impl Client {
         contract_id: AccountId,
         method_name: String,
         args: Vec<u8>,
-    ) -> Result<ViewResultDetails, WorkspaceError> {
+    ) -> Result<ViewResultDetails> {
         let query_resp = self
             .query(&RpcQueryRequest {
                 block_reference: Finality::None.into(), // Optimisitic query
@@ -174,7 +174,7 @@ impl Client {
         contract_id: AccountId,
         prefix: Option<&[u8]>,
         block_id: Option<BlockId>,
-    ) -> Result<HashMap<Vec<u8>, Vec<u8>>, WorkspaceError> {
+    ) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
@@ -191,7 +191,7 @@ impl Client {
             .map_err(|e| RpcErrorKind::QueryFailure.with_repr(e.into()))?;
 
         match query_resp.kind {
-            QueryResponseKind::ViewState(state) => tool::into_state_map(&state.values),
+            QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(&state.values)?),
             _ => Err(RpcErrorKind::QueryReturnedInvalidData
                 .with_msg("while querying state")
                 .into()),
@@ -202,7 +202,7 @@ impl Client {
         &self,
         account_id: AccountId,
         block_id: Option<BlockId>,
-    ) -> Result<AccountView, WorkspaceError> {
+    ) -> Result<AccountView> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
@@ -227,7 +227,7 @@ impl Client {
         &self,
         account_id: AccountId,
         block_id: Option<BlockId>,
-    ) -> Result<ContractCodeView, WorkspaceError> {
+    ) -> Result<ContractCodeView> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
@@ -248,10 +248,7 @@ impl Client {
         }
     }
 
-    pub(crate) async fn view_block(
-        &self,
-        block_id: Option<BlockId>,
-    ) -> Result<BlockView, WorkspaceError> {
+    pub(crate) async fn view_block(&self, block_id: Option<BlockId>) -> Result<BlockView> {
         let block_reference = block_id
             .map(Into::into)
             .unwrap_or_else(|| Finality::None.into());
@@ -269,7 +266,7 @@ impl Client {
         signer: &InMemorySigner,
         contract_id: &AccountId,
         wasm: Vec<u8>,
-    ) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+    ) -> Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             contract_id,
@@ -284,7 +281,7 @@ impl Client {
         signer: &InMemorySigner,
         receiver_id: &AccountId,
         amount_yocto: Balance,
-    ) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+    ) -> Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             receiver_id,
@@ -302,7 +299,7 @@ impl Client {
         new_account_id: &AccountId,
         new_account_pk: PublicKey,
         amount: Balance,
-    ) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+    ) -> Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(
             self,
             signer,
@@ -330,7 +327,7 @@ impl Client {
         new_account_pk: PublicKey,
         amount: Balance,
         code: Vec<u8>,
-    ) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+    ) -> Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(
             self,
             signer,
@@ -358,7 +355,7 @@ impl Client {
         signer: &InMemorySigner,
         account_id: &AccountId,
         beneficiary_id: &AccountId,
-    ) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+    ) -> Result<FinalExecutionOutcomeView> {
         let beneficiary_id = beneficiary_id.to_owned();
         self.send_tx_and_retry(
             signer,
@@ -381,11 +378,9 @@ impl Client {
         result
     }
 
-    pub(crate) async fn wait_for_rpc(&self) -> crate::result::Result<()> {
+    pub(crate) async fn wait_for_rpc(&self) -> Result<()> {
         let timeout_secs = match std::env::var("NEAR_RPC_TIMEOUT_SECS") {
-            Ok(secs) => secs
-                .parse::<usize>()
-                .map_err(|e| WorkspaceError::Other(e.into()))?,
+            Ok(secs) => secs.parse::<usize>().map_err(|e| Error::Other(e.into()))?,
             Err(_) => 10,
         };
 
@@ -400,7 +395,7 @@ impl Client {
                     self.rpc_addr, timeout_secs, e
                 )));
 
-                Into::<WorkspaceError>::into(err)
+                Into::<Error>::into(err)
             })?;
         Ok(())
     }
@@ -410,7 +405,7 @@ pub(crate) async fn access_key(
     client: &Client,
     account_id: near_primitives::account::id::AccountId,
     public_key: near_crypto::PublicKey,
-) -> Result<(AccessKeyView, CryptoHash), WorkspaceError> {
+) -> Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::None.into(),
@@ -433,7 +428,7 @@ pub(crate) async fn access_key(
 pub(crate) async fn retry<R, E, T, F>(task: F) -> T::Output
 where
     F: FnMut() -> T,
-    T: core::future::Future<Output = Result<R, E>>,
+    T: core::future::Future<Output = core::result::Result<R, E>>,
 {
     // Exponential backoff starting w/ 5ms for maximum retry of 4 times with the following delays:
     //   5, 25, 125, 625 ms
@@ -445,7 +440,7 @@ where
 pub(crate) async fn send_tx(
     client: &Client,
     tx: SignedTransaction,
-) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+) -> Result<FinalExecutionOutcomeView> {
     client
         .query_broadcast_tx(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
             signed_transaction: tx,
@@ -458,10 +453,10 @@ pub(crate) async fn send_tx(
 pub(crate) async fn send_tx_and_retry<T, F>(
     client: &Client,
     task: F,
-) -> Result<FinalExecutionOutcomeView, WorkspaceError>
+) -> Result<FinalExecutionOutcomeView>
 where
     F: Fn() -> T,
-    T: core::future::Future<Output = Result<SignedTransaction, WorkspaceError>>,
+    T: core::future::Future<Output = Result<SignedTransaction>>,
 {
     retry(|| async { send_tx(client, task().await?).await }).await
 }
@@ -471,7 +466,7 @@ pub(crate) async fn send_batch_tx_and_retry(
     signer: &InMemorySigner,
     receiver_id: &AccountId,
     actions: Vec<Action>,
-) -> Result<FinalExecutionOutcomeView, WorkspaceError> {
+) -> Result<FinalExecutionOutcomeView, Error> {
     send_tx_and_retry(client, || async {
         let (AccessKeyView { nonce, .. }, block_hash) = access_key(
             client,

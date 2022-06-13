@@ -7,7 +7,7 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::state_record::StateRecord;
 
 use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::error::WorkspaceError;
+use crate::error::Error;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{CallExecution, Result};
@@ -137,7 +137,7 @@ impl Sandbox {
         contract_id: &AccountId,
         key: &[u8],
         value: &[u8],
-    ) -> Result<(), WorkspaceError> {
+    ) -> Result<(), Error> {
         let state = StateRecord::Data {
             account_id: contract_id.to_owned(),
             data_key: key.to_vec(),
@@ -150,18 +150,18 @@ impl Sandbox {
             .client()
             .query(&RpcSandboxPatchStateRequest { records })
             .await
-            .map_err(|err| WorkspaceError::SandboxPatchStateFailure(err.to_string()))?;
+            .map_err(|err| Error::SandboxPatchStateFailure(err.to_string()))?;
 
         Ok(())
     }
 
-    pub(crate) async fn fast_forward(&self, delta_height: u64) -> Result<(), WorkspaceError> {
+    pub(crate) async fn fast_forward(&self, delta_height: u64) -> Result<(), Error> {
         // NOTE: RpcSandboxFastForwardResponse is an empty struct with no fields, so don't do anything with it:
         self.client()
             // TODO: replace this with the `query` variant when RpcSandboxFastForwardRequest impls Debug
             .query_nolog(&RpcSandboxFastForwardRequest { delta_height })
             .await
-            .map_err(|err| WorkspaceError::SandboxFastForwardFailure(err.to_string()))?;
+            .map_err(|err| Error::SandboxFastForwardFailure(err.to_string()))?;
 
         Ok(())
     }

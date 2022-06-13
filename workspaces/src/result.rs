@@ -6,7 +6,7 @@ use near_primitives::views::{
     FinalExecutionStatus,
 };
 
-use crate::error::{BytesError, WorkspaceError};
+use crate::error::{BytesError, Error};
 use crate::types::{CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
@@ -88,7 +88,7 @@ impl CallExecutionDetails {
     pub fn raw_bytes(&self) -> Result<Vec<u8>> {
         let result = self.try_into_success_value()?;
         base64::decode(result)
-            .map_err(WorkspaceError::DecodeBase64Error)
+            .map_err(BytesError::DecodeBase64Error)
             .map_err(Into::into)
     }
 
@@ -96,15 +96,14 @@ impl CallExecutionDetails {
         match self.status {
             FinalExecutionStatus::SuccessValue(ref val) => Ok(val),
             FinalExecutionStatus::Failure(ref err) => {
-                Err(WorkspaceError::ExecutionError(err.to_string()).into())
+                Err(Error::ExecutionError(err.to_string()).into())
             }
             FinalExecutionStatus::NotStarted => {
-                Err(WorkspaceError::ExecutionError("Transaction not started.".into()).into())
+                Err(Error::ExecutionError("Transaction not started.".into()).into())
             }
-            FinalExecutionStatus::Started => Err(WorkspaceError::ExecutionError(
-                "Transaction still being processed.".into(),
-            )
-            .into()),
+            FinalExecutionStatus::Started => {
+                Err(Error::ExecutionError("Transaction still being processed.".into()).into())
+            }
         }
     }
 
@@ -280,16 +279,14 @@ impl ExecutionOutcome {
 
     /// Converts this [`ExecutionOutcome`] into a Result type to match against whether the
     /// particular outcome has failed or not.
-    pub fn into_result(self) -> Result<ValueOrReceiptId, WorkspaceError> {
+    pub fn into_result(self) -> Result<ValueOrReceiptId, Error> {
         match self.status {
             ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(value)),
             ExecutionStatusView::SuccessReceiptId(hash) => {
                 Ok(ValueOrReceiptId::ReceiptId(CryptoHash(hash.0)))
             }
-            ExecutionStatusView::Failure(err) => {
-                Err(WorkspaceError::ExecutionError(err.to_string()))
-            }
-            ExecutionStatusView::Unknown => Err(WorkspaceError::ExecutionError(
+            ExecutionStatusView::Failure(err) => Err(Error::ExecutionError(err.to_string())),
+            ExecutionStatusView::Unknown => Err(Error::ExecutionError(
                 "Execution pending or unknown".to_string(),
             )),
         }

@@ -2,7 +2,7 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::types::BlockId;
 use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
-use crate::error::WorkspaceError;
+use crate::error::Error;
 use crate::network::DEV_ACCOUNT_SEED;
 use crate::rpc::client::Client;
 use crate::types::{BlockHeight, KeyType, SecretKey};
@@ -82,7 +82,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
     }
 
     /// Process the trannsaction, and return the result of the execution.
-    pub async fn transact(self) -> Result<Contract, WorkspaceError> {
+    pub async fn transact(self) -> Result<Contract, Error> {
         let account_id = self.account_id;
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();
@@ -140,12 +140,12 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
                 records: records.clone(),
             })
             .await
-            .map_err(|err| WorkspaceError::SandboxPatchStateFailure(err.to_string()))?;
+            .map_err(|err| Error::SandboxPatchStateFailure(err.to_string()))?;
 
         self.into_network
             .query(&RpcSandboxPatchStateRequest { records })
             .await
-            .map_err(|err| WorkspaceError::SandboxPatchStateFailure(err.to_string()))?;
+            .map_err(|err| Error::SandboxPatchStateFailure(err.to_string()))?;
 
         Ok(Contract::new(account_id, signer))
     }
