@@ -1,7 +1,7 @@
 use std::fmt;
 
-// TODO:
-// - since account id is public, maybe expose it as-is
+/// Error type that workspaces will make use of for all the errors
+/// returned from this library
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
@@ -32,6 +32,7 @@ pub enum Error {
 unsafe impl Sync for Error {}
 unsafe impl Send for Error {}
 
+/// Bytes specific errors such as serialization and deserialization
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum BytesError {

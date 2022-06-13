@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// All the possible error kinds that can occur when parsing within workspaces.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ParseErrorKind {
@@ -18,6 +19,8 @@ pub enum ParseErrorKind {
     Unknown,
 }
 
+/// Any errors related to parsing, potentially coming from dependencies
+/// and then forwarded to this error type.
 pub struct ParseError {
     kind: ParseErrorKind,
     repr: Option<Box<dyn std::error::Error>>,
@@ -33,10 +36,6 @@ impl ParseError {
             kind,
             repr: Some(repr),
         }
-    }
-
-    pub(crate) fn from_msg(kind: ParseErrorKind, msg: &'static str) -> Self {
-        Self::from_repr(kind, anyhow::anyhow!(msg).into())
     }
 
     pub fn kind(&self) -> &ParseErrorKind {
