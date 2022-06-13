@@ -25,7 +25,7 @@ pub enum Error {
     ParseError(#[from] crate::types::error::ParseError),
     #[error("bytes error from {0}")]
     BytesError(#[from] BytesError),
-    #[error("other error")]
+    #[error(transparent)]
     Other(#[from] Box<dyn std::error::Error>),
 }
 
@@ -131,13 +131,5 @@ impl RpcError {
             .as_ref()
             .map(ToString::to_string)
             .unwrap_or("".to_string())
-    }
-
-    pub(crate) fn inner<'a>(&'a self) -> Option<&'a (dyn std::error::Error + Send + Sync)> {
-        if let Some(err) = self.repr.as_ref() {
-            Some(err.as_ref())
-        } else {
-            None
-        }
     }
 }
