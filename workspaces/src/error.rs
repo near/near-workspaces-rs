@@ -14,12 +14,8 @@ pub enum Error {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum WorkspaceError {
-    #[error("failed to connect to rpc service: {0}")]
-    RpcConnectFail(String),
     #[error("RPC errored out: {0}")]
     RpcError(#[from] RpcError),
-    #[error("access key was unstable to retrieved")]
-    UnableToRetrieveAccessKey,
     #[error("Execution error: {0}")]
     ExecutionError(String),
     #[error("sandbox has already been started")]
