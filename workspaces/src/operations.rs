@@ -1,6 +1,6 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
-use crate::error::{BytesError, Error};
+use crate::error::{BytesError, Error, RpcError};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
@@ -186,7 +186,7 @@ impl<'a> Transaction<'a> {
         self
     }
 
-    async fn transact_raw(self) -> Result<FinalExecutionOutcomeView, Error> {
+    async fn transact_raw(self) -> Result<FinalExecutionOutcomeView, RpcError> {
         send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions).await
     }
 

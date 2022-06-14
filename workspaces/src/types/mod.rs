@@ -1,6 +1,5 @@
 pub(crate) mod account;
 pub(crate) mod block;
-pub(crate) mod error;
 
 /// Types copied over from near_primitives since those APIs are not yet stable.
 /// and internal libraries like near-jsonrpc-client requires specific versions
@@ -15,7 +14,7 @@ use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
-use self::error::ParseErrorKind;
+use crate::error::{ParseError, ParseErrorKind};
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
@@ -99,7 +98,7 @@ impl SecretKey {
 }
 
 impl std::str::FromStr for SecretKey {
-    type Err = self::error::ParseError;
+    type Err = ParseError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let sk = near_crypto::SecretKey::from_str(value)?;
@@ -134,7 +133,7 @@ impl InMemorySigner {
 pub struct CryptoHash(pub [u8; 32]);
 
 impl std::str::FromStr for CryptoHash {
-    type Err = self::error::ParseError;
+    type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = from_base(s).map_err(|e| Self::Err::from_repr(ParseErrorKind::Unknown, e))?;
@@ -143,7 +142,7 @@ impl std::str::FromStr for CryptoHash {
 }
 
 impl TryFrom<&[u8]> for CryptoHash {
-    type Error = self::error::ParseError;
+    type Error = ParseError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 32 {
@@ -160,7 +159,7 @@ impl TryFrom<&[u8]> for CryptoHash {
 }
 
 impl TryFrom<Vec<u8>> for CryptoHash {
-    type Error = self::error::ParseError;
+    type Error = ParseError;
 
     fn try_from(v: Vec<u8>) -> Result<Self, Self::Error> {
         <Self as TryFrom<&[u8]>>::try_from(v.as_ref())
