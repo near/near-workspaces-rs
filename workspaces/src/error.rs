@@ -123,10 +123,13 @@ impl RpcError {
         Self::from_repr(kind, anyhow::anyhow!(msg))
     }
 
+    /// Get the kind of error that occurred in the RPC service.
     pub fn kind(&self) -> &RpcErrorKind {
         &self.kind
     }
 
+    /// Get the underlying error message from respective error. This can be
+    /// empty to signify no meaningful error message is present.
     pub fn err_msg(&self) -> String {
         self.repr
             .as_ref()

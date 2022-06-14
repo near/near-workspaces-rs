@@ -38,10 +38,13 @@ impl ParseError {
         }
     }
 
+    /// Get the kind of error that occurred from parsing.
     pub fn kind(&self) -> &ParseErrorKind {
         &self.kind
     }
 
+    /// Get the underlying error message from respective error. This can be
+    /// empty to signify no meaningful error message is present.
     pub fn err_msg(&self) -> String {
         self.repr
             .as_ref()
