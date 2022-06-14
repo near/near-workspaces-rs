@@ -1,4 +1,3 @@
-use crate::error::Error;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::network::{Info, Sandbox};
 use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
@@ -8,6 +7,7 @@ use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
 use crate::worker::Worker;
 use crate::{Account, Block, Contract};
 use crate::{AccountDetails, Network};
+
 use async_trait::async_trait;
 use near_primitives::types::Balance;
 use std::collections::HashMap;
@@ -99,7 +99,7 @@ where
     }
 
     /// View the WASM code bytes of a contract on the network.
-    pub async fn view_code(&self, contract_id: &AccountId) -> Result<Vec<u8>, Error> {
+    pub async fn view_code(&self, contract_id: &AccountId) -> crate::result::Result<Vec<u8>> {
         let code_view = self.client().view_code(contract_id.clone(), None).await?;
         Ok(code_view.code)
     }
@@ -196,7 +196,7 @@ impl Worker<Sandbox> {
         contract_id: &AccountId,
         key: &[u8],
         value: &[u8],
-    ) -> Result<(), Error> {
+    ) -> crate::result::Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
     }
 
@@ -206,7 +206,7 @@ impl Worker<Sandbox> {
     ///
     /// Estimate as to how long it takes: if our delta_height crosses `X` epochs, then it would
     /// roughly take `X * 5` seconds for the fast forward request to be processed.
-    pub async fn fast_forward(&self, delta_height: u64) -> Result<(), Error> {
+    pub async fn fast_forward(&self, delta_height: u64) -> crate::result::Result<()> {
         self.workspace.fast_forward(delta_height).await
     }
 }

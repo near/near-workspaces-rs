@@ -82,7 +82,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
     }
 
     /// Process the trannsaction, and return the result of the execution.
-    pub async fn transact(self) -> Result<Contract, Error> {
+    pub async fn transact(self) -> crate::result::Result<Contract> {
         let account_id = self.account_id;
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();

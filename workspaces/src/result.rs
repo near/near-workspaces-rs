@@ -279,7 +279,7 @@ impl ExecutionOutcome {
 
     /// Converts this [`ExecutionOutcome`] into a Result type to match against whether the
     /// particular outcome has failed or not.
-    pub fn into_result(self) -> Result<ValueOrReceiptId, Error> {
+    pub fn into_result(self) -> crate::result::Result<ValueOrReceiptId> {
         match self.status {
             ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(value)),
             ExecutionStatusView::SuccessReceiptId(hash) => {

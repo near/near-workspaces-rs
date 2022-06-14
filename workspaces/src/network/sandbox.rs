@@ -137,7 +137,7 @@ impl Sandbox {
         contract_id: &AccountId,
         key: &[u8],
         value: &[u8],
-    ) -> Result<(), Error> {
+    ) -> crate::result::Result<()> {
         let state = StateRecord::Data {
             account_id: contract_id.to_owned(),
             data_key: key.to_vec(),
@@ -155,7 +155,7 @@ impl Sandbox {
         Ok(())
     }
 
-    pub(crate) async fn fast_forward(&self, delta_height: u64) -> Result<(), Error> {
+    pub(crate) async fn fast_forward(&self, delta_height: u64) -> crate::result::Result<()> {
         // NOTE: RpcSandboxFastForwardResponse is an empty struct with no fields, so don't do anything with it:
         self.client()
             // TODO: replace this with the `query` variant when RpcSandboxFastForwardRequest impls Debug

@@ -25,7 +25,7 @@ impl SandboxServer {
         }
     }
 
-    pub fn start(&mut self) -> Result<(), Error> {
+    pub fn start(&mut self) -> crate::result::Result<()> {
         if self.process.is_some() {
             return Err(Error::SandboxAlreadyStarted);
         }

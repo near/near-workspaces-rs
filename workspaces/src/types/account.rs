@@ -3,7 +3,7 @@ use std::path::Path;
 
 use near_primitives::views::AccountView;
 
-use crate::error::Error;
+use crate::result::Result;
 use crate::types::{AccountId, Balance, InMemorySigner};
 use crate::{CryptoHash, Network, Worker};
 
@@ -63,7 +63,7 @@ impl Account {
         worker: &Worker<T>,
         receiver_id: &AccountId,
         amount: Balance,
-    ) -> crate::result::Result<CallExecutionDetails> {
+    ) -> Result<CallExecutionDetails> {
         worker
             .transfer_near(self.signer(), receiver_id, amount)
             .await
@@ -75,7 +75,7 @@ impl Account {
         self,
         worker: &Worker<T>,
         beneficiary_id: &AccountId,
-    ) -> crate::result::Result<CallExecutionDetails> {
+    ) -> Result<CallExecutionDetails> {
         worker
             .delete_account(&self.id, &self.signer, beneficiary_id)
             .await
@@ -85,7 +85,7 @@ impl Account {
     pub async fn view_account<T: Network>(
         &self,
         worker: &Worker<T>,
-    ) -> crate::result::Result<AccountDetails> {
+    ) -> Result<AccountDetails> {
         worker.view_account(&self.id).await
     }
 
@@ -111,7 +111,7 @@ impl Account {
         &self,
         worker: &Worker<T>,
         wasm: &[u8],
-    ) -> Result<CallExecution<Contract>, Error> {
+    ) -> Result<CallExecution<Contract>> {
         let outcome = worker
             .client()
             .deploy(&self.signer, self.id(), wasm.as_ref().into())
@@ -137,7 +137,7 @@ impl Account {
     }
 
     /// Store the credentials of this account locally in the directory provided.
-    pub async fn store_credentials(&self, save_dir: impl AsRef<Path>) -> Result<(), Error> {
+    pub async fn store_credentials(&self, save_dir: impl AsRef<Path>) -> Result<()> {
         let savepath = save_dir.as_ref().to_path_buf();
         std::fs::create_dir_all(save_dir)?;
 
@@ -208,12 +208,12 @@ impl Contract {
         worker: &Worker<T>,
         function: &str,
         args: Vec<u8>,
-    ) -> crate::result::Result<ViewResultDetails> {
+    ) -> Result<ViewResultDetails> {
         worker.view(self.id(), function, args).await
     }
 
     /// View the WASM code bytes of this contract.
-    pub async fn view_code<T: Network>(&self, worker: &Worker<T>) -> Result<Vec<u8>, Error> {
+    pub async fn view_code<T: Network>(&self, worker: &Worker<T>) -> Result<Vec<u8>> {
         worker.view_code(self.id()).await
     }
 
@@ -222,7 +222,7 @@ impl Contract {
         &self,
         worker: &Worker<T>,
         prefix: Option<&[u8]>,
-    ) -> crate::result::Result<HashMap<Vec<u8>, Vec<u8>>> {
+    ) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
         worker.view_state(self.id(), prefix).await
     }
 
@@ -230,7 +230,7 @@ impl Contract {
     pub async fn view_account<T: Network>(
         &self,
         worker: &Worker<T>,
-    ) -> crate::result::Result<AccountDetails> {
+    ) -> Result<AccountDetails> {
         worker.view_account(self.id()).await
     }
 
@@ -240,7 +240,7 @@ impl Contract {
         self,
         worker: &Worker<T>,
         beneficiary_id: &AccountId,
-    ) -> crate::result::Result<CallExecutionDetails> {
+    ) -> Result<CallExecutionDetails> {
         self.account.delete_account(worker, beneficiary_id).await
     }
 
