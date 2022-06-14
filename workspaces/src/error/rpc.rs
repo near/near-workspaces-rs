@@ -97,6 +97,6 @@ impl RpcError {
         self.repr
             .as_ref()
             .map(ToString::to_string)
-            .unwrap_or("".to_string())
+            .unwrap_or_else(|| "".to_string())
     }
 }

@@ -96,13 +96,13 @@ impl CallExecutionDetails {
         match self.status {
             FinalExecutionStatus::SuccessValue(ref val) => Ok(val),
             FinalExecutionStatus::Failure(ref err) => {
-                Err(Error::ExecutionError(err.to_string()).into())
+                Err(Error::ExecutionError(err.to_string()))
             }
             FinalExecutionStatus::NotStarted => {
-                Err(Error::ExecutionError("Transaction not started.".into()).into())
+                Err(Error::ExecutionError("Transaction not started.".into()))
             }
             FinalExecutionStatus::Started => {
-                Err(Error::ExecutionError("Transaction still being processed.".into()).into())
+                Err(Error::ExecutionError("Transaction still being processed.".into()))
             }
         }
     }

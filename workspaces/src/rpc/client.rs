@@ -163,9 +163,10 @@ impl Client {
 
         match query_resp.kind {
             QueryResponseKind::CallResult(result) => Ok(result.into()),
-            _ => Err(RpcErrorKind::QueryReturnedInvalidData
-                .with_msg("while calling into view function")
-                .into()),
+            _ => {
+                Err(RpcErrorKind::QueryReturnedInvalidData
+                    .with_msg("while calling into view function"))
+            }
         }
     }
 
@@ -217,9 +218,7 @@ impl Client {
 
         match query_resp.kind {
             QueryResponseKind::ViewAccount(account) => Ok(account),
-            _ => Err(RpcErrorKind::QueryReturnedInvalidData
-                .with_msg("while querying account")
-                .into()),
+            _ => Err(RpcErrorKind::QueryReturnedInvalidData.with_msg("while querying account")),
         }
     }
 
@@ -242,9 +241,7 @@ impl Client {
 
         match query_resp.kind {
             QueryResponseKind::ViewCode(code) => Ok(code),
-            _ => Err(RpcErrorKind::QueryReturnedInvalidData
-                .with_msg("while querying code")
-                .into()),
+            _ => Err(RpcErrorKind::QueryReturnedInvalidData.with_msg("while querying code")),
         }
     }
 
@@ -426,9 +423,7 @@ pub(crate) async fn access_key(
 
     match query_resp.kind {
         QueryResponseKind::AccessKey(access_key) => Ok((access_key, query_resp.block_hash)),
-        _ => Err(RpcErrorKind::QueryReturnedInvalidData
-            .with_msg("while querying access key")
-            .into()),
+        _ => Err(RpcErrorKind::QueryReturnedInvalidData.with_msg("while querying access key")),
     }
 }
 
