@@ -24,7 +24,7 @@ pub enum RpcErrorKind {
 }
 
 impl RpcErrorKind {
-    pub(crate) fn with_repr(self, repr: anyhow::Error) -> RpcError {
+    pub(crate) fn with_repr(self, repr: Box<dyn std::error::Error + Send + Sync>) -> RpcError {
         RpcError::from_repr(self, repr)
     }
 
@@ -48,9 +48,11 @@ impl From<RpcErrorKind> for Error {
 /// Possible errors coming from the RPC service.
 pub struct RpcError {
     kind: RpcErrorKind,
-    repr: Option<anyhow::Error>,
+    repr: Option<Box<dyn std::error::Error>>,
 }
 
+unsafe impl Send for RpcError {}
+unsafe impl Sync for RpcError {}
 impl std::error::Error for RpcError {}
 
 impl fmt::Debug for RpcError {
@@ -70,7 +72,10 @@ impl RpcError {
         Self { kind, repr: None }
     }
 
-    pub(crate) fn from_repr(kind: RpcErrorKind, repr: anyhow::Error) -> Self {
+    pub(crate) fn from_repr(
+        kind: RpcErrorKind,
+        repr: Box<dyn std::error::Error + Send + Sync>,
+    ) -> Self {
         Self {
             kind,
             repr: Some(repr),
@@ -78,7 +83,7 @@ impl RpcError {
     }
 
     pub(crate) fn from_msg(kind: RpcErrorKind, msg: &'static str) -> Self {
-        Self::from_repr(kind, anyhow::anyhow!(msg))
+        Self::from_repr(kind, anyhow::anyhow!(msg).into())
     }
 
     /// Get the kind of error that occurred in the RPC service.
