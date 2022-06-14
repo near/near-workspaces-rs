@@ -394,15 +394,15 @@ impl Client {
         Retry::spawn(retry_strategy, || async { self.status().await })
             .await
             .map_err(|e| {
-                let err = RpcErrorKind::ConnectionFailure.with_repr(
-                    anyhow::anyhow!(format!(
+                RpcErrorKind::ConnectionFailure.with_repr(
+                    anyhow::anyhow!(
                         "Failed to connect to RPC service {} within {} seconds: {:?}",
-                        self.rpc_addr, timeout_secs, e
-                    ))
+                        self.rpc_addr,
+                        timeout_secs,
+                        e
+                    )
                     .into(),
-                );
-
-                Into::<RpcError>::into(err)
+                )
             })?;
         Ok(())
     }
