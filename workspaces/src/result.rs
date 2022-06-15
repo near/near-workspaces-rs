@@ -95,15 +95,13 @@ impl CallExecutionDetails {
     fn try_into_success_value(&self) -> Result<&str> {
         match self.status {
             FinalExecutionStatus::SuccessValue(ref val) => Ok(val),
-            FinalExecutionStatus::Failure(ref err) => {
-                Err(Error::ExecutionError(err.to_string()))
-            }
+            FinalExecutionStatus::Failure(ref err) => Err(Error::ExecutionError(err.to_string())),
             FinalExecutionStatus::NotStarted => {
                 Err(Error::ExecutionError("Transaction not started.".into()))
             }
-            FinalExecutionStatus::Started => {
-                Err(Error::ExecutionError("Transaction still being processed.".into()))
-            }
+            FinalExecutionStatus::Started => Err(Error::ExecutionError(
+                "Transaction still being processed.".into(),
+            )),
         }
     }
 
