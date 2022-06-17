@@ -256,7 +256,7 @@ impl Client {
         let block_view = self
             .query(&methods::block::RpcBlockRequest { block_reference })
             .await
-            .map_err(|e| RpcErrorKind::QueryBlockFailure.with_repr(e.into()))?;
+            .map_err(|e| RpcErrorKind::QueryFailure.with_repr(e.into()))?;
 
         Ok(block_view)
     }

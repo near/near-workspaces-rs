@@ -2,9 +2,11 @@ use std::fmt;
 
 use super::Error;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Copy, Clone, Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum RpcErrorKind {
+    #[error("unable to create a new account via helper")]
+    HelperAccountCreationFailure,
     #[error("failed to connect to rpc service")]
     ConnectionFailure,
     #[error("access key was unable to be retrieved")]
@@ -15,8 +17,6 @@ pub enum RpcErrorKind {
     ViewFunctionFailure,
     #[error("unable to fulfill the query request")]
     QueryFailure,
-    #[error("unable to fulfill the block query request")]
-    QueryBlockFailure,
     #[error("incorrect variant retrieved while querying (maybe a bug in RPC code?)")]
     QueryReturnedInvalidData,
     #[error("other error not expected from workspaces")]
@@ -48,7 +48,7 @@ impl From<RpcErrorKind> for Error {
 /// Possible errors coming from the RPC service.
 pub struct RpcError {
     kind: RpcErrorKind,
-    repr: Option<Box<dyn std::error::Error>>,
+    repr: Option<Box<dyn std::error::Error + Send + Sync>>,
 }
 
 unsafe impl Send for RpcError {}
@@ -87,13 +87,13 @@ impl RpcError {
     }
 
     /// Get the kind of error that occurred in the RPC service.
-    pub fn kind(&self) -> &RpcErrorKind {
-        &self.kind
+    pub fn kind(&self) -> RpcErrorKind {
+        self.kind
     }
 
     /// Get the underlying error message from respective error. This can be
     /// empty to signify no meaningful error message is present.
-    pub fn err_msg(&self) -> String {
+    fn err_msg(&self) -> String {
         self.repr
             .as_ref()
             .map(ToString::to_string)

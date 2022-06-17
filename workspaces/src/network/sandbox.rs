@@ -7,7 +7,7 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::state_record::StateRecord;
 
 use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::error::Error;
+use crate::error::SandboxError;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{CallExecution, Result};
@@ -150,7 +150,7 @@ impl Sandbox {
             .client()
             .query(&RpcSandboxPatchStateRequest { records })
             .await
-            .map_err(|err| Error::SandboxPatchStateFailure(err.to_string()))?;
+            .map_err(|err| SandboxError::PatchStateFailure(err.to_string()))?;
 
         Ok(())
     }
@@ -161,7 +161,7 @@ impl Sandbox {
             // TODO: replace this with the `query` variant when RpcSandboxFastForwardRequest impls Debug
             .query_nolog(&RpcSandboxFastForwardRequest { delta_height })
             .await
-            .map_err(|err| Error::SandboxFastForwardFailure(err.to_string()))?;
+            .map_err(|err| SandboxError::FastForwardFailure(err.to_string()))?;
 
         Ok(())
     }

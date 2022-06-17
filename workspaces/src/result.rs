@@ -6,7 +6,7 @@ use near_primitives::views::{
     FinalExecutionStatus,
 };
 
-use crate::error::{BytesError, Error};
+use crate::error::{Error, SerializationError};
 use crate::types::{CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
@@ -68,7 +68,7 @@ impl CallExecutionDetails {
     pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
         serde_json::from_slice(&buf)
-            .map_err(BytesError::SerdeError)
+            .map_err(SerializationError::SerdeError)
             .map_err(Into::into)
     }
 
@@ -78,7 +78,7 @@ impl CallExecutionDetails {
     pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
         borsh::BorshDeserialize::try_from_slice(&buf)
-            .map_err(BytesError::BorshError)
+            .map_err(SerializationError::BorshError)
             .map_err(Into::into)
     }
 
@@ -88,7 +88,7 @@ impl CallExecutionDetails {
     pub fn raw_bytes(&self) -> Result<Vec<u8>> {
         let result = self.try_into_success_value()?;
         base64::decode(result)
-            .map_err(BytesError::DecodeBase64Error)
+            .map_err(SerializationError::DecodeBase64Error)
             .map_err(Into::into)
     }
 
@@ -112,7 +112,7 @@ impl CallExecutionDetails {
         Ok(self)
     }
 
-    pub(crate) fn from_outcome(outcome: FinalExecutionOutcomeView) -> crate::result::Result<Self> {
+    pub(crate) fn from_outcome(outcome: FinalExecutionOutcomeView) -> Result<Self> {
         Self::from(outcome).try_into_result()
     }
 
@@ -214,7 +214,7 @@ impl ViewResultDetails {
     /// requirements.
     pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
         serde_json::from_slice(&self.result)
-            .map_err(BytesError::SerdeError)
+            .map_err(SerializationError::SerdeError)
             .map_err(Into::into)
     }
 
@@ -223,7 +223,7 @@ impl ViewResultDetails {
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
     pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
         borsh::BorshDeserialize::try_from_slice(&self.result)
-            .map_err(BytesError::BorshError)
+            .map_err(SerializationError::BorshError)
             .map_err(Into::into)
     }
 }
@@ -277,7 +277,7 @@ impl ExecutionOutcome {
 
     /// Converts this [`ExecutionOutcome`] into a Result type to match against whether the
     /// particular outcome has failed or not.
-    pub fn into_result(self) -> crate::result::Result<ValueOrReceiptId> {
+    pub fn into_result(self) -> Result<ValueOrReceiptId> {
         match self.status {
             ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(value)),
             ExecutionStatusView::SuccessReceiptId(hash) => {

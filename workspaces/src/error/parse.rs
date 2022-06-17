@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// All the possible error kinds that can occur when parsing within workspaces.
-#[derive(Debug, thiserror::Error)]
+#[derive(Copy, Clone, Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ParseErrorKind {
     #[error("incorrect hash length (expected {expected_length}, but {received_length} was given)")]
@@ -39,13 +39,13 @@ impl ParseError {
     }
 
     /// Get the kind of error that occurred from parsing.
-    pub fn kind(&self) -> &ParseErrorKind {
-        &self.kind
+    pub fn kind(&self) -> ParseErrorKind {
+        self.kind
     }
 
     /// Get the underlying error message from respective error. This can be
     /// empty to signify no meaningful error message is present.
-    pub fn err_msg(&self) -> String {
+    fn err_msg(&self) -> String {
         self.repr
             .as_ref()
             .map(ToString::to_string)

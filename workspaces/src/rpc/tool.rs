@@ -11,14 +11,14 @@ use url::Url;
 use near_crypto::SecretKey;
 use near_primitives::views::StateItem;
 
-use crate::error::{BytesError, Error};
+use crate::error::{RpcErrorKind, SerializationError};
 use crate::types::{AccountId, PublicKey};
 
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
 /// Assumes key and value are base64 encoded, so this also decodes them.
 pub(crate) fn into_state_map(
     state_items: &[StateItem],
-) -> Result<HashMap<Vec<u8>, Vec<u8>>, BytesError> {
+) -> Result<HashMap<Vec<u8>, Vec<u8>>, SerializationError> {
     let decode = |s: &StateItem| Ok((base64::decode(&s.key)?, base64::decode(&s.value)?));
 
     state_items.iter().map(decode).collect()
@@ -51,11 +51,11 @@ pub(crate) async fn url_create_account(
                 "newAccountId": account_id,
                 "newAccountPublicKey": pk,
             }))
-            .map_err(BytesError::SerdeError)?,
+            .map_err(SerializationError::SerdeError)?,
         )
         .send()
         .await
-        .map_err(|e| Error::Other(Box::new(e)))?;
+        .map_err(|e| RpcErrorKind::HelperAccountCreationFailure.with_repr(Box::new(e)))?;
 
     Ok(())
 }
