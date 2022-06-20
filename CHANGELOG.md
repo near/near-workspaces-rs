@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2022-06-20
+
+### Added
+- Raw bytes API similar to `json`/`borsh` calls: https://github.com/near/workspaces-rs/pull/133/files
+- Expose `types` module and added `SecretKey` creation: https://github.com/near/workspaces-rs/pull/139
+
+### Fixed
+- If sandbox gets started multiple times, short circuit it early on: https://github.com/near/workspaces-rs/pull/135
+- Fix short timeouts on connecting to RPC for macos with custom env variable to specify timeout if needed: https://github.com/near/workspaces-rs/pull/143
+
 ## [0.3.0] - 2022-05-10
 
 ### Added
@@ -57,6 +67,7 @@
 
 
 [Unreleased]: https://github.com/near/workspaces-rs/compare/0.3.0...HEAD
+[0.3.1]: https://github.com/near/workspaces-rs/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/near/workspaces-rs/compare/0.2.1...0.3.0
 [0.2.1]: https://github.com/near/workspaces-rs/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/near/workspaces-rs/compare/0.1.1...0.2.0
