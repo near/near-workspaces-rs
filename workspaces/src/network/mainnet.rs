@@ -22,7 +22,7 @@ pub struct Mainnet {
 
 impl Mainnet {
     pub(crate) async fn new() -> anyhow::Result<Self> {
-        let client = Client::new(RPC_URL.into());
+        let client = Client::new(RPC_URL);
         client.wait_for_rpc().await?;
 
         Ok(Self {
@@ -37,7 +37,7 @@ impl Mainnet {
     }
 
     pub(crate) async fn archival() -> anyhow::Result<Self> {
-        let client = Client::new(ARCHIVAL_URL.into());
+        let client = Client::new(ARCHIVAL_URL);
         client.wait_for_rpc().await?;
 
         Ok(Self {
