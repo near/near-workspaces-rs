@@ -1,5 +1,8 @@
 use std::fmt;
 
+// Serialization error feels like its a good case to just have in general since serialization
+// is a feature that needs to be handled more often than not
+
 /// All the possible error kinds that can occur when parsing within workspaces.
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -23,7 +26,7 @@ pub enum ParseErrorKind {
 /// and then forwarded to this error type.
 pub struct ParseError {
     kind: ParseErrorKind,
-    repr: Option<Box<dyn std::error::Error>>,
+    repr: Option<Box<dyn std::error::Error + Send + Sync>>,
 }
 
 impl ParseError {
@@ -31,7 +34,7 @@ impl ParseError {
         Self { kind, repr: None }
     }
 
-    pub(crate) fn from_repr(kind: ParseErrorKind, repr: Box<dyn std::error::Error>) -> Self {
+    pub(crate) fn from_repr(kind: ParseErrorKind, repr: Box<dyn std::error::Error + Send + Sync>) -> Self {
         Self {
             kind,
             repr: Some(repr),
