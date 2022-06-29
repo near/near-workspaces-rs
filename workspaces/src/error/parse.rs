@@ -23,7 +23,7 @@ pub enum ParseErrorKind {
 /// and then forwarded to this error type.
 pub struct ParseError {
     kind: ParseErrorKind,
-    repr: Option<Box<dyn std::error::Error>>,
+    repr: Option<Box<dyn std::error::Error + Send + Sync>>,
 }
 
 impl ParseError {
@@ -31,7 +31,7 @@ impl ParseError {
         Self { kind, repr: None }
     }
 
-    pub(crate) fn from_repr(kind: ParseErrorKind, repr: Box<dyn std::error::Error>) -> Self {
+    pub(crate) fn from_repr(kind: ParseErrorKind, repr: Box<dyn std::error::Error + Send + Sync>) -> Self {
         Self {
             kind,
             repr: Some(repr),

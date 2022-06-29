@@ -14,7 +14,7 @@ use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
-use crate::error::{ParseError, ParseErrorKind};
+use crate::error::Error;
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
@@ -98,10 +98,11 @@ impl SecretKey {
 }
 
 impl std::str::FromStr for SecretKey {
-    type Err = ParseError;
+    type Err = Error;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let sk = near_crypto::SecretKey::from_str(value)?;
+        let sk = near_crypto::SecretKey::from_str(value)
+            .map_err(|e| Error::ParseError(e.to_string()))?;
 
         Ok(Self(sk))
     }
@@ -133,24 +134,23 @@ impl InMemorySigner {
 pub struct CryptoHash(pub [u8; 32]);
 
 impl std::str::FromStr for CryptoHash {
-    type Err = ParseError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = from_base(s).map_err(|e| Self::Err::from_repr(ParseErrorKind::Unknown, e))?;
+        let bytes = from_base(s).map_err(|e| Error::ParseError(e.to_string()))?;
         Self::try_from(bytes)
     }
 }
 
 impl TryFrom<&[u8]> for CryptoHash {
-    type Error = ParseError;
+    type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 32 {
-            return Err(ParseErrorKind::IncorrectHashLength {
-                expected_length: 32,
-                received_length: bytes.len(),
-            }
-            .into());
+            return Err(Error::ParseError(format!(
+                "incorrect hash length (expected 32, but {} was given)",
+                bytes.len()
+            )));
         }
         let mut buf = [0; 32];
         buf.copy_from_slice(bytes);
@@ -159,7 +159,7 @@ impl TryFrom<&[u8]> for CryptoHash {
 }
 
 impl TryFrom<Vec<u8>> for CryptoHash {
-    type Error = ParseError;
+    type Error = Error;
 
     fn try_from(v: Vec<u8>) -> Result<Self, Self::Error> {
         <Self as TryFrom<&[u8]>>::try_from(v.as_ref())

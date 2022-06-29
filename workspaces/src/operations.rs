@@ -356,7 +356,7 @@ where
             .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
         let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id)
             .try_into()
-            .map_err(|e: ParseAccountError| Error::AccountError(e.to_string()))?;
+            .map_err(|e: ParseAccountError| Error::ParseError(e.to_string()))?;
 
         let outcome = self
             .worker

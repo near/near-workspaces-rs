@@ -1,10 +1,8 @@
 //! All errors that can occur within workspaces, including but not limited to
 //! the following: IO, RPC, parsing, and serialization errors.
 
-mod parse;
 mod rpc;
 
-pub use self::parse::{ParseError, ParseErrorKind};
 pub use self::rpc::{RpcError, RpcErrorKind};
 
 /// Error type that workspaces will make use of for all the errors
@@ -20,16 +18,11 @@ pub enum Error {
     SandboxError(#[from] SandboxError),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
-    #[error("Account error: {0}")]
-    AccountError(String),
     #[error("Parse error: {0}")]
-    ParseError(#[from] ParseError),
+    ParseError(String),
     #[error("Serialization error: {0}")]
     SerializationError(#[from] SerializationError),
 }
-
-unsafe impl Sync for Error {}
-unsafe impl Send for Error {}
 
 /// Bytes specific errors such as serialization and deserialization
 #[derive(Debug, thiserror::Error)]

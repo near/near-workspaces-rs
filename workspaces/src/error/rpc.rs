@@ -51,8 +51,6 @@ pub struct RpcError {
     repr: Option<Box<dyn std::error::Error + Send + Sync>>,
 }
 
-unsafe impl Send for RpcError {}
-unsafe impl Sync for RpcError {}
 impl std::error::Error for RpcError {}
 
 impl fmt::Debug for RpcError {
