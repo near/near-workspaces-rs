@@ -17,7 +17,7 @@ use near_primitives::transaction::{
     DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
 };
 use near_primitives::views::FinalExecutionOutcomeView;
-use std::convert::TryInto;
+use std::convert::{TryInto, TryFrom};
 
 const MAX_GAS: Gas = 300_000_000_000_000;
 
@@ -26,7 +26,7 @@ const MAX_GAS: Gas = 300_000_000_000_000;
 #[derive(Debug, Clone)]
 pub struct Function<'a> {
     name: &'a str,
-    args: Vec<u8>,
+    args: Result<Vec<u8>, SerializationError>,
     deposit: Balance,
     gas: Gas,
 }
@@ -37,7 +37,7 @@ impl<'a> Function<'a> {
     pub fn new(name: &'a str) -> Self {
         Self {
             name,
-            args: vec![],
+            args: Ok(vec![]),
             deposit: DEFAULT_CALL_DEPOSIT,
             gas: DEFAULT_CALL_FN_GAS,
         }
@@ -47,26 +47,23 @@ impl<'a> Function<'a> {
     /// a JSON or Borsh serializable set of arguments. To use the more specific versions
     /// with better quality of life, use `args_json` or `args_borsh`.
     pub fn args(mut self, args: Vec<u8>) -> Self {
-        self.args = args;
+        self.args = Ok(args);
         self
     }
 
     /// Similiar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
-    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self, SerializationError> {
-        self.args = serde_json::to_vec(&args)?;
-        Ok(self)
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
+        self.args = serde_json::to_vec(&args).map_err(Into::into);
+        self
     }
 
     /// Similiar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
-    pub fn args_borsh<U: borsh::BorshSerialize>(
-        mut self,
-        args: U,
-    ) -> Result<Self, SerializationError> {
-        self.args = args.try_to_vec().map_err(SerializationError::BorshError)?;
-        Ok(self)
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
+        self.args = args.try_to_vec().map_err(SerializationError::BorshError);
+        self
     }
 
     /// Specify the amount of tokens to be deposited where `deposit` is the amount of
@@ -88,14 +85,14 @@ impl<'a> Function<'a> {
     }
 }
 
-impl From<Function<'_>> for Action {
-    fn from(function: Function<'_>) -> Self {
-        Self::FunctionCall(FunctionCallAction {
+impl TryFrom<Function<'_>> for Action {
+    fn from(function: Function<'_>) -> Result<Self, SerializationError> {
+        Ok(Self::FunctionCall(FunctionCallAction {
             method_name: function.name.to_string(),
-            args: function.args,
+            args: function.args?,
             deposit: function.deposit,
             gas: function.gas,
-        })
+        }))
     }
 }
 
@@ -222,7 +219,7 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
             worker,
             signer,
             contract_id,
-            function: Function::new(function),
+            function: Ok(Function::new(function)),
         }
     }
 
@@ -237,19 +234,16 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     /// Similiar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
-    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self, SerializationError> {
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
         self.function = self.function.args_json(args)?;
-        Ok(self)
+        self
     }
 
     /// Similiar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
-    pub fn args_borsh<U: borsh::BorshSerialize>(
-        mut self,
-        args: U,
-    ) -> Result<Self, SerializationError> {
-        self.function = self.function.args_borsh(args)?;
-        Ok(self)
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
+        self.function = self.function.args_borsh(args);
+        self
     }
 
     /// Specify the amount of tokens to be deposited where `deposit` is the amount of
@@ -280,7 +274,7 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
                 &self.signer,
                 &self.contract_id,
                 self.function.name.to_string(),
-                self.function.args,
+                self.function.args?,
                 self.function.gas,
                 self.function.deposit,
             )
@@ -296,7 +290,7 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
             .view(
                 self.contract_id,
                 self.function.name.to_string(),
-                self.function.args,
+                self.function.args?,
             )
             .await
             .map_err(crate::error::Error::from)
