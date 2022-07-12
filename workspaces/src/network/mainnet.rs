@@ -54,11 +54,10 @@ impl Mainnet {
 
 impl std::fmt::Debug for Mainnet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Mainnet {{ root_id: {:?}, rpc_url: {:?} }}",
-            self.info.root_id, self.info.rpc_url
-        )
+        f.debug_struct("Mainnet")
+            .field("root_id", &self.info.root_id)
+            .field("rpc_url", &self.info.rpc_url)
+            .finish()
     }
 }
 

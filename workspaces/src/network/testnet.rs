@@ -63,11 +63,10 @@ impl Testnet {
 
 impl std::fmt::Debug for Testnet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Testnet {{ root_id: {:?}, rpc_url: {:?} }}",
-            self.info.root_id, self.info.rpc_url
-        )
+        f.debug_struct("Testnet")
+            .field("root_id", &self.info.root_id)
+            .field("rpc_url", &self.info.rpc_url)
+            .finish()
     }
 }
 

@@ -21,7 +21,7 @@ pub struct Account {
 
 impl fmt::Debug for Account {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Account {{ id: {:?} }}", self.id)
+        f.debug_struct("Account").field("id", &self.id).finish()
     }
 }
 
@@ -169,7 +169,9 @@ pub struct Contract {
 
 impl fmt::Debug for Contract {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Contract {{ id: {:?} }}", self.id())
+        f.debug_struct("Contract")
+            .field("id", &self.account.id)
+            .finish()
     }
 }
 

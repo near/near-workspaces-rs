@@ -27,7 +27,9 @@ where
 
 impl<T: fmt::Debug> fmt::Debug for Worker<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Worker {{ workspace: {:?} }}", self.workspace)
+        f.debug_struct("Worker")
+            .field("workspace", &self.workspace)
+            .finish()
     }
 }
 
