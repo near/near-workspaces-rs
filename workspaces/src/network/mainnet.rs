@@ -52,6 +52,16 @@ impl Mainnet {
     }
 }
 
+impl std::fmt::Debug for Mainnet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Mainnet {{ root_id: {:?}, rpc_url: {:?} }}",
+            self.info.root_id, self.info.rpc_url
+        )
+    }
+}
+
 impl NetworkClient for Mainnet {
     fn client(&self) -> &Client {
         &self.client

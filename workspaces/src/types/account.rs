@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::path::Path;
 
 use near_primitives::views::AccountView;
@@ -12,9 +13,16 @@ use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 /// `Account` is directly associated to an account in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
 /// network, such as creating transactions and calling into contract functions.
+#[derive(Clone)]
 pub struct Account {
     pub(crate) id: AccountId,
     pub(crate) signer: InMemorySigner,
+}
+
+impl fmt::Debug for Account {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Account {{ id: {:?} }}", self.id)
+    }
 }
 
 impl Account {
@@ -154,8 +162,15 @@ impl Account {
 /// `Contract` is directly associated to a contract in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
 /// network, such as creating transactions and calling into contract functions.
+#[derive(Clone)]
 pub struct Contract {
     pub(crate) account: Account,
+}
+
+impl fmt::Debug for Contract {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Contract {{ id: {:?} }}", self.id())
+    }
 }
 
 impl Contract {

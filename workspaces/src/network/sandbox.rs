@@ -64,6 +64,30 @@ impl Sandbox {
             info,
         })
     }
+
+    /// Port being used by sandbox server for RPC requests.
+    pub(crate) fn rpc_port(&self) -> u16 {
+        self.server.rpc_port
+    }
+
+    /// Port being used by sandbox as to non interfere with other (sandbox) nodes running
+    /// simulataneously on the same machine.
+    pub(crate) fn net_port(&self) -> u16 {
+        self.server.net_port
+    }
+}
+
+impl std::fmt::Debug for Sandbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "Sandbox {{ root_id: {:?}, rpc_url: {:?}, rpc_port: {}, net_port: {} }}",
+            self.info.root_id,
+            self.info.rpc_url,
+            self.rpc_port(),
+            self.net_port(),
+        )
+    }
 }
 
 impl AllowDevAccountCreation for Sandbox {}

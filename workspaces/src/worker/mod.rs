@@ -1,5 +1,6 @@
 mod impls;
 
+use std::fmt;
 use std::sync::Arc;
 
 use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
@@ -21,6 +22,12 @@ where
         Self {
             workspace: Arc::new(network),
         }
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for Worker<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Worker {{ workspace: {:?} }}", self.workspace)
     }
 }
 
