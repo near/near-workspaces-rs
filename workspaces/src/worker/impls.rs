@@ -195,4 +195,9 @@ impl Worker<Sandbox> {
     pub async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
         self.workspace.fast_forward(delta_height).await
     }
+
+    /// The port being used by RPC
+    pub fn rpc_port(&self) -> u16 {
+        self.workspace.rpc_port()
+    }
 }

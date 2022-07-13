@@ -64,6 +64,22 @@ impl Sandbox {
             info,
         })
     }
+
+    /// Port being used by sandbox server for RPC requests.
+    pub(crate) fn rpc_port(&self) -> u16 {
+        self.server.rpc_port
+    }
+}
+
+impl std::fmt::Debug for Sandbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("Sandbox")
+            .field("root_id", &self.info.root_id)
+            .field("rpc_url", &self.info.rpc_url)
+            .field("rpc_port", &self.server.rpc_port)
+            .field("net_port", &self.server.net_port)
+            .finish()
+    }
 }
 
 impl AllowDevAccountCreation for Sandbox {}
