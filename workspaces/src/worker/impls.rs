@@ -160,7 +160,7 @@ impl Worker<Sandbox> {
     pub fn root_account(&self) -> Account {
         let account_id = self.info().root_id.clone();
         let signer = self.workspace.root_signer();
-        Account::new(account_id, signer)
+        Account::new(account_id, signer.unwrap())
     }
 
     /// Import a contract from the the given network, and return us a [`ImportContractTransaction`]

@@ -38,7 +38,7 @@ impl Sandbox {
         path
     }
 
-    pub(crate) fn root_signer(&self) -> InMemorySigner {
+    pub(crate) fn root_signer(&self) -> anyhow::Result<InMemorySigner> {
         let mut path = Self::home_dir(self.server.rpc_port);
         path.push("validator_key.json");
 
@@ -91,7 +91,7 @@ impl TopLevelAccountCreator for Sandbox {
         id: AccountId,
         sk: SecretKey,
     ) -> anyhow::Result<CallExecution<Account>> {
-        let root_signer = self.root_signer();
+        let root_signer = self.root_signer()?;
         let outcome = self
             .client
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
@@ -110,7 +110,7 @@ impl TopLevelAccountCreator for Sandbox {
         sk: SecretKey,
         wasm: &[u8],
     ) -> anyhow::Result<CallExecution<Contract>> {
-        let root_signer = self.root_signer();
+        let root_signer = self.root_signer()?;
         let outcome = self
             .client
             .create_account_and_deploy(
