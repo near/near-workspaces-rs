@@ -33,6 +33,12 @@ impl Account {
         Self::new(id, signer)
     }
 
+    /// Create a new account from the given secret key.
+    pub fn from_secret_key(id: AccountId, sk: SecretKey) -> Self {
+        let signer = InMemorySigner::from_secret_key(id, sk);
+        Self::new(id, signer)
+    }
+
     pub(crate) fn new(id: AccountId, signer: InMemorySigner) -> Self {
         Self { id, signer }
     }
