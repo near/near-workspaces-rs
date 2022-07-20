@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2022-07-20
+
+### Added
+- Mac M1 Support: https://github.com/near/workspaces-rs/pull/169
+- Added `Account::secret_key` to grab the account's secret key: https://github.com/near/workspaces-rs/pull/144
+- `Debug`/`Clone` impls for `Account`/`Contract`, and `Debug` for `Worker`: https://github.com/near/workspaces-rs/pull/167
+- `ExecutionOutcome::tokens_burnt` is now available: https://github.com/near/workspaces-rs/pull/168
+
+### Fixed
+- internally no longer creating a new RPC client per call: https://github.com/near/workspaces-rs/pull/154
+- upped near dependencies to fix transitive vulnerabilities: https://github.com/near/workspaces-rs/pull/169
+
 ## [0.3.1] - 2022-06-20
 
 ### Added
@@ -66,7 +78,8 @@
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
 
-[Unreleased]: https://github.com/near/workspaces-rs/compare/0.3.0...HEAD
+[Unreleased]: https://github.com/near/workspaces-rs/compare/0.4.0...HEAD
+[0.4.0]: https://github.com/near/workspaces-rs/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/near/workspaces-rs/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/near/workspaces-rs/compare/0.2.1...0.3.0
 [0.2.1]: https://github.com/near/workspaces-rs/compare/0.2.0...0.2.1
