@@ -6,7 +6,7 @@ use near_primitives::views::{
     FinalExecutionStatus,
 };
 
-use crate::types::{CryptoHash, Gas};
+use crate::types::{Balance, CryptoHash, Gas};
 
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
@@ -240,6 +240,10 @@ pub struct ExecutionOutcome {
     pub receipt_ids: Vec<CryptoHash>,
     /// The amount of the gas burnt by the given transaction or receipt.
     pub gas_burnt: Gas,
+    /// The amount of tokens burnt corresponding to the burnt gas amount.
+    /// This value doesn't always equal to the `gas_burnt` multiplied by the gas price, because
+    /// the prepaid gas price might be lower than the actual gas price and it creates a deficit.
+    pub tokens_burnt: Balance,
     /// The id of the account on which the execution happens. For transaction this is signer_id,
     /// for receipt this is receiver_id.
     pub executor_id: AccountId,
@@ -303,6 +307,7 @@ impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {
                 .map(|c| CryptoHash(c.0))
                 .collect(),
             gas_burnt: view.outcome.gas_burnt,
+            tokens_burnt: view.outcome.tokens_burnt,
             executor_id: view.outcome.executor_id,
             status: view.outcome.status,
         }

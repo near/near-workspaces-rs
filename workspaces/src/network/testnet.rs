@@ -97,6 +97,7 @@ impl TopLevelAccountCreator for Testnet {
                     logs: Vec::new(),
                     receipt_ids: Vec::new(),
                     gas_burnt: 0,
+                    tokens_burnt: 0,
                     executor_id: "testnet".parse()?,
                     status: ExecutionStatusView::SuccessValue(String::new()),
                 },
