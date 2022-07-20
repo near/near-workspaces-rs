@@ -39,4 +39,4 @@ jobs:
     - name: Check with stable features
       run: cargo check --verbose
     - name: Run tests with unstable features
-      run: NEAR_RPC_TIMEOUT_SECS=10 cargo test --verbose --features unstable -- --nocapture
+      run: RUST_BACKTRACE=1 NEAR_RPC_TIMEOUT_SECS=10 cargo test --verbose --features unstable -- --nocapture

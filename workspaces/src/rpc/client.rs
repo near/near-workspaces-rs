@@ -376,7 +376,7 @@ impl Client {
     }
 
     pub(crate) async fn wait_for_rpc(&self) -> anyhow::Result<()> {
-        let now = std::time::Instant::now();
+        // let now = std::time::Instant::now();
 
         let timeout_secs = match std::env::var("NEAR_RPC_TIMEOUT_SECS") {
             Ok(secs) => secs.parse::<usize>()?,
@@ -396,10 +396,10 @@ impl Client {
                 )
             })?;
 
-        let elapsed = now.elapsed().as_secs();
-        if elapsed >= 10 {
-            anyhow::bail!("Elapsed >>> {} secs", elapsed);
-        }
+        // let elapsed = now.elapsed().as_secs();
+        // if elapsed >= 10 {
+        //     anyhow::bail!("Elapsed >>> {} secs", elapsed);
+        // }
         Ok(())
     }
 }
