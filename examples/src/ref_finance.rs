@@ -203,7 +203,7 @@ async fn create_custom_ft(
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let owner = worker.root_account();
+    let owner = worker.root_account()?;
 
     ///////////////////////////////////////////////////////////////////////////
     // Stage 1: Deploy relevant contracts such as FT, WNear, and Ref-Finance

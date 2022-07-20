@@ -27,10 +27,10 @@ impl fmt::Debug for Account {
 
 impl Account {
     /// Create a new account with the given path to the credentials JSON file
-    pub fn from_file(path: impl AsRef<std::path::Path>) -> Self {
-        let signer = InMemorySigner::from_file(path.as_ref());
+    pub fn from_file(path: impl AsRef<std::path::Path>) -> anyhow::Result<Self> {
+        let signer = InMemorySigner::from_file(path.as_ref())?;
         let id = signer.account_id.clone();
-        Self::new(id, signer)
+        Ok(Self::new(id, signer))
     }
 
     pub(crate) fn new(id: AccountId, signer: InMemorySigner) -> Self {

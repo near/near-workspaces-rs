@@ -117,9 +117,12 @@ impl InMemorySigner {
         }
     }
 
-    pub fn from_file(path: &Path) -> Self {
-        let signer = near_crypto::InMemorySigner::from_file(path);
-        Self::from_secret_key(signer.account_id, SecretKey(signer.secret_key))
+    pub fn from_file(path: &Path) -> anyhow::Result<Self> {
+        let signer = near_crypto::InMemorySigner::from_file(path)?;
+        Ok(Self::from_secret_key(
+            signer.account_id,
+            SecretKey(signer.secret_key),
+        ))
     }
 
     pub(crate) fn inner(&self) -> near_crypto::InMemorySigner {
