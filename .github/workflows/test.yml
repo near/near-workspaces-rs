@@ -2,7 +2,6 @@ name: Workspace Checks & Tests
 
 on:
   push:
-    branches: [ main ]
   pull_request:
 
 env:
@@ -40,4 +39,4 @@ jobs:
     - name: Check with stable features
       run: cargo check --verbose
     - name: Run tests with unstable features
-      run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --verbose --features unstable
+      run: NEAR_RPC_TIMEOUT_SECS=3600 cargo test --verbose --features unstable
