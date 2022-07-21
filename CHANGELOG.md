@@ -14,6 +14,9 @@
 - internally no longer creating a new RPC client per call: https://github.com/near/workspaces-rs/pull/154
 - upped near dependencies to fix transitive vulnerabilities: https://github.com/near/workspaces-rs/pull/169
 
+### Changed
+- Default sandbox version is now using commit hash master/13a66dda709a4148f6395636914dca2a55df1390 (July 18, 2022): https://github.com/near/workspaces-rs/pull/169
+
 ## [0.3.1] - 2022-06-20
 
 ### Added
