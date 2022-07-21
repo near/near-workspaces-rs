@@ -8,35 +8,13 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    name: Clippy and fmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v1
-      - name: Check Formatting
-        run: cargo fmt -- --check
-      - name: Check Clippy
-        run: cargo clippy --tests -- -Dclippy::all
-
   test:
-    needs: check
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest]
+        platform: [macos-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v2
-    - name: Add wasm32 target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Check with stable features
-      run: cargo check --verbose
     - name: Run tests with unstable features
       run: RUST_BACKTRACE=1 NEAR_RPC_TIMEOUT_SECS=10 cargo test --verbose --features unstable -- --nocapture

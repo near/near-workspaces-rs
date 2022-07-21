@@ -6,6 +6,10 @@ use test_log::test;
 #[test(tokio::test)]
 async fn test_batch_tx() -> anyhow::Result<()> {
     println!("CURRENT TIME: {:?}", time::Instant::now());
+    println!(
+        "SUB: {:?}",
+        std::time::Instant::now() - std::time::Duration::from_secs(3600)
+    );
 
     let sub = time::Instant::now() - time::Duration::hours(1);
     println!("New subbed: {:?}", sub);
