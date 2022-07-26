@@ -1,6 +1,6 @@
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::network::{Info, Sandbox};
-use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
+use crate::result::{CallExecution, CallExecutionDetails, Result, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
@@ -31,7 +31,7 @@ where
         &self,
         id: AccountId,
         sk: SecretKey,
-    ) -> crate::result::Result<CallExecution<Account>> {
+    ) -> Result<CallExecution<Account>> {
         self.workspace.create_tla(id, sk).await
     }
 
@@ -40,7 +40,7 @@ where
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> crate::result::Result<CallExecution<Contract>> {
+    ) -> Result<CallExecution<Contract>> {
         self.workspace.create_tla_and_deploy(id, sk, wasm).await
     }
 }
@@ -70,7 +70,7 @@ where
         args: Vec<u8>,
         gas: Option<Gas>,
         deposit: Option<Balance>,
-    ) -> crate::result::Result<CallExecutionDetails> {
+    ) -> Result<CallExecutionDetails> {
         self.client()
             .call(
                 contract.signer(),
@@ -91,7 +91,7 @@ where
         contract_id: &AccountId,
         function: &str,
         args: Vec<u8>,
-    ) -> crate::result::Result<ViewResultDetails> {
+    ) -> Result<ViewResultDetails> {
         self.client()
             .view(contract_id.clone(), function.into(), args)
             .await
@@ -99,7 +99,7 @@ where
     }
 
     /// View the WASM code bytes of a contract on the network.
-    pub async fn view_code(&self, contract_id: &AccountId) -> crate::result::Result<Vec<u8>> {
+    pub async fn view_code(&self, contract_id: &AccountId) -> Result<Vec<u8>> {
         let code_view = self.client().view_code(contract_id.clone(), None).await?;
         Ok(code_view.code)
     }
@@ -111,7 +111,7 @@ where
         &self,
         contract_id: &AccountId,
         prefix: Option<&[u8]>,
-    ) -> crate::result::Result<HashMap<Vec<u8>, Vec<u8>>> {
+    ) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
         self.client()
             .view_state(contract_id.clone(), prefix, None)
             .await
@@ -119,7 +119,7 @@ where
     }
 
     /// View the latest block from the network
-    pub async fn view_latest_block(&self) -> crate::result::Result<Block> {
+    pub async fn view_latest_block(&self) -> Result<Block> {
         self.client()
             .view_block(None)
             .await
@@ -134,7 +134,7 @@ where
         signer: &InMemorySigner,
         receiver_id: &AccountId,
         amount_yocto: Balance,
-    ) -> crate::result::Result<CallExecutionDetails> {
+    ) -> Result<CallExecutionDetails> {
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
@@ -149,7 +149,7 @@ where
         account_id: &AccountId,
         signer: &InMemorySigner,
         beneficiary_id: &AccountId,
-    ) -> crate::result::Result<CallExecutionDetails> {
+    ) -> Result<CallExecutionDetails> {
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
             .await
@@ -158,10 +158,7 @@ where
     }
 
     /// View account details of a specific account on the network.
-    pub async fn view_account(
-        &self,
-        account_id: &AccountId,
-    ) -> crate::result::Result<AccountDetails> {
+    pub async fn view_account(&self, account_id: &AccountId) -> Result<AccountDetails> {
         self.client()
             .view_account(account_id.clone(), None)
             .await
@@ -171,7 +168,7 @@ where
 }
 
 impl Worker<Sandbox> {
-    pub fn root_account(&self) -> anyhow::Result<Account> {
+    pub fn root_account(&self) -> Result<Account> {
         let account_id = self.info().root_id.clone();
         let signer = self.workspace.root_signer()?;
         Ok(Account::new(account_id, signer))
@@ -196,7 +193,7 @@ impl Worker<Sandbox> {
         contract_id: &AccountId,
         key: &[u8],
         value: &[u8],
-    ) -> crate::result::Result<()> {
+    ) -> Result<()> {
         self.workspace.patch_state(contract_id, key, value).await
     }
 
@@ -206,7 +203,7 @@ impl Worker<Sandbox> {
     ///
     /// Estimate as to how long it takes: if our delta_height crosses `X` epochs, then it would
     /// roughly take `X * 5` seconds for the fast forward request to be processed.
-    pub async fn fast_forward(&self, delta_height: u64) -> crate::result::Result<()> {
+    pub async fn fast_forward(&self, delta_height: u64) -> Result<()> {
         self.workspace.fast_forward(delta_height).await
     }
 

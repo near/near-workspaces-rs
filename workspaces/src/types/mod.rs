@@ -14,6 +14,7 @@ use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
+use crate::result::Result;
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
@@ -121,7 +122,7 @@ impl InMemorySigner {
         }
     }
 
-    pub fn from_file(path: &Path) -> anyhow::Result<Self> {
+    pub fn from_file(path: &Path) -> Result<Self> {
         let signer = near_crypto::InMemorySigner::from_file(path)?;
         Ok(Self::from_secret_key(
             signer.account_id,

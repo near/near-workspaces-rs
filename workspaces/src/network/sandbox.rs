@@ -39,7 +39,7 @@ impl Sandbox {
         path
     }
 
-    pub(crate) fn root_signer(&self) -> anyhow::Result<InMemorySigner> {
+    pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
         let mut path = Self::home_dir(self.server.rpc_port);
         path.push("validator_key.json");
 
