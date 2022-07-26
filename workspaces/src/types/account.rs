@@ -1,10 +1,11 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::path::Path;
 
 use near_primitives::views::AccountView;
 
 use crate::result::Result;
-use crate::types::{AccountId, Balance, InMemorySigner};
+use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{CryptoHash, Network, Worker};
 
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
@@ -13,17 +14,24 @@ use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
 /// `Account` is directly associated to an account in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
 /// network, such as creating transactions and calling into contract functions.
+#[derive(Clone)]
 pub struct Account {
     pub(crate) id: AccountId,
     pub(crate) signer: InMemorySigner,
 }
 
+impl fmt::Debug for Account {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Account").field("id", &self.id).finish()
+    }
+}
+
 impl Account {
     /// Create a new account with the given path to the credentials JSON file
-    pub fn from_file(path: impl AsRef<std::path::Path>) -> Self {
-        let signer = InMemorySigner::from_file(path.as_ref());
-        let id = signer.0.account_id.clone();
-        Self::new(id, signer)
+    pub fn from_file(path: impl AsRef<std::path::Path>) -> anyhow::Result<Self> {
+        let signer = InMemorySigner::from_file(path.as_ref())?;
+        let id = signer.account_id.clone();
+        Ok(Self::new(id, signer))
     }
 
     pub(crate) fn new(id: AccountId, signer: InMemorySigner) -> Self {
@@ -141,9 +149,14 @@ impl Account {
         let mut savepath = savepath.join(self.id.to_string());
         savepath.set_extension("json");
 
-        crate::rpc::tool::write_cred_to_file(&savepath, &self.id, &self.signer.0.secret_key);
+        crate::rpc::tool::write_cred_to_file(&savepath, &self.id, &self.secret_key().0);
 
         Ok(())
+    }
+
+    /// Get the keys of this account. The public key can be retrieved from the secret key.
+    pub fn secret_key(&self) -> &SecretKey {
+        &self.signer.secret_key
     }
 }
 
@@ -152,8 +165,17 @@ impl Account {
 /// `Contract` is directly associated to a contract in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
 /// network, such as creating transactions and calling into contract functions.
+#[derive(Clone)]
 pub struct Contract {
     pub(crate) account: Account,
+}
+
+impl fmt::Debug for Contract {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Contract")
+            .field("id", &self.account.id)
+            .finish()
+    }
 }
 
 impl Contract {

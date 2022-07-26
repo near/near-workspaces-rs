@@ -7,7 +7,7 @@ use near_primitives::views::{
 };
 
 use crate::error::{Error, SerializationError};
-use crate::types::{CryptoHash, Gas};
+use crate::types::{Balance, CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
 
@@ -199,6 +199,7 @@ impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
 /// The result from a call into a View function. This contains the contents or
 /// the results from the view function call itself. The consumer of this object
 /// can choose how to deserialize its contents.
+#[derive(PartialEq, Eq, Clone, Debug)]
 #[non_exhaustive]
 pub struct ViewResultDetails {
     /// Our result from our call into a view function.
@@ -249,6 +250,10 @@ pub struct ExecutionOutcome {
     pub receipt_ids: Vec<CryptoHash>,
     /// The amount of the gas burnt by the given transaction or receipt.
     pub gas_burnt: Gas,
+    /// The amount of tokens burnt corresponding to the burnt gas amount.
+    /// This value doesn't always equal to the `gas_burnt` multiplied by the gas price, because
+    /// the prepaid gas price might be lower than the actual gas price and it creates a deficit.
+    pub tokens_burnt: Balance,
     /// The id of the account on which the execution happens. For transaction this is signer_id,
     /// for receipt this is receiver_id.
     pub executor_id: AccountId,
@@ -312,6 +317,7 @@ impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {
                 .map(|c| CryptoHash(c.0))
                 .collect(),
             gas_burnt: view.outcome.gas_burnt,
+            tokens_burnt: view.outcome.tokens_burnt,
             executor_id: view.outcome.executor_id,
             status: view.outcome.status,
         }

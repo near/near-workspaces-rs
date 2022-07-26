@@ -39,7 +39,7 @@ impl Sandbox {
         path
     }
 
-    pub(crate) fn root_signer(&self) -> InMemorySigner {
+    pub(crate) fn root_signer(&self) -> anyhow::Result<InMemorySigner> {
         let mut path = Self::home_dir(self.server.rpc_port);
         path.push("validator_key.json");
 
@@ -49,7 +49,7 @@ impl Sandbox {
     pub(crate) async fn new() -> Result<Self> {
         let mut server = SandboxServer::default();
         server.start()?;
-        let client = Client::new(server.rpc_addr());
+        let client = Client::new(&server.rpc_addr());
         client.wait_for_rpc().await?;
 
         let info = Info {
@@ -65,6 +65,22 @@ impl Sandbox {
             info,
         })
     }
+
+    /// Port being used by sandbox server for RPC requests.
+    pub(crate) fn rpc_port(&self) -> u16 {
+        self.server.rpc_port
+    }
+}
+
+impl std::fmt::Debug for Sandbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("Sandbox")
+            .field("root_id", &self.info.root_id)
+            .field("rpc_url", &self.info.rpc_url)
+            .field("rpc_port", &self.server.rpc_port)
+            .field("net_port", &self.server.net_port)
+            .finish()
+    }
 }
 
 impl AllowDevAccountCreation for Sandbox {}
@@ -72,7 +88,7 @@ impl AllowDevAccountCreation for Sandbox {}
 #[async_trait]
 impl TopLevelAccountCreator for Sandbox {
     async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
-        let root_signer = self.root_signer();
+        let root_signer = self.root_signer()?;
         let outcome = self
             .client
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
@@ -91,7 +107,7 @@ impl TopLevelAccountCreator for Sandbox {
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<CallExecution<Contract>> {
-        let root_signer = self.root_signer();
+        let root_signer = self.root_signer()?;
         let outcome = self
             .client
             .create_account_and_deploy(

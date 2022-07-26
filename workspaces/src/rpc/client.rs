@@ -5,6 +5,7 @@ use std::time::Duration;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
+use near_crypto::Signer;
 use near_jsonrpc_client::errors::JsonRpcError;
 use near_jsonrpc_client::methods::health::RpcStatusError;
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
@@ -25,20 +26,27 @@ use near_primitives::views::{
 use crate::error::{RpcError, RpcErrorKind};
 use crate::result::ViewResultDetails;
 use crate::rpc::tool;
-use crate::types::{AccountId, InMemorySigner, PublicKey, Signer};
+use crate::types::{AccountId, InMemorySigner, PublicKey};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 
-/// A client that wraps around JsonRpcClient, and provides more capabilities such
+/// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
 pub struct Client {
     rpc_addr: String,
+    rpc_client: JsonRpcClient,
 }
 
 impl Client {
-    pub(crate) fn new(rpc_addr: String) -> Self {
-        Self { rpc_addr }
+    pub(crate) fn new(rpc_addr: &str) -> Self {
+        let connector = JsonRpcClient::new_client();
+        let rpc_client = connector.connect(rpc_addr);
+
+        Self {
+            rpc_client,
+            rpc_addr: rpc_addr.into(),
+        }
     }
 
     pub(crate) async fn query_broadcast_tx(
@@ -49,7 +57,7 @@ impl Client {
         near_jsonrpc_primitives::types::transactions::RpcTransactionError,
     > {
         retry(|| async {
-            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            let result = self.rpc_client.call(method).await;
             match &result {
                 Ok(response) => {
                     // When user sets logging level to INFO we only print one-liners with submitted
@@ -89,7 +97,7 @@ impl Client {
     where
         M: methods::RpcMethod,
     {
-        retry(|| async { JsonRpcClient::connect(&self.rpc_addr).call(method).await }).await
+        retry(|| async { self.rpc_client.call(method).await }).await
     }
 
     pub(crate) async fn query<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
@@ -99,7 +107,7 @@ impl Client {
         M::Error: Debug,
     {
         retry(|| async {
-            let result = JsonRpcClient::connect(&self.rpc_addr).call(method).await;
+            let result = self.rpc_client.call(method).await;
             tracing::debug!(
                 target: "workspaces",
                 "Querying RPC with {:?} resulted in {:?}",
@@ -366,7 +374,8 @@ impl Client {
     }
 
     pub(crate) async fn status(&self) -> Result<StatusResponse, JsonRpcError<RpcStatusError>> {
-        let result = JsonRpcClient::connect(&self.rpc_addr)
+        let result = self
+            .rpc_client
             .call(methods::status::RpcStatusRequest)
             .await;
 
@@ -469,19 +478,16 @@ pub(crate) async fn send_batch_tx_and_retry(
     receiver_id: &AccountId,
     actions: Vec<Action>,
 ) -> Result<FinalExecutionOutcomeView, RpcError> {
+    let signer = signer.inner();
     send_tx_and_retry(client, || async {
-        let (AccessKeyView { nonce, .. }, block_hash) = access_key(
-            client,
-            signer.inner().account_id.clone(),
-            signer.inner().public_key(),
-        )
-        .await?;
+        let (AccessKeyView { nonce, .. }, block_hash) =
+            access_key(client, signer.account_id.clone(), signer.public_key()).await?;
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
-            signer.inner().account_id.clone(),
+            signer.account_id.clone(),
             receiver_id.clone(),
-            signer.inner() as &dyn Signer,
+            &signer as &dyn Signer,
             actions.clone(),
             block_hash,
         ))

@@ -32,7 +32,7 @@ pub struct Testnet {
 
 impl Testnet {
     pub(crate) async fn new() -> Result<Self> {
-        let client = Client::new(RPC_URL.into());
+        let client = Client::new(RPC_URL);
         client.wait_for_rpc().await?;
 
         Ok(Self {
@@ -47,7 +47,7 @@ impl Testnet {
     }
 
     pub(crate) async fn archival() -> Result<Self> {
-        let client = Client::new(ARCHIVAL_URL.into());
+        let client = Client::new(ARCHIVAL_URL);
         client.wait_for_rpc().await?;
 
         Ok(Self {
@@ -59,6 +59,15 @@ impl Testnet {
                 rpc_url: ARCHIVAL_URL.into(),
             },
         })
+    }
+}
+
+impl std::fmt::Debug for Testnet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Testnet")
+            .field("root_id", &self.info.root_id)
+            .field("rpc_url", &self.info.rpc_url)
+            .finish()
     }
 }
 
@@ -90,6 +99,7 @@ impl TopLevelAccountCreator for Testnet {
                     logs: Vec::new(),
                     receipt_ids: Vec::new(),
                     gas_burnt: 0,
+                    tokens_burnt: 0,
                     executor_id: "testnet".parse().unwrap(),
                     status: ExecutionStatusView::SuccessValue(String::new()),
                 },

@@ -171,10 +171,10 @@ where
 }
 
 impl Worker<Sandbox> {
-    pub fn root_account(&self) -> Account {
+    pub fn root_account(&self) -> anyhow::Result<Account> {
         let account_id = self.info().root_id.clone();
-        let signer = self.workspace.root_signer();
-        Account::new(account_id, signer)
+        let signer = self.workspace.root_signer()?;
+        Ok(Account::new(account_id, signer))
     }
 
     /// Import a contract from the the given network, and return us a [`ImportContractTransaction`]
@@ -208,5 +208,10 @@ impl Worker<Sandbox> {
     /// roughly take `X * 5` seconds for the fast forward request to be processed.
     pub async fn fast_forward(&self, delta_height: u64) -> crate::result::Result<()> {
         self.workspace.fast_forward(delta_height).await
+    }
+
+    /// The port being used by RPC
+    pub fn rpc_port(&self) -> u16 {
+        self.workspace.rpc_port()
     }
 }
