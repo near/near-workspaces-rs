@@ -1,10 +1,11 @@
 //! All errors that can occur within workspaces, including but not limited to
-//! the following: IO, RPC, parsing, and serialization errors.
+//! the following: IO, RPC, Execution, Sandbox, DataConversion errors.
 
 mod impls;
 
 use std::borrow::Cow;
 
+/// A list specifying general categories of NEAR workspace error.
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
 #[non_exhaustive]
 pub enum ErrorKind {
@@ -15,7 +16,7 @@ pub enum ErrorKind {
     #[error("Execution")]
     Execution,
     /// An error having to do with running sandbox.
-    #[error("Sandbox")]
+    #[error("Sandbox({0})")]
     Sandbox(#[from] SandboxErrorCode),
     /// An error from performing IO.
     #[error("IO")]
