@@ -18,12 +18,12 @@ async fn test_batch_tx() -> anyhow::Result<()> {
             Function::new("set_status")
                 .args_json(json!({
                     "message": "hello_world",
-                }))?
+                }))
                 .deposit(0),
         )
         .call(Function::new("set_status").args_json(json!({
             "message": "world_hello",
-        }))?)
+        })))
         .transact()
         .await?;
 
@@ -31,7 +31,7 @@ async fn test_batch_tx() -> anyhow::Result<()> {
         .call(&worker, "get_status")
         .args_json(serde_json::json!({
             "account_id": contract.id(),
-        }))?
+        }))
         .view()
         .await?
         .json()?;

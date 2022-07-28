@@ -54,7 +54,7 @@ async fn deploy_status_contract(
         .call(worker, "set_status")
         .args_json(serde_json::json!({
             "message": msg,
-        }))?
+        }))
         .transact()
         .await?;
 

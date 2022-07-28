@@ -39,7 +39,7 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
         .call(&worker, "new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": contract.id()
-        }))?
+        }))
         .transact()
         .await?;
 

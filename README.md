@@ -78,7 +78,7 @@ Then we'll go directly into making a call into the contract, and initialize the 
         .call(&worker, "new_default_meta")
         .args_json(json!({
             "owner_id": contract.id(),
-        }))?
+        }))
         .transact()
         .await?;
 
@@ -100,7 +100,7 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
                 "dscription": "Tallest mountain in charted solar system",
                 "copies": 1,
             },
-        }))?
+        }))
         .deposit(deposit)
         // nft_mint might consume more than default gas, so supply our own gas value:
         .gas(near_units::parse_gas("300 T"))
@@ -160,7 +160,7 @@ async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyh
     contract.call(&worker, "contract_function")
         .args_json(serde_json::json!({
             "message": msg,
-        })?
+        })
         .transact()
         .await?;
     Ok(())
@@ -220,7 +220,7 @@ Following that we will have to init the contract again with our own metadata. Th
         .args_json(serde_json::json!({
             "arg1": value1,
             "arg2": value2,
-        }))?
+        }))
         .transact()
         .await?;
 
