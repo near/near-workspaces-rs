@@ -27,11 +27,7 @@ impl<T> TopLevelAccountCreator for Worker<T>
 where
     T: TopLevelAccountCreator + Send + Sync,
 {
-    async fn create_tla(
-        &self,
-        id: AccountId,
-        sk: SecretKey,
-    ) -> Result<CallExecution<Account>> {
+    async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
         self.workspace.create_tla(id, sk).await
     }
 
@@ -81,7 +77,6 @@ where
                 deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
             )
             .await
-            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 
@@ -95,7 +90,6 @@ where
         self.client()
             .view(contract_id.clone(), function.into(), args)
             .await
-            .map_err(crate::error::Error::from)
     }
 
     /// View the WASM code bytes of a contract on the network.
@@ -115,16 +109,11 @@ where
         self.client()
             .view_state(contract_id.clone(), prefix, None)
             .await
-            .map_err(crate::error::Error::from)
     }
 
     /// View the latest block from the network
     pub async fn view_latest_block(&self) -> Result<Block> {
-        self.client()
-            .view_block(None)
-            .await
-            .map(Into::into)
-            .map_err(Into::into)
+        self.client().view_block(None).await.map(Into::into)
     }
 
     /// Transfer tokens from one account to another. The signer is the account
@@ -138,7 +127,6 @@ where
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
-            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 
@@ -153,7 +141,6 @@ where
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
             .await
-            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 
@@ -162,7 +149,6 @@ where
         self.client()
             .view_account(account_id.clone(), None)
             .await
-            .map_err(crate::error::Error::from)
             .map(Into::into)
     }
 }

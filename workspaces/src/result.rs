@@ -6,7 +6,7 @@ use near_primitives::views::{
     FinalExecutionStatus,
 };
 
-use crate::error::{Error, SerializationError};
+use crate::error::ErrorKind;
 use crate::types::{Balance, CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
@@ -67,9 +67,7 @@ impl CallExecutionDetails {
     /// requirements.
     pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
-        serde_json::from_slice(&buf)
-            .map_err(SerializationError::SerdeError)
-            .map_err(Into::into)
+        serde_json::from_slice(&buf).map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from the execution
@@ -78,8 +76,7 @@ impl CallExecutionDetails {
     pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
         borsh::BorshDeserialize::try_from_slice(&buf)
-            .map_err(SerializationError::BorshError)
-            .map_err(Into::into)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 
     /// Grab the underlying raw bytes returned from calling into a contract's function.
@@ -87,21 +84,19 @@ impl CallExecutionDetails {
     /// or [`CallExecutionDetails::borsh`] instead.
     pub fn raw_bytes(&self) -> Result<Vec<u8>> {
         let result = self.try_into_success_value()?;
-        base64::decode(result)
-            .map_err(SerializationError::DecodeBase64Error)
-            .map_err(Into::into)
+        base64::decode(result).map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 
     fn try_into_success_value(&self) -> Result<&str> {
         match self.status {
             FinalExecutionStatus::SuccessValue(ref val) => Ok(val),
-            FinalExecutionStatus::Failure(ref err) => Err(Error::ExecutionError(err.to_string())),
+            FinalExecutionStatus::Failure(ref err) => Err(ErrorKind::Execution.custom(err.clone())),
             FinalExecutionStatus::NotStarted => {
-                Err(Error::ExecutionError("Transaction not started.".into()))
+                Err(ErrorKind::Execution.message("Transaction not started."))
             }
-            FinalExecutionStatus::Started => Err(Error::ExecutionError(
-                "Transaction still being processed.".into(),
-            )),
+            FinalExecutionStatus::Started => {
+                Err(ErrorKind::Execution.message("Transaction still being processed."))
+            }
         }
     }
 
@@ -214,9 +209,7 @@ impl ViewResultDetails {
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
     pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
-        serde_json::from_slice(&self.result)
-            .map_err(SerializationError::SerdeError)
-            .map_err(Into::into)
+        serde_json::from_slice(&self.result).map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from this view call's
@@ -224,8 +217,7 @@ impl ViewResultDetails {
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
     pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
         borsh::BorshDeserialize::try_from_slice(&self.result)
-            .map_err(SerializationError::BorshError)
-            .map_err(Into::into)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 }
 
@@ -288,10 +280,10 @@ impl ExecutionOutcome {
             ExecutionStatusView::SuccessReceiptId(hash) => {
                 Ok(ValueOrReceiptId::ReceiptId(CryptoHash(hash.0)))
             }
-            ExecutionStatusView::Failure(err) => Err(Error::ExecutionError(err.to_string())),
-            ExecutionStatusView::Unknown => Err(Error::ExecutionError(
-                "Execution pending or unknown".to_string(),
-            )),
+            ExecutionStatusView::Failure(err) => Err(ErrorKind::Execution.custom(err)),
+            ExecutionStatusView::Unknown => {
+                Err(ErrorKind::Execution.message("Execution pending or unknown"))
+            }
         }
     }
 }

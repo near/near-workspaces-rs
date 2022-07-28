@@ -2,7 +2,7 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::types::BlockId;
 use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
-use crate::error::SandboxError;
+use crate::error::SandboxErrorCode;
 use crate::network::DEV_ACCOUNT_SEED;
 use crate::rpc::client::Client;
 use crate::types::{BlockHeight, KeyType, SecretKey};
@@ -140,12 +140,12 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
                 records: records.clone(),
             })
             .await
-            .map_err(|err| SandboxError::PatchStateFailure(err.to_string()))?;
+            .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
         self.into_network
             .query(&RpcSandboxPatchStateRequest { records })
             .await
-            .map_err(|err| SandboxError::PatchStateFailure(err.to_string()))?;
+            .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
         Ok(Contract::new(account_id, signer))
     }

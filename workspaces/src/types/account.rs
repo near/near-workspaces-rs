@@ -4,12 +4,11 @@ use std::path::Path;
 
 use near_primitives::views::AccountView;
 
-use crate::result::Result;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{CryptoHash, Network, Worker};
 
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
-use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
+use crate::result::{CallExecution, CallExecutionDetails, Result, ViewResultDetails};
 
 /// `Account` is directly associated to an account in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
@@ -28,7 +27,7 @@ impl fmt::Debug for Account {
 
 impl Account {
     /// Create a new account with the given path to the credentials JSON file
-    pub fn from_file(path: impl AsRef<std::path::Path>) -> anyhow::Result<Self> {
+    pub fn from_file(path: impl AsRef<std::path::Path>) -> Result<Self> {
         let signer = InMemorySigner::from_file(path.as_ref())?;
         let id = signer.account_id.clone();
         Ok(Self::new(id, signer))

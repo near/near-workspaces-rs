@@ -1,7 +1,7 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
-use crate::error::{Error, RpcError, SerializationError};
-use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
+use crate::error::{Error, ErrorKind};
+use crate::result::{CallExecution, CallExecutionDetails, Result, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
 };
@@ -54,18 +54,17 @@ impl<'a> Function<'a> {
     /// Similiar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
-    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self, SerializationError> {
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self> {
         self.args = serde_json::to_vec(&args)?;
         Ok(self)
     }
 
     /// Similiar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
-    pub fn args_borsh<U: borsh::BorshSerialize>(
-        mut self,
-        args: U,
-    ) -> Result<Self, SerializationError> {
-        self.args = args.try_to_vec().map_err(SerializationError::BorshError)?;
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Result<Self> {
+        self.args = args
+            .try_to_vec()
+            .map_err(|e| Error::custom(ErrorKind::DataConversion, e))?;
         Ok(self)
     }
 
@@ -189,15 +188,14 @@ impl<'a> Transaction<'a> {
         self
     }
 
-    async fn transact_raw(self) -> Result<FinalExecutionOutcomeView, RpcError> {
+    async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions).await
     }
 
     /// Process the trannsaction, and return the result of the execution.
-    pub async fn transact(self) -> crate::result::Result<CallExecutionDetails> {
+    pub async fn transact(self) -> Result<CallExecutionDetails> {
         self.transact_raw()
             .await
-            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 }
@@ -237,17 +235,14 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     /// Similiar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
-    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self, SerializationError> {
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Result<Self> {
         self.function = self.function.args_json(args)?;
         Ok(self)
     }
 
     /// Similiar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
-    pub fn args_borsh<U: borsh::BorshSerialize>(
-        mut self,
-        args: U,
-    ) -> Result<Self, SerializationError> {
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Result<Self> {
         self.function = self.function.args_borsh(args)?;
         Ok(self)
     }
@@ -273,7 +268,7 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     /// Finally, send the transaction to the network. This will consume the `CallTransaction`
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
-    pub async fn transact(self) -> crate::result::Result<CallExecutionDetails> {
+    pub async fn transact(self) -> Result<CallExecutionDetails> {
         self.worker
             .client()
             .call(
@@ -285,12 +280,11 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
                 self.function.deposit,
             )
             .await
-            .map_err(crate::error::Error::from)
             .and_then(CallExecutionDetails::from_outcome)
     }
 
     /// Instead of transacting the transaction, call into the specified view function.
-    pub async fn view(self) -> crate::result::Result<ViewResultDetails> {
+    pub async fn view(self) -> Result<ViewResultDetails> {
         self.worker
             .client()
             .view(
@@ -299,7 +293,6 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
                 self.function.args,
             )
             .await
-            .map_err(crate::error::Error::from)
     }
 }
 
@@ -350,13 +343,13 @@ where
 
     /// Send the transaction to the network. This will consume the `CreateAccountTransaction`
     /// and give us back the details of the execution and finally the new [`Account`] object.
-    pub async fn transact(self) -> crate::result::Result<CallExecution<Account>> {
+    pub async fn transact(self) -> Result<CallExecution<Account>> {
         let sk = self
             .secret_key
             .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
         let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id)
             .try_into()
-            .map_err(|e: ParseAccountError| Error::ParseError(e.to_string()))?;
+            .map_err(|e: ParseAccountError| ErrorKind::DataConversion.custom(e))?;
 
         let outcome = self
             .worker

@@ -13,7 +13,7 @@ use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::{from_base, to_base};
 use serde::{Deserialize, Serialize};
 
-use crate::error::Error;
+use crate::error::{Error, ErrorKind};
 use crate::result::Result;
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
@@ -102,7 +102,7 @@ impl std::str::FromStr for SecretKey {
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let sk = near_crypto::SecretKey::from_str(value)
-            .map_err(|e| Error::ParseError(e.to_string()))?;
+            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
 
         Ok(Self(sk))
     }
@@ -147,7 +147,7 @@ impl std::str::FromStr for CryptoHash {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = from_base(s).map_err(|e| Error::ParseError(e.to_string()))?;
+        let bytes = from_base(s).map_err(|e| ErrorKind::DataConversion.custom(e))?;
         Self::try_from(bytes)
     }
 }
@@ -157,10 +157,13 @@ impl TryFrom<&[u8]> for CryptoHash {
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 32 {
-            return Err(Error::ParseError(format!(
-                "incorrect hash length (expected 32, but {} was given)",
-                bytes.len()
-            )));
+            return Err(Error::message(
+                ErrorKind::DataConversion,
+                format!(
+                    "incorrect hash length (expected 32, but {} was given)",
+                    bytes.len()
+                ),
+            ));
         }
         let mut buf = [0; 32];
         buf.copy_from_slice(bytes);
