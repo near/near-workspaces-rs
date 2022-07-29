@@ -11,14 +11,14 @@ async fn test_dev_deploy_project() -> anyhow::Result<()> {
 
     let _res = contract
         .call(&worker, "set_status")
-        .args_json(("foo",))?
+        .args_json(("foo",))
         .max_gas()
         .transact()
         .await?;
 
     let res = contract
         .call(&worker, "get_status")
-        .args_json((contract.id(),))?
+        .args_json((contract.id(),))
         .view()
         .await?;
     assert_eq!(res.json::<String>()?, "foo");
