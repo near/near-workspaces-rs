@@ -37,6 +37,7 @@ pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 pub struct Client {
     rpc_addr: String,
     rpc_client: JsonRpcClient,
+    /// AccessKey nonces to reference when sending transactions.
     access_key_nonces: RwLock<HashMap<AccountId, Mutex<Nonce>>>,
 }
 
