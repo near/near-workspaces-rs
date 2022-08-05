@@ -76,7 +76,7 @@ impl Error {
     /// Consumes the `Error`, returning its inner error (if any).
     ///
     /// If this [`Error`] was constructed via [`Error::custom`] or [`Error::full`]
-    /// then this function will return [`Some`], otherwise it will return [`None`].
+    /// then this function will return [`Ok`], otherwise it will return [`Err`].
     pub fn into_inner(self) -> Result<Box<dyn std::error::Error + Send + Sync>, Self> {
         match self.repr {
             ErrorRepr::Custom { error, .. } => Ok(error),
@@ -125,24 +125,6 @@ impl Error {
     /// Returns a mutable reference to the inner error (if any) downcasted to the type provided
     pub fn downcast_mut<T: std::error::Error + Send + Sync + 'static>(&mut self) -> Option<&mut T> {
         self.get_mut()?.downcast_mut()
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(error: io::Error) -> Self {
-        Self::custom(ErrorKind::Io, error)
-    }
-}
-
-impl From<base64::DecodeError> for Error {
-    fn from(error: base64::DecodeError) -> Self {
-        Self::custom(ErrorKind::DataConversion, error)
-    }
-}
-
-impl From<serde_json::Error> for Error {
-    fn from(error: serde_json::Error) -> Self {
-        Self::custom(ErrorKind::DataConversion, error)
     }
 }
 

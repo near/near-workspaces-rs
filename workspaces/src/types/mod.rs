@@ -123,7 +123,8 @@ impl InMemorySigner {
     }
 
     pub fn from_file(path: &Path) -> Result<Self> {
-        let signer = near_crypto::InMemorySigner::from_file(path)?;
+        let signer = near_crypto::InMemorySigner::from_file(path)
+            .map_err(|err| ErrorKind::Io.custom(err))?;
         Ok(Self::from_secret_key(
             signer.account_id,
             SecretKey(signer.secret_key),

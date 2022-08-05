@@ -11,14 +11,19 @@ use url::Url;
 use near_crypto::SecretKey;
 use near_primitives::views::StateItem;
 
-use crate::error::RpcErrorCode;
+use crate::error::{Error, ErrorKind, RpcErrorCode};
 use crate::result::Result;
 use crate::types::{AccountId, PublicKey};
 
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
 /// Assumes key and value are base64 encoded, so this also decodes them.
 pub(crate) fn into_state_map(state_items: &[StateItem]) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
-    let decode = |s: &StateItem| Ok((base64::decode(&s.key)?, base64::decode(&s.value)?));
+    let decode = |s: &StateItem| {
+        Ok((
+            base64::decode(&s.key).map_err(|e| Error::custom(ErrorKind::DataConversion, e))?,
+            base64::decode(&s.value).map_err(|e| Error::custom(ErrorKind::DataConversion, e))?,
+        ))
+    };
 
     state_items.iter().map(decode).collect()
 }
@@ -45,10 +50,13 @@ pub(crate) async fn url_create_account(
     let _resp = reqwest::Client::new()
         .post(helper_url)
         .header("Content-Type", "application/json")
-        .body(serde_json::to_vec(&serde_json::json!({
-            "newAccountId": account_id,
-            "newAccountPublicKey": pk,
-        }))?)
+        .body(
+            serde_json::to_vec(&serde_json::json!({
+                "newAccountId": account_id,
+                "newAccountPublicKey": pk,
+            }))
+            .map_err(|e| ErrorKind::DataConversion.custom(e))?,
+        )
         .send()
         .await
         .map_err(|e| RpcErrorCode::HelperAccountCreationFailure.custom(e))?;
