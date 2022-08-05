@@ -19,6 +19,7 @@ pub mod result;
 pub mod types;
 
 pub use network::variants::{DevNetwork, Network};
+pub use result::Result;
 pub use types::account::{Account, AccountDetails, Contract};
 pub use types::block::Block;
 pub use types::{AccessKey, AccountId, BlockHeight, CryptoHash, InMemorySigner};
