@@ -1,4 +1,5 @@
-use std::{borrow::Cow, fmt, io};
+use std::borrow::Cow;
+use std::fmt;
 
 use super::{Error, ErrorKind, ErrorRepr, RpcErrorCode, SandboxErrorCode};
 
@@ -84,48 +85,6 @@ impl Error {
             _ => Err(self),
         }
     }
-
-    /// Attempt to downgrade the inner error to `E` if any.
-    ///
-    /// Returns `Err(self)` if the downcast is not possible
-    pub fn downcast<E: std::error::Error + Send + Sync + 'static>(self) -> Result<E, Self> {
-        if self.downcast_ref::<E>().is_none() {
-            return Err(self);
-        }
-        // Unwrapping is ok here since we already check above that the downcast will work
-        Ok(*self
-            .into_inner()?
-            .downcast()
-            .expect("failed to unwrap downcast"))
-    }
-
-    /// Returns a reference to the inner error wrapped by this error (if any).
-    pub fn get_ref(&self) -> Option<&(dyn std::error::Error + Send + Sync + 'static)> {
-        match &self.repr {
-            ErrorRepr::Custom { error, .. } => Some(error.as_ref()),
-            ErrorRepr::Full { error, .. } => Some(error.as_ref()),
-            _ => None,
-        }
-    }
-
-    /// Downcast this error object by reference.
-    pub fn downcast_ref<E: std::error::Error + Send + Sync + 'static>(&self) -> Option<&E> {
-        self.get_ref()?.downcast_ref()
-    }
-
-    /// Returns a mutable reference to the inner error wrapped by this error (if any).
-    pub fn get_mut(&mut self) -> Option<&mut (dyn std::error::Error + Send + Sync + 'static)> {
-        match &mut self.repr {
-            ErrorRepr::Custom { error, .. } => Some(error.as_mut()),
-            ErrorRepr::Full { error, .. } => Some(error.as_mut()),
-            _ => None,
-        }
-    }
-
-    /// Returns a mutable reference to the inner error (if any) downcasted to the type provided
-    pub fn downcast_mut<T: std::error::Error + Send + Sync + 'static>(&mut self) -> Option<&mut T> {
-        self.get_mut()?.downcast_mut()
-    }
 }
 
 impl fmt::Display for Error {
@@ -137,7 +96,8 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.repr {
-            ErrorRepr::Custom { error, .. } => Some(error.as_ref()),
+            ErrorRepr::Custom { error, .. } => error.source(),
+            ErrorRepr::Full { error, .. } => error.source(),
             _ => None,
         }
     }

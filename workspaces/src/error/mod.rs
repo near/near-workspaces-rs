@@ -6,7 +6,7 @@ mod impls;
 use std::borrow::Cow;
 
 /// A list specifying general categories of NEAR workspace error.
-#[derive(Clone, Debug, PartialEq, thiserror::Error)]
+#[derive(Clone, Debug, Eq, PartialEq, thiserror::Error)]
 #[non_exhaustive]
 pub enum ErrorKind {
     /// An error occurred while performing an RPC request.
@@ -55,7 +55,8 @@ pub struct Error {
     repr: ErrorRepr,
 }
 
-#[derive(Clone, Debug, PartialEq, thiserror::Error)]
+#[derive(Clone, Debug, Eq, PartialEq, thiserror::Error)]
+#[non_exhaustive]
 pub enum SandboxErrorCode {
     #[error("Sandbox has already been started")]
     AlreadyStarted,
@@ -69,7 +70,7 @@ pub enum SandboxErrorCode {
     FastForwardFailure,
 }
 
-#[derive(Clone, Debug, PartialEq, thiserror::Error)]
+#[derive(Clone, Debug, Eq, PartialEq, thiserror::Error)]
 #[non_exhaustive]
 pub enum RpcErrorCode {
     #[error("unable to create a new account via helper")]
