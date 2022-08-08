@@ -23,7 +23,7 @@ use near_primitives::views::{
     QueryRequest, StatusResponse,
 };
 
-use crate::error::{Error, RpcErrorCode};
+use crate::error::{Error, ErrorKind, RpcErrorCode};
 use crate::result::{Result, ViewResultDetails};
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, PublicKey};
@@ -383,7 +383,13 @@ impl Client {
         let timeout_secs = match std::env::var("NEAR_RPC_TIMEOUT_SECS") {
             // hard fail on not being able to parse the env var, since this isn't something
             // the user should handle with the library.
-            Ok(secs) => secs.parse::<usize>().unwrap(),
+            Ok(secs) => secs.parse::<usize>().map_err(|err| {
+                Error::full(
+                    ErrorKind::DataConversion,
+                    format!("Failed to parse provided NEAR_RPC_TIMEOUT_SECS={}", secs),
+                    err,
+                )
+            })?,
             Err(_) => 10,
         };
 
