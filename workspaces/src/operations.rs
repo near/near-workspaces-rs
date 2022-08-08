@@ -1,6 +1,6 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
-use crate::error::{Error, ErrorKind};
+use crate::error::ErrorKind;
 use crate::result::{CallExecution, CallExecutionDetails, Result, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
@@ -26,10 +26,9 @@ const MAX_GAS: Gas = 300_000_000_000_000;
 #[derive(Debug)]
 pub struct Function<'a> {
     name: &'a str,
-    args: Vec<u8>,
+    args: Result<Vec<u8>>,
     deposit: Balance,
     gas: Gas,
-    pre_error: Option<Error>,
 }
 
 impl<'a> Function<'a> {
@@ -38,10 +37,9 @@ impl<'a> Function<'a> {
     pub fn new(name: &'a str) -> Self {
         Self {
             name,
-            args: vec![],
+            args: Ok(vec![]),
             deposit: DEFAULT_CALL_DEPOSIT,
             gas: DEFAULT_CALL_FN_GAS,
-            pre_error: None,
         }
     }
 
@@ -49,7 +47,10 @@ impl<'a> Function<'a> {
     /// a JSON or Borsh serializable set of arguments. To use the more specific versions
     /// with better quality of life, use `args_json` or `args_borsh`.
     pub fn args(mut self, args: Vec<u8>) -> Self {
-        self.args = args;
+        if self.args.is_err() {
+            return self;
+        }
+        self.args = Ok(args);
         self
     }
 
@@ -58,8 +59,8 @@ impl<'a> Function<'a> {
     /// `serde_json::json!` macro to easily serialize the arguments.
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
         match serde_json::to_vec(&args) {
-            Ok(args) => self.args = args,
-            Err(e) => self.pre_error = Some(Error::from(e)),
+            Ok(args) => self.args = Ok(args),
+            Err(e) => self.args = Err(ErrorKind::DataConversion.custom(e)),
         }
         self
     }
@@ -68,8 +69,8 @@ impl<'a> Function<'a> {
     /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
         match args.try_to_vec() {
-            Ok(args) => self.args = args,
-            Err(e) => self.pre_error = Some(Error::custom(ErrorKind::DataConversion, e)),
+            Ok(args) => self.args = Ok(args),
+            Err(e) => self.args = Err(ErrorKind::DataConversion.custom(e)),
         }
         self
     }
@@ -100,9 +101,8 @@ pub struct Transaction<'a> {
     client: &'a Client,
     signer: InMemorySigner,
     receiver_id: AccountId,
-    actions: Vec<Action>,
-    // Used to defer errors in argument parsing to later when calling into transact
-    pre_error: Option<Error>,
+    // Result used to defer errors in argument parsing to later when calling into transact
+    actions: Result<Vec<Action>>,
 }
 
 impl<'a> Transaction<'a> {
@@ -111,94 +111,111 @@ impl<'a> Transaction<'a> {
             client,
             signer,
             receiver_id,
-            actions: Vec::new(),
-            pre_error: None,
+            actions: Ok(Vec::new()),
         }
     }
 
     /// Adds a key to the `receiver_id`'s account, where the public key can be used
     /// later to delete the same key.
     pub fn add_key(mut self, pk: PublicKey, ak: AccessKey) -> Self {
-        self.actions.push(
-            AddKeyAction {
-                public_key: pk.into(),
-                access_key: ak.into(),
-            }
-            .into(),
-        );
+        if let Ok(actions) = &mut self.actions {
+            actions.push(
+                AddKeyAction {
+                    public_key: pk.into(),
+                    access_key: ak.into(),
+                }
+                .into(),
+            );
+        }
+
         self
     }
 
     /// Call into the `receiver_id`'s contract with the specific function arguments.
     pub fn call(mut self, function: Function) -> Self {
-        if self.pre_error.is_none() {
-            if let Some(pre_error) = function.pre_error {
-                self.pre_error = Some(pre_error);
+        let args = match function.args {
+            Ok(args) => args,
+            Err(err) => {
+                self.actions = Err(err);
+                return self;
             }
+        };
+
+        if let Ok(actions) = &mut self.actions {
+            actions.push(Action::FunctionCall(FunctionCallAction {
+                method_name: function.name.to_string(),
+                args,
+                deposit: function.deposit,
+                gas: function.gas,
+            }));
         }
 
-        self.actions.push(Action::FunctionCall(FunctionCallAction {
-            method_name: function.name.to_string(),
-            args: function.args,
-            deposit: function.deposit,
-            gas: function.gas,
-        }));
         self
     }
 
     /// Create a new account with the account id being `receiver_id`.
     pub fn create_account(mut self) -> Self {
-        self.actions.push(CreateAccountAction {}.into());
+        if let Ok(actions) = &mut self.actions {
+            actions.push(CreateAccountAction {}.into());
+        }
         self
     }
 
     /// Deletes the `receiver_id`'s account. The beneficiary specified by
     /// `beneficiary_id` will receive the funds of the account deleted.
     pub fn delete_account(mut self, beneficiary_id: &AccountId) -> Self {
-        self.actions.push(
-            DeleteAccountAction {
-                beneficiary_id: beneficiary_id.clone(),
-            }
-            .into(),
-        );
+        if let Ok(actions) = &mut self.actions {
+            actions.push(
+                DeleteAccountAction {
+                    beneficiary_id: beneficiary_id.clone(),
+                }
+                .into(),
+            );
+        }
         self
     }
 
     /// Deletes a key from the `receiver_id`'s account, where the public key is
     /// associated with the access key to be deleted.
     pub fn delete_key(mut self, pk: PublicKey) -> Self {
-        self.actions
-            .push(DeleteKeyAction { public_key: pk.0 }.into());
+        if let Ok(actions) = &mut self.actions {
+            actions.push(DeleteKeyAction { public_key: pk.0 }.into());
+        }
         self
     }
 
     /// Deploy contract code or WASM bytes to the `receiver_id`'s account.
     pub fn deploy(mut self, code: &[u8]) -> Self {
-        self.actions
-            .push(DeployContractAction { code: code.into() }.into());
+        if let Ok(actions) = &mut self.actions {
+            actions.push(DeployContractAction { code: code.into() }.into());
+        }
         self
     }
 
     /// An action which stakes the signer's tokens and setups a validator public key.
     pub fn stake(mut self, stake: Balance, pk: PublicKey) -> Self {
-        self.actions.push(
-            StakeAction {
-                stake,
-                public_key: pk.0,
-            }
-            .into(),
-        );
+        if let Ok(actions) = &mut self.actions {
+            actions.push(
+                StakeAction {
+                    stake,
+                    public_key: pk.0,
+                }
+                .into(),
+            );
+        }
         self
     }
 
     /// Transfer `deposit` amount from `signer`'s account into `receiver_id`'s account.
     pub fn transfer(mut self, deposit: Balance) -> Self {
-        self.actions.push(TransferAction { deposit }.into());
+        if let Ok(actions) = &mut self.actions {
+            actions.push(TransferAction { deposit }.into());
+        }
         self
     }
 
     async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions).await
+        send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?).await
     }
 
     /// Process the trannsaction, and return the result of the execution.
@@ -278,17 +295,13 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
     pub async fn transact(self) -> Result<CallExecutionDetails> {
-        if let Some(pre_error) = self.function.pre_error {
-            return Err(pre_error);
-        }
-
         self.worker
             .client()
             .call(
                 &self.signer,
                 &self.contract_id,
                 self.function.name.to_string(),
-                self.function.args,
+                self.function.args?,
                 self.function.gas,
                 self.function.deposit,
             )
@@ -303,7 +316,7 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
             .view(
                 self.contract_id,
                 self.function.name.to_string(),
-                self.function.args,
+                self.function.args?,
             )
             .await
     }
