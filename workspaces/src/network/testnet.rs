@@ -8,7 +8,7 @@ use near_primitives::views::{ExecutionStatusView, FinalExecutionStatus};
 
 use crate::network::Info;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::result::{CallExecution, CallExecutionDetails, ExecutionOutcome};
+use crate::result::{CallExecution, CallExecutionDetails, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
 use crate::{Account, Contract, CryptoHash};
@@ -30,7 +30,7 @@ pub struct Testnet {
 }
 
 impl Testnet {
-    pub(crate) async fn new() -> anyhow::Result<Self> {
+    pub(crate) async fn new() -> Result<Self> {
         let client = Client::new(RPC_URL);
         client.wait_for_rpc().await?;
 
@@ -45,7 +45,7 @@ impl Testnet {
         })
     }
 
-    pub(crate) async fn archival() -> anyhow::Result<Self> {
+    pub(crate) async fn archival() -> Result<Self> {
         let client = Client::new(ARCHIVAL_URL);
         client.wait_for_rpc().await?;
 
@@ -79,8 +79,9 @@ impl TopLevelAccountCreator for Testnet {
         id: AccountId,
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
-    ) -> anyhow::Result<CallExecution<Account>> {
-        tool::url_create_account(Url::parse(HELPER_URL)?, id.clone(), sk.public_key()).await?;
+    ) -> Result<CallExecution<Account>> {
+        let url = Url::parse(HELPER_URL).unwrap();
+        tool::url_create_account(url, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
 
         Ok(CallExecution {
@@ -98,7 +99,7 @@ impl TopLevelAccountCreator for Testnet {
                     receipt_ids: Vec::new(),
                     gas_burnt: 0,
                     tokens_burnt: 0,
-                    executor_id: "testnet".parse()?,
+                    executor_id: "testnet".parse().unwrap(),
                     status: ExecutionStatusView::SuccessValue(String::new()),
                 },
                 receipts: Vec::new(),
@@ -111,7 +112,7 @@ impl TopLevelAccountCreator for Testnet {
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> anyhow::Result<CallExecution<Contract>> {
+    ) -> Result<CallExecution<Contract>> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
         let account = self.create_tla(id.clone(), sk).await?;
         let account = account.into_result()?;

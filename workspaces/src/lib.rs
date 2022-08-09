@@ -11,6 +11,7 @@ pub use cargo::compile_project;
 mod rpc;
 mod worker;
 
+pub mod error;
 pub mod network;
 pub mod operations;
 pub mod prelude;
@@ -18,6 +19,7 @@ pub mod result;
 pub mod types;
 
 pub use network::variants::{DevNetwork, Network};
+pub use result::Result;
 pub use types::account::{Account, AccountDetails, Contract};
 pub use types::block::Block;
 pub use types::{AccessKey, AccountId, BlockHeight, CryptoHash, InMemorySigner};

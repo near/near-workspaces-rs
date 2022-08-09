@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
         .call(&worker, "set_status")
         .args_json(json!({
             "message": "hello_world",
-        }))?
+        }))
         .transact()
         .await?;
     println!("set_status: {:?}", outcome);

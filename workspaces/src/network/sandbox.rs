@@ -7,9 +7,10 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::state_record::StateRecord;
 
 use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
-use crate::result::CallExecution;
+use crate::result::{CallExecution, Result};
 use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
@@ -38,14 +39,14 @@ impl Sandbox {
         path
     }
 
-    pub(crate) fn root_signer(&self) -> anyhow::Result<InMemorySigner> {
+    pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
         let mut path = Self::home_dir(self.server.rpc_port);
         path.push("validator_key.json");
 
         InMemorySigner::from_file(&path)
     }
 
-    pub(crate) async fn new() -> anyhow::Result<Self> {
+    pub(crate) async fn new() -> Result<Self> {
         let mut server = SandboxServer::default();
         server.start()?;
         let client = Client::new(&server.rpc_addr());
@@ -86,11 +87,7 @@ impl AllowDevAccountCreation for Sandbox {}
 
 #[async_trait]
 impl TopLevelAccountCreator for Sandbox {
-    async fn create_tla(
-        &self,
-        id: AccountId,
-        sk: SecretKey,
-    ) -> anyhow::Result<CallExecution<Account>> {
+    async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
         let root_signer = self.root_signer()?;
         let outcome = self
             .client
@@ -109,7 +106,7 @@ impl TopLevelAccountCreator for Sandbox {
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> anyhow::Result<CallExecution<Contract>> {
+    ) -> Result<CallExecution<Contract>> {
         let root_signer = self.root_signer()?;
         let outcome = self
             .client
@@ -156,7 +153,7 @@ impl Sandbox {
         contract_id: &AccountId,
         key: &[u8],
         value: &[u8],
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         let state = StateRecord::Data {
             account_id: contract_id.to_owned(),
             data_key: key.to_vec(),
@@ -169,18 +166,18 @@ impl Sandbox {
             .client()
             .query(&RpcSandboxPatchStateRequest { records })
             .await
-            .map_err(|err| anyhow::anyhow!("Failed to patch state: {:?}", err))?;
+            .map_err(|e| SandboxErrorCode::PatchStateFailure.custom(e))?;
 
         Ok(())
     }
 
-    pub(crate) async fn fast_forward(&self, delta_height: u64) -> anyhow::Result<()> {
+    pub(crate) async fn fast_forward(&self, delta_height: u64) -> Result<()> {
         // NOTE: RpcSandboxFastForwardResponse is an empty struct with no fields, so don't do anything with it:
         self.client()
             // TODO: replace this with the `query` variant when RpcSandboxFastForwardRequest impls Debug
             .query_nolog(&RpcSandboxFastForwardRequest { delta_height })
             .await
-            .map_err(|err| anyhow::anyhow!("Failed to fast forward: {:?}", err))?;
+            .map_err(|e| SandboxErrorCode::FastForwardFailure.custom(e))?;
 
         Ok(())
     }

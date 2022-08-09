@@ -18,11 +18,12 @@ async fn cross_contract_create_contract(
 ) -> anyhow::Result<CallExecutionDetails> {
     contract
         .call(worker, "deploy_status_message")
-        .args_json((status_id.clone(), status_amt))?
+        .args_json((status_id.clone(), status_amt))
         .deposit(parse_near!("50 N"))
         .max_gas()
         .transact()
         .await
+        .map_err(Into::into)
 }
 
 #[tokio::test]
@@ -70,7 +71,7 @@ async fn test_cross_contract_calls() -> anyhow::Result<()> {
     let message = "hello world";
     let result = contract
         .call(&worker, "complex_call")
-        .args_json((status_id, message))?
+        .args_json((status_id, message))
         .max_gas()
         .transact()
         .await?

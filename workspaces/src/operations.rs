@@ -1,6 +1,7 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
-use crate::result::{CallExecution, CallExecutionDetails, ViewResultDetails};
+use crate::error::ErrorKind;
+use crate::result::{CallExecution, CallExecutionDetails, Result, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
 };
@@ -10,6 +11,7 @@ use crate::types::{
 use crate::worker::Worker;
 use crate::{Account, Network};
 
+use near_account_id::ParseAccountError;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
     DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
@@ -21,10 +23,10 @@ const MAX_GAS: Gas = 300_000_000_000_000;
 
 /// A set of arguments we can provide to a transaction, containing
 /// the function name, arguments, the amount of gas to use and deposit.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Function<'a> {
     name: &'a str,
-    args: Vec<u8>,
+    args: Result<Vec<u8>>,
     deposit: Balance,
     gas: Gas,
 }
@@ -35,7 +37,7 @@ impl<'a> Function<'a> {
     pub fn new(name: &'a str) -> Self {
         Self {
             name,
-            args: vec![],
+            args: Ok(vec![]),
             deposit: DEFAULT_CALL_DEPOSIT,
             gas: DEFAULT_CALL_FN_GAS,
         }
@@ -45,23 +47,32 @@ impl<'a> Function<'a> {
     /// a JSON or Borsh serializable set of arguments. To use the more specific versions
     /// with better quality of life, use `args_json` or `args_borsh`.
     pub fn args(mut self, args: Vec<u8>) -> Self {
-        self.args = args;
+        if self.args.is_err() {
+            return self;
+        }
+        self.args = Ok(args);
         self
     }
 
     /// Similiar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
-    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.args = serde_json::to_vec(&args)?;
-        Ok(self)
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
+        match serde_json::to_vec(&args) {
+            Ok(args) => self.args = Ok(args),
+            Err(e) => self.args = Err(ErrorKind::DataConversion.custom(e)),
+        }
+        self
     }
 
     /// Similiar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
-    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.args = args.try_to_vec()?;
-        Ok(self)
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
+        match args.try_to_vec() {
+            Ok(args) => self.args = Ok(args),
+            Err(e) => self.args = Err(ErrorKind::DataConversion.custom(e)),
+        }
+        self
     }
 
     /// Specify the amount of tokens to be deposited where `deposit` is the amount of
@@ -83,17 +94,6 @@ impl<'a> Function<'a> {
     }
 }
 
-impl From<Function<'_>> for Action {
-    fn from(function: Function<'_>) -> Self {
-        Self::FunctionCall(FunctionCallAction {
-            method_name: function.name.to_string(),
-            args: function.args,
-            deposit: function.deposit,
-            gas: function.gas,
-        })
-    }
-}
-
 /// A builder-like object that will allow specifying various actions to be performed
 /// in a single transaction. For details on each of the actions, find them in
 /// [NEAR transactions](https://docs.near.org/docs/concepts/transaction).
@@ -101,7 +101,8 @@ pub struct Transaction<'a> {
     client: &'a Client,
     signer: InMemorySigner,
     receiver_id: AccountId,
-    actions: Vec<Action>,
+    // Result used to defer errors in argument parsing to later when calling into transact
+    actions: Result<Vec<Action>>,
 }
 
 impl<'a> Transaction<'a> {
@@ -110,86 +111,115 @@ impl<'a> Transaction<'a> {
             client,
             signer,
             receiver_id,
-            actions: Vec::new(),
+            actions: Ok(Vec::new()),
         }
     }
 
     /// Adds a key to the `receiver_id`'s account, where the public key can be used
     /// later to delete the same key.
     pub fn add_key(mut self, pk: PublicKey, ak: AccessKey) -> Self {
-        self.actions.push(
-            AddKeyAction {
-                public_key: pk.into(),
-                access_key: ak.into(),
-            }
-            .into(),
-        );
+        if let Ok(actions) = &mut self.actions {
+            actions.push(
+                AddKeyAction {
+                    public_key: pk.into(),
+                    access_key: ak.into(),
+                }
+                .into(),
+            );
+        }
+
         self
     }
 
     /// Call into the `receiver_id`'s contract with the specific function arguments.
     pub fn call(mut self, function: Function) -> Self {
-        self.actions.push(function.into());
+        let args = match function.args {
+            Ok(args) => args,
+            Err(err) => {
+                self.actions = Err(err);
+                return self;
+            }
+        };
+
+        if let Ok(actions) = &mut self.actions {
+            actions.push(Action::FunctionCall(FunctionCallAction {
+                method_name: function.name.to_string(),
+                args,
+                deposit: function.deposit,
+                gas: function.gas,
+            }));
+        }
+
         self
     }
 
     /// Create a new account with the account id being `receiver_id`.
     pub fn create_account(mut self) -> Self {
-        self.actions.push(CreateAccountAction {}.into());
+        if let Ok(actions) = &mut self.actions {
+            actions.push(CreateAccountAction {}.into());
+        }
         self
     }
 
     /// Deletes the `receiver_id`'s account. The beneficiary specified by
     /// `beneficiary_id` will receive the funds of the account deleted.
     pub fn delete_account(mut self, beneficiary_id: &AccountId) -> Self {
-        self.actions.push(
-            DeleteAccountAction {
-                beneficiary_id: beneficiary_id.clone(),
-            }
-            .into(),
-        );
+        if let Ok(actions) = &mut self.actions {
+            actions.push(
+                DeleteAccountAction {
+                    beneficiary_id: beneficiary_id.clone(),
+                }
+                .into(),
+            );
+        }
         self
     }
 
     /// Deletes a key from the `receiver_id`'s account, where the public key is
     /// associated with the access key to be deleted.
     pub fn delete_key(mut self, pk: PublicKey) -> Self {
-        self.actions
-            .push(DeleteKeyAction { public_key: pk.0 }.into());
+        if let Ok(actions) = &mut self.actions {
+            actions.push(DeleteKeyAction { public_key: pk.0 }.into());
+        }
         self
     }
 
     /// Deploy contract code or WASM bytes to the `receiver_id`'s account.
     pub fn deploy(mut self, code: &[u8]) -> Self {
-        self.actions
-            .push(DeployContractAction { code: code.into() }.into());
+        if let Ok(actions) = &mut self.actions {
+            actions.push(DeployContractAction { code: code.into() }.into());
+        }
         self
     }
 
     /// An action which stakes the signer's tokens and setups a validator public key.
     pub fn stake(mut self, stake: Balance, pk: PublicKey) -> Self {
-        self.actions.push(
-            StakeAction {
-                stake,
-                public_key: pk.0,
-            }
-            .into(),
-        );
+        if let Ok(actions) = &mut self.actions {
+            actions.push(
+                StakeAction {
+                    stake,
+                    public_key: pk.0,
+                }
+                .into(),
+            );
+        }
         self
     }
 
     /// Transfer `deposit` amount from `signer`'s account into `receiver_id`'s account.
     pub fn transfer(mut self, deposit: Balance) -> Self {
-        self.actions.push(TransferAction { deposit }.into());
+        if let Ok(actions) = &mut self.actions {
+            actions.push(TransferAction { deposit }.into());
+        }
         self
     }
 
-    async fn transact_raw(self) -> anyhow::Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions).await
+    async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
+        send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?).await
     }
 
     /// Process the trannsaction, and return the result of the execution.
-    pub async fn transact(self) -> anyhow::Result<CallExecutionDetails> {
+    pub async fn transact(self) -> Result<CallExecutionDetails> {
         self.transact_raw()
             .await
             .and_then(CallExecutionDetails::from_outcome)
@@ -231,16 +261,16 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     /// Similiar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
-    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.function = self.function.args_json(args)?;
-        Ok(self)
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
+        self.function = self.function.args_json(args);
+        self
     }
 
     /// Similiar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
-    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> anyhow::Result<Self> {
-        self.function = self.function.args_borsh(args)?;
-        Ok(self)
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
+        self.function = self.function.args_borsh(args);
+        self
     }
 
     /// Specify the amount of tokens to be deposited where `deposit` is the amount of
@@ -264,14 +294,14 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     /// Finally, send the transaction to the network. This will consume the `CallTransaction`
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
-    pub async fn transact(self) -> anyhow::Result<CallExecutionDetails> {
+    pub async fn transact(self) -> Result<CallExecutionDetails> {
         self.worker
             .client()
             .call(
                 &self.signer,
                 &self.contract_id,
                 self.function.name.to_string(),
-                self.function.args,
+                self.function.args?,
                 self.function.gas,
                 self.function.deposit,
             )
@@ -280,13 +310,13 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
     }
 
     /// Instead of transacting the transaction, call into the specified view function.
-    pub async fn view(self) -> anyhow::Result<ViewResultDetails> {
+    pub async fn view(self) -> Result<ViewResultDetails> {
         self.worker
             .client()
             .view(
                 self.contract_id,
                 self.function.name.to_string(),
-                self.function.args,
+                self.function.args?,
             )
             .await
     }
@@ -339,11 +369,13 @@ where
 
     /// Send the transaction to the network. This will consume the `CreateAccountTransaction`
     /// and give us back the details of the execution and finally the new [`Account`] object.
-    pub async fn transact(self) -> anyhow::Result<CallExecution<Account>> {
+    pub async fn transact(self) -> Result<CallExecution<Account>> {
         let sk = self
             .secret_key
             .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
-        let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id).try_into()?;
+        let id: AccountId = format!("{}.{}", self.new_account_id, self.parent_id)
+            .try_into()
+            .map_err(|e: ParseAccountError| ErrorKind::DataConversion.custom(e))?;
 
         let outcome = self
             .worker

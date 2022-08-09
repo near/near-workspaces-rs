@@ -14,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
         .call(&worker, "new_default_meta")
         .args_json(json!({
                 "owner_id": contract.id(),
-        }))?
+        }))
         .transact()
         .await?;
 
@@ -31,7 +31,7 @@ async fn main() -> anyhow::Result<()> {
                 "dscription": "Tallest mountain in charted solar system",
                 "copies": 1,
             },
-        }))?
+        }))
         .deposit(deposit)
         .transact()
         .await?;

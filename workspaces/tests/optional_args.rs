@@ -14,7 +14,7 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
         .args_json(serde_json::json!({
             "owner_id": contract.id(),
             "total_supply": parse_near!("1,000,000,000 N").to_string(),
-        }))?
+        }))
         .transact()
         .await?;
 
@@ -46,7 +46,7 @@ async fn test_optional_args_present() -> anyhow::Result<()> {
         .call(&worker, "storage_unregister")
         .args_json(serde_json::json!({
             "force": true
-        }))?
+        }))
         .max_gas()
         .deposit(1)
         .transact()

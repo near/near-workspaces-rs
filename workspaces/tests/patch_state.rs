@@ -30,7 +30,7 @@ async fn view_status_state(
         .call(&worker, "set_status")
         .args_json(json!({
                 "message": "hello",
-        }))?
+        }))
         .transact()
         .await?;
 

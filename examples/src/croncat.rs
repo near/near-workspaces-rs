@@ -69,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
             "function_id": "increment",
             "cadence": "*/1 * * * * *",
             "recurring": true,
-        }))?
+        }))
         .max_gas()
         .deposit(parse_near!("1 N"))
         .transact()
@@ -101,7 +101,7 @@ pub async fn run_scheduled_tasks(
     // Register the agent to eventually execute the task
     let outcome = agent
         .call(&worker, contract.id(), "register_agent")
-        .args_json(json!({}))?
+        .args_json(json!({}))
         .deposit(parse_near!("0.00226 N"))
         .transact()
         .await?;
@@ -110,7 +110,7 @@ pub async fn run_scheduled_tasks(
     // Check the right agent was registered correctly:
     let registered_agent = contract
         .call(&worker, "get_agent")
-        .args_json(json!({ "account_id": agent.id() }))?
+        .args_json(json!({ "account_id": agent.id() }))
         .view()
         .await?
         .json::<Option<Agent>>()?
@@ -148,7 +148,7 @@ pub async fn run_scheduled_tasks(
     // the manager contract, and we want to eventually withdraw this amount.
     let agent_details = contract
         .call(&worker, "get_agent")
-        .args_json(json!({"account_id": agent.id()}))?
+        .args_json(json!({"account_id": agent.id()}))
         .view()
         .await?
         .json::<Option<Agent>>()?
@@ -167,7 +167,7 @@ pub async fn run_scheduled_tasks(
     // contract:
     let agent_details = contract
         .call(&worker, "get_agent")
-        .args_json(json!({"account_id": agent.id() }))?
+        .args_json(json!({"account_id": agent.id() }))
         .view()
         .await?
         .json::<Option<Agent>>()?
@@ -191,7 +191,7 @@ pub async fn run_scheduled_tasks(
     // Check to see if the agent has been successfully unregistered
     let removed_agent: Option<Agent> = contract
         .call(&worker, "get_agent")
-        .args_json(json!({"account_id": agent.id() }))?
+        .args_json(json!({"account_id": agent.id() }))
         .view()
         .await?
         .json()?;

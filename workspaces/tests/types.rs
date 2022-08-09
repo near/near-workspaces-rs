@@ -1,4 +1,7 @@
+use std::str::FromStr;
+
 use workspaces::types::{KeyType, SecretKey};
+use workspaces::AccountId;
 
 #[test]
 fn test_keypair_ed25519() -> anyhow::Result<()> {
@@ -28,4 +31,13 @@ fn test_keypair_secp256k1() -> anyhow::Result<()> {
     assert_eq!(sk, serde_json::from_str(sk_expected)?);
 
     Ok(())
+}
+
+#[test]
+fn test_valid_account_id() {
+    let account_id = "testnet";
+    assert!(
+        AccountId::from_str(account_id).is_ok(),
+        "Something changed underneath for testnet to not be a valid Account ID"
+    );
 }

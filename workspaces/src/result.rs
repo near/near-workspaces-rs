@@ -6,7 +6,10 @@ use near_primitives::views::{
     FinalExecutionStatus,
 };
 
+use crate::error::ErrorKind;
 use crate::types::{Balance, CryptoHash, Gas};
+
+pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
 
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
@@ -21,8 +24,8 @@ impl<T> CallExecution<T> {
         self.into_result().unwrap()
     }
 
-    pub fn into_result(self) -> anyhow::Result<T> {
-        Into::<anyhow::Result<_>>::into(self)
+    pub fn into_result(self) -> Result<T> {
+        Into::<Result<_>>::into(self)
     }
 
     /// Checks whether the transaction was successful. Returns true if
@@ -38,16 +41,10 @@ impl<T> CallExecution<T> {
     }
 }
 
-impl<T> From<CallExecution<T>> for anyhow::Result<T> {
-    fn from(value: CallExecution<T>) -> anyhow::Result<T> {
-        match value.details.status {
-            FinalExecutionStatus::SuccessValue(_) => Ok(value.result),
-            FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
-            FinalExecutionStatus::NotStarted => Err(anyhow::anyhow!("Transaction not started.")),
-            FinalExecutionStatus::Started => {
-                Err(anyhow::anyhow!("Transaction still being processed."))
-            }
-        }
+impl<T> From<CallExecution<T>> for Result<T> {
+    fn from(value: CallExecution<T>) -> Result<T> {
+        value.details.try_into_result()?;
+        Ok(value.result)
     }
 }
 
@@ -68,45 +65,49 @@ impl CallExecutionDetails {
     /// execution result of this call. This conversion can fail if the structure of
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
-    pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
-        serde_json::from_slice(&buf).map_err(Into::into)
+        serde_json::from_slice(&buf).map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from the execution
     /// result. This conversion can fail if the structure of the internal state does
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
-    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
-        borsh::BorshDeserialize::try_from_slice(&buf).map_err(Into::into)
+        borsh::BorshDeserialize::try_from_slice(&buf)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 
     /// Grab the underlying raw bytes returned from calling into a contract's function.
     /// If we want to deserialize these bytes into a rust datatype, use [`CallExecutionDetails::json`]
     /// or [`CallExecutionDetails::borsh`] instead.
-    pub fn raw_bytes(&self) -> anyhow::Result<Vec<u8>> {
-        let result: &str = match self.status {
-            FinalExecutionStatus::SuccessValue(ref val) => val,
-            FinalExecutionStatus::Failure(ref err) => anyhow::bail!(err.clone()),
-            FinalExecutionStatus::NotStarted => anyhow::bail!("Transaction not started."),
-            FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
-        };
-        base64::decode(result).map_err(Into::into)
+    pub fn raw_bytes(&self) -> Result<Vec<u8>> {
+        let result = self.try_into_success_value()?;
+        base64::decode(result).map_err(|e| ErrorKind::DataConversion.custom(e))
+    }
+
+    fn try_into_success_value(&self) -> Result<&str> {
+        match self.status {
+            FinalExecutionStatus::SuccessValue(ref val) => Ok(val),
+            FinalExecutionStatus::Failure(ref err) => Err(ErrorKind::Execution.custom(err.clone())),
+            FinalExecutionStatus::NotStarted => {
+                Err(ErrorKind::Execution.message("Transaction not started."))
+            }
+            FinalExecutionStatus::Started => {
+                Err(ErrorKind::Execution.message("Transaction still being processed."))
+            }
+        }
     }
 
     /// Convert the execution details into a Result if its status is not a successful one.
     /// Useful for checking if the call was successful and forwarding the error upwards.
-    fn try_into_result(self) -> anyhow::Result<Self> {
-        match self.status {
-            FinalExecutionStatus::Failure(ref err) => anyhow::bail!(err.clone()),
-            FinalExecutionStatus::NotStarted => anyhow::bail!("Transaction not started."),
-            FinalExecutionStatus::Started => anyhow::bail!("Transaction still being processed."),
-            _ => (),
-        };
+    fn try_into_result(self) -> Result<Self> {
+        self.try_into_success_value()?;
         Ok(self)
     }
 
-    pub(crate) fn from_outcome(outcome: FinalExecutionOutcomeView) -> anyhow::Result<Self> {
+    pub(crate) fn from_outcome(outcome: FinalExecutionOutcomeView) -> Result<Self> {
         Self::from(outcome).try_into_result()
     }
 
@@ -207,15 +208,16 @@ impl ViewResultDetails {
     /// execution result of this call. This conversion can fail if the structure of
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
-    pub fn json<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<T> {
-        serde_json::from_slice(&self.result).map_err(Into::into)
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
+        serde_json::from_slice(&self.result).map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from this view call's
     /// result. This conversion can fail if the structure of the internal state does
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
-    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> anyhow::Result<T> {
-        borsh::BorshDeserialize::try_from_slice(&self.result).map_err(Into::into)
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
+        borsh::BorshDeserialize::try_from_slice(&self.result)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 }
 
@@ -270,18 +272,18 @@ impl ExecutionOutcome {
         )
     }
 
-    /// Converts this [`ExecutionOutcome`] into a Result type, where the failure is converted
-    /// to an [`anyhow::Error`] object which can be downcasted later.
-    pub fn into_result(self) -> anyhow::Result<ValueOrReceiptId> {
+    /// Converts this [`ExecutionOutcome`] into a Result type to match against whether the
+    /// particular outcome has failed or not.
+    pub fn into_result(self) -> Result<ValueOrReceiptId> {
         match self.status {
             ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(value)),
             ExecutionStatusView::SuccessReceiptId(hash) => {
                 Ok(ValueOrReceiptId::ReceiptId(CryptoHash(hash.0)))
             }
-            ExecutionStatusView::Failure(err) => {
-                Err(anyhow::anyhow!("Execution failed: {:?}", err))
+            ExecutionStatusView::Failure(err) => Err(ErrorKind::Execution.custom(err)),
+            ExecutionStatusView::Unknown => {
+                Err(ErrorKind::Execution.message("Execution pending or unknown"))
             }
-            ExecutionStatusView::Unknown => anyhow::bail!("Execution pending or unknown"),
         }
     }
 }
