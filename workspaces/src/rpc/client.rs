@@ -1,8 +1,10 @@
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
@@ -38,7 +40,7 @@ pub struct Client {
     rpc_addr: String,
     rpc_client: JsonRpcClient,
     /// AccessKey nonces to reference when sending transactions.
-    access_key_nonces: RwLock<HashMap<AccountId, Mutex<Nonce>>>,
+    access_key_nonces: RwLock<HashMap<AccountId, AtomicU64>>,
 }
 
 impl Client {
@@ -450,23 +452,26 @@ async fn fetch_tx_nonce(
 ) -> Result<(CryptoHash, Nonce)> {
     let nonces = client.access_key_nonces.read().await;
     if let Some(nonce) = nonces.get(&account_id) {
-        let mut nonce = nonce.lock().await;
-        *nonce += 1;
+        let nonce = nonce.fetch_add(1, Ordering::SeqCst);
 
         // Fetch latest block_hash since the previous one is now invalid for new transactions:
         let block = client.view_block(Some(Finality::Final.into())).await?;
         let block_hash = block.header.hash;
-        return Ok((block_hash, *nonce));
+        Ok((block_hash, nonce + 1))
+    } else {
+        drop(nonces);
+        let mut nonces = client.access_key_nonces.write().await;
+        match nonces.entry(account_id.clone()) {
+            Entry::Occupied(_) => Err(anyhow::anyhow!(
+                "nonce already written, wait for next loop to increment nonce",
+            )),
+            Entry::Vacant(entry) => {
+                let (access_key, block_hash) = access_key(client, account_id, public_key).await?;
+                entry.insert(AtomicU64::new(access_key.nonce + 1));
+                Ok((block_hash, access_key.nonce + 1))
+            }
+        }
     }
-    drop(nonces);
-
-    let (access_key, block_hash) = access_key(client, account_id.clone(), public_key).await?;
-    let mut nonces = client.access_key_nonces.write().await;
-    nonces
-        .entry(account_id)
-        .or_insert_with(|| Mutex::new(access_key.nonce + 1));
-
-    Ok((block_hash, access_key.nonce + 1))
 }
 
 pub(crate) async fn retry<R, E, T, F>(task: F) -> T::Output
