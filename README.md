@@ -123,6 +123,62 @@ Then later on, we can view our minted NFT's metadata via our `view` call into `n
 }
 ```
 
+## Common Usage
+
+One advantage of using NEAR Workspaces-rs instead of a unit test is that Workspaces allows you to check balances after a transfer (unit tests don't).
+
+Here is an example:
+
+```rs
+async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
+    let initial_balance: Balance = near_units::near::parse("1").unwrap();
+    let transfer_amount: Balance = near_units::near::parse("0.1").unwrap();
+    let worker = workspaces::sandbox().await?;
+    let contract = worker
+        .dev_deploy(&include_bytes!("../target/res/your_project_name.wasm").to_vec())
+        .await?;
+    contract
+        .call(&worker, "new")
+        .gas(GAS_FOR_ACCOUNT_CALLBACK.0)
+        .transact()
+        .await?;
+    let parent_account = worker.dev_create_account().await?;
+    let recipient = parent_account
+        .create_subaccount(&worker, "recipient")
+        .initial_balance(initial_balance)
+        .transact()
+        .await?
+        .into_result()?;
+    assert_eq!(
+        recipient.view_account(&worker).await?.balance,
+        initial_balance
+    );
+    let sender = parent_account
+        .create_subaccount(&worker, "sender")
+        .initial_balance(initial_balance)
+        .transact()
+        .await?
+        .into_result()?;
+
+    let _result = sender
+        .call(
+            &worker,
+            contract.id(),
+            "some_function_that_involves_a_transfer",
+        )
+        .args_json(json!({"recipient": &recipient.id()}))?
+        .gas(GAS_FOR_ACCOUNT_CALLBACK.0)
+        .deposit(transfer_amount)
+        .transact()
+        .await?;
+    assert_eq!(
+        recipient.view_account(&worker).await?.balance,
+        initial_balance + transfer_amount
+    );
+    Ok(())
+}
+```
+
 ## Examples
 More standalone examples can be found in `examples/src/*.rs`.
 
