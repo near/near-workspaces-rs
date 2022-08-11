@@ -32,6 +32,12 @@ rustup default stable-x86_64-apple-darwin
 ### WASM compilation not supported
 `workspaces-rs`, the library itself, does not currently compile to WASM. Best to put this dependency in `[dev-dependencies]` section of `Cargo.toml` if we were trying to run this library alongside something that already does compile to WASM, such as `near-sdk-rs`.
 
+## Important reminder (a "gotcha")
+
+Running a Workspaces-rs test (such as via `RUST_BACKTRACE=full cargo test --package your_package --test integration-tests -- some_specific_test --exact --show-output` or by clicking "Run Test" in VSC) does _not_ compile your code first. 
+
+Always [rebuild](https://www.near-sdk.io/building/basic-build) before running your tests, or else you'll be testing against stale code.
+
 ## Simple Testing Case
 A simple test to get us going and familiar with `workspaces` framework. Here, we will be going through the NFT contract and how we can test it with `workspaces-rs`.
 
