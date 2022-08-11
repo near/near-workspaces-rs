@@ -142,25 +142,10 @@ async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
         .gas(GAS_FOR_ACCOUNT_CALLBACK.0)
         .transact()
         .await?;
-    let parent_account = worker.dev_create_account().await?;
-    let recipient = parent_account
-        .create_subaccount(&worker, "recipient")
-        .initial_balance(initial_balance)
-        .transact()
-        .await?
-        .into_result()?;
-    assert_eq!(
-        recipient.view_account(&worker).await?.balance,
-        initial_balance
-    );
-    let sender = parent_account
-        .create_subaccount(&worker, "sender")
-        .initial_balance(initial_balance)
-        .transact()
-        .await?
-        .into_result()?;
-
-    let _result = sender
+    let alice = worker.dev_create_account().await?;
+    let bob = worker.dev_create_account().await?;
+    let bob_original_balance = bob.view_account(&worker).await?.balance;
+    let _result = alice
         .call(
             &worker,
             contract.id(),
@@ -171,9 +156,10 @@ async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
         .deposit(transfer_amount)
         .transact()
         .await?;
+
     assert_eq!(
-        recipient.view_account(&worker).await?.balance,
-        initial_balance + transfer_amount
+        bob.view_account(&worker).await?.balance,
+        bob_original_balance + transfer_amount
     );
     Ok(())
 }
