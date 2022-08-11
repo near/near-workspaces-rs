@@ -130,18 +130,14 @@ One advantage of using NEAR Workspaces-rs instead of a unit test is that Workspa
 Here is an example:
 
 ```rs
+#[test(tokio::test)]
 async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
-    let initial_balance: Balance = near_units::near::parse("1").unwrap();
-    let transfer_amount: Balance = near_units::near::parse("0.1").unwrap();
+    let transfer_amount = near_units::near::parse("0.1").unwrap();
     let worker = workspaces::sandbox().await?;
     let contract = worker
         .dev_deploy(&include_bytes!("../target/res/your_project_name.wasm").to_vec())
         .await?;
-    contract
-        .call(&worker, "new")
-        .gas(GAS_FOR_ACCOUNT_CALLBACK.0)
-        .transact()
-        .await?;
+    contract.call(&worker, "new").max_gas().transact().await?;
     let alice = worker.dev_create_account().await?;
     let bob = worker.dev_create_account().await?;
     let bob_original_balance = bob.view_account(&worker).await?.balance;
@@ -151,12 +147,11 @@ async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
             contract.id(),
             "some_function_that_involves_a_transfer",
         )
-        .args_json(json!({"recipient": &recipient.id()}))?
-        .gas(GAS_FOR_ACCOUNT_CALLBACK.0)
+        .args_json(json!({"destination_account": &bob.id()}))?
+        .max_gas()
         .deposit(transfer_amount)
         .transact()
         .await?;
-
     assert_eq!(
         bob.view_account(&worker).await?.balance,
         bob_original_balance + transfer_amount
