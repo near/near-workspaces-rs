@@ -31,10 +31,17 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]  # macos-latest disabled due to time issues w/ nearcore
+        toolchain: [stable, 1.60.0]
 
     runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v2
+    - name: "${{ matrix.toolchain }}"
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.toolchain }}
+    - uses: Swatinem/rust-cache@v1
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
     - name: Check with stable features

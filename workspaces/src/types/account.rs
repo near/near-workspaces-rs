@@ -276,7 +276,7 @@ impl Contract {
 
 /// Details of an Account or Contract. This is an non-exhaustive list of items
 /// that the account stores in the blockchain state.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct AccountDetails {
     pub balance: Balance,

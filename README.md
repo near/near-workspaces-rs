@@ -17,7 +17,7 @@
 **Release notes and unreleased changes can be found in the [CHANGELOG](CHANGELOG.md)**
 
 ## Requirements
-- Rust v1.56 and up
+- Rust v1.60.0 and up
 - MacOS (x86) or Linux (x86) for sandbox tests. Testnet is available regardless
 
 ### M1 MacOS
