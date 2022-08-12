@@ -17,17 +17,8 @@
 **Release notes and unreleased changes can be found in the [CHANGELOG](CHANGELOG.md)**
 
 ## Requirements
-- Rust v1.56 and up
-- MacOS (x86) or Linux (x86) for sandbox tests. Testnet is available regardless
-
-### M1 MacOS
-NOTE: Current version of `workspaces-rs` does not support use on M1 chip devices due to internal upgrades with wasmer. M1 users should use `workspaces-rs` version `0.1.1` until this problem gets resolved. Check the progress on this issue [here](https://github.com/near/workspaces-rs/issues/110).
-
-Even with the above note, we can use `workspaces-rs` with version `0.1.1` on M1 by setting up rosetta plus our cross compile target:
-```
-softwareupdate --install-rosetta
-rustup default stable-x86_64-apple-darwin
-```
+- Rust v1.60.0 and up
+- MacOS (x86 and M1) or Linux (x86) for sandbox tests.
 
 ### WASM compilation not supported
 `workspaces-rs`, the library itself, does not currently compile to WASM. Best to put this dependency in `[dev-dependencies]` section of `Cargo.toml` if we were trying to run this library alongside something that already does compile to WASM, such as `near-sdk-rs`.
