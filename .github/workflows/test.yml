@@ -30,7 +30,7 @@ jobs:
     needs: check
     strategy:
       matrix:
-        platform: [ubuntu-latest]  # macos-latest disabled due to time issues w/ nearcore
+        platform: [ubuntu-latest, macos-latest]
         toolchain: [stable, 1.60.0]
 
     runs-on: ${{ matrix.platform }}
