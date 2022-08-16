@@ -114,6 +114,43 @@ Then later on, we can view our minted NFT's metadata via our `view` call into `n
 }
 ```
 
+## Common Usage
+
+One advantage of using NEAR Workspaces-rs instead of a unit test is that Workspaces allows you to check balances after a transfer (unit tests don't).
+
+Here is an example:
+
+```rs
+#[test(tokio::test)]
+async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
+    let transfer_amount = near_units::near::parse("0.1").unwrap();
+    let worker = workspaces::sandbox().await?;
+    let contract = worker
+        .dev_deploy(&include_bytes!("../target/res/your_project_name.wasm").to_vec())
+        .await?;
+    contract.call(&worker, "new").max_gas().transact().await?;
+    let alice = worker.dev_create_account().await?;
+    let bob = worker.dev_create_account().await?;
+    let bob_original_balance = bob.view_account(&worker).await?.balance;
+    let _result = alice
+        .call(
+            &worker,
+            contract.id(),
+            "some_function_that_involves_a_transfer",
+        )
+        .args_json(json!({"destination_account": &bob.id()}))?
+        .max_gas()
+        .deposit(transfer_amount)
+        .transact()
+        .await?;
+    assert_eq!(
+        bob.view_account(&worker).await?.balance,
+        bob_original_balance + transfer_amount
+    );
+    Ok(())
+}
+```
+
 ## Examples
 More standalone examples can be found in `examples/src/*.rs`.
 
