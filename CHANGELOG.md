@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2022-08-16
+
+### Added
+- Derive `Eq` on `AccountDetails` type: https://github.com/near/workspaces-rs/pull/177/files
+
+### Fixed
+- Fix macOS non-deterministic overflow error when starting up sandbox: https://github.com/near/workspaces-rs/pull/179
+
 ## [0.4.0] - 2022-07-20
 
 ### Added
@@ -81,7 +89,8 @@
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
 
-[Unreleased]: https://github.com/near/workspaces-rs/compare/0.4.0...HEAD
+[Unreleased]: https://github.com/near/workspaces-rs/compare/0.4.1...HEAD
+[0.4.1]: https://github.com/near/workspaces-rs/compare/0.4.0-no-eh...0.4.1
 [0.4.0]: https://github.com/near/workspaces-rs/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/near/workspaces-rs/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/near/workspaces-rs/compare/0.2.1...0.3.0
