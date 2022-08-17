@@ -16,6 +16,9 @@
 ### Fixed
 - Fix macOS non-deterministic overflow error when starting up sandbox: https://github.com/near/workspaces-rs/pull/179
 
+### Changed
+- `CallExecutionDetails` is now `#[must_use]`. To assert whether transaction succeeded, call into `executed()?` to forward the result: https://github.com/near/workspaces-rs/pull/150/files
+
 ## [0.4.0] - 2022-07-20
 
 ### Added
