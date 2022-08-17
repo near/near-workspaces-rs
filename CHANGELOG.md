@@ -91,7 +91,7 @@
 
 
 [Unreleased]: https://github.com/near/workspaces-rs/compare/0.4.1...HEAD
-[0.4.1]: https://github.com/near/workspaces-rs/compare/0.4.0-no-eh...0.4.1
+[0.4.1]: https://github.com/near/workspaces-rs/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/near/workspaces-rs/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/near/workspaces-rs/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/near/workspaces-rs/compare/0.2.1...0.3.0
