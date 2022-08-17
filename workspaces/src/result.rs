@@ -45,7 +45,7 @@ impl<T> CallExecution<T> {
 
 impl<T> From<CallExecution<T>> for Result<T> {
     fn from(value: CallExecution<T>) -> Result<T> {
-        let _ = value.details.executed()?;
+        value.details.executed()?;
         Ok(value.result)
     }
 }
