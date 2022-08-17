@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- Error handling with `workspaces::error::Error` type: https://github.com/near/workspaces-rs/pull/149
 
 ## [0.4.1] - 2022-08-16
 
