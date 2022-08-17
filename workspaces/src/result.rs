@@ -41,12 +41,6 @@ impl<T> CallExecution<T> {
     pub fn is_failure(&self) -> bool {
         self.details.is_failure()
     }
-
-    /// Checks whether the transaction was successful, if not returns a Result with the
-    /// corresponding error that occured.
-    pub fn executed(&self) -> Result<()> {
-        self.details.executed()
-    }
 }
 
 impl<T> From<CallExecution<T>> for Result<T> {
