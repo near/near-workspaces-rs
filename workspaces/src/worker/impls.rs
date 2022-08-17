@@ -57,7 +57,8 @@ where
                 deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
             )
             .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .map(CallExecutionDetails::from)
+            .map_err(crate::error::Error::from)
     }
 
     /// Call into a contract's view function.
@@ -107,7 +108,8 @@ where
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .map(CallExecutionDetails::from)
+            .map_err(crate::error::Error::from)
     }
 
     /// Deletes an account from the network. The beneficiary will receive the balance
@@ -121,7 +123,8 @@ where
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
             .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .map(CallExecutionDetails::from)
+            .map_err(crate::error::Error::from)
     }
 
     /// View account details of a specific account on the network.

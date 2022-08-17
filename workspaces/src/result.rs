@@ -14,6 +14,8 @@ pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
 /// the transaction failed to be processed on the chain.
+#[non_exhaustive]
+#[must_use]
 pub struct CallExecution<T> {
     pub result: T,
     pub details: CallExecutionDetails,
@@ -39,17 +41,24 @@ impl<T> CallExecution<T> {
     pub fn is_failure(&self) -> bool {
         self.details.is_failure()
     }
+
+    /// Checks whether the transaction was successful, if not returns a Result with the
+    /// corresponding error that occured.
+    pub fn ok(&self) -> Result<()> {
+        self.details.ok()
+    }
 }
 
 impl<T> From<CallExecution<T>> for Result<T> {
     fn from(value: CallExecution<T>) -> Result<T> {
-        value.details.try_into_result()?;
+        value.details.ok()?;
         Ok(value.result)
     }
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 #[non_exhaustive]
+#[must_use]
 pub struct CallExecutionDetails {
     /// Execution status. Contains the result in case of successful execution.
     pub(crate) status: FinalExecutionStatus,
@@ -100,15 +109,11 @@ impl CallExecutionDetails {
         }
     }
 
-    /// Convert the execution details into a Result if its status is not a successful one.
-    /// Useful for checking if the call was successful and forwarding the error upwards.
-    fn try_into_result(self) -> Result<Self> {
+    /// Checks whether the transaction was successful, if not returns a Result with the
+    /// corresponding error that occured.
+    pub fn ok(&self) -> Result<()> {
         self.try_into_success_value()?;
-        Ok(self)
-    }
-
-    pub(crate) fn from_outcome(outcome: FinalExecutionOutcomeView) -> Result<Self> {
-        Self::from(outcome).try_into_result()
+        Ok(())
     }
 
     /// Returns just the transaction outcome.

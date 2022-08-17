@@ -222,7 +222,8 @@ impl<'a> Transaction<'a> {
     pub async fn transact(self) -> Result<CallExecutionDetails> {
         self.transact_raw()
             .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .map(CallExecutionDetails::from)
+            .map_err(crate::error::Error::from)
     }
 }
 
@@ -306,7 +307,8 @@ impl<'a, 'b> CallTransaction<'a, 'b> {
                 self.function.deposit,
             )
             .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .map(CallExecutionDetails::from)
+            .map_err(crate::error::Error::from)
     }
 
     /// Instead of transacting the transaction, call into the specified view function.
