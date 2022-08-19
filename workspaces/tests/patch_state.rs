@@ -27,7 +27,7 @@ async fn view_status_state(
     let contract = worker.dev_deploy(&wasm).await.unwrap();
 
     contract
-        .call(&worker, "set_status")
+        .call("set_status")
         .args_json(json!({
                 "message": "hello",
         }))

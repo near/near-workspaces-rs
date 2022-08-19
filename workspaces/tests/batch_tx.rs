@@ -13,7 +13,7 @@ async fn test_batch_tx() -> anyhow::Result<()> {
     // Batch transaction with two `call`s into `set_status`. The second one
     // should override the first one.
     contract
-        .batch(&worker)
+        .batch()
         .call(
             Function::new("set_status")
                 .args_json(json!({
@@ -28,7 +28,7 @@ async fn test_batch_tx() -> anyhow::Result<()> {
         .await?;
 
     let status_msg: String = contract
-        .call(&worker, "get_status")
+        .call("get_status")
         .args_json(serde_json::json!({
             "account_id": contract.id(),
         }))

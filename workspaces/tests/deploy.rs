@@ -36,17 +36,14 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(&wasm).await?;
 
     let _result = contract
-        .call(&worker, "new_default_meta")
+        .call("new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": contract.id()
         }))
         .transact()
         .await?;
 
-    let actual: NftMetadata = contract
-        .view(&worker, "nft_metadata", Vec::new())
-        .await?
-        .json()?;
+    let actual: NftMetadata = contract.view("nft_metadata", Vec::new()).await?.json()?;
 
     assert_eq!(actual, expected());
 

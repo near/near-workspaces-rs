@@ -55,7 +55,7 @@ async fn main() -> anyhow::Result<()> {
 
     // deploy the manager contract so we can schedule tasks via our agents.
     let manager_contract = worker.dev_deploy(MANAGER_CONTRACT).await?;
-    manager_contract.call(&worker, "new").transact().await?;
+    manager_contract.call("new").transact().await?;
 
     // Create a root croncat account with agent subaccounts to schedule tasks.
     let croncat = worker.dev_create_account().await?;
@@ -63,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
     // This will setup a task to call into the counter contract, with a cadence of 1 hour.
     println!("Creating task for `counter.increment`");
     let outcome = croncat
-        .call(&worker, manager_contract.id(), "create_task")
+        .call(manager_contract.id(), "create_task")
         .args_json(json!({
             "contract_id": counter_contract.id(),
             "function_id": "increment",
@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
     // Let's create an agent that will eventually execute the above task and get rewards
     // for executing it:
     let agent_1 = croncat
-        .create_subaccount(&worker, "agent_1")
+        .create_subaccount("agent_1")
         .initial_balance(parse_near!("10 N"))
         .transact()
         .await?
@@ -100,7 +100,7 @@ pub async fn run_scheduled_tasks(
 ) -> anyhow::Result<()> {
     // Register the agent to eventually execute the task
     let outcome = agent
-        .call(&worker, contract.id(), "register_agent")
+        .call(contract.id(), "register_agent")
         .args_json(json!({}))
         .deposit(parse_near!("0.00226 N"))
         .transact()
@@ -109,7 +109,7 @@ pub async fn run_scheduled_tasks(
 
     // Check the right agent was registered correctly:
     let registered_agent = contract
-        .call(&worker, "get_agent")
+        .call("get_agent")
         .args_json(json!({ "account_id": agent.id() }))
         .view()
         .await?
@@ -130,7 +130,7 @@ pub async fn run_scheduled_tasks(
     // if it can. The time based conditions are checked right in the contract. We are in the future
     // here, so the agent should be executing the task.
     agent
-        .call(&worker, contract.id(), "proxy_call")
+        .call(contract.id(), "proxy_call")
         .gas(parse_gas!("200 Tgas") as u64)
         .transact()
         .await?;
@@ -139,7 +139,7 @@ pub async fn run_scheduled_tasks(
     // recurring one that happens every hour:
     worker.fast_forward(4500).await?;
     agent
-        .call(&worker, contract.id(), "proxy_call")
+        .call(contract.id(), "proxy_call")
         .gas(parse_gas!("200 Tgas") as u64)
         .transact()
         .await?;
@@ -147,7 +147,7 @@ pub async fn run_scheduled_tasks(
     // Check accumulated agent balance after completing our task. This value is held within
     // the manager contract, and we want to eventually withdraw this amount.
     let agent_details = contract
-        .call(&worker, "get_agent")
+        .call("get_agent")
         .args_json(json!({"account_id": agent.id()}))
         .view()
         .await?
@@ -159,14 +159,14 @@ pub async fn run_scheduled_tasks(
 
     // Withdraw the reward from completing the task to our agent's account
     agent
-        .call(&worker, contract.id(), "withdraw_task_balance")
+        .call(contract.id(), "withdraw_task_balance")
         .transact()
         .await?;
 
     // Check accumulated agent balance to see that the amount has been taken out of the manager
     // contract:
     let agent_details = contract
-        .call(&worker, "get_agent")
+        .call("get_agent")
         .args_json(json!({"account_id": agent.id() }))
         .view()
         .await?
@@ -183,14 +183,14 @@ pub async fn run_scheduled_tasks(
 
     // Not that everything is done, let's cleanup and unregister the agent from doing anything.
     agent
-        .call(&worker, contract.id(), "unregister_agent")
+        .call(contract.id(), "unregister_agent")
         .deposit(parse_near!("1y"))
         .transact()
         .await?;
 
     // Check to see if the agent has been successfully unregistered
     let removed_agent: Option<Agent> = contract
-        .call(&worker, "get_agent")
+        .call("get_agent")
         .args_json(json!({"account_id": agent.id() }))
         .view()
         .await?

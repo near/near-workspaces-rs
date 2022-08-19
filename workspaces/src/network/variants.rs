@@ -39,7 +39,7 @@ pub trait DevAccountDeployer {
 }
 
 #[async_trait]
-impl<T> DevAccountDeployer for Worker<T>
+impl<T: ?Sized> DevAccountDeployer for Worker<T>
 where
     T: AllowDevAccountCreation + Send + Sync,
     Worker<T>: TopLevelAccountCreator,
@@ -73,7 +73,7 @@ impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 pub trait DevNetwork: AllowDevAccountCreation + Network {}
 
 // Implemented by default if we have `AllowDevAccountCreation`
-impl<T> DevNetwork for T
+impl<T: ?Sized> DevNetwork for T
 where
     Worker<T>: TopLevelAccountCreator + DevAccountDeployer,
     T: AllowDevAccountCreation + Network,
