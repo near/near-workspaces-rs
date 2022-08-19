@@ -1,8 +1,9 @@
-use std::{collections::HashMap, convert::TryInto};
+use std::collections::HashMap;
+use std::convert::TryInto;
 
 use near_units::{parse_gas, parse_near};
 use workspaces::network::Sandbox;
-use workspaces::{Account, AccountId, Contract, Network, Worker};
+use workspaces::{Account, AccountId, Contract, Worker};
 use workspaces::{BlockHeight, DevNetwork};
 
 const FT_CONTRACT_FILEPATH: &str = "./examples/res/fungible_token.wasm";
@@ -92,7 +93,6 @@ async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Resu
 /// Add's the amount in `tokens` we set for liquidity. This will return us the
 /// pool_id after the pool has been created.
 async fn create_pool_with_liquidity(
-    worker: &Worker<impl Network>,
     owner: &Account,
     ref_finance: &Contract,
     tokens: HashMap<&AccountId, u128>,
@@ -128,7 +128,7 @@ async fn create_pool_with_liquidity(
         .transact()
         .await?;
 
-    deposit_tokens(worker, owner, &ref_finance, tokens).await?;
+    deposit_tokens(owner, &ref_finance, tokens).await?;
 
     owner
         .call(ref_finance.id(), "add_liquidity")
@@ -145,7 +145,6 @@ async fn create_pool_with_liquidity(
 
 /// Deposit tokens into Ref-Finance
 async fn deposit_tokens(
-    worker: &Worker<impl Network>,
     owner: &Account,
     ref_finance: &Contract,
     tokens: HashMap<&AccountId, u128>,
@@ -218,7 +217,6 @@ async fn main() -> anyhow::Result<()> {
     ///////////////////////////////////////////////////////////////////////////
 
     let pool_id = create_pool_with_liquidity(
-        &worker,
         &owner,
         &ref_finance,
         maplit::hashmap! {
@@ -234,7 +232,6 @@ async fn main() -> anyhow::Result<()> {
     );
 
     deposit_tokens(
-        &worker,
         &owner,
         &ref_finance,
         maplit::hashmap! {
