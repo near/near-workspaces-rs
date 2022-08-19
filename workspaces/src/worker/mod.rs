@@ -11,8 +11,16 @@ use crate::Network;
 /// as mainnet and testnet. This controls where the environment the worker is
 /// running on top of is. Refer to this for all network related actions such as
 /// deploying a contract, or interacting with transactions.
-pub struct Worker<T> {
+pub struct Worker<T: ?Sized> {
     workspace: Arc<T>,
+}
+
+impl<T: Network + 'static> Worker<T> {
+    pub(crate) fn coerce(self) -> Worker<dyn Network> {
+        Worker {
+            workspace: self.workspace,
+        }
+    }
 }
 
 impl<T> Worker<T>

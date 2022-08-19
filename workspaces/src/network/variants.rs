@@ -2,7 +2,7 @@ use crate::network::Info;
 use crate::result::{CallExecution, Result};
 use crate::rpc::client::Client;
 use crate::types::{AccountId, KeyType, SecretKey};
-use crate::{Account, Contract};
+use crate::{Account, Contract, Worker};
 use async_trait::async_trait;
 
 pub(crate) const DEV_ACCOUNT_SEED: &str = "testificate";
@@ -39,9 +39,10 @@ pub trait DevAccountDeployer {
 }
 
 #[async_trait]
-impl<T> DevAccountDeployer for T
+impl<T> DevAccountDeployer for Worker<T>
 where
-    T: TopLevelAccountCreator + NetworkInfo + AllowDevAccountCreation + Send + Sync,
+    T: AllowDevAccountCreation + Send + Sync,
+    Worker<T>: TopLevelAccountCreator,
 {
     async fn dev_generate(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
@@ -69,7 +70,12 @@ pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: TopLevelAccountCreator + AllowDevAccountCreation + Network {}
+pub trait DevNetwork: AllowDevAccountCreation + Network {}
 
 // Implemented by default if we have `AllowDevAccountCreation`
-impl<T> DevNetwork for T where T: TopLevelAccountCreator + AllowDevAccountCreation + Network {}
+impl<T> DevNetwork for T
+where
+    Worker<T>: TopLevelAccountCreator + DevAccountDeployer,
+    T: AllowDevAccountCreation + Network,
+{
+}

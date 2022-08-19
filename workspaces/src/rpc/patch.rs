@@ -4,19 +4,20 @@ use near_primitives::{account::AccessKey, state_record::StateRecord, types::Bala
 
 use crate::error::SandboxErrorCode;
 use crate::network::DEV_ACCOUNT_SEED;
-use crate::rpc::client::Client;
 use crate::types::{BlockHeight, KeyType, SecretKey};
-use crate::{AccountId, Contract, CryptoHash, InMemorySigner};
+use crate::{AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
+
+use super::client::Client;
 
 /// A [`Transaction`]-like object that allows us to specify details about importing
 /// a contract from a different network into our sandbox local network. This creates
 /// a new [`Transaction`] to be committed to the sandbox network once `transact()`
 /// has been called. This does not commit any new transactions from the network
 /// this object is importing from.
-pub struct ImportContractTransaction<'a, 'b> {
+pub struct ImportContractTransaction<'a> {
     account_id: AccountId,
     from_network: &'a Client,
-    into_network: &'b Client,
+    into_network: Worker<dyn Network>,
 
     /// Whether to grab data down from the other contract or not
     import_data: bool,
@@ -28,11 +29,11 @@ pub struct ImportContractTransaction<'a, 'b> {
     block_id: Option<BlockId>,
 }
 
-impl<'a, 'b> ImportContractTransaction<'a, 'b> {
+impl<'a, 'b> ImportContractTransaction<'a> {
     pub(crate) fn new(
         account_id: AccountId,
         from_network: &'a Client,
-        into_network: &'b Client,
+        into_network: Worker<dyn Network>,
     ) -> Self {
         ImportContractTransaction {
             account_id,
@@ -136,6 +137,7 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
         // NOTE: For some reason, patching anything with account/contract related items takes two patches
         // otherwise its super non-deterministic and mostly just fails to locate the account afterwards: ¯\_(ツ)_/¯
         self.into_network
+            .client()
             .query(&RpcSandboxPatchStateRequest {
                 records: records.clone(),
             })
@@ -143,10 +145,11 @@ impl<'a, 'b> ImportContractTransaction<'a, 'b> {
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
         self.into_network
+            .client()
             .query(&RpcSandboxPatchStateRequest { records })
             .await
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
-        Ok(Contract::new(account_id, signer))
+        Ok(Contract::new(account_id, signer, self.into_network.clone()))
     }
 }

@@ -11,7 +11,7 @@ use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLev
 use crate::result::{CallExecution, CallExecutionDetails, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
-use crate::{Account, Contract, CryptoHash};
+use crate::{Account, Contract, CryptoHash, Worker};
 
 const RPC_URL: &str = "https://rpc.testnet.near.org";
 const HELPER_URL: &str = "https://helper.testnet.near.org";
@@ -70,10 +70,10 @@ impl std::fmt::Debug for Testnet {
     }
 }
 
-impl AllowDevAccountCreation for Testnet {}
+impl AllowDevAccountCreation for Worker<Testnet> {}
 
 #[async_trait]
-impl TopLevelAccountCreator for Testnet {
+impl TopLevelAccountCreator for Worker<Testnet> {
     async fn create_tla(
         &self,
         id: AccountId,
@@ -85,7 +85,7 @@ impl TopLevelAccountCreator for Testnet {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
 
         Ok(CallExecution {
-            result: Account::new(id, signer),
+            result: Account::new(id, signer, self.clone().coerce()),
             details: CallExecutionDetails {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.
@@ -117,7 +117,7 @@ impl TopLevelAccountCreator for Testnet {
         let account = self.create_tla(id.clone(), sk).await?;
         let account = account.into_result()?;
 
-        let outcome = self.client.deploy(&signer, &id, wasm.into()).await?;
+        let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;
 
         Ok(CallExecution {
             result: Contract::account(account),
