@@ -51,7 +51,7 @@ async fn deploy_status_contract(
 
     // This will `call` into `set_status` with the message we want to set.
     contract
-        .call(worker, "set_status")
+        .call("set_status")
         .args_json(serde_json::json!({
             "message": msg,
         }))

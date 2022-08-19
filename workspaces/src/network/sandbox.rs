@@ -13,7 +13,7 @@ use crate::network::Info;
 use crate::result::{CallExecution, Result};
 use crate::rpc::client::Client;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
-use crate::{Account, Contract, Worker};
+use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
@@ -85,8 +85,13 @@ impl std::fmt::Debug for Sandbox {
 impl AllowDevAccountCreation for Sandbox {}
 
 #[async_trait]
-impl TopLevelAccountCreator for Worker<Sandbox> {
-    async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
+impl TopLevelAccountCreator for Sandbox {
+    async fn create_tla(
+        &self,
+        worker: Worker<dyn Network>,
+        id: AccountId,
+        sk: SecretKey,
+    ) -> Result<CallExecution<Account>> {
         let root_signer = self.root_signer()?;
         let outcome = self
             .client()
@@ -95,13 +100,14 @@ impl TopLevelAccountCreator for Worker<Sandbox> {
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
-            result: Account::new(id, signer, self.clone().coerce()),
+            result: Account::new(id, signer, worker),
             details: outcome.into(),
         })
     }
 
     async fn create_tla_and_deploy(
         &self,
+        worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
@@ -120,7 +126,7 @@ impl TopLevelAccountCreator for Worker<Sandbox> {
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
-            result: Contract::new(id, signer, self.clone().coerce()),
+            result: Contract::new(id, signer, worker),
             details: outcome.into(),
         })
     }

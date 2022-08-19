@@ -3,9 +3,10 @@ mod impls;
 use std::fmt;
 use std::sync::Arc;
 
-use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
-use crate::result::Result;
-use crate::Network;
+use crate::network::{Betanet, Mainnet, Sandbox, Testnet, TopLevelAccountCreator};
+use crate::result::CallExecution;
+use crate::types::{AccountId, SecretKey};
+use crate::{Account, Contract, DevNetwork, Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
 /// as mainnet and testnet. This controls where the environment the worker is
@@ -13,6 +14,17 @@ use crate::Network;
 /// deploying a contract, or interacting with transactions.
 pub struct Worker<T: ?Sized> {
     workspace: Arc<T>,
+}
+
+impl<T> Worker<T>
+where
+    T: Network,
+{
+    pub(crate) fn new(network: T) -> Self {
+        Self {
+            workspace: Arc::new(network),
+        }
+    }
 }
 
 impl<T: Network + 'static> Worker<T> {
@@ -25,12 +37,23 @@ impl<T: Network + 'static> Worker<T> {
 
 impl<T> Worker<T>
 where
-    T: Network,
+    T: DevNetwork + TopLevelAccountCreator + 'static,
 {
-    pub(crate) fn new(network: T) -> Self {
-        Self {
-            workspace: Arc::new(network),
-        }
+    pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
+        self.workspace
+            .create_tla(self.clone().coerce(), id, sk)
+            .await
+    }
+
+    pub async fn create_tla_and_deploy(
+        &self,
+        id: AccountId,
+        sk: SecretKey,
+        wasm: &[u8],
+    ) -> Result<CallExecution<Contract>> {
+        self.workspace
+            .create_tla_and_deploy(self.clone().coerce(), id, sk, wasm)
+            .await
     }
 }
 

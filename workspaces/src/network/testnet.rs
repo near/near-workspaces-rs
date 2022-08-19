@@ -11,7 +11,7 @@ use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLev
 use crate::result::{CallExecution, CallExecutionDetails, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
-use crate::{Account, Contract, CryptoHash, Worker};
+use crate::{Account, Contract, CryptoHash, Network, Worker};
 
 const RPC_URL: &str = "https://rpc.testnet.near.org";
 const HELPER_URL: &str = "https://helper.testnet.near.org";
@@ -73,9 +73,10 @@ impl std::fmt::Debug for Testnet {
 impl AllowDevAccountCreation for Worker<Testnet> {}
 
 #[async_trait]
-impl TopLevelAccountCreator for Worker<Testnet> {
+impl TopLevelAccountCreator for Testnet {
     async fn create_tla(
         &self,
+        worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
@@ -85,7 +86,7 @@ impl TopLevelAccountCreator for Worker<Testnet> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
 
         Ok(CallExecution {
-            result: Account::new(id, signer, self.clone().coerce()),
+            result: Account::new(id, signer, worker),
             details: CallExecutionDetails {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.
@@ -109,12 +110,13 @@ impl TopLevelAccountCreator for Worker<Testnet> {
 
     async fn create_tla_and_deploy(
         &self,
+        worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<CallExecution<Contract>> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
-        let account = self.create_tla(id.clone(), sk).await?;
+        let account = self.create_tla(worker, id.clone(), sk).await?;
         let account = account.into_result()?;
 
         let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;

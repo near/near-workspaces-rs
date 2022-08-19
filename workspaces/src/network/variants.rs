@@ -17,10 +17,16 @@ pub trait NetworkInfo {
 
 #[async_trait]
 pub trait TopLevelAccountCreator {
-    async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>>;
+    async fn create_tla(
+        &self,
+        worker: Worker<dyn Network>,
+        id: AccountId,
+        sk: SecretKey,
+    ) -> Result<CallExecution<Account>>;
 
     async fn create_tla_and_deploy(
         &self,
+        worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
@@ -39,10 +45,9 @@ pub trait DevAccountDeployer {
 }
 
 #[async_trait]
-impl<T: ?Sized> DevAccountDeployer for Worker<T>
+impl<T> DevAccountDeployer for Worker<T>
 where
-    T: AllowDevAccountCreation + Send + Sync,
-    Worker<T>: TopLevelAccountCreator,
+    T: TopLevelAccountCreator + Network + AllowDevAccountCreation + Send + Sync + 'static,
 {
     async fn dev_generate(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
@@ -70,12 +75,9 @@ pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: AllowDevAccountCreation + Network {}
+pub trait DevNetwork: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static {}
 
-// Implemented by default if we have `AllowDevAccountCreation`
-impl<T: ?Sized> DevNetwork for T
-where
-    Worker<T>: TopLevelAccountCreator + DevAccountDeployer,
-    T: AllowDevAccountCreation + Network,
+impl<T> DevNetwork for T where
+    T: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static
 {
 }

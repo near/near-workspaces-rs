@@ -148,7 +148,7 @@ impl Worker<Sandbox> {
         id: &AccountId,
         worker: &'a Worker<impl Network>,
     ) -> ImportContractTransaction<'a> {
-        ImportContractTransaction::new(id.to_owned(), &worker.client(), self.clone().coerce())
+        ImportContractTransaction::new(id.to_owned(), worker.client(), self.clone().coerce())
     }
 
     /// Patch state into the sandbox network, given a key and value. This will allow us to set
@@ -176,9 +176,5 @@ impl Worker<Sandbox> {
     /// The port being used by RPC
     pub fn rpc_port(&self) -> u16 {
         self.workspace.rpc_port()
-    }
-
-    pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
-        self.workspace.root_signer()
     }
 }

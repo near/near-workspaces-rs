@@ -2,7 +2,7 @@ use near_sdk::json_types::U128;
 use near_units::parse_near;
 use workspaces::prelude::*;
 use workspaces::result::CallExecutionDetails;
-use workspaces::{AccountId, Contract, Network, Worker};
+use workspaces::{AccountId, Contract};
 
 /// The factory contract used in these tests can be found in
 /// [near-sdk/examples/factory-contract](https://github.com/near/near-sdk-rs/tree/master/examples/factory-contract/high-level).
