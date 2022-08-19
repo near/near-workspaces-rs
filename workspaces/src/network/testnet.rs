@@ -70,7 +70,7 @@ impl std::fmt::Debug for Testnet {
     }
 }
 
-impl AllowDevAccountCreation for Worker<Testnet> {}
+impl AllowDevAccountCreation for Testnet {}
 
 #[async_trait]
 impl TopLevelAccountCreator for Testnet {
