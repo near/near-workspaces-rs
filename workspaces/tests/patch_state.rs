@@ -4,7 +4,6 @@
 use borsh::{self, BorshDeserialize, BorshSerialize};
 use serde_json::json;
 use test_log::test;
-use workspaces::prelude::*;
 use workspaces::{AccountId, DevNetwork, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";

@@ -1,6 +1,5 @@
 use near_sdk::json_types::U128;
 use near_units::parse_near;
-use workspaces::prelude::*;
 use workspaces::result::CallExecutionDetails;
 use workspaces::{AccountId, Contract};
 

@@ -1,7 +1,5 @@
 use serde_json::json;
 
-use workspaces::prelude::*;
-
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 
 #[tokio::main]

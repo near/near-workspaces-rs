@@ -1,5 +1,3 @@
-use workspaces::prelude::*;
-
 /// Our simple contract. Has a function to called `current_env_data` to just grab
 /// the current block_timestamp and epoch_height. Will be used to showcase what
 /// our contracts can see pre-and-post fast forwarding.

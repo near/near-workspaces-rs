@@ -37,31 +37,40 @@ pub trait TopLevelAccountCreator {
 // This trait acts as segmented boundary for only specific networks such as sandbox and testnet.
 pub trait AllowDevAccountCreation {}
 
-#[async_trait]
-pub trait DevAccountDeployer {
-    async fn dev_generate(&self) -> (AccountId, SecretKey);
-    async fn dev_create_account(&self) -> Result<Account>;
-    async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract>;
-}
-
-#[async_trait]
-impl<T> DevAccountDeployer for Worker<T>
+impl<T> Worker<T>
 where
-    T: TopLevelAccountCreator + Network + AllowDevAccountCreation + Send + Sync + 'static,
+    T: DevNetwork + TopLevelAccountCreator + 'static,
 {
-    async fn dev_generate(&self) -> (AccountId, SecretKey) {
+    pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
+        self.workspace
+            .create_tla(self.clone().coerce(), id, sk)
+            .await
+    }
+
+    pub async fn create_tla_and_deploy(
+        &self,
+        id: AccountId,
+        sk: SecretKey,
+        wasm: &[u8],
+    ) -> Result<CallExecution<Contract>> {
+        self.workspace
+            .create_tla_and_deploy(self.clone().coerce(), id, sk, wasm)
+            .await
+    }
+
+    pub async fn dev_generate(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         (id, sk)
     }
 
-    async fn dev_create_account(&self) -> Result<Account> {
+    pub async fn dev_create_account(&self) -> Result<Account> {
         let (id, sk) = self.dev_generate().await;
         let account = self.create_tla(id.clone(), sk).await?;
         account.into()
     }
 
-    async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
+    pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
         let (id, sk) = self.dev_generate().await;
         let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
         contract.into()

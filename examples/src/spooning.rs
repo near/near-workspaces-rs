@@ -3,7 +3,6 @@ use std::env;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
-use workspaces::prelude::*;
 use workspaces::{AccountId, Contract, DevNetwork, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";

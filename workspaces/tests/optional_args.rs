@@ -1,7 +1,6 @@
 #![recursion_limit = "256"]
 use near_units::parse_near;
 use test_log::test;
-use workspaces::prelude::*;
 use workspaces::{Contract, DevNetwork, Worker};
 
 async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {

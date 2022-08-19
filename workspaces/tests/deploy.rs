@@ -1,7 +1,6 @@
 #![recursion_limit = "256"]
 use serde::{Deserialize, Serialize};
 use test_log::test;
-use workspaces::prelude::*;
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{

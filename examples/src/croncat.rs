@@ -10,7 +10,6 @@ use serde::Deserialize;
 use serde_json::json;
 
 use workspaces::network::Sandbox;
-use workspaces::prelude::*;
 use workspaces::{Account, AccountId, Contract, Worker};
 
 const MANAGER_CONTRACT: &[u8] = include_bytes!("../res/manager.wasm");
