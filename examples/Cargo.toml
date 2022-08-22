@@ -41,3 +41,7 @@ path = "src/fast_forward.rs"
 [[example]]
 name = "croncat"
 path = "src/croncat.rs"
+
+[[example]]
+name = "proxy"
+path = "src/proxy.rs"
