@@ -11,7 +11,7 @@ async fn main() -> anyhow::Result<()> {
 async fn _test_proxy() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
     let root = worker.root_account()?;
-    let keypom = worker
+    let mut keypom = worker
         .dev_deploy(include_bytes!("../res/main.wasm"))
         .await?;
     let nft_series = worker
@@ -108,6 +108,17 @@ async fn _test_proxy() -> anyhow::Result<()> {
         .gas(300000000000000)
         .transact()
         .await?;
+
+    keypom.as_mut_account().signer_mut().secret_key = sk;
+    let res = keypom
+        .call(&worker, "claim")
+        .args_json(json!({
+            "account_id": keypom.id()
+        }))
+        .gas(100000000000000)
+        .transact()
+        .await?;
+    eprintln!("{:?}", res.logs());
 
     Ok(())
 }

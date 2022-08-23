@@ -365,6 +365,22 @@ impl Client {
         .await
     }
 
+    pub(crate) async fn gas_price(&self) -> Result<u128> {
+        let x = self
+            .rpc_client
+            .call(methods::gas_price::RpcGasPriceRequest { block_id: None })
+            .await
+            .map_err(|e| {
+                Error::full(
+                    RpcErrorCode::ConnectionFailure.into(),
+                    format!("failed to query gas price"),
+                    e,
+                )
+            })?;
+
+        Ok(x.gas_price)
+    }
+
     pub(crate) async fn status(&self) -> Result<StatusResponse, JsonRpcError<RpcStatusError>> {
         let result = self
             .rpc_client

@@ -47,6 +47,10 @@ impl Account {
         &self.signer
     }
 
+    pub fn signer_mut(&mut self) -> &mut InMemorySigner {
+        &mut self.signer
+    }
+
     /// Call a contract on the network specified within `worker`, and return
     /// a [`CallTransaction`] object that we will make use to populate the
     /// rest of the call details.
@@ -199,6 +203,10 @@ impl Contract {
     /// to be used from this `Contract`.
     pub fn as_account(&self) -> &Account {
         &self.account
+    }
+
+    pub fn as_mut_account(&mut self) -> &mut Account {
+        &mut self.account
     }
 
     pub(crate) fn signer(&self) -> &InMemorySigner {

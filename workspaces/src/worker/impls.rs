@@ -151,6 +151,10 @@ where
             .await
             .map(Into::into)
     }
+
+    pub async fn gas_price(&self) -> Result<u128> {
+        self.client().gas_price().await
+    }
 }
 
 impl Worker<Sandbox> {
