@@ -4,6 +4,8 @@ use workspaces::types::{KeyType, SecretKey};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // let worker = workspaces::mainnet().await?;
+    // println!("-- {}", worker.gas_price().await?);
     _test_proxy().await?;
     Ok(())
 }
