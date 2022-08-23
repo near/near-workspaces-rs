@@ -110,8 +110,8 @@ impl std::str::FromStr for SecretKey {
 
 #[derive(Clone)]
 pub struct InMemorySigner {
-    pub(crate) account_id: AccountId,
-    pub(crate) secret_key: SecretKey,
+    pub account_id: AccountId,
+    pub secret_key: SecretKey,
 }
 
 impl InMemorySigner {

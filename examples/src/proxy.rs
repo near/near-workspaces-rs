@@ -1,5 +1,5 @@
 use serde_json::json;
-use workspaces::prelude::*;
+use workspaces::{prelude::*, AccessKey};
 use workspaces::types::{KeyType, SecretKey};
 
 #[tokio::main]
@@ -11,7 +11,7 @@ async fn main() -> anyhow::Result<()> {
 async fn _test_proxy() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
     let root = worker.root_account()?;
-    let keypom = worker
+    let mut keypom = worker
         .dev_deploy(include_bytes!("../res/main.wasm"))
         .await?;
     let nft_series = worker
@@ -35,11 +35,6 @@ async fn _test_proxy() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    // let ali = root
-    //     .create_subaccount("ali")
-    //     .transact()
-    //     .await?
-    //     .into_result()?;
     // let bob = root
     //     .create_subaccount("bob")
     //     .transact()
@@ -91,7 +86,7 @@ async fn _test_proxy() -> anyhow::Result<()> {
             "public_keys": [sk.public_key()],
             "deposit_per_use": near_units::parse_near!("5 mN").to_string(),
             "fc_data": json!({
-                "methods": [null, null, [json!({
+                "methods": [[json!({
                     "receiver_id": nft_series.id(),
                     "method_name": "nft_mint",
                     "args": "",
@@ -101,13 +96,29 @@ async fn _test_proxy() -> anyhow::Result<()> {
                 })]]
             }),
             "config": json!({
-                "uses_per_key": 3,
+                "uses_per_key": 1,
                 "on_claim_refund_deposit": true,
             }),
         }))
         .gas(300000000000000)
         .transact()
         .await?;
+        
+    // ali.signer_mut().secret_key = sk;
+    keypom.as_mut_account().signer_mut().secret_key = sk;
+    
+    //.batch(&worker).delete_key(keypom.as_account().secret_key().public_key()).add_key(sk.public_key(), AccessKey::full_access()).transact().await?;
+    // ali.batch(&worker, ali.id()).delete_key(ali.secret_key().public_key()).add_key(sk.public_key(), AccessKey::full_access()).transact().await?;
+
+    let res = keypom.call(&worker, "claim")
+    .args_json(json!({
+        "account_id": keypom.id()
+    }))
+    .gas(100000000000000)
+    .transact()
+    .await?;
+
+    eprintln!("{:?}", res.logs());
 
     Ok(())
 }
