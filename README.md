@@ -35,9 +35,6 @@ use near_units::parse_near;
 
 // macro allowing us to convert args into JSON bytes to be read by the contract.
 use serde_json::json;
-
-// Additional convenient imports that allows workspaces to function readily.
-use workspaces::prelude::*;
 ```
 
 We will need to have our pre-compiled WASM contract ahead of time and know its path. In this showcase, we will be pointing to the example's NFT contract:
@@ -126,19 +123,19 @@ async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
     let transfer_amount = near_units::near::parse("0.1").unwrap();
     let worker = workspaces::sandbox().await?;
     let contract = worker
-        .dev_deploy(&include_bytes!("../target/res/your_project_name.wasm").to_vec())
+        .dev_deploy(include_bytes!("../target/res/your_project_name.wasm"))
         .await?;
-    contract.call(&worker, "new").max_gas().transact().await?;
+    contract.call("new")
+        .max_gas()
+        .transact()
+        .await?;
+
     let alice = worker.dev_create_account().await?;
     let bob = worker.dev_create_account().await?;
     let bob_original_balance = bob.view_account(&worker).await?.balance;
-    let _result = alice
-        .call(
-            &worker,
-            contract.id(),
-            "some_function_that_involves_a_transfer",
-        )
-        .args_json(json!({"destination_account": &bob.id()}))?
+
+    alice.call(contract.id(), "function_that_transfers")
+        .args_json(json!({ "destination_account": &bob.id() }))
         .max_gas()
         .deposit(transfer_amount)
         .transact()
@@ -147,6 +144,7 @@ async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
         bob.view_account(&worker).await?.balance,
         bob_original_balance + transfer_amount
     );
+
     Ok(())
 }
 ```
@@ -179,13 +177,12 @@ async fn main() -> anyhow::Result<()> {
 Need to make a helper function regardless of whatever Network?
 
 ```rust
-use workspaces::prelude::*;
 use workspaces::{Contract, DevNetwork, Network, Worker};
 
 // Helper function that calls into a contract we give it
 async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyhow::Result<()> {
     // Call into the function `contract_function` with args:
-    contract.call(&worker, "contract_function")
+    contract.call("contract_function")
         .args_json(serde_json::json!({
             "message": msg,
         })
@@ -208,7 +205,6 @@ We will first start with the usual imports:
 ```rust
 use near_units::{parse_gas, parse_near};
 use workspaces::network::Sandbox;
-use workspaces::prelude::*;
 use workspaces::{Account, AccountId, BlockHeight, Contract, Worker};
 ```
 
