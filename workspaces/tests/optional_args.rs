@@ -34,10 +34,17 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
         .await?;
 
     assert!(res.is_failure());
-    if let Some((_details, err)) = res.err() {
+    if let Some(err) = res.err() {
         match err.kind() {
             workspaces::error::ErrorKind::Execution => {
                 assert!(format!("{}", err).contains("Failed to deserialize input from JSON"));
+                let details = err
+                    .details()
+                    .expect("execution error should provide details");
+                assert!(
+                    details.total_gas_burnt > 0,
+                    "Gas is still burnt for transaction although inputs are incorrect"
+                );
             }
             other => panic!("Expected ExecutionError, got: {:?}", other),
         }

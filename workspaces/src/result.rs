@@ -93,7 +93,9 @@ impl CallExecutionDetails {
     fn try_into_success_value(&self) -> Result<&str> {
         match self.status {
             FinalExecutionStatus::SuccessValue(ref val) => Ok(val),
-            FinalExecutionStatus::Failure(ref err) => Err(ErrorKind::Execution.custom(err.clone())),
+            FinalExecutionStatus::Failure(ref err) => {
+                Err(ErrorKind::Execution.detailed(self.clone(), err.clone()))
+            }
             FinalExecutionStatus::NotStarted => {
                 Err(ErrorKind::Execution.message("Transaction not started."))
             }
@@ -113,22 +115,19 @@ impl CallExecutionDetails {
         Ok(())
     }
 
-    /// Converts the Execution details into a [`Result`]. [`Ok`] if the transaction succeed
-    /// and [`Err`] if it failed. The `Err` contains the [`Error`] along with the [`details`]
-    ///
-    /// [`details`]: crate::result::CallExecutionDetails
-    pub fn ok(self) -> Result<Self, (Self, Error)> {
-        match self.try_into_success_value() {
-            Ok(_) => Ok(self),
-            Err(err) => Err((self, err)),
-        }
+    /// Checks whether the transaction was executed successfully. This will return
+    /// a `Ok(CallExecutionDetails)` if the transaction was successful, and a `Err(Error)`
+    /// if it was not.
+    pub fn into_result(self) -> Result<Self> {
+        self.try_into_success_value()?;
+        Ok(self)
     }
 
     /// Checks whether the transaction execution failed. This will return
     /// `Some((CallExeuctionDetails, Error))` if it did fail, and `None` if it succeeded.
-    pub fn err(self) -> Option<(Self, Error)> {
+    pub fn err(self) -> Option<Error> {
         match self.try_into_success_value() {
-            Err(err) => Some((self, err)),
+            Err(err) => Some(err),
             Ok(_) => None,
         }
     }

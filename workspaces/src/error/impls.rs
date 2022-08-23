@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 use std::fmt;
 
+use crate::result::CallExecutionDetails;
+
 use super::{Error, ErrorKind, ErrorRepr, RpcErrorCode, SandboxErrorCode};
 
 impl ErrorKind {
@@ -17,9 +19,29 @@ impl ErrorKind {
     {
         Error::message(self, msg)
     }
+
+    pub(crate) fn detailed<E>(self, details: CallExecutionDetails, error: E) -> Error
+    where
+        E: Into<Box<dyn std::error::Error + Send + Sync>>,
+    {
+        Error::detailed(self, details, error)
+    }
 }
 
 impl Error {
+    pub(crate) fn detailed<E>(kind: ErrorKind, details: CallExecutionDetails, error: E) -> Self
+    where
+        E: Into<Box<dyn std::error::Error + Send + Sync>>,
+    {
+        Self {
+            repr: ErrorRepr::Detailed {
+                kind,
+                details: Box::new(details),
+                error: error.into(),
+            },
+        }
+    }
+
     pub(crate) fn full<T, E>(kind: ErrorKind, msg: T, error: E) -> Self
     where
         T: Into<Cow<'static, str>>,
@@ -64,6 +86,15 @@ impl Error {
         }
     }
 
+    /// Get the associated execution details of this error. Usually found with
+    /// an error occuring from executing a transaction.
+    pub fn details(&self) -> Option<&CallExecutionDetails> {
+        match &self.repr {
+            ErrorRepr::Detailed { details, .. } => Some(details),
+            _ => None,
+        }
+    }
+
     /// Returns the corresponding [`ErrorKind`] for this error.
     pub fn kind(&self) -> &ErrorKind {
         match &self.repr {
@@ -71,6 +102,7 @@ impl Error {
             ErrorRepr::Message { kind, .. } => kind,
             ErrorRepr::Custom { kind, .. } => kind,
             ErrorRepr::Full { kind, .. } => kind,
+            ErrorRepr::Detailed { kind, .. } => kind,
         }
     }
 
@@ -82,6 +114,7 @@ impl Error {
         match self.repr {
             ErrorRepr::Custom { error, .. } => Ok(error),
             ErrorRepr::Full { error, .. } => Ok(error),
+            ErrorRepr::Detailed { error, .. } => Ok(error),
             _ => Err(self),
         }
     }

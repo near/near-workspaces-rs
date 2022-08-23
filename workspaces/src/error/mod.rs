@@ -5,6 +5,8 @@ mod impls;
 
 use std::borrow::Cow;
 
+use crate::result::CallExecutionDetails;
+
 /// A list specifying general categories of NEAR workspace error.
 #[derive(Clone, Debug, Eq, PartialEq, thiserror::Error)]
 #[non_exhaustive]
@@ -44,6 +46,13 @@ enum ErrorRepr {
     Full {
         kind: ErrorKind,
         message: Cow<'static, str>,
+        error: Box<dyn std::error::Error + Send + Sync>,
+    },
+    #[error("{error}")]
+    Detailed {
+        kind: ErrorKind,
+        // NOTE: Box to mitigate large size difference between enum variants
+        details: Box<CallExecutionDetails>,
         error: Box<dyn std::error::Error + Send + Sync>,
     },
 }
