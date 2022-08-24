@@ -12,7 +12,6 @@ use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{CallExecution, Result};
 use crate::rpc::client::Client;
-use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{Account, Contract, Network, Worker};
 
@@ -87,29 +86,35 @@ impl AllowDevAccountCreation for Sandbox {}
 
 #[async_trait]
 impl TopLevelAccountCreator for Sandbox {
-    async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
+    async fn create_tla(
+        &self,
+        worker: Worker<dyn Network>,
+        id: AccountId,
+        sk: SecretKey,
+    ) -> Result<CallExecution<Account>> {
         let root_signer = self.root_signer()?;
         let outcome = self
-            .client
+            .client()
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
-            result: Account::new(id, signer),
+            result: Account::new(id, signer, worker),
             details: outcome.into(),
         })
     }
 
     async fn create_tla_and_deploy(
         &self,
+        worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<CallExecution<Contract>> {
         let root_signer = self.root_signer()?;
         let outcome = self
-            .client
+            .client()
             .create_account_and_deploy(
                 &root_signer,
                 &id,
@@ -121,7 +126,7 @@ impl TopLevelAccountCreator for Sandbox {
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         Ok(CallExecution {
-            result: Contract::new(id, signer),
+            result: Contract::new(id, signer, worker),
             details: outcome.into(),
         })
     }
@@ -140,14 +145,6 @@ impl NetworkInfo for Sandbox {
 }
 
 impl Sandbox {
-    pub(crate) fn import_contract<'a, 'b>(
-        &'b self,
-        id: &AccountId,
-        worker: &'a Worker<impl Network>,
-    ) -> ImportContractTransaction<'a, 'b> {
-        ImportContractTransaction::new(id.to_owned(), worker.client(), self.client())
-    }
-
     pub(crate) async fn patch_state(
         &self,
         contract_id: &AccountId,

@@ -4,15 +4,14 @@ use std::fmt;
 use std::sync::Arc;
 
 use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
-use crate::result::Result;
-use crate::Network;
+use crate::{Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
 /// as mainnet and testnet. This controls where the environment the worker is
 /// running on top of is. Refer to this for all network related actions such as
 /// deploying a contract, or interacting with transactions.
-pub struct Worker<T> {
-    workspace: Arc<T>,
+pub struct Worker<T: ?Sized> {
+    pub(crate) workspace: Arc<T>,
 }
 
 impl<T> Worker<T>
@@ -22,6 +21,14 @@ where
     pub(crate) fn new(network: T) -> Self {
         Self {
             workspace: Arc::new(network),
+        }
+    }
+}
+
+impl<T: Network + 'static> Worker<T> {
+    pub(crate) fn coerce(self) -> Worker<dyn Network> {
+        Worker {
+            workspace: self.workspace,
         }
     }
 }

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 - Error handling with `workspaces::error::Error` type: https://github.com/near/workspaces-rs/pull/149
+  - breaking: `args_json` and `args_borsh` no longer return `Result`s and are deferred till later when `transact()`ed
+- breaking: No longer require `worker` to be passed in for each transaction: https://github.com/near/workspaces-rs/pull/181
+  - breaking: `Account::from_file` function signature change, requiring a `&worker` to be passed in.
+  - `workspaces::prelude::*` import no longer necessary
+    - breaking: no longer able to import `workspaces::prelude::DevAccountDeployer` directly.
 
 ## [0.4.1] - 2022-08-16
 

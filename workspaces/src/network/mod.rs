@@ -18,5 +18,5 @@ pub use self::mainnet::Mainnet;
 pub use self::sandbox::Sandbox;
 pub use self::testnet::Testnet;
 pub use self::variants::{
-    AllowDevAccountCreation, DevAccountDeployer, NetworkClient, NetworkInfo, TopLevelAccountCreator,
+    AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator,
 };

@@ -228,16 +228,16 @@ impl<'a> Transaction<'a> {
 
 /// Similiar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
-pub struct CallTransaction<'a, 'b, T> {
-    worker: &'a Worker<T>,
+pub struct CallTransaction<'a, 'b> {
+    worker: &'a Worker<dyn Network>,
     signer: InMemorySigner,
     contract_id: AccountId,
     function: Function<'b>,
 }
 
-impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
+impl<'a, 'b> CallTransaction<'a, 'b> {
     pub(crate) fn new(
-        worker: &'a Worker<T>,
+        worker: &'a Worker<dyn Network>,
         contract_id: AccountId,
         signer: InMemorySigner,
         function: &'b str,
@@ -324,8 +324,8 @@ impl<'a, 'b, T: Network> CallTransaction<'a, 'b, T> {
 
 /// Similiar to a [`Transaction`], but more specific to creating an account.
 /// This transaction will create a new account with the specified `receiver_id`
-pub struct CreateAccountTransaction<'a, 'b, T> {
-    worker: &'a Worker<T>,
+pub struct CreateAccountTransaction<'a, 'b> {
+    worker: &'a Worker<dyn Network>,
     signer: InMemorySigner,
     parent_id: AccountId,
     new_account_id: &'b str,
@@ -334,12 +334,9 @@ pub struct CreateAccountTransaction<'a, 'b, T> {
     secret_key: Option<SecretKey>,
 }
 
-impl<'a, 'b, T> CreateAccountTransaction<'a, 'b, T>
-where
-    T: Network,
-{
+impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
     pub(crate) fn new(
-        worker: &'a Worker<T>,
+        worker: &'a Worker<dyn Network>,
         signer: InMemorySigner,
         parent_id: AccountId,
         new_account_id: &'b str,
@@ -384,7 +381,7 @@ where
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        let account = Account::new(id, signer);
+        let account = Account::new(id, signer, self.worker.clone());
 
         Ok(CallExecution {
             result: account,

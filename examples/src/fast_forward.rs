@@ -1,5 +1,3 @@
-use workspaces::prelude::*;
-
 /// Our simple contract. Has a function to called `current_env_data` to just grab
 /// the current block_timestamp and epoch_height. Will be used to showcase what
 /// our contracts can see pre-and-post fast forwarding.
@@ -16,11 +14,8 @@ async fn main() -> anyhow::Result<()> {
         .dev_deploy(&std::fs::read(SIMPLE_WASM_FILEPATH)?)
         .await?;
 
-    let (timestamp, epoch_height): (u64, u64) = contract
-        .call(&worker, "current_env_data")
-        .view()
-        .await?
-        .json()?;
+    let (timestamp, epoch_height): (u64, u64) =
+        contract.call("current_env_data").view().await?.json()?;
     println!("timestamp = {}, epoch_height = {}", timestamp, epoch_height);
 
     let block_info = worker.view_latest_block().await?;
@@ -30,11 +25,8 @@ async fn main() -> anyhow::Result<()> {
     // faster than manually waiting for the same amounts of blocks to be produced
     worker.fast_forward(10000).await?;
 
-    let (timestamp, epoch_height): (u64, u64) = contract
-        .call(&worker, "current_env_data")
-        .view()
-        .await?
-        .json()?;
+    let (timestamp, epoch_height): (u64, u64) =
+        contract.call("current_env_data").view().await?.json()?;
     println!("timestamp = {}, epoch_height = {}", timestamp, epoch_height);
 
     let block_info = worker.view_latest_block().await?;

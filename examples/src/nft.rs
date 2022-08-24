@@ -1,7 +1,5 @@
 use serde_json::json;
 
-use workspaces::prelude::*;
-
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 
 #[tokio::main]
@@ -11,7 +9,7 @@ async fn main() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(&wasm).await?;
 
     let outcome = contract
-        .call(&worker, "new_default_meta")
+        .call("new_default_meta")
         .args_json(json!({
                 "owner_id": contract.id(),
         }))
@@ -22,7 +20,7 @@ async fn main() -> anyhow::Result<()> {
 
     let deposit = 10000000000000000000000;
     let outcome = contract
-        .call(&worker, "nft_mint")
+        .call("nft_mint")
         .args_json(json!({
             "token_id": "0",
             "token_owner_id": contract.id(),

@@ -18,6 +18,7 @@ use crate::result::{CallExecution, CallExecutionDetails, Result, ViewResultDetai
 pub struct Account {
     pub(crate) id: AccountId,
     pub(crate) signer: InMemorySigner,
+    worker: Worker<dyn Network>,
 }
 
 impl fmt::Debug for Account {
@@ -28,14 +29,17 @@ impl fmt::Debug for Account {
 
 impl Account {
     /// Create a new account with the given path to the credentials JSON file
-    pub fn from_file(path: impl AsRef<std::path::Path>) -> Result<Self> {
+    pub fn from_file(
+        path: impl AsRef<std::path::Path>,
+        worker: &Worker<impl Network + 'static>,
+    ) -> Result<Self> {
         let signer = InMemorySigner::from_file(path.as_ref())?;
         let id = signer.account_id.clone();
-        Ok(Self::new(id, signer))
+        Ok(Self::new(id, signer, worker.clone().coerce()))
     }
 
-    pub(crate) fn new(id: AccountId, signer: InMemorySigner) -> Self {
-        Self { id, signer }
+    pub(crate) fn new(id: AccountId, signer: InMemorySigner, worker: Worker<dyn Network>) -> Self {
+        Self { id, signer, worker }
     }
 
     /// Grab the current account identifier
@@ -50,14 +54,13 @@ impl Account {
     /// Call a contract on the network specified within `worker`, and return
     /// a [`CallTransaction`] object that we will make use to populate the
     /// rest of the call details.
-    pub fn call<'a, 'b, T: Network>(
-        &self,
-        worker: &'a Worker<T>,
+    pub fn call<'a, 'b>(
+        &'a self,
         contract_id: &AccountId,
         function: &'b str,
-    ) -> CallTransaction<'a, 'b, T> {
+    ) -> CallTransaction<'a, 'b> {
         CallTransaction::new(
-            worker,
+            &self.worker,
             contract_id.to_owned(),
             self.signer.clone(),
             function,
@@ -66,44 +69,38 @@ impl Account {
 
     /// Transfer NEAR to an account specified by `receiver_id` with the amount
     /// specified by `amount`. Returns the execution details of this transaction
-    pub async fn transfer_near<T: Network>(
+    pub async fn transfer_near(
         &self,
-        worker: &Worker<T>,
         receiver_id: &AccountId,
         amount: Balance,
     ) -> Result<CallExecutionDetails> {
-        worker
+        self.worker
             .transfer_near(self.signer(), receiver_id, amount)
             .await
     }
 
     /// Deletes the current account, and returns the execution details of this
     /// transaction. The beneficiary will receive the funds of the account deleted
-    pub async fn delete_account<T: Network>(
-        self,
-        worker: &Worker<T>,
-        beneficiary_id: &AccountId,
-    ) -> Result<CallExecutionDetails> {
-        worker
+    pub async fn delete_account(self, beneficiary_id: &AccountId) -> Result<CallExecutionDetails> {
+        self.worker
             .delete_account(&self.id, &self.signer, beneficiary_id)
             .await
     }
 
     /// Views the current account's details such as balance and storage usage.
-    pub async fn view_account<T: Network>(&self, worker: &Worker<T>) -> Result<AccountDetails> {
-        worker.view_account(&self.id).await
+    pub async fn view_account(&self) -> Result<AccountDetails> {
+        self.worker.view_account(&self.id).await
     }
 
     /// Create a new sub account. Returns a [`CreateAccountTransaction`] object
     /// that we can make use of to fill out the rest of the details. The subaccount
     /// id will be in the form of: "{new_account_id}.{parent_account_id}"
-    pub fn create_subaccount<'a, 'b, T: Network>(
-        &self,
-        worker: &'a Worker<T>,
+    pub fn create_subaccount<'a, 'b>(
+        &'a self,
         new_account_id: &'b str,
-    ) -> CreateAccountTransaction<'a, 'b, T> {
+    ) -> CreateAccountTransaction<'a, 'b> {
         CreateAccountTransaction::new(
-            worker,
+            &self.worker,
             self.signer.clone(),
             self.id().clone(),
             new_account_id,
@@ -112,18 +109,19 @@ impl Account {
 
     /// Deploy contract code or WASM bytes to the account, and return us a new
     /// [`Contract`] object that we can use to interact with the contract.
-    pub async fn deploy<T: Network>(
-        &self,
-        worker: &Worker<T>,
-        wasm: &[u8],
-    ) -> Result<CallExecution<Contract>> {
-        let outcome = worker
+    pub async fn deploy(&self, wasm: &[u8]) -> Result<CallExecution<Contract>> {
+        let outcome = self
+            .worker
             .client()
             .deploy(&self.signer, self.id(), wasm.as_ref().into())
             .await?;
 
         Ok(CallExecution {
-            result: Contract::new(self.id().clone(), self.signer().clone()),
+            result: Contract::new(
+                self.id().clone(),
+                self.signer().clone(),
+                self.worker.clone(),
+            ),
             details: outcome.into(),
         })
     }
@@ -133,12 +131,12 @@ impl Account {
     /// [`Transaction`] object that we can use to add Actions to the batched
     /// transaction. Call `transact` to send the batched transaction to the
     /// network.
-    pub fn batch<'a, T: Network>(
-        &self,
-        worker: &'a Worker<T>,
-        contract_id: &AccountId,
-    ) -> Transaction<'a> {
-        Transaction::new(worker.client(), self.signer().clone(), contract_id.clone())
+    pub fn batch(&self, contract_id: &AccountId) -> Transaction {
+        Transaction::new(
+            self.worker.client(),
+            self.signer().clone(),
+            contract_id.clone(),
+        )
     }
 
     /// Store the credentials of this account locally in the directory provided.
@@ -179,9 +177,9 @@ impl fmt::Debug for Contract {
 }
 
 impl Contract {
-    pub(crate) fn new(id: AccountId, signer: InMemorySigner) -> Self {
+    pub(crate) fn new(id: AccountId, signer: InMemorySigner, worker: Worker<dyn Network>) -> Self {
         Self {
-            account: Account::new(id, signer),
+            account: Account::new(id, signer, worker),
         }
     }
 
@@ -212,60 +210,43 @@ impl Contract {
     /// If we want to make use of the contract's account to call into a
     /// different contract besides the current one, use
     /// `contract.as_account().call` instead.
-    pub fn call<'a, 'b, T: Network>(
-        &self,
-        worker: &'a Worker<T>,
-        function: &'b str,
-    ) -> CallTransaction<'a, 'b, T> {
-        self.account.call(worker, self.id(), function)
+    pub fn call<'a>(&self, function: &'a str) -> CallTransaction<'_, 'a> {
+        self.account.call(self.id(), function)
     }
 
     /// Call a view function into the current contract. Returns a result that
     /// yields a JSON string object.
-    pub async fn view<T: Network>(
-        &self,
-        worker: &Worker<T>,
-        function: &str,
-        args: Vec<u8>,
-    ) -> Result<ViewResultDetails> {
-        worker.view(self.id(), function, args).await
+    pub async fn view(&self, function: &str, args: Vec<u8>) -> Result<ViewResultDetails> {
+        self.account.worker.view(self.id(), function, args).await
     }
 
     /// View the WASM code bytes of this contract.
-    pub async fn view_code<T: Network>(&self, worker: &Worker<T>) -> Result<Vec<u8>> {
-        worker.view_code(self.id()).await
+    pub async fn view_code(&self) -> Result<Vec<u8>> {
+        self.account.worker.view_code(self.id()).await
     }
 
     /// View a contract's state map of key value pairs.
-    pub async fn view_state<T: Network>(
-        &self,
-        worker: &Worker<T>,
-        prefix: Option<&[u8]>,
-    ) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
-        worker.view_state(self.id(), prefix).await
+    pub async fn view_state(&self, prefix: Option<&[u8]>) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
+        self.account.worker.view_state(self.id(), prefix).await
     }
 
     /// Views the current contract's details such as balance and storage usage.
-    pub async fn view_account<T: Network>(&self, worker: &Worker<T>) -> Result<AccountDetails> {
-        worker.view_account(self.id()).await
+    pub async fn view_account(&self) -> Result<AccountDetails> {
+        self.account.worker.view_account(self.id()).await
     }
 
     /// Deletes the current contract, and returns the execution details of this
     /// transaction. The beneciary will receive the funds of the account deleted
-    pub async fn delete_contract<T: Network>(
-        self,
-        worker: &Worker<T>,
-        beneficiary_id: &AccountId,
-    ) -> Result<CallExecutionDetails> {
-        self.account.delete_account(worker, beneficiary_id).await
+    pub async fn delete_contract(self, beneficiary_id: &AccountId) -> Result<CallExecutionDetails> {
+        self.account.delete_account(beneficiary_id).await
     }
 
     /// Start a batch transaction, using the current contract as the signer and
     /// making calls into this contract. Returns a [`Transaction`] object that
     /// we can use to add Actions to the batched transaction. Call `transact`
     /// to send the batched transaction to the network.
-    pub fn batch<'a, T: Network>(&self, worker: &'a Worker<T>) -> Transaction<'a> {
-        Transaction::new(worker.client(), self.signer().clone(), self.id().clone())
+    pub fn batch(&self) -> Transaction {
+        self.account.batch(self.id())
     }
 }
 

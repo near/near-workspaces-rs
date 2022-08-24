@@ -1,18 +1,17 @@
-use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
-use crate::result::{CallExecution, CallExecutionDetails, Result, ViewResultDetails};
+use crate::result::{CallExecutionDetails, Result, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Gas, InMemorySigner, SecretKey};
+use crate::types::{AccountId, Gas, InMemorySigner};
 use crate::worker::Worker;
 use crate::{Account, Block, Contract};
 use crate::{AccountDetails, Network};
 
-use async_trait::async_trait;
 use near_primitives::types::Balance;
 use std::collections::HashMap;
 
-impl<T> Clone for Worker<T> {
+impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
         Self {
             workspace: self.workspace.clone(),
@@ -21,25 +20,6 @@ impl<T> Clone for Worker<T> {
 }
 
 impl<T> AllowDevAccountCreation for Worker<T> where T: AllowDevAccountCreation {}
-
-#[async_trait]
-impl<T> TopLevelAccountCreator for Worker<T>
-where
-    T: TopLevelAccountCreator + Send + Sync,
-{
-    async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
-        self.workspace.create_tla(id, sk).await
-    }
-
-    async fn create_tla_and_deploy(
-        &self,
-        id: AccountId,
-        sk: SecretKey,
-        wasm: &[u8],
-    ) -> Result<CallExecution<Contract>> {
-        self.workspace.create_tla_and_deploy(id, sk, wasm).await
-    }
-}
 
 impl<T> NetworkInfo for Worker<T>
 where
@@ -50,7 +30,7 @@ where
     }
 }
 
-impl<T> Worker<T>
+impl<T: ?Sized> Worker<T>
 where
     T: NetworkClient,
 {
@@ -157,18 +137,18 @@ impl Worker<Sandbox> {
     pub fn root_account(&self) -> Result<Account> {
         let account_id = self.info().root_id.clone();
         let signer = self.workspace.root_signer()?;
-        Ok(Account::new(account_id, signer))
+        Ok(Account::new(account_id, signer, self.clone().coerce()))
     }
 
     /// Import a contract from the the given network, and return us a [`ImportContractTransaction`]
     /// which allows to specify further details, such as being able to import contract data and
     /// how far back in time we wanna grab the contract.
-    pub fn import_contract<'a, 'b>(
-        &'b self,
+    pub fn import_contract<'a>(
+        &self,
         id: &AccountId,
         worker: &'a Worker<impl Network>,
-    ) -> ImportContractTransaction<'a, 'b> {
-        self.workspace.import_contract(id, worker)
+    ) -> ImportContractTransaction<'a> {
+        ImportContractTransaction::new(id.to_owned(), worker.client(), self.clone().coerce())
     }
 
     /// Patch state into the sandbox network, given a key and value. This will allow us to set

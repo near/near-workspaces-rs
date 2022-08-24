@@ -1,9 +1,9 @@
-use std::{collections::HashMap, convert::TryInto};
+use std::collections::HashMap;
+use std::convert::TryInto;
 
 use near_units::{parse_gas, parse_near};
 use workspaces::network::Sandbox;
-use workspaces::prelude::*;
-use workspaces::{Account, AccountId, Contract, Network, Worker};
+use workspaces::{Account, AccountId, Contract, Worker};
 use workspaces::{BlockHeight, DevNetwork};
 
 const FT_CONTRACT_FILEPATH: &str = "./examples/res/fungible_token.wasm";
@@ -35,7 +35,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
     // service to pull down (i.e. greater than 50mb).
 
     owner
-        .call(&worker, ref_finance.id(), "new")
+        .call(ref_finance.id(), "new")
         .args_json(serde_json::json!({
             "owner_id": ref_finance.id(),
             "exchange_fee": 4,
@@ -45,7 +45,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
         .await?;
 
     owner
-        .call(&worker, ref_finance.id(), "storage_deposit")
+        .call(ref_finance.id(), "storage_deposit")
         .args_json(serde_json::json!({}))
         .deposit(parse_near!("30 mN"))
         .transact()
@@ -65,7 +65,7 @@ async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Resu
         .await?;
 
     owner
-        .call(&worker, wnear.id(), "new")
+        .call(wnear.id(), "new")
         .args_json(serde_json::json!({
             "owner_id": owner.id(),
             "total_supply": parse_near!("1,000,000,000 N"),
@@ -74,14 +74,14 @@ async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Resu
         .await?;
 
     owner
-        .call(&worker, wnear.id(), "storage_deposit")
+        .call(wnear.id(), "storage_deposit")
         .args_json(serde_json::json!({}))
         .deposit(parse_near!("0.008 N"))
         .transact()
         .await?;
 
     owner
-        .call(&worker, wnear.id(), "near_deposit")
+        .call(wnear.id(), "near_deposit")
         .deposit(parse_near!("200 N"))
         .transact()
         .await?;
@@ -93,7 +93,6 @@ async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Resu
 /// Add's the amount in `tokens` we set for liquidity. This will return us the
 /// pool_id after the pool has been created.
 async fn create_pool_with_liquidity(
-    worker: &Worker<impl Network>,
     owner: &Account,
     ref_finance: &Contract,
     tokens: HashMap<&AccountId, u128>,
@@ -104,13 +103,13 @@ async fn create_pool_with_liquidity(
         .unzip();
 
     ref_finance
-        .call(worker, "extend_whitelisted_tokens")
+        .call("extend_whitelisted_tokens")
         .args_json(serde_json::json!({ "tokens": token_ids }))
         .transact()
         .await?;
 
     let pool_id: u64 = ref_finance
-        .call(worker, "add_simple_pool")
+        .call("add_simple_pool")
         .args_json(serde_json::json!({
             "tokens": token_ids,
             "fee": 25
@@ -121,7 +120,7 @@ async fn create_pool_with_liquidity(
         .json()?;
 
     owner
-        .call(&worker, ref_finance.id(), "register_tokens")
+        .call(ref_finance.id(), "register_tokens")
         .args_json(serde_json::json!({
             "token_ids": token_ids,
         }))
@@ -129,10 +128,10 @@ async fn create_pool_with_liquidity(
         .transact()
         .await?;
 
-    deposit_tokens(worker, owner, &ref_finance, tokens).await?;
+    deposit_tokens(owner, &ref_finance, tokens).await?;
 
     owner
-        .call(&worker, ref_finance.id(), "add_liquidity")
+        .call(ref_finance.id(), "add_liquidity")
         .args_json(serde_json::json!({
             "pool_id": pool_id,
             "amounts": token_amounts,
@@ -146,7 +145,6 @@ async fn create_pool_with_liquidity(
 
 /// Deposit tokens into Ref-Finance
 async fn deposit_tokens(
-    worker: &Worker<impl Network>,
     owner: &Account,
     ref_finance: &Contract,
     tokens: HashMap<&AccountId, u128>,
@@ -154,7 +152,7 @@ async fn deposit_tokens(
     for (contract_id, amount) in tokens {
         ref_finance
             .as_account()
-            .call(&worker, contract_id, "storage_deposit")
+            .call(contract_id, "storage_deposit")
             .args_json(serde_json::json!({
                 "registration_only": true,
             }))
@@ -163,7 +161,7 @@ async fn deposit_tokens(
             .await?;
 
         owner
-            .call(&worker, contract_id, "ft_transfer_call")
+            .call(contract_id, "ft_transfer_call")
             .args_json(serde_json::json!({
                 "receiver_id": ref_finance.id(),
                 "amount": amount.to_string(),
@@ -189,7 +187,7 @@ async fn create_custom_ft(
 
     // Initialize our FT contract with owner metadata and total supply available
     // to be traded and transfered into other contracts such as Ref-Finance
-    ft.call(&worker, "new_default_meta")
+    ft.call("new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": owner.id(),
             "total_supply": parse_near!("1,000,000,000 N").to_string(),
@@ -219,7 +217,6 @@ async fn main() -> anyhow::Result<()> {
     ///////////////////////////////////////////////////////////////////////////
 
     let pool_id = create_pool_with_liquidity(
-        &worker,
         &owner,
         &ref_finance,
         maplit::hashmap! {
@@ -235,7 +232,6 @@ async fn main() -> anyhow::Result<()> {
     );
 
     deposit_tokens(
-        &worker,
         &owner,
         &ref_finance,
         maplit::hashmap! {
@@ -309,7 +305,7 @@ async fn main() -> anyhow::Result<()> {
     assert_eq!(expected_return, "1662497915624478906119726");
 
     let actual_out = owner
-        .call(&worker, ref_finance.id(), "swap")
+        .call(ref_finance.id(), "swap")
         .args_json(serde_json::json!({
             "actions": vec![serde_json::json!({
                 "pool_id": pool_id,
@@ -354,7 +350,6 @@ async fn main() -> anyhow::Result<()> {
 
     let wnear_deposit: String = ref_finance
         .view(
-            &worker,
             "get_deposit",
             serde_json::json!({
                 "account_id": owner.id(),

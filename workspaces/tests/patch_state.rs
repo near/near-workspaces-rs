@@ -4,7 +4,6 @@
 use borsh::{self, BorshDeserialize, BorshSerialize};
 use serde_json::json;
 use test_log::test;
-use workspaces::prelude::*;
 use workspaces::{AccountId, DevNetwork, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
@@ -27,14 +26,14 @@ async fn view_status_state(
     let contract = worker.dev_deploy(&wasm).await.unwrap();
 
     contract
-        .call(&worker, "set_status")
+        .call("set_status")
         .args_json(json!({
                 "message": "hello",
         }))
         .transact()
         .await?;
 
-    let mut state_items = contract.view_state(&worker, None).await?;
+    let mut state_items = contract.view_state(None).await?;
     let state = state_items
         .remove(b"STATE".as_slice())
         .ok_or_else(|| anyhow::anyhow!("Could not retrieve STATE"))?;

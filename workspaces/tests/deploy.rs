@@ -1,7 +1,6 @@
 #![recursion_limit = "256"]
 use serde::{Deserialize, Serialize};
 use test_log::test;
-use workspaces::prelude::*;
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{
@@ -36,17 +35,14 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(&wasm).await?;
 
     let _result = contract
-        .call(&worker, "new_default_meta")
+        .call("new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": contract.id()
         }))
         .transact()
         .await?;
 
-    let actual: NftMetadata = contract
-        .view(&worker, "nft_metadata", Vec::new())
-        .await?
-        .json()?;
+    let actual: NftMetadata = contract.view("nft_metadata", Vec::new()).await?.json()?;
 
     assert_eq!(actual, expected());
 
