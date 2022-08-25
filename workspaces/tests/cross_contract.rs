@@ -64,7 +64,7 @@ async fn test_cross_contract_calls() -> anyhow::Result<()> {
     let status_id: AccountId = "status-top-level-account-long-name".parse().unwrap();
     cross_contract_create_contract(&status_id, &status_amt, &contract)
         .await?
-        .ok()?;
+        .executed()?;
 
     let message = "hello world";
     let result = contract

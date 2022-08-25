@@ -76,8 +76,8 @@ impl Error {
 
     /// Consumes the `Error`, returning its inner error (if any).
     ///
-    /// If this [`Error`] was constructed via [`Error::custom`] or [`Error::full`]
-    /// then this function will return [`Ok`], otherwise it will return [`Err`].
+    /// If this [`Error`] was constructed via a Custom or Full variant, then
+    /// this function will return [`Ok`], otherwise it will return [`Err`].
     pub fn into_inner(self) -> Result<Box<dyn std::error::Error + Send + Sync>, Self> {
         match self.repr {
             ErrorRepr::Custom { error, .. } => Ok(error),

@@ -41,7 +41,7 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
         }))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
 
     let actual: NftMetadata = contract.view("nft_metadata", Vec::new()).await?.json()?;
 

@@ -56,7 +56,7 @@ async fn deploy_status_contract(
         }))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
     ();
 
     Ok(contract)

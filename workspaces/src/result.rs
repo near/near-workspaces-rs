@@ -6,7 +6,7 @@ use near_primitives::views::{
     FinalExecutionStatus,
 };
 
-use crate::error::ErrorKind;
+use crate::error::{Error, ErrorKind};
 use crate::types::{Balance, CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
@@ -44,14 +44,14 @@ impl<T> CallExecution<T> {
 
     /// Checks whether the transaction was successful, if not returns a Result with the
     /// corresponding error that occured.
-    pub fn ok(&self) -> Result<()> {
-        self.details.ok()
+    pub fn executed(&self) -> Result<()> {
+        self.details.executed()
     }
 }
 
 impl<T> From<CallExecution<T>> for Result<T> {
     fn from(value: CallExecution<T>) -> Result<T> {
-        value.details.ok()?;
+        let _ = value.details.executed()?;
         Ok(value.result)
     }
 }
@@ -109,11 +109,34 @@ impl CallExecutionDetails {
         }
     }
 
-    /// Checks whether the transaction was successful, if not returns a Result with the
-    /// corresponding error that occured.
-    pub fn ok(&self) -> Result<()> {
+    /// Checks whether the transaction was executed successfully. This will return
+    /// a `Ok(())` if the transaction was successful, and a `Err(Error)` if it was not.
+    ///
+    /// This acts a convenience function to allow us to forward errors when we do not
+    /// care about the details of the transaction at all.
+    pub fn executed(&self) -> Result<()> {
         self.try_into_success_value()?;
         Ok(())
+    }
+
+    /// Converts the Execution details into a [`Result`]. [`Ok`] if the transaction succeed
+    /// and [`Err`] if it failed. The `Err` contains the [`Error`] along with the [`details`]
+    ///
+    /// [`details`]: crate::result::CallExecutionDetails
+    pub fn ok(self) -> Result<Self, (Self, Error)> {
+        match self.try_into_success_value() {
+            Ok(_) => Ok(self),
+            Err(err) => Err((self, err)),
+        }
+    }
+
+    /// Checks whether the transaction execution failed. This will return
+    /// `Some((CallExeuctionDetails, Error))` if it did fail, and `None` if it succeeded.
+    pub fn err(self) -> Option<(Self, Error)> {
+        match self.try_into_success_value() {
+            Err(err) => Some((self, err)),
+            Ok(_) => None,
+        }
     }
 
     /// Returns just the transaction outcome.

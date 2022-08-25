@@ -16,7 +16,7 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
         }))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
 
     Ok(contract)
 }
@@ -33,14 +33,14 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    match res.ok() {
-        Ok(()) => panic!("Expected error: Failed to deserialize input from JSON"),
-        Err(err) => match err {
-            workspaces::error::Error::ExecutionError(msg) => {
-                assert!(msg.contains("Failed to deserialize input from JSON"));
+    assert!(res.is_failure());
+    if let Some((_details, err)) = res.err() {
+        match err.kind() {
+            workspaces::error::ErrorKind::Execution => {
+                assert!(format!("{}", err).contains("Failed to deserialize input from JSON"));
             }
             other => panic!("Expected ExecutionError, got: {:?}", other),
-        },
+        }
     }
 
     Ok(())

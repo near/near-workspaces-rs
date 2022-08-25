@@ -43,7 +43,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
         }))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
 
     owner
         .call(ref_finance.id(), "storage_deposit")
@@ -51,7 +51,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
         .deposit(parse_near!("30 mN"))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
 
     Ok(ref_finance)
 }
@@ -74,7 +74,7 @@ async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Resu
         }))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
 
     owner
         .call(wnear.id(), "storage_deposit")
@@ -82,14 +82,14 @@ async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Resu
         .deposit(parse_near!("0.008 N"))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
 
     owner
         .call(wnear.id(), "near_deposit")
         .deposit(parse_near!("200 N"))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
 
     Ok(wnear)
 }
@@ -112,7 +112,7 @@ async fn create_pool_with_liquidity(
         .args_json(serde_json::json!({ "tokens": token_ids }))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
 
     let pool_id: u64 = ref_finance
         .call("add_simple_pool")
@@ -133,7 +133,7 @@ async fn create_pool_with_liquidity(
         .deposit(1)
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
     ();
 
     deposit_tokens(owner, &ref_finance, tokens).await?;
@@ -147,7 +147,7 @@ async fn create_pool_with_liquidity(
         .deposit(parse_near!("1 N"))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
     ();
 
     Ok(pool_id)
@@ -169,7 +169,7 @@ async fn deposit_tokens(
             .deposit(parse_near!("1 N"))
             .transact()
             .await?
-            .ok()?;
+            .executed()?;
         ();
 
         owner
@@ -183,7 +183,7 @@ async fn deposit_tokens(
             .deposit(1)
             .transact()
             .await?
-            .ok()?;
+            .executed()?;
         ();
     }
 
@@ -208,7 +208,7 @@ async fn create_custom_ft(
         }))
         .transact()
         .await?
-        .ok()?;
+        .executed()?;
     ();
 
     Ok(ft)
