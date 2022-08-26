@@ -67,13 +67,13 @@ where
     pub async fn dev_create_account(&self) -> Result<Account> {
         let (id, sk) = self.dev_generate().await;
         let account = self.create_tla(id.clone(), sk).await?;
-        account.into_result()
+        Ok(account.into_result()?)
     }
 
     pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
         let (id, sk) = self.dev_generate().await;
         let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
-        contract.into_result()
+        Ok(contract.into_result()?)
     }
 }
 
