@@ -11,8 +11,21 @@ use crate::error::ErrorKind;
 use crate::types::{Balance, CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
+
+/// Execution related info found after performing a transaction. Can be converted
+/// into [`ExecutionSuccess`] or [`ExecutionFailure`] through [`into_result`]
+///
+/// [`into_result`]: crate::result::ExecutionResult::into_result
 pub type ExecutionFinalResult = ExecutionResult<FinalExecutionStatus>;
+
+/// Execution related info as a result of performing a successful transaction
+/// execution on the network. This value can be converted into the returned
+/// value of the transaction via [`ExecutionSuccess::json`] or [`ExecutionSuccess::borsh`]
 pub type ExecutionSuccess = ExecutionResult<String>;
+
+/// Execution related info as a result of performing a failed transaction
+/// execution on the network. The related error message can be retrieved
+/// from this object or can be forwarded.
 pub type ExecutionFailure = ExecutionResult<TxExecutionError>;
 
 /// Struct to hold a type we want to return along w/ the execution result view.
@@ -147,7 +160,8 @@ impl ExecutionFinalResult {
         }
     }
 
-    /// Convert this
+    /// Converts this object into a [`Result`] holding either [`ExecutionSuccess`] or [`ExecutionFailure`].
+    /// Use this to easily forward 
     pub fn into_result(self) -> Result<ExecutionSuccess, ExecutionFailure> {
         match self.value {
             FinalExecutionStatus::SuccessValue(value) => Ok(ExecutionResult {
@@ -162,9 +176,6 @@ impl ExecutionFinalResult {
                 receipts: self.receipts,
                 value: tx_error,
             }),
-            // ref other => {
-            //     Err(ErrorKind::Execution.message(format!("invalid Execution variant: {:?}", other)))
-            // }
             _ => unreachable!(),
         }
     }
@@ -185,8 +196,8 @@ impl ExecutionFinalResult {
     }
 
     /// Grab the underlying raw bytes returned from calling into a contract's function.
-    /// If we want to deserialize these bytes into a rust datatype, use [`CallExecutionDetails::json`]
-    /// or [`CallExecutionDetails::borsh`] instead.
+    /// If we want to deserialize these bytes into a rust datatype, use [`ExecutionResult::json`]
+    /// or [`ExecutionResult::borsh`] instead.
     pub fn raw_bytes(self) -> Result<Vec<u8>> {
         self.into_result()?.raw_bytes()
     }
@@ -224,8 +235,8 @@ impl ExecutionSuccess {
     }
 
     /// Grab the underlying raw bytes returned from calling into a contract's function.
-    /// If we want to deserialize these bytes into a rust datatype, use [`CallExecutionDetails::json`]
-    /// or [`CallExecutionDetails::borsh`] instead.
+    /// If we want to deserialize these bytes into a rust datatype, use [`ExecutionResult::json`]
+    /// or [`ExecutionResult::borsh`] instead.
     pub fn raw_bytes(&self) -> Result<Vec<u8>> {
         base64::decode(&self.value).map_err(|e| ErrorKind::DataConversion.custom(e))
     }

@@ -14,6 +14,8 @@ use super::client::Client;
 /// a new [`Transaction`] to be committed to the sandbox network once `transact()`
 /// has been called. This does not commit any new transactions from the network
 /// this object is importing from.
+///
+/// [`Transaction`]: crate::operations::Transaction
 pub struct ImportContractTransaction<'a> {
     account_id: AccountId,
     from_network: &'a Client,
