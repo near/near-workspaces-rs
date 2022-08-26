@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::fmt;
 
-use crate::result::ExecutionResult;
+use crate::result::ExecutionFailure;
 
 use super::{Error, ErrorKind, ErrorRepr, RpcErrorCode, SandboxErrorCode};
 
@@ -20,24 +20,17 @@ impl ErrorKind {
         Error::message(self, msg)
     }
 
-    pub(crate) fn detailed<E>(self, details: ExecutionResult<String>, error: E) -> Error
-    where
-        E: Into<Box<dyn std::error::Error + Send + Sync>>,
-    {
-        Error::detailed(self, details, error)
+    pub(crate) fn detailed(self, error: ExecutionFailure) -> Error {
+        Error::detailed(self, error)
     }
 }
 
 impl Error {
-    pub(crate) fn detailed<E>(kind: ErrorKind, details: ExecutionResult<String>, error: E) -> Self
-    where
-        E: Into<Box<dyn std::error::Error + Send + Sync>>,
-    {
+    pub(crate) fn detailed(kind: ErrorKind, error: ExecutionFailure) -> Self {
         Self {
             repr: ErrorRepr::Detailed {
                 kind,
-                details: Box::new(details),
-                error: error.into(),
+                error: Box::new(error),
             },
         }
     }
@@ -88,9 +81,9 @@ impl Error {
 
     /// Get the associated execution details of this error. Usually found with
     /// an error occuring from executing a transaction.
-    pub fn details(&self) -> Option<&ExecutionResult<String>> {
+    pub fn details(&self) -> Option<&ExecutionFailure> {
         match &self.repr {
-            ErrorRepr::Detailed { details, .. } => Some(details),
+            ErrorRepr::Detailed { error, .. } => Some(error),
             _ => None,
         }
     }
