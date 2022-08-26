@@ -40,13 +40,13 @@ impl Account {
 
     /// Create an [`Account`] object from an [`AccountId`] and [`SecretKey`].
     pub fn from_secret_key(
-        id: &AccountId,
-        sk: &SecretKey,
+        id: AccountId,
+        sk: SecretKey,
         worker: &Worker<impl Network + 'static>,
     ) -> Self {
         Self {
             id: id.clone(),
-            signer: InMemorySigner::from_secret_key(id.clone(), sk.clone()),
+            signer: InMemorySigner::from_secret_key(id, sk),
             worker: worker.clone().coerce(),
         }
     }
@@ -172,8 +172,8 @@ impl Account {
 
     /// Sets the [`SecretKey`] of this account. Future transactions will be signed
     /// using this newly provided key.
-    pub fn set_secret_key(&mut self, sk: &SecretKey) {
-        self.signer.secret_key = sk.clone();
+    pub fn set_secret_key(&mut self, sk: SecretKey) {
+        self.signer.secret_key = sk;
     }
 }
 
@@ -198,8 +198,8 @@ impl fmt::Debug for Contract {
 impl Contract {
     /// Create a [`Contract`] object from an [`AccountId`] and [`SecretKey`].
     pub fn from_secret_key(
-        id: &AccountId,
-        sk: &SecretKey,
+        id: AccountId,
+        sk: SecretKey,
         worker: &Worker<impl Network + 'static>,
     ) -> Self {
         Self::account(Account::from_secret_key(id, sk, worker))
