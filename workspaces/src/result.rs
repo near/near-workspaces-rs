@@ -1,5 +1,6 @@
 //! Result and execution types from results of RPC calls to the network.
 
+use std::fmt;
 use std::ops::Deref;
 
 use near_account_id::AccountId;
@@ -120,7 +121,7 @@ impl ExecutionDetails {
 #[derive(PartialEq, Eq, Clone)]
 #[non_exhaustive]
 pub struct ExecutionResult<T> {
-    /// Total gas burnt by the call execution
+    /// Total gas burnt by the execution
     pub total_gas_burnt: Gas,
 
     /// Value returned from an execution. This is a base64 encoded str for a successful
@@ -131,8 +132,8 @@ pub struct ExecutionResult<T> {
     pub(crate) details: ExecutionDetails,
 }
 
-impl<T: std::fmt::Debug> std::fmt::Debug for ExecutionResult<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<T: fmt::Debug> fmt::Debug for ExecutionResult<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ExecutionResult")
             .field("total_gas_burnt", &self.total_gas_burnt)
             .field("transaction", &self.details.transaction)
@@ -157,11 +158,22 @@ impl<T> Deref for ExecutionResult<T> {
 #[derive(PartialEq, Eq, Clone)]
 #[must_use]
 pub struct ExecutionFinalResult {
-    /// Total gas burnt by the call execution
+    /// Total gas burnt by the execution
     pub total_gas_burnt: Gas,
 
     pub(crate) status: FinalExecutionStatus,
     pub(crate) details: ExecutionDetails,
+}
+
+impl fmt::Debug for ExecutionFinalResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ExecutionResult")
+            .field("total_gas_burnt", &self.total_gas_burnt)
+            .field("transaction", &self.details.transaction)
+            .field("receipts", &self.details.receipts)
+            .field("status", &self.status)
+            .finish()
+    }
 }
 
 impl Deref for ExecutionFinalResult {
