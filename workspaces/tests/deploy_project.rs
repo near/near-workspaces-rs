@@ -14,7 +14,7 @@ async fn test_dev_deploy_project() -> anyhow::Result<()> {
         .max_gas()
         .transact()
         .await?
-        .executed()?;
+        .into_result()?;
 
     let res = contract
         .call("get_status")
