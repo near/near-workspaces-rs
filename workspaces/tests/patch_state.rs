@@ -32,7 +32,7 @@ async fn view_status_state(
         }))
         .transact()
         .await?
-        .executed()?;
+        .into_result()?;
 
     let mut state_items = contract.view_state(None).await?;
     let state = state_items

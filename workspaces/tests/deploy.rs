@@ -34,14 +34,14 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 
-    let _result = contract
+    contract
         .call("new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": contract.id()
         }))
         .transact()
         .await?
-        .executed()?;
+        .into_result()?;
 
     let actual: NftMetadata = contract.view("nft_metadata", Vec::new()).await?.json()?;
 

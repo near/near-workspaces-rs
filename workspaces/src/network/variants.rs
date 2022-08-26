@@ -1,5 +1,5 @@
 use crate::network::Info;
-use crate::result::{CallExecution, Result};
+use crate::result::{Execution, Result};
 use crate::rpc::client::Client;
 use crate::types::{AccountId, KeyType, SecretKey};
 use crate::{Account, Contract, Worker};
@@ -22,7 +22,7 @@ pub trait TopLevelAccountCreator {
         worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
-    ) -> Result<CallExecution<Account>>;
+    ) -> Result<Execution<Account>>;
 
     async fn create_tla_and_deploy(
         &self,
@@ -30,7 +30,7 @@ pub trait TopLevelAccountCreator {
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> Result<CallExecution<Contract>>;
+    ) -> Result<Execution<Contract>>;
 }
 
 // NOTE: Not all networks/runtimes will have the ability to be able to do dev_deploy.
@@ -41,7 +41,7 @@ impl<T> Worker<T>
 where
     T: DevNetwork + TopLevelAccountCreator + 'static,
 {
-    pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<CallExecution<Account>> {
+    pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<Execution<Account>> {
         self.workspace
             .create_tla(self.clone().coerce(), id, sk)
             .await
@@ -52,7 +52,7 @@ where
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> Result<CallExecution<Contract>> {
+    ) -> Result<Execution<Contract>> {
         self.workspace
             .create_tla_and_deploy(self.clone().coerce(), id, sk, wasm)
             .await
@@ -67,13 +67,13 @@ where
     pub async fn dev_create_account(&self) -> Result<Account> {
         let (id, sk) = self.dev_generate().await;
         let account = self.create_tla(id.clone(), sk).await?;
-        account.into()
+        account.into_result()
     }
 
     pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
         let (id, sk) = self.dev_generate().await;
         let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
-        contract.into()
+        contract.into_result()
     }
 }
 

@@ -1,6 +1,6 @@
 use near_sdk::json_types::U128;
 use near_units::parse_near;
-use workspaces::result::CallExecutionDetails;
+use workspaces::result::ExecutionFinalResult;
 use workspaces::{AccountId, Contract};
 
 /// The factory contract used in these tests can be found in
@@ -13,7 +13,7 @@ async fn cross_contract_create_contract(
     status_id: &AccountId,
     status_amt: &U128,
     contract: &Contract,
-) -> anyhow::Result<CallExecutionDetails> {
+) -> anyhow::Result<ExecutionFinalResult> {
     contract
         .call("deploy_status_message")
         .args_json((status_id.clone(), status_amt))
@@ -64,7 +64,7 @@ async fn test_cross_contract_calls() -> anyhow::Result<()> {
     let status_id: AccountId = "status-top-level-account-long-name".parse().unwrap();
     cross_contract_create_contract(&status_id, &status_amt, &contract)
         .await?
-        .executed()?;
+        .into_result()?;
 
     let message = "hello world";
     let result = contract

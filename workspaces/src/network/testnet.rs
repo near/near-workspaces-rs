@@ -4,11 +4,11 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use url::Url;
 
-use near_primitives::views::{ExecutionStatusView, FinalExecutionStatus};
+use near_primitives::views::ExecutionStatusView;
 
 use crate::network::Info;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::result::{CallExecution, CallExecutionDetails, ExecutionOutcome, Result};
+use crate::result::{Execution, ExecutionFinalResult, ExecutionOutcome, ExecutionResult, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
 use crate::{Account, Contract, CryptoHash, Network, Worker};
@@ -80,20 +80,19 @@ impl TopLevelAccountCreator for Testnet {
         id: AccountId,
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
-    ) -> Result<CallExecution<Account>> {
+    ) -> Result<Execution<Account>> {
         let url = Url::parse(HELPER_URL).unwrap();
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
 
-        Ok(CallExecution {
+        Ok(Execution {
             result: Account::new(id, signer, worker),
-            details: CallExecutionDetails {
+            details: ExecutionResult {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.
                 total_gas_burnt: 0,
 
-                status: FinalExecutionStatus::SuccessValue(String::new()),
-
+                value: near_primitives::views::FinalExecutionStatus::SuccessValue(String::new()),
                 transaction: ExecutionOutcome {
                     block_hash: CryptoHash::default(),
                     logs: Vec::new(),
@@ -114,16 +113,15 @@ impl TopLevelAccountCreator for Testnet {
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> Result<CallExecution<Contract>> {
+    ) -> Result<Execution<Contract>> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
         let account = self.create_tla(worker, id.clone(), sk).await?;
-        let account = account.into_result()?;
 
         let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;
 
-        Ok(CallExecution {
-            result: Contract::account(account),
-            details: outcome.into(),
+        Ok(Execution {
+            result: Contract::account(account.into_result()?),
+            details: ExecutionFinalResult::from_view(outcome),
         })
     }
 }

@@ -25,7 +25,7 @@ async fn test_batch_tx() -> anyhow::Result<()> {
         })))
         .transact()
         .await?
-        .executed()?;
+        .into_result()?;
 
     let status_msg: String = contract
         .call("get_status")

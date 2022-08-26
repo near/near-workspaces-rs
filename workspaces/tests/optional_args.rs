@@ -16,7 +16,7 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
         }))
         .transact()
         .await?
-        .executed()?;
+        .into_result()?;
 
     Ok(contract)
 }
@@ -31,23 +31,17 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
         .max_gas()
         .deposit(1)
         .transact()
-        .await?;
+        .await?
+        .into_result();
 
-    assert!(res.is_failure());
-    if let Some(err) = res.err() {
-        match err.kind() {
-            workspaces::error::ErrorKind::Execution => {
-                assert!(format!("{}", err).contains("Failed to deserialize input from JSON"));
-                let details = err
-                    .details()
-                    .expect("execution error should provide details");
-                assert!(
-                    details.total_gas_burnt > 0,
-                    "Gas is still burnt for transaction although inputs are incorrect"
-                );
-            }
-            other => panic!("Expected ExecutionError, got: {:?}", other),
-        }
+    if let Some(exeuction_err) = res.err() {
+        assert!(format!("{}", exeuction_err).contains("Failed to deserialize input from JSON"));
+        assert!(
+            exeuction_err.total_gas_burnt > 0,
+            "Gas is still burnt for transaction although inputs are incorrect"
+        );
+    } else {
+        panic!("Expected execution to error out");
     }
 
     Ok(())

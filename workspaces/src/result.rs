@@ -1,33 +1,38 @@
 //! Result and execution types from results of RPC calls to the network.
 
 use near_account_id::AccountId;
+use near_primitives::errors::TxExecutionError;
 use near_primitives::views::{
     CallResult, ExecutionOutcomeWithIdView, ExecutionStatusView, FinalExecutionOutcomeView,
     FinalExecutionStatus,
 };
 
-use crate::error::{Error, ErrorKind};
+use crate::error::ErrorKind;
 use crate::types::{Balance, CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
+pub type ExecutionFinalResult = ExecutionResult<FinalExecutionStatus>;
+pub type ExecutionSuccess = ExecutionResult<String>;
+pub type ExecutionFailure = ExecutionResult<TxExecutionError>;
 
 /// Struct to hold a type we want to return along w/ the execution result view.
 /// This view has extra info about the execution, such as gas usage and whether
 /// the transaction failed to be processed on the chain.
 #[non_exhaustive]
 #[must_use]
-pub struct CallExecution<T> {
+pub struct Execution<T> {
     pub result: T,
-    pub details: CallExecutionDetails,
+    pub details: ExecutionFinalResult,
 }
 
-impl<T> CallExecution<T> {
+impl<T> Execution<T> {
     pub fn unwrap(self) -> T {
         self.into_result().unwrap()
     }
 
     pub fn into_result(self) -> Result<T> {
-        Into::<Result<_>>::into(self)
+        self.details.into_result()?;
+        Ok(self.result)
     }
 
     /// Checks whether the transaction was successful. Returns true if
@@ -43,95 +48,33 @@ impl<T> CallExecution<T> {
     }
 }
 
-impl<T> From<CallExecution<T>> for Result<T> {
-    fn from(value: CallExecution<T>) -> Result<T> {
-        value.details.executed()?;
-        Ok(value.result)
-    }
-}
-
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone)]
 #[non_exhaustive]
-#[must_use]
-pub struct CallExecutionDetails {
-    /// Execution status. Contains the result in case of successful execution.
-    pub(crate) status: FinalExecutionStatus,
+// #[must_use]
+pub struct ExecutionResult<T> {
     /// Total gas burnt by the call execution
     pub total_gas_burnt: Gas,
 
+    /// Value returned from an execution. This is a base64 encoded str for a successful
+    /// execution, a `TxExecutionError` if failed, or a `FinalExecutionStatus` if that
+    /// has yet to be determined.
+    pub(crate) value: T,
     pub(crate) transaction: ExecutionOutcome,
     pub(crate) receipts: Vec<ExecutionOutcome>,
 }
 
-impl CallExecutionDetails {
-    /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
-    /// execution result of this call. This conversion can fail if the structure of
-    /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
-    /// requirements.
-    pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
-        let buf = self.raw_bytes()?;
-        serde_json::from_slice(&buf).map_err(|e| ErrorKind::DataConversion.custom(e))
+impl<T: std::fmt::Debug> std::fmt::Debug for ExecutionResult<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ExecutionResult")
+            .field("total_gas_burnt", &self.total_gas_burnt)
+            .field("transaction", &self.transaction)
+            .field("receipts", &self.receipts)
+            .field("value", &self.value)
+            .finish()
     }
+}
 
-    /// Deserialize an instance of type `T` from bytes sourced from the execution
-    /// result. This conversion can fail if the structure of the internal state does
-    /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
-    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
-        let buf = self.raw_bytes()?;
-        borsh::BorshDeserialize::try_from_slice(&buf)
-            .map_err(|e| ErrorKind::DataConversion.custom(e))
-    }
-
-    /// Grab the underlying raw bytes returned from calling into a contract's function.
-    /// If we want to deserialize these bytes into a rust datatype, use [`CallExecutionDetails::json`]
-    /// or [`CallExecutionDetails::borsh`] instead.
-    pub fn raw_bytes(&self) -> Result<Vec<u8>> {
-        let result = self.try_into_success_value()?;
-        base64::decode(result).map_err(|e| ErrorKind::DataConversion.custom(e))
-    }
-
-    fn try_into_success_value(&self) -> Result<&str> {
-        match self.status {
-            FinalExecutionStatus::SuccessValue(ref val) => Ok(val),
-            FinalExecutionStatus::Failure(ref err) => {
-                Err(ErrorKind::Execution.detailed(self.clone(), err.clone()))
-            }
-            FinalExecutionStatus::NotStarted => {
-                Err(ErrorKind::Execution.message("Transaction not started."))
-            }
-            FinalExecutionStatus::Started => {
-                Err(ErrorKind::Execution.message("Transaction still being processed."))
-            }
-        }
-    }
-
-    /// Checks whether the transaction was executed successfully. This will return
-    /// a `Ok(())` if the transaction was successful, and a `Err(Error)` if it was not.
-    ///
-    /// This acts a convenience function to allow us to forward errors when we do not
-    /// care about the details of the transaction at all.
-    pub fn executed(&self) -> Result<()> {
-        self.try_into_success_value()?;
-        Ok(())
-    }
-
-    /// Checks whether the transaction was executed successfully. This will return
-    /// a `Ok(CallExecutionDetails)` if the transaction was successful, and a `Err(Error)`
-    /// if it was not.
-    pub fn into_result(self) -> Result<Self> {
-        self.try_into_success_value()?;
-        Ok(self)
-    }
-
-    /// Checks whether the transaction execution failed. This will return
-    /// `Some((CallExeuctionDetails, Error))` if it did fail, and `None` if it succeeded.
-    pub fn err(self) -> Option<Error> {
-        match self.try_into_success_value() {
-            Err(err) => Some(err),
-            Ok(_) => None,
-        }
-    }
-
+impl<T> ExecutionResult<T> {
     /// Returns just the transaction outcome.
     pub fn outcome(&self) -> &ExecutionOutcome {
         &self.transaction
@@ -170,18 +113,6 @@ impl CallExecutionDetails {
             .collect()
     }
 
-    /// Checks whether the transaction was successful. Returns true if
-    /// the transaction has a status of [`FinalExecutionStatus::SuccessValue`].
-    pub fn is_success(&self) -> bool {
-        matches!(self.status, FinalExecutionStatus::SuccessValue(_))
-    }
-
-    /// Checks whether the transaction has failed. Returns true if
-    /// the transaction has a status of [`FinalExecutionStatus::Failure`].
-    pub fn is_failure(&self) -> bool {
-        matches!(self.status, FinalExecutionStatus::Failure(_))
-    }
-
     /// Grab all logs from both the transaction and receipt outcomes.
     pub fn logs(&self) -> Vec<&str> {
         self.outcomes()
@@ -192,23 +123,111 @@ impl CallExecutionDetails {
     }
 }
 
-impl From<FinalExecutionOutcomeView> for CallExecutionDetails {
-    fn from(transaction_result: FinalExecutionOutcomeView) -> Self {
-        CallExecutionDetails {
-            status: transaction_result.status,
-            total_gas_burnt: transaction_result.transaction_outcome.outcome.gas_burnt
-                + transaction_result
-                    .receipts_outcome
-                    .iter()
-                    .map(|t| t.outcome.gas_burnt)
-                    .sum::<u64>(),
-            transaction: transaction_result.transaction_outcome.into(),
-            receipts: transaction_result
+impl ExecutionFinalResult {
+    pub(crate) fn from_view(view: FinalExecutionOutcomeView) -> Self {
+        let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt
+            + view
                 .receipts_outcome
-                .into_iter()
-                .map(ExecutionOutcome::from)
-                .collect(),
+                .iter()
+                .map(|t| t.outcome.gas_burnt)
+                .sum::<u64>();
+
+        let transaction = view.transaction_outcome.into();
+        let receipts = view
+            .receipts_outcome
+            .into_iter()
+            .map(ExecutionOutcome::from)
+            .collect();
+
+        Self {
+            total_gas_burnt,
+            transaction,
+            receipts,
+            value: view.status,
         }
+    }
+
+    /// Convert this
+    pub fn into_result(self) -> Result<ExecutionSuccess, ExecutionFailure> {
+        match self.value {
+            FinalExecutionStatus::SuccessValue(value) => Ok(ExecutionResult {
+                total_gas_burnt: self.total_gas_burnt,
+                transaction: self.transaction,
+                receipts: self.receipts,
+                value,
+            }),
+            FinalExecutionStatus::Failure(tx_error) => Err(ExecutionResult {
+                total_gas_burnt: self.total_gas_burnt,
+                transaction: self.transaction,
+                receipts: self.receipts,
+                value: tx_error,
+            }),
+            // ref other => {
+            //     Err(ErrorKind::Execution.message(format!("invalid Execution variant: {:?}", other)))
+            // }
+            _ => unreachable!(),
+        }
+    }
+
+    /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
+    /// execution result of this call. This conversion can fail if the structure of
+    /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
+    /// requirements.
+    pub fn json<T: serde::de::DeserializeOwned>(self) -> Result<T> {
+        self.into_result()?.json()
+    }
+
+    /// Deserialize an instance of type `T` from bytes sourced from the execution
+    /// result. This conversion can fail if the structure of the internal state does
+    /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
+    pub fn borsh<T: borsh::BorshDeserialize>(self) -> Result<T> {
+        self.into_result()?.borsh()
+    }
+
+    /// Grab the underlying raw bytes returned from calling into a contract's function.
+    /// If we want to deserialize these bytes into a rust datatype, use [`CallExecutionDetails::json`]
+    /// or [`CallExecutionDetails::borsh`] instead.
+    pub fn raw_bytes(self) -> Result<Vec<u8>> {
+        self.into_result()?.raw_bytes()
+    }
+
+    /// Checks whether the transaction was successful. Returns true if
+    /// the transaction has a status of [`FinalExecutionStatus::SuccessValue`].
+    pub fn is_success(&self) -> bool {
+        matches!(self.value, FinalExecutionStatus::SuccessValue(_))
+    }
+
+    /// Checks whether the transaction has failed. Returns true if
+    /// the transaction has a status of [`FinalExecutionStatus::Failure`].
+    pub fn is_failure(&self) -> bool {
+        matches!(self.value, FinalExecutionStatus::Failure(_))
+    }
+}
+
+impl ExecutionSuccess {
+    /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
+    /// execution result of this call. This conversion can fail if the structure of
+    /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
+    /// requirements.
+    pub fn json<U: serde::de::DeserializeOwned>(&self) -> Result<U> {
+        let buf = self.raw_bytes()?;
+        serde_json::from_slice(&buf).map_err(|e| ErrorKind::DataConversion.custom(e))
+    }
+
+    /// Deserialize an instance of type `T` from bytes sourced from the execution
+    /// result. This conversion can fail if the structure of the internal state does
+    /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
+    pub fn borsh<U: borsh::BorshDeserialize>(&self) -> Result<U> {
+        let buf = self.raw_bytes()?;
+        borsh::BorshDeserialize::try_from_slice(&buf)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))
+    }
+
+    /// Grab the underlying raw bytes returned from calling into a contract's function.
+    /// If we want to deserialize these bytes into a rust datatype, use [`CallExecutionDetails::json`]
+    /// or [`CallExecutionDetails::borsh`] instead.
+    pub fn raw_bytes(&self) -> Result<Vec<u8>> {
+        base64::decode(&self.value).map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 }
 
