@@ -8,9 +8,7 @@ use near_primitives::views::ExecutionStatusView;
 
 use crate::network::Info;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::result::{
-    Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, ExecutionResult, Result,
-};
+use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
 use crate::{Account, Contract, CryptoHash, Network, Worker};
