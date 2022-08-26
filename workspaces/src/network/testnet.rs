@@ -89,12 +89,12 @@ impl TopLevelAccountCreator for Testnet {
 
         Ok(Execution {
             result: Account::new(id, signer, worker),
-            details: ExecutionResult {
+            details: ExecutionFinalResult {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.
                 total_gas_burnt: 0,
 
-                value: near_primitives::views::FinalExecutionStatus::SuccessValue(String::new()),
+                status: near_primitives::views::FinalExecutionStatus::SuccessValue(String::new()),
                 details: ExecutionDetails {
                     transaction: ExecutionOutcome {
                         block_hash: CryptoHash::default(),

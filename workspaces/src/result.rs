@@ -14,12 +14,6 @@ use crate::types::{Balance, CryptoHash, Gas};
 
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
 
-/// Execution related info found after performing a transaction. Can be converted
-/// into [`ExecutionSuccess`] or [`ExecutionFailure`] through [`into_result`]
-///
-/// [`into_result`]: crate::result::ExecutionResult::into_result
-pub type ExecutionFinalResult = ExecutionResult<FinalExecutionStatus>;
-
 /// Execution related info as a result of performing a successful transaction
 /// execution on the network. This value can be converted into the returned
 /// value of the transaction via [`ExecutionSuccess::json`] or [`ExecutionSuccess::borsh`]
@@ -152,6 +146,28 @@ impl<T> Deref for ExecutionResult<T> {
     }
 }
 
+/// Execution related info found after performing a transaction. Can be converted
+/// into [`ExecutionSuccess`] or [`ExecutionFailure`] through [`into_result`]
+///
+/// [`into_result`]: crate::result::ExecutionResult::into_result
+#[derive(PartialEq, Eq, Clone)]
+#[must_use]
+pub struct ExecutionFinalResult {
+    /// Total gas burnt by the call execution
+    pub total_gas_burnt: Gas,
+
+    pub(crate) status: FinalExecutionStatus,
+    pub(crate) details: ExecutionDetails,
+}
+
+impl Deref for ExecutionFinalResult {
+    type Target = ExecutionDetails;
+
+    fn deref(&self) -> &Self::Target {
+        &self.details
+    }
+}
+
 impl ExecutionFinalResult {
     pub(crate) fn from_view(view: FinalExecutionOutcomeView) -> Self {
         let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt
@@ -170,7 +186,7 @@ impl ExecutionFinalResult {
 
         Self {
             total_gas_burnt,
-            value: view.status,
+            status: view.status,
             details: ExecutionDetails {
                 transaction,
                 receipts,
@@ -180,7 +196,7 @@ impl ExecutionFinalResult {
 
     /// Converts this object into a [`Result`] holding either [`ExecutionSuccess`] or [`ExecutionFailure`].
     pub fn into_result(self) -> Result<ExecutionSuccess, ExecutionFailure> {
-        match self.value {
+        match self.status {
             FinalExecutionStatus::SuccessValue(value) => Ok(ExecutionResult {
                 total_gas_burnt: self.total_gas_burnt,
                 value,
@@ -230,13 +246,13 @@ impl ExecutionFinalResult {
     /// Checks whether the transaction was successful. Returns true if
     /// the transaction has a status of [`FinalExecutionStatus::SuccessValue`].
     pub fn is_success(&self) -> bool {
-        matches!(self.value, FinalExecutionStatus::SuccessValue(_))
+        matches!(self.status, FinalExecutionStatus::SuccessValue(_))
     }
 
     /// Checks whether the transaction has failed. Returns true if
     /// the transaction has a status of [`FinalExecutionStatus::Failure`].
     pub fn is_failure(&self) -> bool {
-        matches!(self.value, FinalExecutionStatus::Failure(_))
+        matches!(self.status, FinalExecutionStatus::Failure(_))
     }
 }
 
