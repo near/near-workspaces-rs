@@ -196,6 +196,7 @@ impl fmt::Debug for Contract {
 }
 
 impl Contract {
+    /// Create a [`Contract`] object from an [`AccountId`] and [`SecretKey`].
     pub fn from_secret_key(
         id: &AccountId,
         sk: &SecretKey,
