@@ -137,7 +137,7 @@ pub async fn run_scheduled_tasks(
         .gas(parse_gas!("200 Tgas") as u64)
         .transact()
         .await?
-        .executed()?;
+        .into_result()?;
 
     // Do it again, just to show that this can be done multiple times since our task is a
     // recurring one that happens every hour:
