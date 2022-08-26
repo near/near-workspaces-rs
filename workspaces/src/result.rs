@@ -43,7 +43,7 @@ impl<T> Execution<T> {
         self.into_result().unwrap()
     }
 
-    pub fn into_result(self) -> Result<T> {
+    pub fn into_result(self) -> Result<T, ExecutionFailure> {
         self.details.into_result()?;
         Ok(self.result)
     }
@@ -63,7 +63,6 @@ impl<T> Execution<T> {
 
 #[derive(PartialEq, Eq, Clone)]
 #[non_exhaustive]
-// #[must_use]
 pub struct ExecutionResult<T> {
     /// Total gas burnt by the call execution
     pub total_gas_burnt: Gas,
@@ -161,7 +160,6 @@ impl ExecutionFinalResult {
     }
 
     /// Converts this object into a [`Result`] holding either [`ExecutionSuccess`] or [`ExecutionFailure`].
-    /// Use this to easily forward 
     pub fn into_result(self) -> Result<ExecutionSuccess, ExecutionFailure> {
         match self.value {
             FinalExecutionStatus::SuccessValue(value) => Ok(ExecutionResult {
@@ -178,6 +176,16 @@ impl ExecutionFinalResult {
             }),
             _ => unreachable!(),
         }
+    }
+
+    /// Returns the contained Ok value, consuming the self value.
+    ///
+    /// Because this function may panic, its use is generally discouraged. Instead, prefer
+    /// to call into [`into_result`] then pattern matching and handle the Err case explicitly.
+    ///
+    /// [`into_result`]: crate::result::ExecutionResult::into_result
+    pub fn unwrap(self) -> ExecutionSuccess {
+        self.into_result().unwrap()
     }
 
     /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
