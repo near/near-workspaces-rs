@@ -172,7 +172,7 @@ impl Account {
 
     /// Sets the [`SecretKey`] of this account. Future transactions will be signed
     /// using this newly provided key.
-    pub fn set_signer_key(&mut self, sk: &SecretKey) {
+    pub fn set_secret_key(&mut self, sk: &SecretKey) {
         self.signer.secret_key = sk.clone();
     }
 }
