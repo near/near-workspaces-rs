@@ -8,7 +8,9 @@ use near_primitives::views::ExecutionStatusView;
 
 use crate::network::Info;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::result::{Execution, ExecutionFinalResult, ExecutionOutcome, ExecutionResult, Result};
+use crate::result::{
+    Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, ExecutionResult, Result,
+};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
 use crate::{Account, Contract, CryptoHash, Network, Worker};
@@ -93,16 +95,18 @@ impl TopLevelAccountCreator for Testnet {
                 total_gas_burnt: 0,
 
                 value: near_primitives::views::FinalExecutionStatus::SuccessValue(String::new()),
-                transaction: ExecutionOutcome {
-                    block_hash: CryptoHash::default(),
-                    logs: Vec::new(),
-                    receipt_ids: Vec::new(),
-                    gas_burnt: 0,
-                    tokens_burnt: 0,
-                    executor_id: "testnet".parse().unwrap(),
-                    status: ExecutionStatusView::SuccessValue(String::new()),
+                details: ExecutionDetails {
+                    transaction: ExecutionOutcome {
+                        block_hash: CryptoHash::default(),
+                        logs: Vec::new(),
+                        receipt_ids: Vec::new(),
+                        gas_burnt: 0,
+                        tokens_burnt: 0,
+                        executor_id: "testnet".parse().unwrap(),
+                        status: ExecutionStatusView::SuccessValue(String::new()),
+                    },
+                    receipts: Vec::new(),
                 },
-                receipts: Vec::new(),
             },
         })
     }

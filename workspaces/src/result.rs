@@ -1,5 +1,7 @@
 //! Result and execution types from results of RPC calls to the network.
 
+use std::ops::Deref;
+
 use near_account_id::AccountId;
 use near_primitives::errors::TxExecutionError;
 use near_primitives::views::{
@@ -62,6 +64,12 @@ impl<T> Execution<T> {
 }
 
 #[derive(PartialEq, Eq, Clone)]
+pub struct ExecutionDetails {
+    pub(crate) transaction: ExecutionOutcome,
+    pub(crate) receipts: Vec<ExecutionOutcome>,
+}
+
+#[derive(PartialEq, Eq, Clone)]
 #[non_exhaustive]
 pub struct ExecutionResult<T> {
     /// Total gas burnt by the call execution
@@ -71,22 +79,31 @@ pub struct ExecutionResult<T> {
     /// execution, a `TxExecutionError` if failed, or a `FinalExecutionStatus` if that
     /// has yet to be determined.
     pub(crate) value: T,
-    pub(crate) transaction: ExecutionOutcome,
-    pub(crate) receipts: Vec<ExecutionOutcome>,
+    // pub(crate) transaction: ExecutionOutcome,
+    // pub(crate) receipts: Vec<ExecutionOutcome>,
+    pub(crate) details: ExecutionDetails,
 }
 
 impl<T: std::fmt::Debug> std::fmt::Debug for ExecutionResult<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ExecutionResult")
             .field("total_gas_burnt", &self.total_gas_burnt)
-            .field("transaction", &self.transaction)
-            .field("receipts", &self.receipts)
+            .field("transaction", &self.details.transaction)
+            .field("receipts", &self.details.receipts)
             .field("value", &self.value)
             .finish()
     }
 }
 
-impl<T> ExecutionResult<T> {
+impl<T> Deref for ExecutionResult<T> {
+    type Target = ExecutionDetails;
+
+    fn deref(&self) -> &Self::Target {
+        &self.details
+    }
+}
+
+impl ExecutionDetails {
     /// Returns just the transaction outcome.
     pub fn outcome(&self) -> &ExecutionOutcome {
         &self.transaction
@@ -153,9 +170,11 @@ impl ExecutionFinalResult {
 
         Self {
             total_gas_burnt,
-            transaction,
-            receipts,
             value: view.status,
+            details: ExecutionDetails {
+                transaction,
+                receipts,
+            },
         }
     }
 
@@ -164,15 +183,13 @@ impl ExecutionFinalResult {
         match self.value {
             FinalExecutionStatus::SuccessValue(value) => Ok(ExecutionResult {
                 total_gas_burnt: self.total_gas_burnt,
-                transaction: self.transaction,
-                receipts: self.receipts,
                 value,
+                details: self.details,
             }),
             FinalExecutionStatus::Failure(tx_error) => Err(ExecutionResult {
                 total_gas_burnt: self.total_gas_burnt,
-                transaction: self.transaction,
-                receipts: self.receipts,
                 value: tx_error,
+                details: self.details,
             }),
             _ => unreachable!(),
         }
