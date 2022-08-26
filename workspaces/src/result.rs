@@ -57,6 +57,9 @@ impl<T> Execution<T> {
     }
 }
 
+/// The transaction/receipt details of a transaction execution. This object
+/// can be used to retrieve data such as logs and gas burnt per transaction
+/// or receipt.
 #[derive(PartialEq, Eq, Clone)]
 pub struct ExecutionDetails {
     pub(crate) transaction: ExecutionOutcome,
@@ -112,6 +115,8 @@ impl ExecutionDetails {
     }
 }
 
+/// The result after evaluating the status of an execution. This can be [`ExecutionSuccess`]
+/// for successful executions or a [`ExecutionFailure`] for failed ones.
 #[derive(PartialEq, Eq, Clone)]
 #[non_exhaustive]
 pub struct ExecutionResult<T> {
@@ -119,8 +124,7 @@ pub struct ExecutionResult<T> {
     pub total_gas_burnt: Gas,
 
     /// Value returned from an execution. This is a base64 encoded str for a successful
-    /// execution, a `TxExecutionError` if failed, or a `FinalExecutionStatus` if that
-    /// has yet to be determined.
+    /// execution or a `TxExecutionError` if a failed one.
     pub(crate) value: T,
     // pub(crate) transaction: ExecutionOutcome,
     // pub(crate) receipts: Vec<ExecutionOutcome>,
