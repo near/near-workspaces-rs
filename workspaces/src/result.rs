@@ -29,7 +29,7 @@ pub type ExecutionFailure = ExecutionResult<TxExecutionError>;
 /// This view has extra info about the execution, such as gas usage and whether
 /// the transaction failed to be processed on the chain.
 #[non_exhaustive]
-#[must_use]
+#[must_use = "use `into_result()` to handle potential execution errors"]
 pub struct Execution<T> {
     pub result: T,
     pub details: ExecutionFinalResult,
@@ -154,9 +154,9 @@ impl<T> Deref for ExecutionResult<T> {
 /// Execution related info found after performing a transaction. Can be converted
 /// into [`ExecutionSuccess`] or [`ExecutionFailure`] through [`into_result`]
 ///
-/// [`into_result`]: crate::result::ExecutionResult::into_result
+/// [`into_result`]: crate::result::ExecutionFinalResult::into_result
 #[derive(PartialEq, Eq, Clone)]
-#[must_use]
+#[must_use = "use `into_result()` to handle potential execution errors"]
 pub struct ExecutionFinalResult {
     /// Total gas burnt by the execution
     pub total_gas_burnt: Gas,
@@ -167,7 +167,7 @@ pub struct ExecutionFinalResult {
 
 impl fmt::Debug for ExecutionFinalResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ExecutionResult")
+        f.debug_struct("ExecutionFinalResult")
             .field("total_gas_burnt", &self.total_gas_burnt)
             .field("transaction", &self.details.transaction)
             .field("receipts", &self.details.receipts)
@@ -232,7 +232,7 @@ impl ExecutionFinalResult {
     /// Because this function may panic, its use is generally discouraged. Instead, prefer
     /// to call into [`into_result`] then pattern matching and handle the Err case explicitly.
     ///
-    /// [`into_result`]: crate::result::ExecutionResult::into_result
+    /// [`into_result`]: crate::result::ExecutionFinalResult::into_result
     pub fn unwrap(self) -> ExecutionSuccess {
         self.into_result().unwrap()
     }
