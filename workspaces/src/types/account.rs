@@ -220,16 +220,16 @@ impl Contract {
         &self.account.id
     }
 
-    /// Casts the current [`Contract`] into an [`Account`] type. This does
-    /// nothing on chain/network, and is merely allowing `Account::*` functions
-    /// to be used from this `Contract`.
+    /// Treat this [`Contract`] object as an [`Account`] type. This does nothing
+    /// on chain/network, and is merely allowing `Account::*` functions to be
+    /// used from this `Contract`.
     pub fn as_account(&self) -> &Account {
         &self.account
     }
 
-    /// Casts the current [`Contract`] into an [`Account`] type. This does
-    /// nothing on chain/network, and is merely allowing `Account::*` functions
-    /// to be used from this `Contract`.
+    /// Treat this [`Contract`] object as an [`Account`] type. This does nothing
+    /// on chain/network, and is merely allowing `Account::*` functions to be
+    /// used from this `Contract`.
     pub fn as_account_mut(&mut self) -> &mut Account {
         &mut self.account
     }
