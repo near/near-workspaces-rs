@@ -69,40 +69,6 @@ pub struct ExecutionDetails {
     pub(crate) receipts: Vec<ExecutionOutcome>,
 }
 
-#[derive(PartialEq, Eq, Clone)]
-#[non_exhaustive]
-pub struct ExecutionResult<T> {
-    /// Total gas burnt by the call execution
-    pub total_gas_burnt: Gas,
-
-    /// Value returned from an execution. This is a base64 encoded str for a successful
-    /// execution, a `TxExecutionError` if failed, or a `FinalExecutionStatus` if that
-    /// has yet to be determined.
-    pub(crate) value: T,
-    // pub(crate) transaction: ExecutionOutcome,
-    // pub(crate) receipts: Vec<ExecutionOutcome>,
-    pub(crate) details: ExecutionDetails,
-}
-
-impl<T: std::fmt::Debug> std::fmt::Debug for ExecutionResult<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ExecutionResult")
-            .field("total_gas_burnt", &self.total_gas_burnt)
-            .field("transaction", &self.details.transaction)
-            .field("receipts", &self.details.receipts)
-            .field("value", &self.value)
-            .finish()
-    }
-}
-
-impl<T> Deref for ExecutionResult<T> {
-    type Target = ExecutionDetails;
-
-    fn deref(&self) -> &Self::Target {
-        &self.details
-    }
-}
-
 impl ExecutionDetails {
     /// Returns just the transaction outcome.
     pub fn outcome(&self) -> &ExecutionOutcome {
@@ -149,6 +115,40 @@ impl ExecutionDetails {
             .flat_map(|outcome| &outcome.logs)
             .map(String::as_str)
             .collect()
+    }
+}
+
+#[derive(PartialEq, Eq, Clone)]
+#[non_exhaustive]
+pub struct ExecutionResult<T> {
+    /// Total gas burnt by the call execution
+    pub total_gas_burnt: Gas,
+
+    /// Value returned from an execution. This is a base64 encoded str for a successful
+    /// execution, a `TxExecutionError` if failed, or a `FinalExecutionStatus` if that
+    /// has yet to be determined.
+    pub(crate) value: T,
+    // pub(crate) transaction: ExecutionOutcome,
+    // pub(crate) receipts: Vec<ExecutionOutcome>,
+    pub(crate) details: ExecutionDetails,
+}
+
+impl<T: std::fmt::Debug> std::fmt::Debug for ExecutionResult<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ExecutionResult")
+            .field("total_gas_burnt", &self.total_gas_burnt)
+            .field("transaction", &self.details.transaction)
+            .field("receipts", &self.details.receipts)
+            .field("value", &self.value)
+            .finish()
+    }
+}
+
+impl<T> Deref for ExecutionResult<T> {
+    type Target = ExecutionDetails;
+
+    fn deref(&self) -> &Self::Target {
+        &self.details
     }
 }
 
