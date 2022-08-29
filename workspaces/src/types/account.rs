@@ -38,6 +38,19 @@ impl Account {
         Ok(Self::new(id, signer, worker.clone().coerce()))
     }
 
+    /// Create an [`Account`] object from an [`AccountId`] and [`SecretKey`].
+    pub fn from_secret_key(
+        id: AccountId,
+        sk: SecretKey,
+        worker: &Worker<impl Network + 'static>,
+    ) -> Self {
+        Self {
+            id: id.clone(),
+            signer: InMemorySigner::from_secret_key(id, sk),
+            worker: worker.clone().coerce(),
+        }
+    }
+
     pub(crate) fn new(id: AccountId, signer: InMemorySigner, worker: Worker<dyn Network>) -> Self {
         Self { id, signer, worker }
     }
@@ -156,6 +169,12 @@ impl Account {
     pub fn secret_key(&self) -> &SecretKey {
         &self.signer.secret_key
     }
+
+    /// Sets the [`SecretKey`] of this account. Future transactions will be signed
+    /// using this newly provided key.
+    pub fn set_secret_key(&mut self, sk: SecretKey) {
+        self.signer.secret_key = sk;
+    }
 }
 
 // TODO: allow users to create Contracts so that they can call into
@@ -177,6 +196,15 @@ impl fmt::Debug for Contract {
 }
 
 impl Contract {
+    /// Create a [`Contract`] object from an [`AccountId`] and [`SecretKey`].
+    pub fn from_secret_key(
+        id: AccountId,
+        sk: SecretKey,
+        worker: &Worker<impl Network + 'static>,
+    ) -> Self {
+        Self::account(Account::from_secret_key(id, sk, worker))
+    }
+
     pub(crate) fn new(id: AccountId, signer: InMemorySigner, worker: Worker<dyn Network>) -> Self {
         Self {
             account: Account::new(id, signer, worker),
@@ -192,11 +220,18 @@ impl Contract {
         &self.account.id
     }
 
-    /// Casts the current [`Contract`] into an [`Account`] type. This does
-    /// nothing on chain/network, and is merely allowing `Account::*` functions
-    /// to be used from this `Contract`.
+    /// Treat this [`Contract`] object as an [`Account`] type. This does nothing
+    /// on chain/network, and is merely allowing `Account::*` functions to be
+    /// used from this `Contract`.
     pub fn as_account(&self) -> &Account {
         &self.account
+    }
+
+    /// Treat this [`Contract`] object as an [`Account`] type. This does nothing
+    /// on chain/network, and is merely allowing `Account::*` functions to be
+    /// used from this `Contract`.
+    pub fn as_account_mut(&mut self) -> &mut Account {
+        &mut self.account
     }
 
     pub(crate) fn signer(&self) -> &InMemorySigner {
