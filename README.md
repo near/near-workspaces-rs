@@ -132,16 +132,16 @@ async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
 
     let alice = worker.dev_create_account().await?;
     let bob = worker.dev_create_account().await?;
-    let bob_original_balance = bob.view_account(&worker).await?.balance;
+    let bob_original_balance = bob.view_account().await?.balance;
 
     alice.call(contract.id(), "function_that_transfers")
-        .args_json(json!({ "destination_account": &bob.id() }))
+        .args_json(json!({ "destination_account": bob.id() }))
         .max_gas()
         .deposit(transfer_amount)
         .transact()
         .await?;
     assert_eq!(
-        bob.view_account(&worker).await?.balance,
+        bob.view_account().await?.balance,
         bob_original_balance + transfer_amount
     );
 
