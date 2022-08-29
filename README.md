@@ -37,7 +37,9 @@ use near_units::parse_near;
 use serde_json::json;
 ```
 
-We will need to have our pre-compiled WASM contract ahead of time and know its path. In this showcase, we will be pointing to the example's NFT contract:
+We will need to have our pre-compiled WASM contract ahead of time and know its path. Refer to the respective near-sdk-{rs, js} repos/language for where these paths are located.
+
+In this showcase, we will be pointing to the example's NFT contract:
 ```rust
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 ```
@@ -59,6 +61,8 @@ Where
 * `anyhow` - A crate that deals with error handling, making it more robust for developers.
 * `worker` - Our gateway towards interacting with our sandbox environment.
 * `contract`- The deployed contract on sandbox the developer interacts with.
+
+### Initialize Contract & Test Output
 
 Then we'll go directly into making a call into the contract, and initialize the NFT contract's metadata:
 ```rust
@@ -110,6 +114,10 @@ Then later on, we can view our minted NFT's metadata via our `view` call into `n
     Ok(())
 }
 ```
+
+### Updating Contract Afterwards
+
+Note that if our contract code changes, `workspaces-rs` does nothing about it since we are utilizing `deploy`/`dev_deploy` to merely send the contract bytes to the network. So if it does change, we will have to recompile the contract as usual, and point `deploy`/`dev_deploy` again to the right WASM files. Refer to the experimental/unstable [`compile_project`](#compiling-contracts-during-test-time) function for telling workspaces to compile a *Rust* project for us.
 
 ## Common Usage
 
