@@ -67,7 +67,7 @@ Then we'll go directly into making a call into the contract, and initialize the 
         .args_json(json!({
             "owner_id": contract.id(),
         }))
-        .transact()
+        .transact()  // note: we use the contract's keys here to sign the transaction
         .await?;
 
     // outcome contains data like logs, receipts and transaction outcomes.
@@ -174,13 +174,13 @@ async fn main() -> anyhow::Result<()> {
 
 ### Helper Functions
 
-Need to make a helper function regardless of whatever Network?
+Need to make a helper functions utilizing contracts? Just import it and pass it around:
 
 ```rust
-use workspaces::{Contract, DevNetwork, Network, Worker};
+use workspaces::Contract;
 
 // Helper function that calls into a contract we give it
-async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyhow::Result<()> {
+async fn call_my_func(contract: &Contract) -> anyhow::Result<()> {
     // Call into the function `contract_function` with args:
     contract.call("contract_function")
         .args_json(serde_json::json!({
@@ -190,11 +190,18 @@ async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyh
         .await?;
     Ok(())
 }
+```
+
+Or to pass around workers regardless of networks:
+```rust
+use workspaces::{DevNetwork, Worker};
+
+const CONTRACT_BYTES: &[u8] = include_bytes!("./relative/path/to/file.wasm");
 
 // Create a helper function that deploys a specific contract
-// NOTE: `dev_deploy` is only available on `DevNetwork`s such sandbox and testnet.
+// NOTE: `dev_deploy` is only available on `DevNetwork`s such as sandbox and testnet.
 async fn deploy_my_contract(worker: Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
-    worker.dev_deploy(&std::fs::read(CONTRACT_FILE)?).await
+    worker.dev_deploy(CONTRACT_BYTES).await
 }
 ```
 
