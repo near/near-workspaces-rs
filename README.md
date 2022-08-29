@@ -119,44 +119,6 @@ Then later on, we can view our minted NFT's metadata via our `view` call into `n
 
 Note that if our contract code changes, `workspaces-rs` does nothing about it since we are utilizing `deploy`/`dev_deploy` to merely send the contract bytes to the network. So if it does change, we will have to recompile the contract as usual, and point `deploy`/`dev_deploy` again to the right WASM files. Refer to the experimental/unstable [`compile_project`](#compiling-contracts-during-test-time) function for telling workspaces to compile a *Rust* project for us.
 
-## Common Usage
-
-One advantage of using NEAR Workspaces-rs instead of a unit test is that Workspaces allows you to check balances after a transfer (unit tests don't).
-
-Here is an example:
-
-```rs
-#[test(tokio::test)]
-async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
-    let transfer_amount = near_units::near::parse("0.1").unwrap();
-    let worker = workspaces::sandbox().await?;
-    let contract = worker
-        .dev_deploy(include_bytes!("../target/res/your_project_name.wasm"))
-        .await?;
-    contract.call("new")
-        .max_gas()
-        .transact()
-        .await?;
-
-    let alice = worker.dev_create_account().await?;
-    let bob = worker.dev_create_account().await?;
-    let bob_original_balance = bob.view_account().await?.balance;
-
-    alice.call(contract.id(), "function_that_transfers")
-        .args_json(json!({ "destination_account": bob.id() }))
-        .max_gas()
-        .deposit(transfer_amount)
-        .transact()
-        .await?;
-    assert_eq!(
-        bob.view_account().await?.balance,
-        bob_original_balance + transfer_amount
-    );
-
-    Ok(())
-}
-```
-
 ## Examples
 More standalone examples can be found in `examples/src/*.rs`.
 
@@ -212,6 +174,44 @@ async fn deploy_my_contract(worker: Worker<impl DevNetwork>) -> anyhow::Result<C
     worker.dev_deploy(CONTRACT_BYTES).await
 }
 ```
+
+### View Account Details
+
+We can check the balance of our accounts like so:
+```rs
+#[test(tokio::test)]
+async fn test_contract_transfer() -> anyhow::Result<()> {
+    let transfer_amount = near_units::parse_near!("0.1");
+    let worker = workspaces::sandbox().await?;
+
+    let contract = worker
+        .dev_deploy(include_bytes!("../target/res/your_project_name.wasm"))
+        .await?;
+    contract.call("new")
+        .max_gas()
+        .transact()
+        .await?;
+
+    let alice = worker.dev_create_account().await?;
+    let bob = worker.dev_create_account().await?;
+    let bob_original_balance = bob.view_account().await?.balance;
+
+    alice.call(contract.id(), "function_that_transfers")
+        .args_json(json!({ "destination_account": bob.id() }))
+        .max_gas()
+        .deposit(transfer_amount)
+        .transact()
+        .await?;
+    assert_eq!(
+        bob.view_account().await?.balance,
+        bob_original_balance + transfer_amount
+    );
+
+    Ok(())
+}
+```
+
+For viewing other chain related details, look at the docs for [Worker](https://docs.rs/workspaces/0.4.1/workspaces/struct.Worker.html), [Account](https://docs.rs/workspaces/0.4.1/workspaces/struct.Account.html) and [Contract](https://docs.rs/workspaces/0.4.1/workspaces/struct.Contract.html)
 
 ### Spooning - Pulling Existing State and Contracts from Mainnet/Testnet
 This example will showcase spooning state from a testnet contract into our local sandbox environment.
