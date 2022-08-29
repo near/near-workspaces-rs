@@ -66,7 +66,8 @@ impl Account {
 
     /// Call a contract on the network specified within `worker`, and return
     /// a [`CallTransaction`] object that we will make use to populate the
-    /// rest of the call details.
+    /// rest of the call details. Note that the current [`Account`]'s secret
+    /// key is used as the signer of the transaction.
     pub fn call<'a, 'b>(
         &'a self,
         contract_id: &AccountId,
@@ -177,8 +178,6 @@ impl Account {
     }
 }
 
-// TODO: allow users to create Contracts so that they can call into
-// them without deploying the contract themselves.
 /// `Contract` is directly associated to a contract in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
 /// network, such as creating transactions and calling into contract functions.
@@ -239,12 +238,11 @@ impl Contract {
     }
 
     /// Call the current contract's function using the contract's own account
-    /// details to do the signing. Returns a [`CallTransaction`] object that
+    /// secret key to do the signing. Returns a [`CallTransaction`] object that
     /// we will make use to populate the rest of the call details.
     ///
-    /// If we want to make use of the contract's account to call into a
-    /// different contract besides the current one, use
-    /// `contract.as_account().call` instead.
+    /// If we want to make use of the contract's secret key as a signer to call
+    /// into another contract, use `contract.as_account().call` instead.
     pub fn call<'a>(&self, function: &'a str) -> CallTransaction<'_, 'a> {
         self.account.call(self.id(), function)
     }
@@ -276,8 +274,8 @@ impl Contract {
         self.account.delete_account(beneficiary_id).await
     }
 
-    /// Start a batch transaction, using the current contract as the signer and
-    /// making calls into this contract. Returns a [`Transaction`] object that
+    /// Start a batch transaction, using the current contract's secret key as the
+    /// signer, making calls into itself. Returns a [`Transaction`] object that
     /// we can use to add Actions to the batched transaction. Call `transact`
     /// to send the batched transaction to the network.
     pub fn batch(&self) -> Transaction {
