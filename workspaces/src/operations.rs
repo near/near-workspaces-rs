@@ -97,6 +97,11 @@ impl<'a> Function<'a> {
 /// A builder-like object that will allow specifying various actions to be performed
 /// in a single transaction. For details on each of the actions, find them in
 /// [NEAR transactions](https://docs.near.org/docs/concepts/transaction).
+///
+/// All actions are performed on the account specified by `receiver_id`. This object
+/// is most commonly constructed from [`Account::batch`] or [`Contract::batch`],
+/// where `receiver_id` is specified in the `Account::batch` while `Contract::id()`
+/// is used by default for `Contract::batch`.
 pub struct Transaction<'a> {
     client: &'a Client,
     signer: InMemorySigner,
