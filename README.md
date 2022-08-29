@@ -63,7 +63,7 @@ Where
 Then we'll go directly into making a call into the contract, and initialize the NFT contract's metadata:
 ```rust
     let outcome = contract
-        .call(&worker, "new_default_meta")
+        .call("new_default_meta")
         .args_json(json!({
             "owner_id": contract.id(),
         }))
@@ -79,7 +79,7 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
 ```rust
     let deposit = 10000000000000000000000;
     let outcome = contract
-        .call(&worker, "nft_mint")
+        .call("nft_mint")
         .args_json(json!({
             "token_id": "0",
             "token_owner_id": contract.id(),
@@ -100,7 +100,7 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
 Then later on, we can view our minted NFT's metadata via our `view` call into `nft_metadata`:
 ```rust
     let result: serde_json::Value = contract
-        .call(&worker, "nft_metadata")
+        .call("nft_metadata")
         .view()
         .await?
         .json()?;
@@ -240,7 +240,7 @@ Following that we will have to init the contract again with our own metadata. Th
         .await?;
 
     owner
-        .call(&worker, contract.id(), "init_method_name")
+        .call(contract.id(), "init_method_name")
         .args_json(serde_json::json!({
             "arg1": value1,
             "arg2": value2,
@@ -265,7 +265,7 @@ async fn test_contract() -> anyhow::Result<()> {
     worker.fast_forward(blocks_to_advance);
 
     // Now, "do_something_with_time" will be in the future and can act on future time-related state.
-    contract.call(&worker, "do_something_with_time")
+    contract.call("do_something_with_time")
         .transact()
         .await?;
 }
