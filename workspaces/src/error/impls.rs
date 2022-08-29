@@ -79,15 +79,6 @@ impl Error {
         }
     }
 
-    /// Get the associated execution details of this error. Usually found with
-    /// an error occuring from executing a transaction.
-    pub fn details(&self) -> Option<&ExecutionFailure> {
-        match &self.repr {
-            ErrorRepr::Detailed { error, .. } => Some(error),
-            _ => None,
-        }
-    }
-
     /// Returns the corresponding [`ErrorKind`] for this error.
     pub fn kind(&self) -> &ErrorKind {
         match &self.repr {
