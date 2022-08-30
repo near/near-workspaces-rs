@@ -37,7 +37,9 @@ use near_units::parse_near;
 use serde_json::json;
 ```
 
-We will need to have our pre-compiled WASM contract ahead of time and know its path. In this showcase, we will be pointing to the example's NFT contract:
+We will need to have our pre-compiled WASM contract ahead of time and know its path. Refer to the respective near-sdk-{rs, js} repos/language for where these paths are located.
+
+In this showcase, we will be pointing to the example's NFT contract:
 ```rust
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 ```
@@ -60,14 +62,16 @@ Where
 * `worker` - Our gateway towards interacting with our sandbox environment.
 * `contract`- The deployed contract on sandbox the developer interacts with.
 
+### Initialize Contract & Test Output
+
 Then we'll go directly into making a call into the contract, and initialize the NFT contract's metadata:
 ```rust
     let outcome = contract
-        .call(&worker, "new_default_meta")
+        .call("new_default_meta")
         .args_json(json!({
             "owner_id": contract.id(),
         }))
-        .transact()
+        .transact()  // note: we use the contract's keys here to sign the transaction
         .await?;
 
     // outcome contains data like logs, receipts and transaction outcomes.
@@ -79,7 +83,7 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
 ```rust
     let deposit = 10000000000000000000000;
     let outcome = contract
-        .call(&worker, "nft_mint")
+        .call("nft_mint")
         .args_json(json!({
             "token_id": "0",
             "token_owner_id": contract.id(),
@@ -100,7 +104,7 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
 Then later on, we can view our minted NFT's metadata via our `view` call into `nft_metadata`:
 ```rust
     let result: serde_json::Value = contract
-        .call(&worker, "nft_metadata")
+        .call("nft_metadata")
         .view()
         .await?
         .json()?;
@@ -111,43 +115,9 @@ Then later on, we can view our minted NFT's metadata via our `view` call into `n
 }
 ```
 
-## Common Usage
+### Updating Contract Afterwards
 
-One advantage of using NEAR Workspaces-rs instead of a unit test is that Workspaces allows you to check balances after a transfer (unit tests don't).
-
-Here is an example:
-
-```rs
-#[test(tokio::test)]
-async fn test_some_function_that_involves_a_transfer() -> anyhow::Result<()> {
-    let transfer_amount = near_units::near::parse("0.1").unwrap();
-    let worker = workspaces::sandbox().await?;
-    let contract = worker
-        .dev_deploy(include_bytes!("../target/res/your_project_name.wasm"))
-        .await?;
-    contract.call("new")
-        .max_gas()
-        .transact()
-        .await?;
-
-    let alice = worker.dev_create_account().await?;
-    let bob = worker.dev_create_account().await?;
-    let bob_original_balance = bob.view_account(&worker).await?.balance;
-
-    alice.call(contract.id(), "function_that_transfers")
-        .args_json(json!({ "destination_account": &bob.id() }))
-        .max_gas()
-        .deposit(transfer_amount)
-        .transact()
-        .await?;
-    assert_eq!(
-        bob.view_account(&worker).await?.balance,
-        bob_original_balance + transfer_amount
-    );
-
-    Ok(())
-}
-```
+Note that if our contract code changes, `workspaces-rs` does nothing about it since we are utilizing `deploy`/`dev_deploy` to merely send the contract bytes to the network. So if it does change, we will have to recompile the contract as usual, and point `deploy`/`dev_deploy` again to the right WASM files. However, there is a workspaces feature that will recompile contract changes for us: refer to the experimental/unstable [`compile_project`](#compiling-contracts-during-test-time) function for telling workspaces to compile a *Rust* project for us.
 
 ## Examples
 More standalone examples can be found in `examples/src/*.rs`.
@@ -174,13 +144,13 @@ async fn main() -> anyhow::Result<()> {
 
 ### Helper Functions
 
-Need to make a helper function regardless of whatever Network?
+Need to make a helper functions utilizing contracts? Just import it and pass it around:
 
 ```rust
-use workspaces::{Contract, DevNetwork, Network, Worker};
+use workspaces::Contract;
 
 // Helper function that calls into a contract we give it
-async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyhow::Result<()> {
+async fn call_my_func(contract: &Contract) -> anyhow::Result<()> {
     // Call into the function `contract_function` with args:
     contract.call("contract_function")
         .args_json(serde_json::json!({
@@ -190,13 +160,58 @@ async fn call_my_func(worker: Worker<impl Network>, contract: &Contract) -> anyh
         .await?;
     Ok(())
 }
+```
+
+Or to pass around workers regardless of networks:
+```rust
+use workspaces::{DevNetwork, Worker};
+
+const CONTRACT_BYTES: &[u8] = include_bytes!("./relative/path/to/file.wasm");
 
 // Create a helper function that deploys a specific contract
-// NOTE: `dev_deploy` is only available on `DevNetwork`s such sandbox and testnet.
+// NOTE: `dev_deploy` is only available on `DevNetwork`s such as sandbox and testnet.
 async fn deploy_my_contract(worker: Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
-    worker.dev_deploy(&std::fs::read(CONTRACT_FILE)?).await
+    worker.dev_deploy(CONTRACT_BYTES).await
 }
 ```
+
+### View Account Details
+
+We can check the balance of our accounts like so:
+```rs
+#[test(tokio::test)]
+async fn test_contract_transfer() -> anyhow::Result<()> {
+    let transfer_amount = near_units::parse_near!("0.1");
+    let worker = workspaces::sandbox().await?;
+
+    let contract = worker
+        .dev_deploy(include_bytes!("../target/res/your_project_name.wasm"))
+        .await?;
+    contract.call("new")
+        .max_gas()
+        .transact()
+        .await?;
+
+    let alice = worker.dev_create_account().await?;
+    let bob = worker.dev_create_account().await?;
+    let bob_original_balance = bob.view_account().await?.balance;
+
+    alice.call(contract.id(), "function_that_transfers")
+        .args_json(json!({ "destination_account": bob.id() }))
+        .max_gas()
+        .deposit(transfer_amount)
+        .transact()
+        .await?;
+    assert_eq!(
+        bob.view_account().await?.balance,
+        bob_original_balance + transfer_amount
+    );
+
+    Ok(())
+}
+```
+
+For viewing other chain related details, look at the docs for [Worker](https://docs.rs/workspaces/0.4.1/workspaces/struct.Worker.html), [Account](https://docs.rs/workspaces/0.4.1/workspaces/struct.Account.html) and [Contract](https://docs.rs/workspaces/0.4.1/workspaces/struct.Contract.html)
 
 ### Spooning - Pulling Existing State and Contracts from Mainnet/Testnet
 This example will showcase spooning state from a testnet contract into our local sandbox environment.
@@ -240,7 +255,7 @@ Following that we will have to init the contract again with our own metadata. Th
         .await?;
 
     owner
-        .call(&worker, contract.id(), "init_method_name")
+        .call(contract.id(), "init_method_name")
         .args_json(serde_json::json!({
             "arg1": value1,
             "arg2": value2,
@@ -265,7 +280,7 @@ async fn test_contract() -> anyhow::Result<()> {
     worker.fast_forward(blocks_to_advance);
 
     // Now, "do_something_with_time" will be in the future and can act on future time-related state.
-    contract.call(&worker, "do_something_with_time")
+    contract.call("do_something_with_time")
         .transact()
         .await?;
 }
