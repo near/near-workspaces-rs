@@ -117,7 +117,7 @@ Then later on, we can view our minted NFT's metadata via our `view` call into `n
 
 ### Updating Contract Afterwards
 
-Note that if our contract code changes, `workspaces-rs` does nothing about it since we are utilizing `deploy`/`dev_deploy` to merely send the contract bytes to the network. So if it does change, we will have to recompile the contract as usual, and point `deploy`/`dev_deploy` again to the right WASM files. Refer to the experimental/unstable [`compile_project`](#compiling-contracts-during-test-time) function for telling workspaces to compile a *Rust* project for us.
+Note that if our contract code changes, `workspaces-rs` does nothing about it since we are utilizing `deploy`/`dev_deploy` to merely send the contract bytes to the network. So if it does change, we will have to recompile the contract as usual, and point `deploy`/`dev_deploy` again to the right WASM files. However, there is a workspaces feature that will recompile contract changes for us: refer to the experimental/unstable [`compile_project`](#compiling-contracts-during-test-time) function for telling workspaces to compile a *Rust* project for us.
 
 ## Examples
 More standalone examples can be found in `examples/src/*.rs`.
