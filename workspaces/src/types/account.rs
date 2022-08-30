@@ -9,7 +9,7 @@ use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{CryptoHash, Network, Worker};
 
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
-use crate::result::{CallExecution, CallExecutionDetails, Result, ViewResultDetails};
+use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 
 /// `Account` is directly associated to an account in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
@@ -87,7 +87,7 @@ impl Account {
         &self,
         receiver_id: &AccountId,
         amount: Balance,
-    ) -> Result<CallExecutionDetails> {
+    ) -> Result<ExecutionFinalResult> {
         self.worker
             .transfer_near(self.signer(), receiver_id, amount)
             .await
@@ -95,7 +95,7 @@ impl Account {
 
     /// Deletes the current account, and returns the execution details of this
     /// transaction. The beneficiary will receive the funds of the account deleted
-    pub async fn delete_account(self, beneficiary_id: &AccountId) -> Result<CallExecutionDetails> {
+    pub async fn delete_account(self, beneficiary_id: &AccountId) -> Result<ExecutionFinalResult> {
         self.worker
             .delete_account(&self.id, &self.signer, beneficiary_id)
             .await
@@ -123,20 +123,20 @@ impl Account {
 
     /// Deploy contract code or WASM bytes to the account, and return us a new
     /// [`Contract`] object that we can use to interact with the contract.
-    pub async fn deploy(&self, wasm: &[u8]) -> Result<CallExecution<Contract>> {
+    pub async fn deploy(&self, wasm: &[u8]) -> Result<Execution<Contract>> {
         let outcome = self
             .worker
             .client()
             .deploy(&self.signer, self.id(), wasm.as_ref().into())
             .await?;
 
-        Ok(CallExecution {
+        Ok(Execution {
             result: Contract::new(
                 self.id().clone(),
                 self.signer().clone(),
                 self.worker.clone(),
             ),
-            details: outcome.into(),
+            details: ExecutionFinalResult::from_view(outcome),
         })
     }
 
@@ -270,7 +270,7 @@ impl Contract {
 
     /// Deletes the current contract, and returns the execution details of this
     /// transaction. The beneciary will receive the funds of the account deleted
-    pub async fn delete_contract(self, beneficiary_id: &AccountId) -> Result<CallExecutionDetails> {
+    pub async fn delete_contract(self, beneficiary_id: &AccountId) -> Result<ExecutionFinalResult> {
         self.account.delete_account(beneficiary_id).await
     }
 

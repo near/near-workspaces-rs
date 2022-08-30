@@ -54,7 +54,11 @@ async fn main() -> anyhow::Result<()> {
 
     // deploy the manager contract so we can schedule tasks via our agents.
     let manager_contract = worker.dev_deploy(MANAGER_CONTRACT).await?;
-    manager_contract.call("new").transact().await?;
+    manager_contract
+        .call("new")
+        .transact()
+        .await?
+        .into_result()?;
 
     // Create a root croncat account with agent subaccounts to schedule tasks.
     let croncat = worker.dev_create_account().await?;
@@ -132,7 +136,8 @@ pub async fn run_scheduled_tasks(
         .call(contract.id(), "proxy_call")
         .gas(parse_gas!("200 Tgas") as u64)
         .transact()
-        .await?;
+        .await?
+        .into_result()?;
 
     // Do it again, just to show that this can be done multiple times since our task is a
     // recurring one that happens every hour:
@@ -141,7 +146,8 @@ pub async fn run_scheduled_tasks(
         .call(contract.id(), "proxy_call")
         .gas(parse_gas!("200 Tgas") as u64)
         .transact()
-        .await?;
+        .await?
+        .into_result()?;
 
     // Check accumulated agent balance after completing our task. This value is held within
     // the manager contract, and we want to eventually withdraw this amount.
@@ -160,7 +166,8 @@ pub async fn run_scheduled_tasks(
     agent
         .call(contract.id(), "withdraw_task_balance")
         .transact()
-        .await?;
+        .await?
+        .into_result()?;
 
     // Check accumulated agent balance to see that the amount has been taken out of the manager
     // contract:
@@ -185,7 +192,8 @@ pub async fn run_scheduled_tasks(
         .call(contract.id(), "unregister_agent")
         .deposit(parse_near!("1y"))
         .transact()
-        .await?;
+        .await?
+        .into_result()?;
 
     // Check to see if the agent has been successfully unregistered
     let removed_agent: Option<Agent> = contract

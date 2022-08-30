@@ -15,7 +15,8 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
             "total_supply": parse_near!("1,000,000,000 N").to_string(),
         }))
         .transact()
-        .await?;
+        .await?
+        .into_result()?;
 
     Ok(contract)
 }
@@ -30,8 +31,18 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
         .max_gas()
         .deposit(1)
         .transact()
-        .await;
-    assert!(format!("{:?}", res.unwrap_err()).contains("Failed to deserialize input from JSON"));
+        .await?
+        .into_result();
+
+    if let Some(exeuction_err) = res.err() {
+        assert!(format!("{}", exeuction_err).contains("Failed to deserialize input from JSON"));
+        assert!(
+            exeuction_err.total_gas_burnt > 0,
+            "Gas is still burnt for transaction although inputs are incorrect"
+        );
+    } else {
+        panic!("Expected execution to error out");
+    }
 
     Ok(())
 }

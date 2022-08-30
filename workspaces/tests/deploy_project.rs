@@ -13,7 +13,8 @@ async fn test_dev_deploy_project() -> anyhow::Result<()> {
         .args_json(("foo",))
         .max_gas()
         .transact()
-        .await?;
+        .await?
+        .into_result()?;
 
     let res = contract
         .call("get_status")

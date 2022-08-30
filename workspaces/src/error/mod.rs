@@ -1,9 +1,12 @@
 //! All errors that can occur within workspaces, including but not limited to
 //! the following: IO, RPC, Execution, Sandbox, DataConversion errors.
 
+pub(crate) mod execution;
 mod impls;
 
 use std::borrow::Cow;
+
+use crate::result::ExecutionFailure;
 
 /// A list specifying general categories of NEAR workspace error.
 #[derive(Clone, Debug, Eq, PartialEq, thiserror::Error)]
@@ -45,6 +48,12 @@ enum ErrorRepr {
         kind: ErrorKind,
         message: Cow<'static, str>,
         error: Box<dyn std::error::Error + Send + Sync>,
+    },
+    #[error("{error}")]
+    Detailed {
+        kind: ErrorKind,
+        // NOTE: Box to mitigate large size difference between enum variants
+        error: Box<ExecutionFailure>,
     },
 }
 

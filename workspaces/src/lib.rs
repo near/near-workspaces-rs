@@ -8,7 +8,6 @@ mod cargo;
 #[cfg(feature = "unstable")]
 pub use cargo::compile_project;
 
-mod rpc;
 mod worker;
 
 pub mod error;
@@ -16,6 +15,7 @@ pub mod network;
 pub mod operations;
 pub mod prelude;
 pub mod result;
+pub mod rpc;
 pub mod types;
 
 pub use network::variants::{DevNetwork, Network};

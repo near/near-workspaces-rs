@@ -55,7 +55,8 @@ async fn deploy_status_contract(
             "message": msg,
         }))
         .transact()
-        .await?;
+        .await?
+        .into_result()?;
 
     Ok(contract)
 }

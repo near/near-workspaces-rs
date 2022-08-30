@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 use std::fmt;
 
+use crate::result::ExecutionFailure;
+
 use super::{Error, ErrorKind, ErrorRepr, RpcErrorCode, SandboxErrorCode};
 
 impl ErrorKind {
@@ -17,9 +19,22 @@ impl ErrorKind {
     {
         Error::message(self, msg)
     }
+
+    pub(crate) fn detailed(self, error: ExecutionFailure) -> Error {
+        Error::detailed(self, error)
+    }
 }
 
 impl Error {
+    pub(crate) fn detailed(kind: ErrorKind, error: ExecutionFailure) -> Self {
+        Self {
+            repr: ErrorRepr::Detailed {
+                kind,
+                error: Box::new(error),
+            },
+        }
+    }
+
     pub(crate) fn full<T, E>(kind: ErrorKind, msg: T, error: E) -> Self
     where
         T: Into<Cow<'static, str>>,
@@ -71,17 +86,19 @@ impl Error {
             ErrorRepr::Message { kind, .. } => kind,
             ErrorRepr::Custom { kind, .. } => kind,
             ErrorRepr::Full { kind, .. } => kind,
+            ErrorRepr::Detailed { kind, .. } => kind,
         }
     }
 
     /// Consumes the `Error`, returning its inner error (if any).
     ///
-    /// If this [`Error`] was constructed via [`Error::custom`] or [`Error::full`]
-    /// then this function will return [`Ok`], otherwise it will return [`Err`].
+    /// If this [`Error`] was constructed via a Custom or Full variant, then
+    /// this function will return [`Ok`], otherwise it will return [`Err`].
     pub fn into_inner(self) -> Result<Box<dyn std::error::Error + Send + Sync>, Self> {
         match self.repr {
             ErrorRepr::Custom { error, .. } => Ok(error),
             ErrorRepr::Full { error, .. } => Ok(error),
+            ErrorRepr::Detailed { error, .. } => Ok(error),
             _ => Err(self),
         }
     }

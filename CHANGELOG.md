@@ -8,6 +8,21 @@
   - `workspaces::prelude::*` import no longer necessary
     - breaking: no longer able to import `workspaces::prelude::DevAccountDeployer` directly.
 
+### Added
+- Require `#[must_use]` on the Execution value returned by `transact()`: https://github.com/near/workspaces-rs/pull/150
+  - Added `ExecutionFinalResult`, `ExecutionResult`, `ExecutionSuccess` and `ExecutionFailure` types
+  - Added `into_result()` to easily handle `#[must_use] ExecutionFinalResult`
+  - Added `unwrap()` to not care about Err variant in `ExecutionResult`s
+### Changed
+- Renamed CallExecution* types: https://github.com/near/workspaces-rs/pull/150
+  - Renamed `CallExecution`` to `Execution`
+  - Renamed `CallExecutionDetails` to `ExecutionFinalResult`
+
+## Removed
+- Removed impls from exection result: https://github.com/near/workspaces-rs/pull/150
+  - Removed `impl<T> From<CallExecution<T>> for Result<T>`
+  - Removed `impl From<FinalExecutionOutcomeView> for CallExecutionDetails`
+
 ## [0.4.1] - 2022-08-16
 
 ### Added

@@ -10,7 +10,7 @@ use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccount
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
-use crate::result::{CallExecution, Result};
+use crate::result::{Execution, ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{Account, Contract, Network, Worker};
@@ -91,7 +91,7 @@ impl TopLevelAccountCreator for Sandbox {
         worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
-    ) -> Result<CallExecution<Account>> {
+    ) -> Result<Execution<Account>> {
         let root_signer = self.root_signer()?;
         let outcome = self
             .client()
@@ -99,9 +99,9 @@ impl TopLevelAccountCreator for Sandbox {
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        Ok(CallExecution {
+        Ok(Execution {
             result: Account::new(id, signer, worker),
-            details: outcome.into(),
+            details: ExecutionFinalResult::from_view(outcome),
         })
     }
 
@@ -111,7 +111,7 @@ impl TopLevelAccountCreator for Sandbox {
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
-    ) -> Result<CallExecution<Contract>> {
+    ) -> Result<Execution<Contract>> {
         let root_signer = self.root_signer()?;
         let outcome = self
             .client()
@@ -125,9 +125,9 @@ impl TopLevelAccountCreator for Sandbox {
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        Ok(CallExecution {
+        Ok(Execution {
             result: Contract::new(id, signer, worker),
-            details: outcome.into(),
+            details: ExecutionFinalResult::from_view(outcome),
         })
     }
 }

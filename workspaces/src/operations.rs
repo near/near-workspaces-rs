@@ -1,7 +1,7 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
 use crate::error::ErrorKind;
-use crate::result::{CallExecution, CallExecutionDetails, Result, ViewResultDetails};
+use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
 };
@@ -224,10 +224,11 @@ impl<'a> Transaction<'a> {
     }
 
     /// Process the trannsaction, and return the result of the execution.
-    pub async fn transact(self) -> Result<CallExecutionDetails> {
+    pub async fn transact(self) -> Result<ExecutionFinalResult> {
         self.transact_raw()
             .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .map(ExecutionFinalResult::from_view)
+            .map_err(crate::error::Error::from)
     }
 }
 
@@ -299,7 +300,7 @@ impl<'a, 'b> CallTransaction<'a, 'b> {
     /// Finally, send the transaction to the network. This will consume the `CallTransaction`
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
-    pub async fn transact(self) -> Result<CallExecutionDetails> {
+    pub async fn transact(self) -> Result<ExecutionFinalResult> {
         self.worker
             .client()
             .call(
@@ -311,7 +312,8 @@ impl<'a, 'b> CallTransaction<'a, 'b> {
                 self.function.deposit,
             )
             .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .map(ExecutionFinalResult::from_view)
+            .map_err(crate::error::Error::from)
     }
 
     /// Instead of transacting the transaction, call into the specified view function.
@@ -371,7 +373,7 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
 
     /// Send the transaction to the network. This will consume the `CreateAccountTransaction`
     /// and give us back the details of the execution and finally the new [`Account`] object.
-    pub async fn transact(self) -> Result<CallExecution<Account>> {
+    pub async fn transact(self) -> Result<Execution<Account>> {
         let sk = self
             .secret_key
             .unwrap_or_else(|| SecretKey::from_seed(KeyType::ED25519, "subaccount.seed"));
@@ -388,9 +390,9 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
         let account = Account::new(id, signer, self.worker.clone());
 
-        Ok(CallExecution {
+        Ok(Execution {
             result: account,
-            details: outcome.into(),
+            details: ExecutionFinalResult::from_view(outcome),
         })
     }
 }

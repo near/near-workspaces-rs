@@ -1,6 +1,6 @@
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
-use crate::result::{CallExecutionDetails, Result, ViewResultDetails};
+use crate::result::{ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
 use crate::types::{AccountId, Gas, InMemorySigner};
@@ -46,8 +46,9 @@ where
         args: Vec<u8>,
         gas: Option<Gas>,
         deposit: Option<Balance>,
-    ) -> Result<CallExecutionDetails> {
-        self.client()
+    ) -> Result<ExecutionFinalResult> {
+        let outcome = self
+            .client()
             .call(
                 contract.signer(),
                 contract.id(),
@@ -56,8 +57,9 @@ where
                 gas.unwrap_or(DEFAULT_CALL_FN_GAS),
                 deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
             )
-            .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .await?;
+
+        Ok(ExecutionFinalResult::from_view(outcome))
     }
 
     /// Call into a contract's view function.
@@ -103,11 +105,12 @@ where
         signer: &InMemorySigner,
         receiver_id: &AccountId,
         amount_yocto: Balance,
-    ) -> Result<CallExecutionDetails> {
+    ) -> Result<ExecutionFinalResult> {
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .map(ExecutionFinalResult::from_view)
+            .map_err(crate::error::Error::from)
     }
 
     /// Deletes an account from the network. The beneficiary will receive the balance
@@ -117,11 +120,12 @@ where
         account_id: &AccountId,
         signer: &InMemorySigner,
         beneficiary_id: &AccountId,
-    ) -> Result<CallExecutionDetails> {
+    ) -> Result<ExecutionFinalResult> {
         self.client()
             .delete_account(signer, account_id, beneficiary_id)
             .await
-            .and_then(CallExecutionDetails::from_outcome)
+            .map(ExecutionFinalResult::from_view)
+            .map_err(crate::error::Error::from)
     }
 
     /// View account details of a specific account on the network.
