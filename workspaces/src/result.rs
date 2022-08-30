@@ -61,7 +61,7 @@ impl<T> Execution<T> {
 /// can be used to retrieve data such as logs and gas burnt per transaction
 /// or receipt.
 #[derive(PartialEq, Eq, Clone)]
-pub struct ExecutionDetails {
+pub(crate) struct ExecutionDetails {
     pub(crate) transaction: ExecutionOutcome,
     pub(crate) receipts: Vec<ExecutionOutcome>,
 }
