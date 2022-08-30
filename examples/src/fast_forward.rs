@@ -39,14 +39,5 @@ async fn main() -> anyhow::Result<()> {
     let block_info = worker.view_latest_block().await?;
     println!("BlockInfo post-fast_forward {:?}", block_info);
 
-
-    let result: serde_json::Value = worker
-        .view(contract.id(), "return_vec", Vec::new())
-        .await?
-        .json()?;
-
-    println!("--------------\n{}", result);
-
-
     Ok(())
 }
