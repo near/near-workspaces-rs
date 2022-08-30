@@ -14,6 +14,13 @@ async fn main() -> anyhow::Result<()> {
         .dev_deploy(&std::fs::read(SIMPLE_WASM_FILEPATH)?)
         .await?;
 
+    let result: serde_json::Value = worker
+        .view(contract.id(), "return_vec", Vec::new())
+        .await?
+        .json()?;
+
+    println!("--------------\n{}", result);    
+
     let (timestamp, epoch_height): (u64, u64) =
         contract.call("current_env_data").view().await?.json()?;
     println!("timestamp = {}, epoch_height = {}", timestamp, epoch_height);
@@ -31,6 +38,15 @@ async fn main() -> anyhow::Result<()> {
 
     let block_info = worker.view_latest_block().await?;
     println!("BlockInfo post-fast_forward {:?}", block_info);
+
+
+    let result: serde_json::Value = worker
+        .view(contract.id(), "return_vec", Vec::new())
+        .await?
+        .json()?;
+
+    println!("--------------\n{}", result);
+
 
     Ok(())
 }

@@ -13,4 +13,9 @@ impl Simple {
         log!("Timestamp: {}", now);
         (now, eh)
     }
+
+    pub fn return_vec() -> Vec<u64> {
+        vec![6, 7, 10]
+    }
+
 }
