@@ -1,27 +1,27 @@
 # Changelog
 
 ## [Unreleased]
-- Error handling with `workspaces::error::Error` type: https://github.com/near/workspaces-rs/pull/149
-  - breaking: `args_json` and `args_borsh` no longer return `Result`s and are deferred till later when `transact()`ed
-- breaking: No longer require `worker` to be passed in for each transaction: https://github.com/near/workspaces-rs/pull/181
-  - breaking: `Account::from_file` function signature change, requiring a `&worker` to be passed in.
-  - `workspaces::prelude::*` import no longer necessary
-    - breaking: no longer able to import `workspaces::prelude::DevAccountDeployer` directly.
-
 ### Added
+- Error handling with opaque `workspaces::error::Error` type: https://github.com/near/workspaces-rs/pull/149
 - Require `#[must_use]` on the Execution value returned by `transact()`: https://github.com/near/workspaces-rs/pull/150
   - Added `ExecutionFinalResult`, `ExecutionResult`, `ExecutionSuccess` and `ExecutionFailure` types
   - Added `into_result()` to easily handle `#[must_use] ExecutionFinalResult`
   - Added `unwrap()` to not care about Err variant in `ExecutionResult`s
+
 ### Changed
 - Renamed CallExecution* types: https://github.com/near/workspaces-rs/pull/150
   - Renamed `CallExecution`` to `Execution`
   - Renamed `CallExecutionDetails` to `ExecutionFinalResult`
+- `args_json` and `args_borsh` no longer return `Result`s and are deferred till later when `transact()`ed: https://github.com/near/workspaces-rs/pull/149
+- API changes from removing `worker` parameter from function calls: https://github.com/near/workspaces-rs/pull/181
+  - `Account::from_file` function signature change, requiring a `&worker` to be passed in.
+  - `workspaces::prelude::*` import no longer necessary, where we no longer able to import `workspaces::prelude::DevAccountDeployer` directly.
 
 ## Removed
 - Removed impls from exection result: https://github.com/near/workspaces-rs/pull/150
   - Removed `impl<T> From<CallExecution<T>> for Result<T>`
   - Removed `impl From<FinalExecutionOutcomeView> for CallExecutionDetails`
+- No longer require `worker` to be passed in for each transaction: https://github.com/near/workspaces-rs/pull/181
 
 ## [0.4.1] - 2022-08-16
 
