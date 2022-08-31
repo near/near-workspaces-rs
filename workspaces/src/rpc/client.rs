@@ -1,9 +1,8 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::time::Duration;
 
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
@@ -33,15 +32,12 @@ use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 
-lazy_static::lazy_static! {
-    static ref ACCESS_KEYS: Mutex<HashMap<AccountId, Nonce>> = Mutex::new(HashMap::new());
-}
-
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
 pub struct Client {
     rpc_addr: String,
     rpc_client: JsonRpcClient,
+    access_key_nonces: RwLock<HashMap<AccountId, Mutex<Nonce>>>,
 }
 
 impl Client {
@@ -52,6 +48,7 @@ impl Client {
         Self {
             rpc_client,
             rpc_addr: rpc_addr.into(),
+            access_key_nonces: RwLock::new(HashMap::new()),
         }
     }
 
@@ -442,29 +439,33 @@ async fn access_key(
     }
 }
 
+/// Fetches the transaction nonce and block hash associated to the access key. Internally
+/// caches the nonce as to not need to query for it every time, and ending up having to run
+/// into contention with others.
 async fn fetch_tx_nonce(
     client: &Client,
     account_id: AccountId,
     public_key: near_crypto::PublicKey,
 ) -> Result<(CryptoHash, Nonce)> {
-    let mut access_keys = ACCESS_KEYS.lock().await;
-    match access_keys.entry(account_id.clone()) {
-        Entry::Occupied(mut entry) => {
-            let nonce = entry.get_mut();
-            *nonce += 1;
+    let nonces = client.access_key_nonces.read().await;
+    if let Some(nonce) = nonces.get(&account_id) {
+        let mut nonce = nonce.lock().await;
+        *nonce += 1;
 
-            // Fetch latest block_hash since the previous one is now invalid for new transactions:
-            let block = client.view_block(Some(Finality::Final.into())).await?;
-            let block_hash = block.header.hash;
-
-            Ok((block_hash, *nonce))
-        }
-        Entry::Vacant(entry) => {
-            let (access_key, block_hash) = access_key(client, account_id, public_key).await?;
-            entry.insert(access_key.nonce + 1);
-            Ok((block_hash, access_key.nonce + 1))
-        }
+        // Fetch latest block_hash since the previous one is now invalid for new transactions:
+        let block = client.view_block(Some(Finality::Final.into())).await?;
+        let block_hash = block.header.hash;
+        return Ok((block_hash, *nonce));
     }
+    drop(nonces);
+
+    let (access_key, block_hash) = access_key(client, account_id.clone(), public_key).await?;
+    let mut nonces = client.access_key_nonces.write().await;
+    nonces
+        .entry(account_id)
+        .or_insert_with(|| Mutex::new(access_key.nonce + 1));
+
+    Ok((block_hash, access_key.nonce + 1))
 }
 
 pub(crate) async fn retry<R, E, T, F>(task: F) -> T::Output
