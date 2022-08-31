@@ -442,6 +442,15 @@ async fn access_key(
     }
 }
 
+async fn cached_nonce(nonce: &AtomicU64, client: &Client) -> Result<(CryptoHash, Nonce)> {
+    let nonce = nonce.fetch_add(1, Ordering::SeqCst);
+
+    // Fetch latest block_hash since the previous one is now invalid for new transactions:
+    let block = client.view_block(Some(Finality::Final.into())).await?;
+    let block_hash = block.header.hash;
+    Ok((block_hash, nonce + 1))
+}
+
 /// Fetches the transaction nonce and block hash associated to the access key. Internally
 /// caches the nonce as to not need to query for it every time, and ending up having to run
 /// into contention with others.
@@ -452,19 +461,16 @@ async fn fetch_tx_nonce(
 ) -> Result<(CryptoHash, Nonce)> {
     let nonces = client.access_key_nonces.read().await;
     if let Some(nonce) = nonces.get(&account_id) {
-        let nonce = nonce.fetch_add(1, Ordering::SeqCst);
-
-        // Fetch latest block_hash since the previous one is now invalid for new transactions:
-        let block = client.view_block(Some(Finality::Final.into())).await?;
-        let block_hash = block.header.hash;
-        Ok((block_hash, nonce + 1))
+        cached_nonce(nonce, client).await
     } else {
         drop(nonces);
         let mut nonces = client.access_key_nonces.write().await;
         match nonces.entry(account_id.clone()) {
-            Entry::Occupied(_) => Err(anyhow::anyhow!(
-                "nonce already written, wait for next loop to increment nonce",
-            )),
+            // case where multiple writers end up at the same lock acquisition point and tries
+            // to overwrite the cached value that a previous writer already wrote.
+            Entry::Occupied(entry) => cached_nonce(entry.get(), client).await,
+
+            // Write the cached value. This value will get invalidated when an InvalidNonce error is returned.
             Entry::Vacant(entry) => {
                 let (access_key, block_hash) = access_key(client, account_id, public_key).await?;
                 entry.insert(AtomicU64::new(access_key.nonce + 1));
@@ -506,7 +512,14 @@ where
     F: Fn() -> T,
     T: core::future::Future<Output = Result<SignedTransaction>>,
 {
-    retry(|| async { send_tx(client, task().await?).await }).await
+    retry(|| async {
+        let resp = send_tx(client, task().await?).await;
+        if resp.is_err() {
+            println!("----> {:?}", resp);
+        }
+        resp
+    })
+    .await
 }
 
 pub(crate) async fn send_batch_tx_and_retry(

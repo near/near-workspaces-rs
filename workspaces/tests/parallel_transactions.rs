@@ -1,5 +1,4 @@
 use serde_json::json;
-use workspaces::prelude::*;
 
 const STATUS_MSG_CONTRACT: &[u8] = include_bytes!("../../examples/res/status_message.wasm");
 
@@ -13,16 +12,16 @@ async fn test_parallel() -> anyhow::Result<()> {
         .iter()
         .map(|msg| {
             let id = contract.id().clone();
-            let worker = worker.clone();
             let account = account.clone();
             tokio::spawn(async move {
                 account
-                    .call(&worker, &id, "set_status")
+                    .call(&id, "set_status")
                     .args_json(json!({
                         "message": msg,
-                    }))?
+                    }))
                     .transact()
-                    .await?;
+                    .await?
+                    .into_result()?;
                 anyhow::Result::<()>::Ok(())
             })
         });
@@ -30,8 +29,8 @@ async fn test_parallel() -> anyhow::Result<()> {
 
     // Check the final set message. This should be random each time this test function is called:
     let final_set_msg = account
-        .call(&worker, contract.id(), "get_status")
-        .args_json(json!({ "account_id": account.id() }))?
+        .call(contract.id(), "get_status")
+        .args_json(json!({ "account_id": account.id() }))
         .view()
         .await?
         .json::<String>()?;
