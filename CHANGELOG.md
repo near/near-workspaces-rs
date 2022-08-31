@@ -23,6 +23,9 @@
   - Removed `impl From<FinalExecutionOutcomeView> for CallExecutionDetails`
 - No longer require `worker` to be passed in for each transaction: https://github.com/near/workspaces-rs/pull/181
 
+## Fixed
+- Gas estimation issue resolved with latest sandbox node (Aug 29, 2022): https://github.com/near/workspaces-rs/pull/188
+
 ## [0.4.1] - 2022-08-16
 
 ### Added
