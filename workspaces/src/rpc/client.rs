@@ -28,13 +28,13 @@ use near_primitives::views::{
 use crate::error::{Error, ErrorKind, RpcErrorCode};
 use crate::result::{Result, ViewResultDetails};
 use crate::rpc::tool;
-use crate::types::{AccountId, InMemorySigner, PublicKey};
+use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 
 lazy_static::lazy_static! {
-    static ref ACCESS_KEYS: Mutex<HashMap<AccountId, (CryptoHash, u64)>> = Mutex::new(HashMap::new());
+    static ref ACCESS_KEYS: Mutex<HashMap<AccountId, Nonce>> = Mutex::new(HashMap::new());
 }
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
@@ -414,7 +414,7 @@ impl Client {
     }
 }
 
-pub(crate) async fn access_key(
+async fn access_key(
     client: &Client,
     account_id: near_primitives::account::id::AccountId,
     public_key: near_crypto::PublicKey,
@@ -442,24 +442,26 @@ pub(crate) async fn access_key(
     }
 }
 
-async fn fetch_access_key(
+async fn fetch_tx_nonce(
     client: &Client,
     account_id: AccountId,
     public_key: near_crypto::PublicKey,
-) -> Result<(CryptoHash, u64)> {
+) -> Result<(CryptoHash, Nonce)> {
     let mut access_keys = ACCESS_KEYS.lock().await;
-    let block = client.view_block(Some(Finality::Final.into())).await?;
-    let block_hash = block.header.hash;
-
     match access_keys.entry(account_id.clone()) {
         Entry::Occupied(mut entry) => {
-            let (_, nonce) = entry.get_mut();
+            let nonce = entry.get_mut();
             *nonce += 1;
+
+            // Fetch latest block_hash since the previous one is now invalid for new transactions:
+            let block = client.view_block(Some(Finality::Final.into())).await?;
+            let block_hash = block.header.hash;
+
             Ok((block_hash, *nonce))
         }
         Entry::Vacant(entry) => {
             let (access_key, block_hash) = access_key(client, account_id, public_key).await?;
-            entry.insert((block_hash.clone(), access_key.nonce + 1));
+            entry.insert(access_key.nonce + 1);
             Ok((block_hash, access_key.nonce + 1))
         }
     }
@@ -509,10 +511,10 @@ pub(crate) async fn send_batch_tx_and_retry(
     let signer = signer.inner();
     send_tx_and_retry(client, || async {
         let (block_hash, nonce) =
-            fetch_access_key(client, signer.account_id.clone(), signer.public_key()).await?;
+            fetch_tx_nonce(client, signer.account_id.clone(), signer.public_key()).await?;
 
         Ok(SignedTransaction::from_actions(
-            nonce + 1,
+            nonce,
             signer.account_id.clone(),
             receiver_id.clone(),
             &signer as &dyn Signer,
