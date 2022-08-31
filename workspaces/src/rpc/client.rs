@@ -1,7 +1,9 @@
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::time::Duration;
 
+use tokio::sync::Mutex;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
@@ -17,7 +19,7 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{Balance, BlockId, Finality, Gas, StoreKey};
+use near_primitives::types::{Balance, BlockId, BlockReference, Finality, Gas, StoreKey};
 use near_primitives::views::{
     AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
     QueryRequest, StatusResponse,
@@ -30,6 +32,10 @@ use crate::types::{AccountId, InMemorySigner, PublicKey};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
+
+lazy_static::lazy_static! {
+    static ref ACCESS_KEYS: Mutex<HashMap<AccountId, (CryptoHash, u64)>> = Mutex::new(HashMap::new());
+}
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
@@ -248,11 +254,8 @@ impl Client {
         }
     }
 
-    pub(crate) async fn view_block(&self, block_id: Option<BlockId>) -> Result<BlockView> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
+    pub(crate) async fn view_block(&self, block_ref: Option<BlockReference>) -> Result<BlockView> {
+        let block_reference = block_ref.unwrap_or_else(|| Finality::None.into());
         let block_view = self
             .query(&methods::block::RpcBlockRequest { block_reference })
             .await
@@ -439,6 +442,29 @@ pub(crate) async fn access_key(
     }
 }
 
+async fn fetch_access_key(
+    client: &Client,
+    account_id: AccountId,
+    public_key: near_crypto::PublicKey,
+) -> Result<(CryptoHash, u64)> {
+    let mut access_keys = ACCESS_KEYS.lock().await;
+    let block = client.view_block(Some(Finality::Final.into())).await?;
+    let block_hash = block.header.hash;
+
+    match access_keys.entry(account_id.clone()) {
+        Entry::Occupied(mut entry) => {
+            let (_, nonce) = entry.get_mut();
+            *nonce += 1;
+            Ok((block_hash, *nonce))
+        }
+        Entry::Vacant(entry) => {
+            let (access_key, block_hash) = access_key(client, account_id, public_key).await?;
+            entry.insert((block_hash.clone(), access_key.nonce + 1));
+            Ok((block_hash, access_key.nonce + 1))
+        }
+    }
+}
+
 pub(crate) async fn retry<R, E, T, F>(task: F) -> T::Output
 where
     F: FnMut() -> T,
@@ -482,8 +508,8 @@ pub(crate) async fn send_batch_tx_and_retry(
 ) -> Result<FinalExecutionOutcomeView> {
     let signer = signer.inner();
     send_tx_and_retry(client, || async {
-        let (AccessKeyView { nonce, .. }, block_hash) =
-            access_key(client, signer.account_id.clone(), signer.public_key()).await?;
+        let (block_hash, nonce) =
+            fetch_access_key(client, signer.account_id.clone(), signer.public_key()).await?;
 
         Ok(SignedTransaction::from_actions(
             nonce + 1,
