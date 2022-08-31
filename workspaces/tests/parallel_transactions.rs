@@ -8,8 +8,10 @@ async fn test_parallel() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
     let account = worker.dev_create_account().await?;
 
-    let parallel_tasks = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
-        .iter()
+    let parallel_tasks =
+        // ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+        // .iter()
+        (0..1000)
         .map(|msg| {
             let id = contract.id().clone();
             let account = account.clone();
@@ -17,7 +19,7 @@ async fn test_parallel() -> anyhow::Result<()> {
                 account
                     .call(&id, "set_status")
                     .args_json(json!({
-                        "message": msg,
+                        "message": msg.to_string(),
                     }))
                     .transact()
                     .await?

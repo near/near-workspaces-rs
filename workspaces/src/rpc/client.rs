@@ -9,12 +9,14 @@ use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
 use near_crypto::Signer;
-use near_jsonrpc_client::errors::JsonRpcError;
+use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::health::RpcStatusError;
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
+use near_jsonrpc_client::methods::tx::RpcTransactionError;
 use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::account::{AccessKey, AccessKeyPermission};
+use near_primitives::errors::InvalidTxError;
 use near_primitives::hash::CryptoHash;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
@@ -494,32 +496,42 @@ where
 
 pub(crate) async fn send_tx(
     client: &Client,
+    receiver_id: &AccountId,
     tx: SignedTransaction,
 ) -> Result<FinalExecutionOutcomeView> {
-    client
+    let result = client
         .query_broadcast_tx(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
             signed_transaction: tx,
         })
-        .await
-        .map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))
+        .await;
+
+    // InvalidNonce, cached nonce is potentially very far behind, so invalidate it.
+    if let Err(JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
+        RpcTransactionError::InvalidTransaction {
+            context: InvalidTxError::InvalidNonce { .. },
+            ..
+        },
+    ))) = &result
+    {
+        let mut nonces = client.access_key_nonces.write().await;
+        if let Entry::Occupied(entry) = nonces.entry(receiver_id.clone()) {
+            entry.remove_entry();
+        }
+    }
+
+    result.map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))
 }
 
 pub(crate) async fn send_tx_and_retry<T, F>(
     client: &Client,
+    receiver_id: &AccountId,
     task: F,
 ) -> Result<FinalExecutionOutcomeView>
 where
     F: Fn() -> T,
     T: core::future::Future<Output = Result<SignedTransaction>>,
 {
-    retry(|| async {
-        let resp = send_tx(client, task().await?).await;
-        if resp.is_err() {
-            println!("----> {:?}", resp);
-        }
-        resp
-    })
-    .await
+    retry(|| async { send_tx(client, receiver_id, task().await?).await }).await
 }
 
 pub(crate) async fn send_batch_tx_and_retry(
@@ -529,7 +541,7 @@ pub(crate) async fn send_batch_tx_and_retry(
     actions: Vec<Action>,
 ) -> Result<FinalExecutionOutcomeView> {
     let signer = signer.inner();
-    send_tx_and_retry(client, || async {
+    send_tx_and_retry(client, receiver_id, || async {
         let (block_hash, nonce) =
             fetch_tx_nonce(client, signer.account_id.clone(), signer.public_key()).await?;
 
