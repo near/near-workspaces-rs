@@ -237,7 +237,7 @@ const BLOCK_HEIGHT: BlockHeight = 12345;
 Create a function called `pull_contract` which will pull the contract's `.wasm` file from the chain and deploy it onto our local sandbox. We'll have to re-initialize it with all the data to run tests.
 ```rust
 async fn pull_contract(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
-    let testnet = workspaces::testnet_archival();
+    let testnet = workspaces::testnet_archival().await?;
     let contract_id: AccountId = CONTRACT_ACCOUNT.parse()?;
 ```
 
@@ -274,10 +274,10 @@ Following that we will have to init the contract again with our own metadata. Th
 #[tokio::test]
 async fn test_contract() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let contract = worker.dev_deploy(WASM_BYTES);
+    let contract = worker.dev_deploy(WASM_BYTES).await?;
 
     let blocks_to_advance = 10000;
-    worker.fast_forward(blocks_to_advance);
+    worker.fast_forward(blocks_to_advance).await?;
 
     // Now, "do_something_with_time" will be in the future and can act on future time-related state.
     contract.call("do_something_with_time")
@@ -301,7 +301,7 @@ async fn test_contract() -> anyhow::Result<()> {
     let wasm = workspaces::compile_project("path/to/contract-rs-project").await?;
 
     let worker = workspaces::sandbox().await?;
-    let contract = worker.dev_deploy(&wasm);
+    let contract = worker.dev_deploy(&wasm).await?;
     ...
 }
 ```
