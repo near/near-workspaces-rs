@@ -25,6 +25,7 @@
 
 ## Fixed
 - Gas estimation issue resolved with latest sandbox node (Aug 29, 2022): https://github.com/near/workspaces-rs/pull/188
+- Fixed parallel tests, where calling into the same contract would require waiting on a previous call: https://github.com/near/workspaces-rs/pull/173
 
 ## [0.4.1] - 2022-08-16
 
