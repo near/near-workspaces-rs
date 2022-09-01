@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.5.0]
 ### Added
 - Error handling with opaque `workspaces::error::Error` type: https://github.com/near/workspaces-rs/pull/149
 - Require `#[must_use]` on the Execution value returned by `transact()`: https://github.com/near/workspaces-rs/pull/150
@@ -17,13 +19,13 @@
   - `Account::from_file` function signature change, requiring a `&worker` to be passed in.
   - `workspaces::prelude::*` import no longer necessary, where we no longer able to import `workspaces::prelude::DevAccountDeployer` directly.
 
-## Removed
+### Removed
 - Removed impls from exection result: https://github.com/near/workspaces-rs/pull/150
   - Removed `impl<T> From<CallExecution<T>> for Result<T>`
   - Removed `impl From<FinalExecutionOutcomeView> for CallExecutionDetails`
 - No longer require `worker` to be passed in for each transaction: https://github.com/near/workspaces-rs/pull/181
 
-## Fixed
+### Fixed
 - Gas estimation issue resolved with latest sandbox node (Aug 29, 2022): https://github.com/near/workspaces-rs/pull/188
 - Fixed parallel tests, where calling into the same contract would require waiting on a previous call: https://github.com/near/workspaces-rs/pull/173
 
@@ -114,7 +116,8 @@
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
 
-[Unreleased]: https://github.com/near/workspaces-rs/compare/0.4.1...HEAD
+[Unreleased]: https://github.com/near/workspaces-rs/compare/0.5.0...HEAD
+[0.5.0]: https://github.com/near/workspaces-rs/compare/0.4.1...0.5.0
 [0.4.1]: https://github.com/near/workspaces-rs/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/near/workspaces-rs/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/near/workspaces-rs/compare/0.3.0...0.3.1
