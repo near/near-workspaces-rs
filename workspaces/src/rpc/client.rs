@@ -1,23 +1,28 @@
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use tokio::sync::RwLock;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
 use near_crypto::Signer;
-use near_jsonrpc_client::errors::JsonRpcError;
+use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::health::RpcStatusError;
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
+use near_jsonrpc_client::methods::tx::RpcTransactionError;
 use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::account::{AccessKey, AccessKeyPermission};
+use near_primitives::errors::InvalidTxError;
 use near_primitives::hash::CryptoHash;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{Balance, BlockId, Finality, Gas, StoreKey};
+use near_primitives::types::{Balance, BlockId, BlockReference, Finality, Gas, StoreKey};
 use near_primitives::views::{
     AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
     QueryRequest, StatusResponse,
@@ -26,7 +31,7 @@ use near_primitives::views::{
 use crate::error::{Error, ErrorKind, RpcErrorCode};
 use crate::result::{Result, ViewResultDetails};
 use crate::rpc::tool;
-use crate::types::{AccountId, InMemorySigner, PublicKey};
+use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
@@ -36,6 +41,8 @@ pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 pub struct Client {
     rpc_addr: String,
     rpc_client: JsonRpcClient,
+    /// AccessKey nonces to reference when sending transactions.
+    access_key_nonces: RwLock<HashMap<AccountId, AtomicU64>>,
 }
 
 impl Client {
@@ -46,6 +53,7 @@ impl Client {
         Self {
             rpc_client,
             rpc_addr: rpc_addr.into(),
+            access_key_nonces: RwLock::new(HashMap::new()),
         }
     }
 
@@ -248,11 +256,8 @@ impl Client {
         }
     }
 
-    pub(crate) async fn view_block(&self, block_id: Option<BlockId>) -> Result<BlockView> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
+    pub(crate) async fn view_block(&self, block_ref: Option<BlockReference>) -> Result<BlockView> {
+        let block_reference = block_ref.unwrap_or_else(|| Finality::None.into());
         let block_view = self
             .query(&methods::block::RpcBlockRequest { block_reference })
             .await
@@ -411,7 +416,7 @@ impl Client {
     }
 }
 
-pub(crate) async fn access_key(
+async fn access_key(
     client: &Client,
     account_id: near_primitives::account::id::AccountId,
     public_key: near_crypto::PublicKey,
@@ -439,6 +444,44 @@ pub(crate) async fn access_key(
     }
 }
 
+async fn cached_nonce(nonce: &AtomicU64, client: &Client) -> Result<(CryptoHash, Nonce)> {
+    let nonce = nonce.fetch_add(1, Ordering::SeqCst);
+
+    // Fetch latest block_hash since the previous one is now invalid for new transactions:
+    let block = client.view_block(Some(Finality::Final.into())).await?;
+    let block_hash = block.header.hash;
+    Ok((block_hash, nonce + 1))
+}
+
+/// Fetches the transaction nonce and block hash associated to the access key. Internally
+/// caches the nonce as to not need to query for it every time, and ending up having to run
+/// into contention with others.
+async fn fetch_tx_nonce(
+    client: &Client,
+    account_id: AccountId,
+    public_key: near_crypto::PublicKey,
+) -> Result<(CryptoHash, Nonce)> {
+    let nonces = client.access_key_nonces.read().await;
+    if let Some(nonce) = nonces.get(&account_id) {
+        cached_nonce(nonce, client).await
+    } else {
+        drop(nonces);
+        let mut nonces = client.access_key_nonces.write().await;
+        match nonces.entry(account_id.clone()) {
+            // case where multiple writers end up at the same lock acquisition point and tries
+            // to overwrite the cached value that a previous writer already wrote.
+            Entry::Occupied(entry) => cached_nonce(entry.get(), client).await,
+
+            // Write the cached value. This value will get invalidated when an InvalidNonce error is returned.
+            Entry::Vacant(entry) => {
+                let (access_key, block_hash) = access_key(client, account_id, public_key).await?;
+                entry.insert(AtomicU64::new(access_key.nonce + 1));
+                Ok((block_hash, access_key.nonce + 1))
+            }
+        }
+    }
+}
+
 pub(crate) async fn retry<R, E, T, F>(task: F) -> T::Output
 where
     F: FnMut() -> T,
@@ -453,25 +496,42 @@ where
 
 pub(crate) async fn send_tx(
     client: &Client,
+    receiver_id: &AccountId,
     tx: SignedTransaction,
 ) -> Result<FinalExecutionOutcomeView> {
-    client
+    let result = client
         .query_broadcast_tx(&methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
             signed_transaction: tx,
         })
-        .await
-        .map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))
+        .await;
+
+    // InvalidNonce, cached nonce is potentially very far behind, so invalidate it.
+    if let Err(JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
+        RpcTransactionError::InvalidTransaction {
+            context: InvalidTxError::InvalidNonce { .. },
+            ..
+        },
+    ))) = &result
+    {
+        let mut nonces = client.access_key_nonces.write().await;
+        if let Entry::Occupied(entry) = nonces.entry(receiver_id.clone()) {
+            entry.remove_entry();
+        }
+    }
+
+    result.map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))
 }
 
 pub(crate) async fn send_tx_and_retry<T, F>(
     client: &Client,
+    receiver_id: &AccountId,
     task: F,
 ) -> Result<FinalExecutionOutcomeView>
 where
     F: Fn() -> T,
     T: core::future::Future<Output = Result<SignedTransaction>>,
 {
-    retry(|| async { send_tx(client, task().await?).await }).await
+    retry(|| async { send_tx(client, receiver_id, task().await?).await }).await
 }
 
 pub(crate) async fn send_batch_tx_and_retry(
@@ -481,12 +541,12 @@ pub(crate) async fn send_batch_tx_and_retry(
     actions: Vec<Action>,
 ) -> Result<FinalExecutionOutcomeView> {
     let signer = signer.inner();
-    send_tx_and_retry(client, || async {
-        let (AccessKeyView { nonce, .. }, block_hash) =
-            access_key(client, signer.account_id.clone(), signer.public_key()).await?;
+    send_tx_and_retry(client, receiver_id, || async {
+        let (block_hash, nonce) =
+            fetch_tx_nonce(client, signer.account_id.clone(), signer.public_key()).await?;
 
         Ok(SignedTransaction::from_actions(
-            nonce + 1,
+            nonce,
             signer.account_id.clone(),
             receiver_id.clone(),
             &signer as &dyn Signer,

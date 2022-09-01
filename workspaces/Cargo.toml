@@ -45,6 +45,7 @@ libc = "0.2"
 
 [dev-dependencies]
 borsh = "0.9"
+futures = "0.3"
 near-units = "0.2.0"
 near-sdk = "4.0.0"
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
