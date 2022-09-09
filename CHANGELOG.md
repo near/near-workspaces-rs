@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- RPC API Keys used to interact with services such as Pagoda Console.
+
 ## [0.5.0]
 ### Added
 - Error handling with opaque `workspaces::error::Error` type: https://github.com/near/workspaces-rs/pull/149

@@ -31,7 +31,7 @@ pub struct Testnet {
 
 impl Testnet {
     pub(crate) async fn new() -> Result<Self> {
-        let client = Client::new(RPC_URL);
+        let client = Client::new(RPC_URL)?;
         client.wait_for_rpc().await?;
 
         Ok(Self {
@@ -46,7 +46,7 @@ impl Testnet {
     }
 
     pub(crate) async fn archival() -> Result<Self> {
-        let client = Client::new(ARCHIVAL_URL);
+        let client = Client::new(ARCHIVAL_URL)?;
         client.wait_for_rpc().await?;
 
         Ok(Self {

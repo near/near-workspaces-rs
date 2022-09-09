@@ -48,7 +48,7 @@ impl Sandbox {
     pub(crate) async fn new() -> Result<Self> {
         let mut server = SandboxServer::default();
         server.start()?;
-        let client = Client::new(&server.rpc_addr());
+        let client = Client::new(&server.rpc_addr())?;
         client.wait_for_rpc().await?;
 
         let info = Info {

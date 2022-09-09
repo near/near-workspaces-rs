@@ -312,3 +312,4 @@ For a full example, take a look at [workspaces/tests/deploy_project.rs](https://
 These environment variables will be useful if there was ever a snag hit:
 - `NEAR_RPC_TIMEOUT_SECS`: The default is 10 seconds, but this is the amount of time beforing timing out waiting for a RPC service when talking to the sandbox or any other network such as testnet.
 - `NEAR_SANDBOX_BIN_PATH`: Set this to our own prebuilt `neard-sandbox` bin path if we want to use a non-default version of the sandbox or configure nearcore with our own custom features that we want to test in workspaces.
+- `NEAR_RPC_API_KEY`: This is the API key necessary for communicating with RPC nodes. This is useful when interacting with services such as Pagoda Console or a service that can access RPC metrics.
