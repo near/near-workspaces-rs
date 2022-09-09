@@ -61,15 +61,20 @@ pub struct Client {
 }
 
 impl Client {
-    pub(crate) fn new(rpc_addr: &str) -> Self {
+    pub(crate) fn new(rpc_addr: &str) -> Result<Self> {
         let connector = JsonRpcClient::new_client();
-        let rpc_client = connector.connect(rpc_addr);
+        let mut rpc_client = connector.connect(rpc_addr);
+        if let Ok(api_key) = std::env::var("NEAR_RPC_API_KEY") {
+            let api_key = near_jsonrpc_client::auth::ApiKey::new(api_key)
+                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+            rpc_client = rpc_client.header(api_key);
+        }
 
-        Self {
+        Ok(Self {
             rpc_client,
             rpc_addr: rpc_addr.into(),
             access_key_nonces: RwLock::new(HashMap::new()),
-        }
+        })
     }
 
     pub(crate) async fn query_broadcast_tx(

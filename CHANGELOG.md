@@ -4,6 +4,7 @@
 
 ### Added
 
+- RPC API Keys used to interact with services such as Pagoda Console.
 - [Import a couple functions over from near_crypto for PublicKey](https://github.com/near/workspaces-rs/pull/265)
   - Impl `Ord`, `PartialOrd`, `Hash`, `BorshSerialize`, `BorshDeserialize`, `Display`, and `FromStr` for `PublicKey`
     - NOTE: Borsh bytes format is the same as near-sdk, where it is in the form of [bytes_len, key_type, key_data..]

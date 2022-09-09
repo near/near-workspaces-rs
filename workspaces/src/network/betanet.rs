@@ -29,7 +29,7 @@ pub struct Betanet {
 impl FromNetworkBuilder for Betanet {
     async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> crate::result::Result<Self> {
         let rpc_url = build.rpc_addr.unwrap_or_else(|| RPC_URL.into());
-        let client = Client::new(&rpc_url);
+        let client = Client::new(&rpc_url)?;
         client.wait_for_rpc().await?;
 
         Ok(Self {

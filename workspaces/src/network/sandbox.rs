@@ -85,7 +85,7 @@ impl FromNetworkBuilder for Sandbox {
             }
         };
 
-        let client = Client::new(&server.rpc_addr());
+        let client = Client::new(&server.rpc_addr())?;
         client.wait_for_rpc().await?;
 
         // Server locks some ports on startup due to potential port collision, so we need
