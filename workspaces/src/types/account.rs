@@ -30,7 +30,7 @@ impl fmt::Debug for Account {
 impl Account {
     /// Create a new account with the given path to the credentials JSON file
     pub fn from_file(
-        path: impl AsRef<std::path::Path>,
+        path: impl AsRef<Path>,
         worker: &Worker<impl Network + 'static>,
     ) -> Result<Self> {
         let signer = InMemorySigner::from_file(path.as_ref())?;
@@ -280,6 +280,12 @@ impl Contract {
     /// to send the batched transaction to the network.
     pub fn batch(&self) -> Transaction {
         self.account.batch(self.id())
+    }
+}
+
+impl From<Account> for Contract {
+    fn from(account: Account) -> Self {
+        Self { account }
     }
 }
 
