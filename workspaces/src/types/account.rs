@@ -81,6 +81,17 @@ impl Account {
         )
     }
 
+    /// View call to a specified contract function. Returns a result which can
+    /// be deserialized into borsh or JSON.
+    pub async fn view(
+        &self,
+        contract_id: &AccountId,
+        function: &str,
+        args: Vec<u8>,
+    ) -> Result<ViewResultDetails> {
+        self.worker.view(contract_id, function, args).await
+    }
+
     /// Transfer NEAR to an account specified by `receiver_id` with the amount
     /// specified by `amount`. Returns the execution details of this transaction
     pub async fn transfer_near(
@@ -247,8 +258,8 @@ impl Contract {
         self.account.call(self.id(), function)
     }
 
-    /// Call a view function into the current contract. Returns a result that
-    /// yields a JSON string object.
+    /// Call a view function into the current contract. Returns a result which can
+    /// be deserialized into borsh or JSON.
     pub async fn view(&self, function: &str, args: Vec<u8>) -> Result<ViewResultDetails> {
         self.account.worker.view(self.id(), function, args).await
     }
