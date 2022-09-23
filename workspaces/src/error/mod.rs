@@ -4,6 +4,7 @@
 pub(crate) mod execution;
 mod impls;
 
+pub use near_primitives::errors::TxExecutionError;
 use std::borrow::Cow;
 
 use crate::result::ExecutionFailure;

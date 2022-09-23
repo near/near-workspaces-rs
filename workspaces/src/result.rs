@@ -315,6 +315,13 @@ impl ExecutionSuccess {
     }
 }
 
+impl ExecutionFailure {
+    /// Returns the execution error as a [`near_primitives::errors::TxExecutionError`].
+    pub fn error(&self) -> &TxExecutionError {
+        &self.value
+    }
+}
+
 impl<T> ExecutionResult<T> {
     /// Returns just the transaction outcome.
     pub fn outcome(&self) -> &ExecutionOutcome {
