@@ -98,10 +98,12 @@ pub async fn compile_project(project_path: &str) -> Result<Vec<u8>> {
             _ => None,
         })
         .last()
-        .ok_or_else(|| ErrorKind::Io.message(
-            "Cargo failed to produce any compilation artifacts. \
+        .ok_or_else(|| {
+            ErrorKind::Io.message(
+                "Cargo failed to produce any compilation artifacts. \
                  Please check that your project contains a NEAR smart contract.",
-        ))?;
+            )
+        })?;
     // The project could have generated many auxiliary files, we are only interested in .wasm files
     let wasm_files = compile_artifact
         .filenames
