@@ -198,7 +198,7 @@ impl ExecutionFinalResult {
         match self.status {
             FinalExecutionStatus::SuccessValue(value) => Ok(ExecutionResult {
                 total_gas_burnt: self.total_gas_burnt,
-                value: Value::from_string(value),
+                value: Value::from_string(base64::encode(value)),
                 details: self.details,
             }),
             FinalExecutionStatus::Failure(tx_error) => Err(ExecutionResult {
@@ -432,9 +432,9 @@ impl ExecutionOutcome {
     /// particular outcome has failed or not.
     pub fn into_result(self) -> Result<ValueOrReceiptId> {
         match self.status {
-            ExecutionStatusView::SuccessValue(value) => {
-                Ok(ValueOrReceiptId::Value(Value::from_string(value)))
-            }
+            ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(
+                Value::from_string(base64::encode(value)),
+            )),
             ExecutionStatusView::SuccessReceiptId(hash) => {
                 Ok(ValueOrReceiptId::ReceiptId(CryptoHash(hash.0)))
             }

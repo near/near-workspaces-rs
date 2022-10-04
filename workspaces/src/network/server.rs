@@ -1,15 +1,12 @@
-use std::process::Child;
-
 use crate::error::SandboxErrorCode;
 use crate::network::Sandbox;
 use crate::result::Result;
 
+use async_process::Child;
 use portpicker::pick_unused_port;
 use tracing::info;
 
-// TODO: swap over the async version of this in the future. Won't be a breaking API
-//       since we already have async marked in the functions that we are exposing.
-use near_sandbox_utils::sync as sandbox;
+use near_sandbox_utils as sandbox;
 
 pub struct SandboxServer {
     pub(crate) rpc_port: u16,
@@ -26,7 +23,7 @@ impl SandboxServer {
         }
     }
 
-    pub fn start(&mut self) -> Result<()> {
+    pub async fn start(&mut self) -> Result<()> {
         if self.process.is_some() {
             return Err(SandboxErrorCode::AlreadyStarted.into());
         }
@@ -39,10 +36,12 @@ impl SandboxServer {
 
         // Remove dir if it already exists:
         let _ = std::fs::remove_dir_all(&home_dir);
-        sandbox::init(&home_dir)
+        let output = sandbox::init(&home_dir)
             .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
-            .wait()
+            .output()
+            .await
             .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?;
+        info!(target: "workspaces", "sandbox init: {:?}", output);
 
         let child = sandbox::run(&home_dir, self.rpc_port, self.net_port)
             .map_err(|e| SandboxErrorCode::RunFailure.custom(e))?;

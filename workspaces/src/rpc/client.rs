@@ -199,13 +199,14 @@ impl Client {
                 request: QueryRequest::ViewState {
                     account_id: contract_id,
                     prefix: StoreKey::from(prefix.map(Vec::from).unwrap_or_default()),
+                    include_proof: false,
                 },
             })
             .await
             .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
 
         match query_resp.kind {
-            QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(&state.values)?),
+            QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(state.values)),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
         }
     }

@@ -92,7 +92,7 @@ impl TopLevelAccountCreator for Testnet {
                 // create the account for us in testnet when we used the Helper contract.
                 total_gas_burnt: 0,
 
-                status: near_primitives::views::FinalExecutionStatus::SuccessValue(String::new()),
+                status: near_primitives::views::FinalExecutionStatus::SuccessValue(Vec::new()),
                 details: ExecutionDetails {
                     transaction: ExecutionOutcome {
                         block_hash: CryptoHash::default(),
@@ -101,7 +101,7 @@ impl TopLevelAccountCreator for Testnet {
                         gas_burnt: 0,
                         tokens_burnt: 0,
                         executor_id: "testnet".parse().unwrap(),
-                        status: ExecutionStatusView::SuccessValue(String::new()),
+                        status: ExecutionStatusView::SuccessValue(Vec::new()),
                     },
                     receipts: Vec::new(),
                 },
