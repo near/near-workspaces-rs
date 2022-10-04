@@ -206,7 +206,7 @@ impl Client {
             .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
 
         match query_resp.kind {
-            QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(&state.values)?),
+            QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(state.values)),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
         }
     }
