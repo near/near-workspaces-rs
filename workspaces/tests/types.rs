@@ -20,8 +20,8 @@ fn test_keypair_ed25519() -> anyhow::Result<()> {
 
 #[test]
 fn test_keypair_secp256k1() -> anyhow::Result<()> {
-    let pk_expected = "\"secp256k1:BtJtBjukUQbcipnS78adSwUKE38sdHnk7pTNZH7miGXfodzUunaAcvY43y37nm7AKbcTQycvdgUzFNWsd7dgPZZ\"";
-    let sk_expected = "\"secp256k1:9ZNzLxNff6ohoFFGkbfMBAFpZgD7EPoWeiuTpPAeeMRV\"";
+    let pk_expected = "\"secp256k1:5ftgm7wYK5gtVqq1kxMGy7gSudkrfYCbpsjL6sH1nwx2oj5NR2JktohjzB6fbEhhRERQpiwJcpwnQjxtoX3GS3cQ\"";
+    let sk_expected = "\"secp256k1:X4ETFKtQkSGVoZEnkn7bZ3LyajJaK2b3eweXaKmynGx\"";
 
     let sk = SecretKey::from_seed(KeyType::SECP256K1, "test");
     let pk = sk.public_key();
