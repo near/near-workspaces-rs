@@ -293,14 +293,14 @@ impl ExecutionSuccess {
     /// execution result of this call. This conversion can fail if the structure of
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
-    pub fn json<U: serde::de::DeserializeOwned>(&self) -> Result<U> {
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
         self.value.json()
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from the execution
     /// result. This conversion can fail if the structure of the internal state does
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
-    pub fn borsh<U: borsh::BorshDeserialize>(&self) -> Result<U> {
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
         self.value.borsh()
     }
 
@@ -473,7 +473,7 @@ impl Value {
     /// execution result of this call. This conversion can fail if the structure of
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
-    pub fn json<U: serde::de::DeserializeOwned>(&self) -> Result<U> {
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
         serde_json::from_slice(&buf).map_err(|e| ErrorKind::DataConversion.custom(e))
     }
@@ -481,7 +481,7 @@ impl Value {
     /// Deserialize an instance of type `T` from bytes sourced from the execution
     /// result. This conversion can fail if the structure of the internal state does
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
-    pub fn borsh<U: borsh::BorshDeserialize>(&self) -> Result<U> {
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
         let buf = self.raw_bytes()?;
         borsh::BorshDeserialize::try_from_slice(&buf)
             .map_err(|e| ErrorKind::DataConversion.custom(e))
