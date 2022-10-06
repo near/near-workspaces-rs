@@ -155,7 +155,8 @@
 
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
-[unreleased]: https://github.com/near/workspaces-rs/compare/0.5.0...HEAD
+[unreleased]: https://github.com/near/workspaces-rs/compare/0.6.0...HEAD
+[0.6.0]: https://github.com/near/workspaces-rs/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/near/workspaces-rs/compare/0.4.1...0.5.0
 [0.4.1]: https://github.com/near/workspaces-rs/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/near/workspaces-rs/compare/0.3.1...0.4.0
