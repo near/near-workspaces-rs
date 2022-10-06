@@ -17,6 +17,7 @@ borsh = "0.9"
 cargo_metadata = { version = "0.14.2", optional = true }
 chrono = "0.4.19"
 dirs = "3.0.2"
+futures = "0.3"
 hex = "0.4.2"
 portpicker = "0.1.1"
 rand = "0.8.4"

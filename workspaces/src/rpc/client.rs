@@ -101,21 +101,21 @@ impl Client {
         .await
     }
 
-    pub(crate) async fn query_nolog<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
+    pub(crate) async fn query_nolog<M>(&self, method: M) -> MethodCallResult<M::Response, M::Error>
     where
         M: methods::RpcMethod,
     {
-        retry(|| async { self.rpc_client.call(method).await }).await
+        retry(|| async { self.rpc_client.call(&method).await }).await
     }
 
-    pub(crate) async fn query<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
+    pub(crate) async fn query<M>(&self, method: M) -> MethodCallResult<M::Response, M::Error>
     where
         M: methods::RpcMethod + Debug,
         M::Response: Debug,
         M::Error: Debug,
     {
         retry(|| async {
-            let result = self.rpc_client.call(method).await;
+            let result = self.rpc_client.call(&method).await;
             tracing::debug!(
                 target: "workspaces",
                 "Querying RPC with {:?} resulted in {:?}",
