@@ -25,10 +25,10 @@ const MAX_GAS: Gas = 300_000_000_000_000;
 /// the function name, arguments, the amount of gas to use and deposit.
 #[derive(Debug)]
 pub struct Function<'a> {
-    name: &'a str,
-    args: Result<Vec<u8>>,
-    deposit: Balance,
-    gas: Gas,
+    pub(crate) name: &'a str,
+    pub(crate) args: Result<Vec<u8>>,
+    pub(crate) deposit: Balance,
+    pub(crate) gas: Gas,
 }
 
 impl<'a> Function<'a> {

@@ -232,6 +232,21 @@ impl AccessKey {
     }
 }
 
+/// Similar to an [`AccessKey`], but also has the [`PublicKey`] associated with it.
+pub struct AccessKeyInfo {
+    pub public_key: PublicKey,
+    pub access_key: AccessKey,
+}
+
+impl From<near_primitives::views::AccessKeyInfoView> for AccessKeyInfo {
+    fn from(view: near_primitives::views::AccessKeyInfoView) -> Self {
+        Self {
+            public_key: PublicKey(view.public_key),
+            access_key: view.access_key.into(),
+        }
+    }
+}
+
 /// Defines permissions for AccessKey
 #[derive(Clone, Debug)]
 enum AccessKeyPermission {
@@ -247,25 +262,25 @@ enum AccessKeyPermission {
 /// It also restrict the account ID of the receiver for this function call.
 /// It also can restrict the method name for the allowed function calls.
 #[derive(Clone, Debug)]
-struct FunctionCallPermission {
+pub struct FunctionCallPermission {
     /// Allowance is a balance limit to use by this access key to pay for function call gas and
     /// transaction fees. When this access key is used, both account balance and the allowance is
     /// decreased by the same value.
     /// `None` means unlimited allowance.
     /// NOTE: To change or increase the allowance, the old access key needs to be deleted and a new
     /// access key should be created.
-    allowance: Option<Balance>,
+    pub allowance: Option<Balance>,
 
     // This isn't an AccountId because already existing records in testnet genesis have invalid
     // values for this field (see: https://github.com/near/nearcore/pull/4621#issuecomment-892099860)
     // we accomodate those by using a string, allowing us to read and parse genesis.
     /// The access key only allows transactions with the given receiver's account id.
-    receiver_id: String,
+    pub receiver_id: String,
 
     /// A list of method names that can be used. The access key only allows transactions with the
     /// function call of one of the given method names.
     /// Empty list means any method name can be used.
-    method_names: Vec<String>,
+    pub method_names: Vec<String>,
 }
 
 impl From<AccessKey> for near_primitives::account::AccessKey {
@@ -284,6 +299,28 @@ impl From<AccessKey> for near_primitives::account::AccessKey {
                 }
                 AccessKeyPermission::FullAccess => {
                     near_primitives::account::AccessKeyPermission::FullAccess
+                }
+            },
+        }
+    }
+}
+
+impl From<near_primitives::views::AccessKeyView> for AccessKey {
+    fn from(access_key: near_primitives::views::AccessKeyView) -> Self {
+        Self {
+            nonce: access_key.nonce,
+            permission: match access_key.permission {
+                near_primitives::views::AccessKeyPermissionView::FunctionCall {
+                    allowance,
+                    receiver_id,
+                    method_names,
+                } => AccessKeyPermission::FunctionCall(FunctionCallPermission {
+                    allowance,
+                    receiver_id,
+                    method_names,
+                }),
+                near_primitives::views::AccessKeyPermissionView::FullAccess => {
+                    AccessKeyPermission::FullAccess
                 }
             },
         }
