@@ -4,7 +4,7 @@ use crate::operations::FunctionOwned;
 use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::rpc::query::{Query, ViewCode, ViewFunction, ViewState};
+use crate::rpc::query::{Query, ViewBlock, ViewCode, ViewFunction, ViewState};
 use crate::types::{AccountId, Gas, InMemorySigner};
 use crate::worker::Worker;
 use crate::{Account, Block, Contract};
@@ -91,9 +91,10 @@ where
         Query::view_state(self.client(), contract_id)
     }
 
-    /// View the latest block from the network
-    pub async fn view_latest_block(&self) -> Result<Block> {
-        self.client().view_block(None).await.map(Into::into)
+    /// View the block from the network. Supply additional parameters such as `block_height`
+    /// or `block_hash` to get the block.
+    pub fn view_block(&self) -> Query<'_, ViewBlock> {
+        Query::new(self.client(), ViewBlock)
     }
 
     /// Transfer tokens from one account to another. The signer is the account
