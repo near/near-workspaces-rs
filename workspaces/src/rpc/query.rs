@@ -33,9 +33,7 @@ impl<'a, T> Query<'a, T> {
             block_ref: None,
         }
     }
-}
 
-impl<'a, T> Query<'a, T> {
     /// Specify at which block height to import the contract from. This is usable with
     /// any network this object is importing from, but be aware that only archival
     /// networks will have the full history while networks like mainnet or testnet
@@ -57,7 +55,7 @@ impl<'a, T> Query<'a, T> {
 
 impl<'a, T, R> std::future::IntoFuture for Query<'a, T>
 where
-    T: Queryable<Output = R> + 'static + Send + Sync,
+    T: Queryable<Output = R> + Send + Sync + 'static,
     <T as Queryable>::QueryMethod: RpcMethod + Debug + Send + Sync,
     <<T as Queryable>::QueryMethod as RpcMethod>::Response: Debug + Send + Sync,
     <<T as Queryable>::QueryMethod as RpcMethod>::Error: Debug + Display + Send + Sync,
