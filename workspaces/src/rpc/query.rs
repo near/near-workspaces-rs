@@ -13,9 +13,10 @@ use near_primitives::views::{BlockView, QueryRequest};
 
 use crate::error::RpcErrorCode;
 use crate::operations::Function;
+use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
-use crate::types::{AccessKeyInfo, BlockHeight, PublicKey};
-use crate::{AccessKey, AccountDetails, Block, CryptoHash, Result};
+use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, PublicKey};
+use crate::{AccountDetails, Block, CryptoHash, Result};
 
 use super::tool;
 
@@ -93,33 +94,38 @@ pub trait Queryable {
     // fn process_response(query: RpcQueryResponse) -> Self::Output;
 }
 
-struct ViewFunction {
+pub(crate) struct ViewFunction {
     account_id: AccountId,
     function: Function<'static>,
 }
 
-pub struct ViewCode {
+pub(crate) struct ViewCode {
     pub(crate) account_id: AccountId,
 }
-pub struct ViewAccount {
+
+pub(crate) struct ViewAccount {
     pub(crate) account_id: AccountId,
 }
-struct ViewBlock;
-struct ViewState {
+
+pub(crate) struct ViewBlock;
+
+pub(crate) struct ViewState {
     account_id: AccountId,
     prefix: Option<Vec<u8>>,
 }
-struct ViewAccessKey {
+
+pub(crate) struct ViewAccessKey {
     account_id: AccountId,
     public_key: PublicKey,
 }
-struct ViewAccessKeyList {
+
+pub(crate) struct ViewAccessKeyList {
     account_id: AccountId,
 }
 
 impl Queryable for ViewFunction {
-    type Output = Vec<u8>;
     type QueryMethod = methods::query::RpcQueryRequest;
+    type Output = ViewResultDetails;
 
     fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
         Self::QueryMethod {
@@ -135,15 +141,15 @@ impl Queryable for ViewFunction {
 
     fn process_response(query: RpcQueryResponse) -> Result<Self::Output> {
         match query.kind {
-            QueryResponseKind::ViewCode(contract) => Ok(contract.code),
+            QueryResponseKind::CallResult(result) => Ok(result.into()),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying account")),
         }
     }
 }
 
 impl Queryable for ViewCode {
-    type Output = Vec<u8>;
     type QueryMethod = methods::query::RpcQueryRequest;
+    type Output = Vec<u8>;
 
     fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
         Self::QueryMethod {
@@ -163,8 +169,8 @@ impl Queryable for ViewCode {
 }
 
 impl Queryable for ViewAccount {
-    type Output = AccountDetails;
     type QueryMethod = methods::query::RpcQueryRequest;
+    type Output = AccountDetails;
 
     fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
         Self::QueryMethod {
