@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
             .parse()
             .map_err(anyhow::Error::msg)?;
 
-        let mut state_items = worker.view_state(&contract_id, None).await?;
+        let mut state_items = worker.view_state(&contract_id).await?;
 
         let state = state_items.remove(b"STATE".as_slice()).unwrap();
         let status_msg = StatusMessage::try_from_slice(&state)?;

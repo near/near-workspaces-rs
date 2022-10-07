@@ -34,7 +34,7 @@ async fn view_status_state(
         .await?
         .into_result()?;
 
-    let mut state_items = contract.view_state(None).await?;
+    let mut state_items = contract.view_state().await?;
     let state = state_items
         .remove(b"STATE".as_slice())
         .ok_or_else(|| anyhow::anyhow!("Could not retrieve STATE"))?;

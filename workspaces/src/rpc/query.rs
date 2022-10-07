@@ -110,7 +110,7 @@ pub struct ViewAccount {
 
 pub struct ViewBlock;
 
-pub(crate) struct ViewState {
+pub struct ViewState {
     account_id: AccountId,
     prefix: Option<Vec<u8>>,
 }
@@ -248,6 +248,24 @@ impl Queryable for ViewState {
             QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(&state.values)?),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
         }
+    }
+}
+
+impl<'a> Query<'a, ViewState> {
+    pub(crate) fn view_state(client: &'a Client, id: &AccountId) -> Self {
+        Self::new(
+            client,
+            ViewState {
+                account_id: id.clone(),
+                prefix: None,
+            },
+        )
+    }
+
+    /// Set the prefix for viewing the state.
+    pub fn prefix(mut self, value: &[u8]) -> Self {
+        self.method.prefix = Some(value.into());
+        self
     }
 }
 

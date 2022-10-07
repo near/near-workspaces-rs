@@ -3,13 +3,13 @@ use crate::network::{Info, Sandbox};
 use crate::result::{ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
+use crate::rpc::query::{Query, ViewCode, ViewState};
 use crate::types::{AccountId, Gas, InMemorySigner};
 use crate::worker::Worker;
 use crate::{Account, Block, Contract};
 use crate::{AccountDetails, Network};
 
 use near_primitives::types::Balance;
-use std::collections::HashMap;
 
 impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -75,22 +75,20 @@ where
     }
 
     /// View the WASM code bytes of a contract on the network.
-    pub async fn view_code(&self, contract_id: &AccountId) -> Result<Vec<u8>> {
-        let code_view = self.client().view_code(contract_id.clone(), None).await?;
-        Ok(code_view.code)
+    pub fn view_code(&self, contract_id: &AccountId) -> Query<'_, ViewCode> {
+        Query::new(
+            self.client(),
+            ViewCode {
+                account_id: contract_id.clone(),
+            },
+        )
     }
 
     /// View the state of a account/contract on the network. This will return the internal
     /// state of the account in the form of a map of key-value pairs; where STATE contains
     /// info on a contract's internal data.
-    pub async fn view_state(
-        &self,
-        contract_id: &AccountId,
-        prefix: Option<&[u8]>,
-    ) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
-        self.client()
-            .view_state(contract_id.clone(), prefix, None)
-            .await
+    pub fn view_state(&self, contract_id: &AccountId) -> Query<'_, ViewState> {
+        Query::view_state(self.client(), contract_id)
     }
 
     /// View the latest block from the network

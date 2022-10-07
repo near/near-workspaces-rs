@@ -5,7 +5,7 @@ use std::path::Path;
 use near_primitives::views::AccountView;
 
 use crate::error::ErrorKind;
-use crate::rpc::query::{Query, ViewFunction};
+use crate::rpc::query::{Query, ViewCode, ViewFunction, ViewState};
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{CryptoHash, Network, Worker};
 
@@ -273,13 +273,13 @@ impl Contract {
     }
 
     /// View the WASM code bytes of this contract.
-    pub async fn view_code(&self) -> Result<Vec<u8>> {
-        self.account.worker.view_code(self.id()).await
+    pub fn view_code(&self) -> Query<'_, ViewCode> {
+        self.account.worker.view_code(self.id())
     }
 
     /// View a contract's state map of key value pairs.
-    pub async fn view_state(&self, prefix: Option<&[u8]>) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
-        self.account.worker.view_state(self.id(), prefix).await
+    pub fn view_state(&self) -> Query<'_, ViewState> {
+        self.account.worker.view_state(self.id())
     }
 
     /// Views the current contract's details such as balance and storage usage.
