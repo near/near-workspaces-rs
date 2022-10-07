@@ -24,17 +24,21 @@ const MAX_GAS: Gas = 300_000_000_000_000;
 /// A set of arguments we can provide to a transaction, containing
 /// the function name, arguments, the amount of gas to use and deposit.
 #[derive(Debug)]
-pub struct Function<'a> {
-    pub(crate) name: &'a str,
+pub struct FunctionArgs<T> {
+    pub(crate) name: T,
     pub(crate) args: Result<Vec<u8>>,
     pub(crate) deposit: Balance,
     pub(crate) gas: Gas,
 }
 
-impl<'a> Function<'a> {
+pub type Function<'a> = FunctionArgs<&'a str>;
+/// Owned version of [`Function`], whereby a lifetime is not attached.
+pub type FunctionOwned = FunctionArgs<String>;
+
+impl<T> FunctionArgs<T> {
     /// Initialize a new instance of [`Function`], tied to a specific function on a
     /// contract that lives directly on a contract we've specified in [`Transaction`].
-    pub fn new(name: &'a str) -> Self {
+    pub fn new(name: T) -> Self {
         Self {
             name,
             args: Ok(vec![]),

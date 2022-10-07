@@ -3,16 +3,13 @@ use crate::network::{Info, Sandbox};
 use crate::result::{ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::rpc::query::{Query, ViewAccount, ViewCode};
 use crate::types::{AccountId, Gas, InMemorySigner};
 use crate::worker::Worker;
 use crate::{Account, Block, Contract};
 use crate::{AccountDetails, Network};
 
 use near_primitives::types::Balance;
-use near_primitives::views::QueryRequest;
 use std::collections::HashMap;
-use std::marker::PhantomData;
 
 impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -99,22 +96,6 @@ where
     /// View the latest block from the network
     pub async fn view_latest_block(&self) -> Result<Block> {
         self.client().view_block(None).await.map(Into::into)
-    }
-
-    pub fn c_view_code<'a>(&'a self, account_id: AccountId) -> Query<'a, ViewCode> {
-        Query {
-            client: self.client(),
-            block_ref: None,
-            method: ViewCode { account_id },
-        }
-    }
-
-    pub fn c_view_account(&self, account_id: AccountId) -> Query<'_, ViewAccount> {
-        Query {
-            client: self.client(),
-            block_ref: None,
-            method: ViewAccount { account_id },
-        }
     }
 
     /// Transfer tokens from one account to another. The signer is the account

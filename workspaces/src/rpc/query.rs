@@ -12,7 +12,7 @@ use near_primitives::types::{BlockId, BlockReference, StoreKey};
 use near_primitives::views::{BlockView, QueryRequest};
 
 use crate::error::RpcErrorCode;
-use crate::operations::Function;
+use crate::operations::FunctionOwned;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
 use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, PublicKey};
@@ -21,14 +21,20 @@ use crate::{AccountDetails, Block, CryptoHash, Result};
 use super::tool;
 
 pub struct Query<'a, T> {
+    pub(crate) method: T,
     pub(crate) client: &'a Client,
     pub(crate) block_ref: Option<BlockReference>,
-    pub(crate) method: T,
 }
 
-// impl<'a, T> Query<'a, T> {
-//     fn new(client: &'a Client, )
-// }
+impl<'a, T> Query<'a, T> {
+    pub(crate) fn new(client: &'a Client, method: T) -> Self {
+        Self {
+            method,
+            client,
+            block_ref: None,
+        }
+    }
+}
 
 impl<'a, T> Query<'a, T> {
     /// Specify at which block height to import the contract from. This is usable with
@@ -91,23 +97,22 @@ pub trait Queryable {
 
     fn into_query_request(self, block_ref: BlockReference) -> Self::QueryMethod;
     fn process_response(query: <Self::QueryMethod as RpcMethod>::Response) -> Result<Self::Output>;
-    // fn process_response(query: RpcQueryResponse) -> Self::Output;
 }
 
-pub(crate) struct ViewFunction {
-    account_id: AccountId,
-    function: Function<'static>,
+pub struct ViewFunction {
+    pub(crate) account_id: AccountId,
+    pub(crate) function: FunctionOwned,
 }
 
-pub(crate) struct ViewCode {
+pub struct ViewCode {
     pub(crate) account_id: AccountId,
 }
 
-pub(crate) struct ViewAccount {
+pub struct ViewAccount {
     pub(crate) account_id: AccountId,
 }
 
-pub(crate) struct ViewBlock;
+pub struct ViewBlock;
 
 pub(crate) struct ViewState {
     account_id: AccountId,
@@ -132,7 +137,7 @@ impl Queryable for ViewFunction {
             block_reference,
             request: QueryRequest::CallFunction {
                 account_id: self.account_id,
-                method_name: self.function.name.into(),
+                method_name: self.function.name,
                 // TODO: result
                 args: self.function.args.unwrap().into(),
             },
@@ -144,6 +149,32 @@ impl Queryable for ViewFunction {
             QueryResponseKind::CallResult(result) => Ok(result.into()),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying account")),
         }
+    }
+}
+
+// Specific builder methods attached to a ViewFunction.
+impl Query<'_, ViewFunction> {
+    /// Provide the arguments for the call. These args are serialized bytes from either
+    /// a JSON or Borsh serializable set of arguments. To use the more specific versions
+    /// with better quality of life, use `args_json` or `args_borsh`.
+    pub fn args(mut self, args: Vec<u8>) -> Self {
+        self.method.function = self.method.function.args(args);
+        self
+    }
+
+    /// Similiar to `args`, specify an argument that is JSON serializable and can be
+    /// accepted by the equivalent contract. Recommend to use something like
+    /// `serde_json::json!` macro to easily serialize the arguments.
+    pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
+        self.method.function = self.method.function.args_json(args);
+        self
+    }
+
+    /// Similiar to `args`, specify an argument that is borsh serializable and can be
+    /// accepted by the equivalent contract.
+    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
+        self.method.function = self.method.function.args_borsh(args);
+        self
     }
 }
 

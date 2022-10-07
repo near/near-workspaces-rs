@@ -5,10 +5,11 @@ use std::path::Path;
 use near_primitives::views::AccountView;
 
 use crate::error::ErrorKind;
+use crate::rpc::query::{Query, ViewFunction};
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{CryptoHash, Network, Worker};
 
-use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
+use crate::operations::{CallTransaction, CreateAccountTransaction, FunctionOwned, Transaction};
 use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 
 /// `Account` is directly associated to an account in the network provided by the
@@ -260,8 +261,15 @@ impl Contract {
 
     /// Call a view function into the current contract. Returns a result which can
     /// be deserialized into borsh or JSON.
-    pub async fn view(&self, function: &str, args: Vec<u8>) -> Result<ViewResultDetails> {
-        self.account.worker.view(self.id(), function, args).await
+    pub fn view(&self, function: &str) -> Query<'_, ViewFunction> {
+        // self.account.worker.view(self.id(), function, args).await
+        Query::new(
+            self.account.worker.client(),
+            ViewFunction {
+                account_id: self.id().clone(),
+                function: FunctionOwned::new(function.into()),
+            },
+        )
     }
 
     /// View the WASM code bytes of this contract.
