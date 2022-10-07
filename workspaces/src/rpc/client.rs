@@ -21,15 +21,13 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{Balance, BlockId, BlockReference, Finality, Gas, StoreKey};
+use near_primitives::types::{Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{
-    AccessKeyView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
-    QueryRequest, StatusResponse,
+    AccessKeyView, BlockView, FinalExecutionOutcomeView, QueryRequest, StatusResponse,
 };
 
 use crate::error::{Error, ErrorKind, RpcErrorCode};
 use crate::result::Result;
-use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
