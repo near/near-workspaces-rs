@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
-use std::future::IntoFuture;
 
-use futures::future::{BoxFuture, TryFutureExt};
+use futures::future::BoxFuture;
 
 use near_account_id::AccountId;
 use near_jsonrpc_client::methods::query::RpcQueryResponse;
@@ -56,9 +55,9 @@ impl<'a, T> Query<'a, T> {
     }
 }
 
-impl<'a, T, R> IntoFuture for Query<'a, T>
+impl<'a, T, R> std::future::IntoFuture for Query<'a, T>
 where
-    T: Queryable<Output = R> + 'static,
+    T: Queryable<Output = R> + 'static + Send + Sync,
     <T as Queryable>::QueryMethod: RpcMethod + Debug + Send + Sync,
     <<T as Queryable>::QueryMethod as RpcMethod>::Response: Debug + Send + Sync,
     <<T as Queryable>::QueryMethod as RpcMethod>::Error: Debug + Display + Send + Sync,
@@ -70,17 +69,16 @@ where
     type IntoFuture = BoxFuture<'a, Self::Output>;
 
     fn into_future(self) -> Self::IntoFuture {
-        let block_reference = self.block_ref.unwrap_or_else(BlockReference::latest);
-        let fut = self
-            .client
-            // query returns Future<Output = Result<Value, JsonRpcError>>
-            .query(self.method.into_query_request(block_reference))
-            // map the err to workspaces type: Future<Output = Result<Value, WorkspacesError>>
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))
-            // map the val to workspaces type: Future<Output = Result<WorkspacesValue, WorkspacesError>>
-            .and_then(|resp| async move { T::process_response(resp) });
+        Box::pin(async move {
+            let block_reference = self.block_ref.unwrap_or_else(BlockReference::latest);
+            let resp = self
+                .client
+                .query(self.method.into_query_request(block_reference))
+                .await
+                .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
 
-        Box::pin(fut)
+            T::process_response(resp)
+        })
     }
 }
 
