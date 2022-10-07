@@ -4,11 +4,10 @@ use crate::operations::FunctionOwned;
 use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::rpc::query::{Query, ViewBlock, ViewCode, ViewFunction, ViewState};
+use crate::rpc::query::{Query, ViewAccount, ViewBlock, ViewCode, ViewFunction, ViewState};
 use crate::types::{AccountId, Gas, InMemorySigner};
 use crate::worker::Worker;
-use crate::{Account, Block, Contract};
-use crate::{AccountDetails, Network};
+use crate::{Account, Contract, Network};
 
 use near_primitives::types::Balance;
 
@@ -128,11 +127,13 @@ where
     }
 
     /// View account details of a specific account on the network.
-    pub async fn view_account(&self, account_id: &AccountId) -> Result<AccountDetails> {
-        self.client()
-            .view_account(account_id.clone(), None)
-            .await
-            .map(Into::into)
+    pub fn view_account(&self, account_id: &AccountId) -> Query<'_, ViewAccount> {
+        Query::new(
+            self.client(),
+            ViewAccount {
+                account_id: account_id.clone(),
+            },
+        )
     }
 }
 
@@ -148,10 +149,10 @@ impl Worker<Sandbox> {
     /// how far back in time we wanna grab the contract.
     pub fn import_contract<'a>(
         &self,
-        id: &AccountId,
-        worker: &'a Worker<impl Network>,
+        id: &'a AccountId,
+        worker: &Worker<impl Network + 'static>,
     ) -> ImportContractTransaction<'a> {
-        ImportContractTransaction::new(id.to_owned(), worker.client(), self.clone().coerce())
+        ImportContractTransaction::new(id, worker.clone().coerce(), self.clone().coerce())
     }
 
     /// Patch state into the sandbox network, given a key and value. This will allow us to set

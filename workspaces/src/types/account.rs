@@ -4,9 +4,9 @@ use std::path::Path;
 use near_primitives::views::AccountView;
 
 use crate::error::ErrorKind;
-use crate::rpc::query::{Query, ViewCode, ViewFunction, ViewState};
+use crate::rpc::query::{Query, ViewAccount, ViewCode, ViewFunction, ViewState};
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
-use crate::{CryptoHash, Network, Worker};
+use crate::{BlockHeight, CryptoHash, Network, Worker};
 
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
 use crate::result::{Execution, ExecutionFinalResult, Result};
@@ -108,8 +108,8 @@ impl Account {
     }
 
     /// Views the current account's details such as balance and storage usage.
-    pub async fn view_account(&self) -> Result<AccountDetails> {
-        self.worker.view_account(&self.id).await
+    pub fn view_account(&self) -> Query<'_, ViewAccount> {
+        self.worker.view_account(&self.id)
     }
 
     /// Create a new sub account. Returns a [`CreateAccountTransaction`] object
@@ -270,8 +270,8 @@ impl Contract {
     }
 
     /// Views the current contract's details such as balance and storage usage.
-    pub async fn view_account(&self) -> Result<AccountDetails> {
-        self.account.worker.view_account(self.id()).await
+    pub fn view_account(&self) -> Query<'_, ViewAccount> {
+        self.account.worker.view_account(self.id())
     }
 
     /// Deletes the current contract, and returns the execution details of this
@@ -298,6 +298,23 @@ pub struct AccountDetails {
     pub locked: Balance,
     pub code_hash: CryptoHash,
     pub storage_usage: u64,
+
+    // Deprecated value. Mainly used to be able to convert back into an AccountView
+    pub(crate) storage_paid_at: BlockHeight,
+}
+
+impl AccountDetails {
+    pub(crate) fn into_near_account(self) -> near_primitives::account::Account {
+        AccountView {
+            amount: self.balance,
+            locked: self.locked,
+            // unwrap guranteed to succeed unless CryptoHash impls have changed in near_primitives.
+            code_hash: near_primitives::hash::CryptoHash(self.code_hash.0),
+            storage_usage: self.storage_usage,
+            storage_paid_at: self.storage_paid_at,
+        }
+        .into()
+    }
 }
 
 impl From<AccountView> for AccountDetails {
@@ -307,6 +324,7 @@ impl From<AccountView> for AccountDetails {
             locked: account.locked,
             code_hash: CryptoHash(account.code_hash.0),
             storage_usage: account.storage_usage,
+            storage_paid_at: account.storage_paid_at,
         }
     }
 }

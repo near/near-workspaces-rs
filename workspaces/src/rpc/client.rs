@@ -23,7 +23,7 @@ use near_primitives::transaction::{
 };
 use near_primitives::types::{Balance, BlockId, BlockReference, Finality, Gas, StoreKey};
 use near_primitives::views::{
-    AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
+    AccessKeyView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
     QueryRequest, StatusResponse,
 };
 
@@ -182,29 +182,6 @@ impl Client {
         match query_resp.kind {
             QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(&state.values)?),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
-        }
-    }
-
-    pub(crate) async fn view_account(
-        &self,
-        account_id: AccountId,
-        block_id: Option<BlockId>,
-    ) -> Result<AccountView> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
-        let query_resp = self
-            .query(&methods::query::RpcQueryRequest {
-                block_reference,
-                request: QueryRequest::ViewAccount { account_id },
-            })
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-
-        match query_resp.kind {
-            QueryResponseKind::ViewAccount(account) => Ok(account),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying account")),
         }
     }
 

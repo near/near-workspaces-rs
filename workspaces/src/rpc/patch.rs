@@ -1,13 +1,11 @@
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
-use near_primitives::types::BlockId;
+use near_primitives::types::{BlockId, BlockReference};
 use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
 use crate::error::SandboxErrorCode;
 use crate::network::DEV_ACCOUNT_SEED;
 use crate::types::{BlockHeight, KeyType, SecretKey};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
-
-use super::client::Client;
 
 /// A [`Transaction`]-like object that allows us to specify details about importing
 /// a contract from a different network into our sandbox local network. This creates
@@ -17,8 +15,8 @@ use super::client::Client;
 ///
 /// [`Transaction`]: crate::operations::Transaction
 pub struct ImportContractTransaction<'a> {
-    account_id: AccountId,
-    from_network: &'a Client,
+    account_id: &'a AccountId,
+    from_network: Worker<dyn Network>,
     into_network: Worker<dyn Network>,
 
     /// Whether to grab data down from the other contract or not
@@ -28,13 +26,13 @@ pub struct ImportContractTransaction<'a> {
     /// from the other account instead.
     initial_balance: Option<Balance>,
 
-    block_id: Option<BlockId>,
+    block_ref: Option<BlockReference>,
 }
 
 impl<'a, 'b> ImportContractTransaction<'a> {
     pub(crate) fn new(
-        account_id: AccountId,
-        from_network: &'a Client,
+        account_id: &'a AccountId,
+        from_network: Worker<dyn Network>,
         into_network: Worker<dyn Network>,
     ) -> Self {
         ImportContractTransaction {
@@ -43,7 +41,7 @@ impl<'a, 'b> ImportContractTransaction<'a> {
             into_network,
             import_data: false,
             initial_balance: None,
-            block_id: None,
+            block_ref: None,
         }
     }
 
@@ -52,7 +50,7 @@ impl<'a, 'b> ImportContractTransaction<'a> {
     /// networks will have the full history while networks like mainnet or testnet
     /// only has the history from 5 or less epochs ago.
     pub fn block_height(mut self, block_height: BlockHeight) -> Self {
-        self.block_id = Some(BlockId::Height(block_height));
+        self.block_ref = Some(BlockId::Height(block_height).into());
         self
     }
 
@@ -61,9 +59,8 @@ impl<'a, 'b> ImportContractTransaction<'a> {
     /// networks will have the full history while networks like mainnet or testnet
     /// only has the history from 5 or less epochs ago.
     pub fn block_hash(mut self, block_hash: CryptoHash) -> Self {
-        self.block_id = Some(BlockId::Hash(near_primitives::hash::CryptoHash(
-            block_hash.0,
-        )));
+        self.block_ref =
+            Some(BlockId::Hash(near_primitives::hash::CryptoHash(block_hash.0)).into());
         self
     }
 
@@ -86,17 +83,20 @@ impl<'a, 'b> ImportContractTransaction<'a> {
 
     /// Process the transaction, and return the result of the execution.
     pub async fn transact(self) -> crate::result::Result<Contract> {
-        let account_id = self.account_id;
+        let account_id = self.account_id.clone();
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();
         let signer = InMemorySigner::from_secret_key(account_id.clone(), sk);
+        let block_ref = self.block_ref.unwrap_or_else(BlockReference::latest);
 
         let mut account_view = self
             .from_network
-            .view_account(account_id.clone(), self.block_id.clone())
-            .await?;
+            .view_account(&account_id)
+            .block_reference(block_ref.clone())
+            .await?
+            .into_near_account();
         if let Some(initial_balance) = self.initial_balance {
-            account_view.amount = initial_balance;
+            account_view.set_amount(initial_balance);
         }
 
         let mut records = vec![
@@ -111,21 +111,23 @@ impl<'a, 'b> ImportContractTransaction<'a> {
             },
         ];
 
-        if account_view.code_hash != near_primitives::hash::CryptoHash::default() {
-            let code_view = self
+        if account_view.code_hash() != near_primitives::hash::CryptoHash::default() {
+            let code = self
                 .from_network
-                .view_code(account_id.clone(), self.block_id.clone())
+                .view_code(&account_id)
+                .block_reference(block_ref.clone())
                 .await?;
             records.push(StateRecord::Contract {
                 account_id: account_id.clone(),
-                code: code_view.code,
+                code,
             });
         }
 
         if self.import_data {
             records.extend(
                 self.from_network
-                    .view_state(account_id.clone(), None, self.block_id)
+                    .view_state(&account_id)
+                    .block_reference(block_ref)
                     .await?
                     .into_iter()
                     .map(|(key, value)| StateRecord::Data {
@@ -152,6 +154,6 @@ impl<'a, 'b> ImportContractTransaction<'a> {
             .await
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
-        Ok(Contract::new(account_id, signer, self.into_network.clone()))
+        Ok(Contract::new(account_id, signer, self.into_network))
     }
 }

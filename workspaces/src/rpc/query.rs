@@ -51,6 +51,11 @@ impl<'a, T> Query<'a, T> {
         self.block_ref = Some(BlockId::Hash(near_primitives::hash::CryptoHash(hash.0)).into());
         self
     }
+
+    pub(crate) fn block_reference(mut self, value: BlockReference) -> Self {
+        self.block_ref = Some(value);
+        self
+    }
 }
 
 impl<'a, T, R> std::future::IntoFuture for Query<'a, T>
