@@ -158,56 +158,6 @@ impl Client {
         .await
     }
 
-    pub(crate) async fn view_state(
-        &self,
-        contract_id: AccountId,
-        prefix: Option<&[u8]>,
-        block_id: Option<BlockId>,
-    ) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
-        let query_resp = self
-            .query(&methods::query::RpcQueryRequest {
-                block_reference,
-                request: QueryRequest::ViewState {
-                    account_id: contract_id,
-                    prefix: StoreKey::from(prefix.map(Vec::from).unwrap_or_default()),
-                },
-            })
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-
-        match query_resp.kind {
-            QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(&state.values)?),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
-        }
-    }
-
-    pub(crate) async fn view_code(
-        &self,
-        account_id: AccountId,
-        block_id: Option<BlockId>,
-    ) -> Result<ContractCodeView> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
-        let query_resp = self
-            .query(&methods::query::RpcQueryRequest {
-                block_reference,
-                request: QueryRequest::ViewCode { account_id },
-            })
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-
-        match query_resp.kind {
-            QueryResponseKind::ViewCode(code) => Ok(code),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying code")),
-        }
-    }
-
     pub(crate) async fn view_block(&self, block_ref: Option<BlockReference>) -> Result<BlockView> {
         let block_reference = block_ref.unwrap_or_else(|| Finality::None.into());
         let block_view = self
