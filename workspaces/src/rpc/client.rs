@@ -11,7 +11,6 @@ use tokio_retry::Retry;
 use near_crypto::Signer;
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::health::RpcStatusError;
-use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_client::methods::tx::RpcTransactionError;
 use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
@@ -29,7 +28,7 @@ use near_primitives::views::{
 };
 
 use crate::error::{Error, ErrorKind, RpcErrorCode};
-use crate::result::{Result, ViewResultDetails};
+use crate::result::Result;
 use crate::rpc::tool;
 use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 
@@ -157,30 +156,6 @@ impl Client {
             .into(),
         )
         .await
-    }
-
-    pub(crate) async fn view(
-        &self,
-        contract_id: AccountId,
-        method_name: String,
-        args: Vec<u8>,
-    ) -> Result<ViewResultDetails> {
-        let query_resp = self
-            .query(&RpcQueryRequest {
-                block_reference: Finality::None.into(), // Optimisitic query
-                request: QueryRequest::CallFunction {
-                    account_id: contract_id,
-                    method_name,
-                    args: args.into(),
-                },
-            })
-            .await
-            .map_err(|e| RpcErrorCode::ViewFunctionFailure.custom(e))?;
-
-        match query_resp.kind {
-            QueryResponseKind::CallResult(result) => Ok(result.into()),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while viewing function")),
-        }
     }
 
     pub(crate) async fn view_state(

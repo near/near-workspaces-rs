@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 
@@ -9,8 +8,8 @@ use crate::rpc::query::{Query, ViewCode, ViewFunction, ViewState};
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{CryptoHash, Network, Worker};
 
-use crate::operations::{CallTransaction, CreateAccountTransaction, FunctionOwned, Transaction};
-use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
+use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
+use crate::result::{Execution, ExecutionFinalResult, Result};
 
 /// `Account` is directly associated to an account in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
@@ -84,13 +83,8 @@ impl Account {
 
     /// View call to a specified contract function. Returns a result which can
     /// be deserialized into borsh or JSON.
-    pub async fn view(
-        &self,
-        contract_id: &AccountId,
-        function: &str,
-        args: Vec<u8>,
-    ) -> Result<ViewResultDetails> {
-        self.worker.view(contract_id, function, args).await
+    pub fn view(&self, contract_id: &AccountId, function: &str) -> Query<'_, ViewFunction> {
+        self.worker.view(contract_id, function)
     }
 
     /// Transfer NEAR to an account specified by `receiver_id` with the amount
@@ -262,14 +256,7 @@ impl Contract {
     /// Call a view function into the current contract. Returns a result which can
     /// be deserialized into borsh or JSON.
     pub fn view(&self, function: &str) -> Query<'_, ViewFunction> {
-        // self.account.worker.view(self.id(), function, args).await
-        Query::new(
-            self.account.worker.client(),
-            ViewFunction {
-                account_id: self.id().clone(),
-                function: FunctionOwned::new(function.into()),
-            },
-        )
+        self.account.view(self.id(), function)
     }
 
     /// View the WASM code bytes of this contract.

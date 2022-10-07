@@ -106,14 +106,10 @@ async fn main() -> anyhow::Result<()> {
 
     // Now grab the state to see that it has indeed been patched:
     let status: String = sandbox_contract
-        .view(
-            "get_status",
-            serde_json::json!({
-                "account_id": testnet_contract_id,
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view("get_status")
+        .args_json(serde_json::json!({
+            "account_id": testnet_contract_id,
+        }))
         .await?
         .json()?;
 
@@ -122,14 +118,10 @@ async fn main() -> anyhow::Result<()> {
 
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
     let result: Option<String> = sandbox_contract
-        .view(
-            "get_status",
-            serde_json::json!({
-                "account_id": sandbox_contract.id(),
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view("get_status")
+        .args_json(serde_json::json!({
+            "account_id": sandbox_contract.id(),
+        }))
         .await?
         .json()?;
     assert_eq!(result, None);

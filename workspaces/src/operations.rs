@@ -323,12 +323,8 @@ impl<'a, 'b> CallTransaction<'a, 'b> {
     /// Instead of transacting the transaction, call into the specified view function.
     pub async fn view(self) -> Result<ViewResultDetails> {
         self.worker
-            .client()
-            .view(
-                self.contract_id,
-                self.function.name.to_string(),
-                self.function.args?,
-            )
+            .view(&self.contract_id, self.function.name)
+            .args(self.function.args?)
             .await
     }
 }

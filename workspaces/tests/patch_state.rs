@@ -75,15 +75,10 @@ async fn test_patch_state() -> anyhow::Result<()> {
         .await?;
 
     let status: String = worker
-        .view(
-            &contract_id,
-            "get_status",
-            json!({
-                "account_id": "alice.near",
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view(&contract_id, "get_status")
+        .args_json(json!({
+            "account_id": "alice.near",
+        }))
         .await?
         .json()?;
 

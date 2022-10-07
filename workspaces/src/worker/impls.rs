@@ -1,9 +1,10 @@
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
-use crate::result::{ExecutionFinalResult, Result, ViewResultDetails};
+use crate::operations::FunctionOwned;
+use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::rpc::query::{Query, ViewCode, ViewState};
+use crate::rpc::query::{Query, ViewCode, ViewFunction, ViewState};
 use crate::types::{AccountId, Gas, InMemorySigner};
 use crate::worker::Worker;
 use crate::{Account, Block, Contract};
@@ -63,15 +64,14 @@ where
     }
 
     /// Call into a contract's view function.
-    pub async fn view(
-        &self,
-        contract_id: &AccountId,
-        function: &str,
-        args: Vec<u8>,
-    ) -> Result<ViewResultDetails> {
-        self.client()
-            .view(contract_id.clone(), function.into(), args)
-            .await
+    pub fn view(&self, contract_id: &AccountId, function: &str) -> Query<'_, ViewFunction> {
+        Query::new(
+            self.client(),
+            ViewFunction {
+                account_id: contract_id.clone(),
+                function: FunctionOwned::new(function.into()),
+            },
+        )
     }
 
     /// View the WASM code bytes of a contract on the network.

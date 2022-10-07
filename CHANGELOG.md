@@ -4,11 +4,13 @@
 
 ### Added
 
-- `view_*` builders have been added
+- `view_*` asynchronous builders have been added which provides being able to query from a specific [`BlockReference`]()
 
 ### Changed
 
-- `{Account, Contract, Worker}::view_state` moved `prefix` parameter into builder. i.e.
+- Apart of the changes from adding `view_*` async builders, we can have a couple breaking changes to the `view_*` functions:
+  - `{Account, Contract, Worker}::view_state` moved `prefix` parameter into builder. i.e.
+  - {}
 
 ```
 worker.view_state("account_id", Some(prefix)).await?;

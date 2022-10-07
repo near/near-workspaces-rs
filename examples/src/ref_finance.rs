@@ -258,32 +258,22 @@ async fn main() -> anyhow::Result<()> {
     ///////////////////////////////////////////////////////////////////////////
 
     let ft_deposit: String = worker
-        .view(
-            ref_finance.id(),
-            "get_deposit",
-            serde_json::json!({
-                "account_id": owner.id(),
-                "token_id": ft.id(),
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view(ref_finance.id(), "get_deposit")
+        .args_json(serde_json::json!({
+            "account_id": owner.id(),
+            "token_id": ft.id(),
+        }))
         .await?
         .json()?;
     println!("Current FT deposit: {}", ft_deposit);
     assert_eq!(ft_deposit, parse_near!("100 N").to_string());
 
     let wnear_deposit: String = worker
-        .view(
-            ref_finance.id(),
-            "get_deposit",
-            serde_json::json!({
-                "account_id": owner.id(),
-                "token_id": wnear.id(),
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view(ref_finance.id(), "get_deposit")
+        .args_json(serde_json::json!({
+            "account_id": owner.id(),
+            "token_id": wnear.id(),
+        }))
         .await?
         .json()?;
 
@@ -295,18 +285,13 @@ async fn main() -> anyhow::Result<()> {
     ///////////////////////////////////////////////////////////////////////////
 
     let expected_return: String = worker
-        .view(
-            ref_finance.id(),
-            "get_return",
-            serde_json::json!({
-                "pool_id": pool_id,
-                "token_in": ft.id(),
-                "token_out": wnear.id(),
-                "amount_in": parse_near!("1 N").to_string(),
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view(ref_finance.id(), "get_return")
+        .args_json(serde_json::json!({
+            "pool_id": pool_id,
+            "token_in": ft.id(),
+            "token_out": wnear.id(),
+            "amount_in": parse_near!("1 N").to_string(),
+        }))
         .await?
         .json()?;
 
@@ -345,31 +330,22 @@ async fn main() -> anyhow::Result<()> {
     ///////////////////////////////////////////////////////////////////////////
 
     let ft_deposit: String = worker
-        .view(
-            ref_finance.id(),
-            "get_deposit",
-            serde_json::json!({
-                "account_id": owner.id(),
-                "token_id": ft.id(),
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view(ref_finance.id(), "get_deposit")
+        .args_json(serde_json::json!({
+            "account_id": owner.id(),
+            "token_id": ft.id(),
+        }))
         .await?
         .json()?;
     println!("New FT deposit after swap: {}", ft_deposit);
     assert_eq!(ft_deposit, parse_near!("99 N").to_string());
 
     let wnear_deposit: String = ref_finance
-        .view(
-            "get_deposit",
-            serde_json::json!({
-                "account_id": owner.id(),
-                "token_id": wnear.id(),
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view("get_deposit")
+        .args_json(serde_json::json!({
+            "account_id": owner.id(),
+            "token_id": wnear.id(),
+        }))
         .await?
         .json()?;
     println!("New WNear deposit after swap: {}", wnear_deposit);
