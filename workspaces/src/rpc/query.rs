@@ -14,7 +14,7 @@ use crate::error::RpcErrorCode;
 use crate::operations::FunctionOwned;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
-use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, PublicKey};
+use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, PublicKey, Finality};
 use crate::{AccountDetails, Block, CryptoHash, Result};
 
 use super::tool;
@@ -34,8 +34,7 @@ impl<'a, T> Query<'a, T> {
         }
     }
 
-    /// Specify at which block height to import the contract from. This is usable with
-    /// any network this object is importing from, but be aware that only archival
+    /// Specify at which block height to query from. Note that only archival
     /// networks will have the full history while networks like mainnet or testnet
     /// only has the history from 5 or less epochs ago.
     pub fn block_height(mut self, height: BlockHeight) -> Self {
@@ -43,12 +42,17 @@ impl<'a, T> Query<'a, T> {
         self
     }
 
-    /// Specify at which block hash to import the contract from. This is usable with
-    /// any network this object is importing from, but be aware that only archival
+    /// Specify at which block hash to query from. Note that only archival
     /// networks will have the full history while networks like mainnet or testnet
     /// only has the history from 5 or less epochs ago.
     pub fn block_hash(mut self, hash: CryptoHash) -> Self {
         self.block_ref = Some(BlockId::Hash(near_primitives::hash::CryptoHash(hash.0)).into());
+        self
+    }
+
+    /// Specify at which block [`Finality`] to query from.
+    pub fn finality(mut self, value: Finality) -> Self {
+        self.block_ref = Some(value.into());
         self
     }
 
@@ -87,7 +91,7 @@ where
 
 /// Trait used as a converter from WorkspaceRequest to near-rpc request, and
 /// from near-rpc response to a WorkspaceResult
-pub trait Queryable {
+trait Queryable {
     // TODO: associated default type is unstable. So for now, will require writing
     // the manual impls for query_request
     type QueryMethod: RpcMethod;

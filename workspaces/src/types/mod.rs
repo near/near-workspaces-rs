@@ -326,3 +326,29 @@ impl From<near_primitives::views::AccessKeyView> for AccessKey {
         }
     }
 }
+
+/// Finality of a transaction or block in which transaction is included in. For more info
+/// go to the [NEAR finality](https://docs.near.org/docs/concepts/transaction#finality) docs.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum Finality {
+    /// Optimistic finality. The latest block recorded on the node that responded to our query
+    /// (<1 second delay after the transaction is submitted).
+    Optimistic,
+    /// Near-final finality. Similiarly to `Final` finality, but delay should be roughly 1 second.
+    DoomSlug,
+    /// Final finality. The block that has been validated on at least 66% of the nodes in the
+    /// network. (At max, should be 2 second delay after the transaction is submitted.)
+    Final,
+}
+
+impl From<Finality> for near_primitives::types::BlockReference {
+    fn from(value: Finality) -> Self {
+        let value = match value {
+            Finality::Optimistic => near_primitives::types::Finality::None,
+            Finality::DoomSlug => near_primitives::types::Finality::DoomSlug,
+            Finality::Final => near_primitives::types::Finality::Final,
+        };
+        value.into()
+    }
+}
