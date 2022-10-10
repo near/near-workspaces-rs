@@ -5,7 +5,8 @@ use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
 use crate::rpc::query::{
-    Query, ViewAccessKey, ViewAccount, ViewBlock, ViewCode, ViewFunction, ViewState,
+    Query, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock, ViewCode, ViewFunction,
+    ViewState,
 };
 use crate::types::{AccountId, Gas, InMemorySigner, PublicKey};
 use crate::worker::Worker;
@@ -108,6 +109,19 @@ where
             ViewAccessKey {
                 account_id: id.clone(),
                 public_key: pk.clone(),
+            },
+        )
+    }
+
+    /// Views all the [`AccessKey`]s of the account specified by [`AccountId`]. This will
+    /// return a list of [`AccessKey`]s along with the associated [`PublicKey`].
+    ///
+    /// [`AccessKey`]: crate::types::AccessKey
+    pub fn view_access_keys(&self, id: &AccountId) -> Query<'_, ViewAccessKeyList> {
+        Query::new(
+            self.client(),
+            ViewAccessKeyList {
+                account_id: id.clone(),
             },
         )
     }

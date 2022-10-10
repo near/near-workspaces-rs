@@ -133,8 +133,8 @@ pub struct ViewAccessKey {
     pub(crate) public_key: PublicKey,
 }
 
-pub(crate) struct ViewAccessKeyList {
-    account_id: AccountId,
+pub struct ViewAccessKeyList {
+    pub(crate) account_id: AccountId,
 }
 
 impl Queryable for ViewFunction {
