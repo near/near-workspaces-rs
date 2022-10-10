@@ -14,11 +14,15 @@ use crate::error::RpcErrorCode;
 use crate::operations::FunctionOwned;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
-use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, PublicKey, Finality};
+use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, Finality, PublicKey};
 use crate::{AccountDetails, Block, CryptoHash, Result};
 
 use super::tool;
 
+/// `Query` object allows creating queries into the network of our choice. This object is
+/// usually given from making calls from other functions such as [`view_state`].
+///
+/// [`view_state`]: crate::worker::Worker::view_state
 pub struct Query<'a, T> {
     pub(crate) method: T,
     pub(crate) client: &'a Client,
