@@ -128,9 +128,9 @@ pub struct ViewState {
     prefix: Option<Vec<u8>>,
 }
 
-pub(crate) struct ViewAccessKey {
-    account_id: AccountId,
-    public_key: PublicKey,
+pub struct ViewAccessKey {
+    pub(crate) account_id: AccountId,
+    pub(crate) public_key: PublicKey,
 }
 
 pub(crate) struct ViewAccessKeyList {

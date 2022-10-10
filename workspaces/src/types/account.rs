@@ -4,8 +4,8 @@ use std::path::Path;
 use near_primitives::views::AccountView;
 
 use crate::error::ErrorKind;
-use crate::rpc::query::{Query, ViewAccount, ViewCode, ViewFunction, ViewState};
-use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
+use crate::rpc::query::{Query, ViewAccessKey, ViewAccount, ViewCode, ViewFunction, ViewState};
+use crate::types::{AccountId, Balance, InMemorySigner, PublicKey, SecretKey};
 use crate::{BlockHeight, CryptoHash, Network, Worker};
 
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
@@ -110,6 +110,17 @@ impl Account {
     /// Views the current account's details such as balance and storage usage.
     pub fn view_account(&self) -> Query<'_, ViewAccount> {
         self.worker.view_account(&self.id)
+    }
+
+    /// Views the current accounts's access key, given the [`PublicKey`] associated to it.
+    pub fn view_access_key(&self, pk: &PublicKey) -> Query<'_, ViewAccessKey> {
+        Query::new(
+            self.worker.client(),
+            ViewAccessKey {
+                account_id: self.id().clone(),
+                public_key: pk.clone(),
+            },
+        )
     }
 
     /// Create a new sub account. Returns a [`CreateAccountTransaction`] object
@@ -272,6 +283,11 @@ impl Contract {
     /// Views the current contract's details such as balance and storage usage.
     pub fn view_account(&self) -> Query<'_, ViewAccount> {
         self.account.worker.view_account(self.id())
+    }
+
+    /// Views the current contract's access key, given the [`PublicKey`] associated to it.
+    pub fn view_access_key(&self, pk: &PublicKey) -> Query<'_, ViewAccessKey> {
+        self.account.view_access_key(pk)
     }
 
     /// Deletes the current contract, and returns the execution details of this
