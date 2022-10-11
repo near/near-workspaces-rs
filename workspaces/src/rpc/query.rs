@@ -265,13 +265,14 @@ impl ProcessQuery for ViewState {
             request: QueryRequest::ViewState {
                 account_id: self.account_id,
                 prefix: StoreKey::from(self.prefix.map(Vec::from).unwrap_or_default()),
+                include_proof: false,
             },
         })
     }
 
     fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
         match resp.kind {
-            QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(&state.values)?),
+            QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(state.values)),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
         }
     }

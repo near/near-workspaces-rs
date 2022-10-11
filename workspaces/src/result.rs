@@ -17,7 +17,7 @@ pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
 /// Execution related info as a result of performing a successful transaction
 /// execution on the network. This value can be converted into the returned
 /// value of the transaction via [`ExecutionSuccess::json`] or [`ExecutionSuccess::borsh`]
-pub type ExecutionSuccess = ExecutionResult<String>;
+pub type ExecutionSuccess = ExecutionResult<Value>;
 
 /// Execution related info as a result of performing a failed transaction
 /// execution on the network. The related error message can be retrieved
@@ -198,7 +198,7 @@ impl ExecutionFinalResult {
         match self.status {
             FinalExecutionStatus::SuccessValue(value) => Ok(ExecutionResult {
                 total_gas_burnt: self.total_gas_burnt,
-                value,
+                value: Value::from_string(base64::encode(value)),
                 details: self.details,
             }),
             FinalExecutionStatus::Failure(tx_error) => Err(ExecutionResult {
@@ -293,25 +293,22 @@ impl ExecutionSuccess {
     /// execution result of this call. This conversion can fail if the structure of
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
-    pub fn json<U: serde::de::DeserializeOwned>(&self) -> Result<U> {
-        let buf = self.raw_bytes()?;
-        serde_json::from_slice(&buf).map_err(|e| ErrorKind::DataConversion.custom(e))
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
+        self.value.json()
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from the execution
     /// result. This conversion can fail if the structure of the internal state does
     /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
-    pub fn borsh<U: borsh::BorshDeserialize>(&self) -> Result<U> {
-        let buf = self.raw_bytes()?;
-        borsh::BorshDeserialize::try_from_slice(&buf)
-            .map_err(|e| ErrorKind::DataConversion.custom(e))
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
+        self.value.borsh()
     }
 
     /// Grab the underlying raw bytes returned from calling into a contract's function.
     /// If we want to deserialize these bytes into a rust datatype, use [`ExecutionResult::json`]
     /// or [`ExecutionResult::borsh`] instead.
     pub fn raw_bytes(&self) -> Result<Vec<u8>> {
-        base64::decode(&self.value).map_err(|e| ErrorKind::DataConversion.custom(e))
+        self.value.raw_bytes()
     }
 }
 
@@ -435,7 +432,9 @@ impl ExecutionOutcome {
     /// particular outcome has failed or not.
     pub fn into_result(self) -> Result<ValueOrReceiptId> {
         match self.status {
-            ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(value)),
+            ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(
+                Value::from_string(base64::encode(value)),
+            )),
             ExecutionStatusView::SuccessReceiptId(hash) => {
                 Ok(ValueOrReceiptId::ReceiptId(CryptoHash(hash.0)))
             }
@@ -448,12 +447,55 @@ impl ExecutionOutcome {
 }
 
 /// Value or ReceiptId from a successful execution.
+#[derive(Debug)]
 pub enum ValueOrReceiptId {
     /// The final action succeeded and returned some value or an empty vec encoded in base64.
-    Value(String),
+    Value(Value),
     /// The final action of the receipt returned a promise or the signed transaction was converted
     /// to a receipt. Contains the receipt_id of the generated receipt.
     ReceiptId(CryptoHash),
+}
+
+/// Value type returned from an [`ExecutionOutcome`] or receipt result. This value
+/// can be converted into the underlying Rust datatype, or directly grab the raw
+/// bytes associated to the value.
+#[derive(Debug)]
+pub struct Value {
+    repr: String,
+}
+
+impl Value {
+    fn from_string(value: String) -> Self {
+        Self { repr: value }
+    }
+
+    /// Deserialize an instance of type `T` from bytes of JSON text sourced from the
+    /// execution result of this call. This conversion can fail if the structure of
+    /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
+    /// requirements.
+    pub fn json<T: serde::de::DeserializeOwned>(&self) -> Result<T> {
+        let buf = self.raw_bytes()?;
+        serde_json::from_slice(&buf).map_err(|e| ErrorKind::DataConversion.custom(e))
+    }
+
+    /// Deserialize an instance of type `T` from bytes sourced from the execution
+    /// result. This conversion can fail if the structure of the internal state does
+    /// not meet up with [`borsh::BorshDeserialize`]'s requirements.
+    pub fn borsh<T: borsh::BorshDeserialize>(&self) -> Result<T> {
+        let buf = self.raw_bytes()?;
+        borsh::BorshDeserialize::try_from_slice(&buf)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))
+    }
+
+    /// Grab the underlying raw bytes returned from calling into a contract's function.
+    /// If we want to deserialize these bytes into a rust datatype, use [`json`]
+    /// or [`borsh`] instead.
+    ///
+    /// [`json`]: Value::json
+    /// [`borsh`]: Value::borsh
+    pub fn raw_bytes(&self) -> Result<Vec<u8>> {
+        base64::decode(&self.repr).map_err(|e| ErrorKind::DataConversion.custom(e))
+    }
 }
 
 impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {

@@ -21,6 +21,26 @@ worker.view_state("account_id")
     .await?;
 // if prefix was `None`, then simply delete the None argument.
 ```
+## [0.6.0]
+
+### Added
+
+- `Account::view` API exposed: https://github.com/near/workspaces-rs/pull/202
+
+### Changed
+
+- Unstable `compile_project` uses new the workspaces errors: https://github.com/near/workspaces-rs/pull/204
+- `ValueOrReceiptId::Value(String)` changed to `ValueOrReceiptId::Value(Value)`: https://github.com/near/workspaces-rs/pull/208
+  - `Value` type offers convenient APIs like `raw_bytes`, `json`, and `borsh` like one would find from a `ExecutionFinalResult`.
+- internal dependencies like near-jsonrpc-client upgraded to 0.4.0 from 0.4.0-beta: https://github.com/near/workspaces-rs/pull/210
+  - Note, the RNG for `SecretKey::{from_random, from_seed}(KeyType::SECP256K1, ...)` has been changed as well, and will produce different keys than before.
+
+### Fixed
+
+- `docs.rs` now shows `unstable` feature flag: https://github.com/near/workspaces-rs/pull/198
+- No longer orphaning sandbox processes on early termination of tests: https://github.com/near/workspaces-rs/pull/205
+- Fixed sandbox colliding installs: https://github.com/near/workspaces-rs/pull/211
+- sandbox no longer spamming stats logs: https://github.com/near/workspaces-rs/pull/213
 
 ## [0.5.0]
 
@@ -154,7 +174,12 @@ worker.view_state("account_id")
 
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
+<<<<<<< HEAD
 [unreleased]: https://github.com/near/workspaces-rs/compare/0.5.0...HEAD
+=======
+[unreleased]: https://github.com/near/workspaces-rs/compare/0.6.0...HEAD
+[0.6.0]: https://github.com/near/workspaces-rs/compare/0.5.0...0.6.0
+>>>>>>> 3d9a76a593470643342d7acb8f2903e941d901b1
 [0.5.0]: https://github.com/near/workspaces-rs/compare/0.4.1...0.5.0
 [0.4.1]: https://github.com/near/workspaces-rs/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/near/workspaces-rs/compare/0.3.1...0.4.0

@@ -10,7 +10,7 @@ use std::path::Path;
 
 pub use near_account_id::AccountId;
 use near_primitives::logging::pretty_hash;
-use near_primitives::serialize::{from_base, to_base};
+use near_primitives::serialize::to_base58;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, ErrorKind};
@@ -29,6 +29,10 @@ pub type Balance = u128;
 
 /// Height of a specific block
 pub type BlockHeight = u64;
+
+fn from_base58(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+    bs58::decode(s).into_vec().map_err(|err| err.into())
+}
 
 /// Key types supported for either a [`SecretKey`] or [`PublicKey`]
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -148,7 +152,7 @@ impl std::str::FromStr for CryptoHash {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = from_base(s).map_err(|e| ErrorKind::DataConversion.custom(e))?;
+        let bytes = from_base58(s).map_err(|e| ErrorKind::DataConversion.custom(e))?;
         Self::try_from(bytes)
     }
 }
@@ -188,7 +192,7 @@ impl fmt::Debug for CryptoHash {
 
 impl fmt::Display for CryptoHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&to_base(&self.0), f)
+        fmt::Display::fmt(&to_base58(&self.0), f)
     }
 }
 

@@ -11,21 +11,14 @@ use url::Url;
 use near_crypto::SecretKey;
 use near_primitives::views::StateItem;
 
-use crate::error::{Error, ErrorKind, RpcErrorCode};
+use crate::error::{ErrorKind, RpcErrorCode};
 use crate::result::Result;
 use crate::types::{AccountId, PublicKey};
 
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
 /// Assumes key and value are base64 encoded, so this also decodes them.
-pub(crate) fn into_state_map(state_items: &[StateItem]) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
-    let decode = |s: &StateItem| {
-        Ok((
-            base64::decode(&s.key).map_err(|e| Error::custom(ErrorKind::DataConversion, e))?,
-            base64::decode(&s.value).map_err(|e| Error::custom(ErrorKind::DataConversion, e))?,
-        ))
-    };
-
-    state_items.iter().map(decode).collect()
+pub(crate) fn into_state_map(state_items: Vec<StateItem>) -> HashMap<Vec<u8>, Vec<u8>> {
+    state_items.into_iter().map(|s| (s.key, s.value)).collect()
 }
 
 pub(crate) fn random_account_id() -> AccountId {

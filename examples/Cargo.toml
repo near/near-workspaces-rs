@@ -8,7 +8,7 @@ edition = "2018"
 anyhow = "1.0"
 borsh = "0.9"
 maplit = "1.0"
-near-units = "0.1.0"
+near-units = "0.2.0"
 serde = "1.0"
 serde_with = "1"
 # arbitrary_precision enabled for u128 types that workspaces requires for Balance types

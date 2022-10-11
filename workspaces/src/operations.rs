@@ -106,6 +106,8 @@ impl<T> FunctionArgs<T> {
 /// is most commonly constructed from [`Account::batch`] or [`Contract::batch`],
 /// where `receiver_id` is specified in the `Account::batch` while `Contract::id()`
 /// is used by default for `Contract::batch`.
+///
+/// [`Contract::batch`]: crate::Contract::batch
 pub struct Transaction<'a> {
     client: &'a Client,
     signer: InMemorySigner,
