@@ -54,9 +54,10 @@ impl<'a, T> Query<'a, T> {
     }
 }
 
+// Constrained to RpcQueryRequest, since methods like GasPrice only take block_id but not Finality.
 impl<'a, T> Query<'a, T>
 where
-    T: Queryable<Method = methods::query::RpcQueryRequest>,
+    T: ProcessQuery<Method = methods::query::RpcQueryRequest>,
 {
     /// Specify at which block [`Finality`] to query from.
     pub fn finality(mut self, value: Finality) -> Self {
@@ -72,10 +73,10 @@ where
 
 impl<'a, T, R> std::future::IntoFuture for Query<'a, T>
 where
-    T: Queryable<Output = R> + Send + Sync + 'static,
-    <T as Queryable>::Method: RpcMethod + Debug + Send + Sync,
-    <<T as Queryable>::Method as RpcMethod>::Response: Debug + Send + Sync,
-    <<T as Queryable>::Method as RpcMethod>::Error: Debug + Display + Send + Sync,
+    T: ProcessQuery<Output = R> + Send + Sync + 'static,
+    <T as ProcessQuery>::Method: RpcMethod + Debug + Send + Sync,
+    <<T as ProcessQuery>::Method as RpcMethod>::Response: Debug + Send + Sync,
+    <<T as ProcessQuery>::Method as RpcMethod>::Error: Debug + Display + Send + Sync,
 {
     type Output = Result<R>;
 
@@ -97,10 +98,11 @@ where
     }
 }
 
+// Note: this trait is exposed publicly due to constraining with the impl offering `finality`.
 /// Trait used as a converter from WorkspaceRequest to near-rpc request, and from near-rpc
 /// response to a WorkspaceResult. Mostly used internally to facilitate syntax sugar for performing
 /// RPC requests with async builders.
-pub trait Queryable {
+pub trait ProcessQuery {
     // TODO: associated default type is unstable. So for now, will require writing
     // the manual impls for query_request
     /// Method for doing the internal RPC request to the network of our choosing.
@@ -149,7 +151,7 @@ pub struct ViewAccessKeyList {
 
 pub struct GasPrice;
 
-impl Queryable for ViewFunction {
+impl ProcessQuery for ViewFunction {
     type Method = methods::query::RpcQueryRequest;
     type Output = ViewResultDetails;
 
@@ -198,7 +200,7 @@ impl Query<'_, ViewFunction> {
     }
 }
 
-impl Queryable for ViewCode {
+impl ProcessQuery for ViewCode {
     type Method = methods::query::RpcQueryRequest;
     type Output = Vec<u8>;
 
@@ -219,7 +221,7 @@ impl Queryable for ViewCode {
     }
 }
 
-impl Queryable for ViewAccount {
+impl ProcessQuery for ViewAccount {
     type Method = methods::query::RpcQueryRequest;
     type Output = AccountDetails;
 
@@ -240,7 +242,7 @@ impl Queryable for ViewAccount {
     }
 }
 
-impl Queryable for ViewBlock {
+impl ProcessQuery for ViewBlock {
     type Method = methods::block::RpcBlockRequest;
     type Output = Block;
 
@@ -253,7 +255,7 @@ impl Queryable for ViewBlock {
     }
 }
 
-impl Queryable for ViewState {
+impl ProcessQuery for ViewState {
     type Method = methods::query::RpcQueryRequest;
     type Output = HashMap<Vec<u8>, Vec<u8>>;
 
@@ -293,7 +295,7 @@ impl<'a> Query<'a, ViewState> {
     }
 }
 
-impl Queryable for ViewAccessKey {
+impl ProcessQuery for ViewAccessKey {
     type Method = methods::query::RpcQueryRequest;
     type Output = AccessKey;
 
@@ -315,7 +317,7 @@ impl Queryable for ViewAccessKey {
     }
 }
 
-impl Queryable for ViewAccessKeyList {
+impl ProcessQuery for ViewAccessKeyList {
     type Method = methods::query::RpcQueryRequest;
     type Output = Vec<AccessKeyInfo>;
 
@@ -338,7 +340,7 @@ impl Queryable for ViewAccessKeyList {
     }
 }
 
-impl Queryable for GasPrice {
+impl ProcessQuery for GasPrice {
     type Method = methods::gas_price::RpcGasPriceRequest;
     type Output = Balance;
 
