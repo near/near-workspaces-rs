@@ -5,8 +5,8 @@ use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
 use crate::rpc::query::{
-    Query, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock, ViewCode, ViewFunction,
-    ViewState,
+    GasPrice, Query, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock, ViewCode,
+    ViewFunction, ViewState,
 };
 use crate::types::{AccountId, Gas, InMemorySigner, PublicKey};
 use crate::worker::Worker;
@@ -164,6 +164,10 @@ where
                 account_id: account_id.clone(),
             },
         )
+    }
+
+    pub fn gas_price(&self) -> Query<'_, GasPrice> {
+        Query::new(self.client(), GasPrice)
     }
 }
 

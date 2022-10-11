@@ -15,7 +15,7 @@ use crate::operations::FunctionOwned;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
 use crate::rpc::tool;
-use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, Finality, PublicKey};
+use crate::types::{AccessKey, AccessKeyInfo, Balance, BlockHeight, Finality, PublicKey};
 use crate::{AccountDetails, Block, CryptoHash, Result};
 
 /// `Query` object allows creating queries into the network of our choice. This object is
@@ -52,7 +52,12 @@ impl<'a, T> Query<'a, T> {
         self.block_ref = Some(BlockId::Hash(near_primitives::hash::CryptoHash(hash.0)).into());
         self
     }
+}
 
+impl<'a, T> Query<'a, T>
+where
+    T: Queryable<Method = methods::query::RpcQueryRequest>,
+{
     /// Specify at which block [`Finality`] to query from.
     pub fn finality(mut self, value: Finality) -> Self {
         self.block_ref = Some(value.into());
@@ -94,7 +99,7 @@ where
 
 /// Trait used as a converter from WorkspaceRequest to near-rpc request, and
 /// from near-rpc response to a WorkspaceResult
-trait Queryable {
+pub trait Queryable {
     // TODO: associated default type is unstable. So for now, will require writing
     // the manual impls for query_request
     type Method: RpcMethod;
@@ -135,6 +140,8 @@ pub struct ViewAccessKey {
 pub struct ViewAccessKeyList {
     pub(crate) account_id: AccountId,
 }
+
+pub struct GasPrice;
 
 impl Queryable for ViewFunction {
     type Method = methods::query::RpcQueryRequest;
@@ -323,5 +330,24 @@ impl Queryable for ViewAccessKeyList {
             }
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
         }
+    }
+}
+
+impl Queryable for GasPrice {
+    type Method = methods::gas_price::RpcGasPriceRequest;
+    type Output = Balance;
+
+    fn into_query_request(self, block_ref: BlockReference) -> Self::Method {
+        let block_id = match block_ref {
+            BlockReference::BlockId(block_id) => Some(block_id),
+            BlockReference::Finality(_finality) => None,
+            _ => panic!(""),
+        };
+
+        Self::Method { block_id }
+    }
+
+    fn process_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
+        Ok(resp.gas_price)
     }
 }
