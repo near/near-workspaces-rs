@@ -102,7 +102,7 @@ impl<'a, 'b> ImportContractTransaction<'a> {
         let mut records = vec![
             StateRecord::Account {
                 account_id: account_id.clone(),
-                account: account_view.clone().into(),
+                account: account_view.clone(),
             },
             StateRecord::AccessKey {
                 account_id: account_id.clone(),

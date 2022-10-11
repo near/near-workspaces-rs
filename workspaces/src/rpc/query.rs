@@ -14,10 +14,9 @@ use crate::error::RpcErrorCode;
 use crate::operations::FunctionOwned;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
+use crate::rpc::tool;
 use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, Finality, PublicKey};
 use crate::{AccountDetails, Block, CryptoHash, Result};
-
-use super::tool;
 
 /// `Query` object allows creating queries into the network of our choice. This object is
 /// usually given from making calls from other functions such as [`view_state`].
@@ -69,9 +68,9 @@ impl<'a, T> Query<'a, T> {
 impl<'a, T, R> std::future::IntoFuture for Query<'a, T>
 where
     T: Queryable<Output = R> + Send + Sync + 'static,
-    <T as Queryable>::QueryMethod: RpcMethod + Debug + Send + Sync,
-    <<T as Queryable>::QueryMethod as RpcMethod>::Response: Debug + Send + Sync,
-    <<T as Queryable>::QueryMethod as RpcMethod>::Error: Debug + Display + Send + Sync,
+    <T as Queryable>::Method: RpcMethod + Debug + Send + Sync,
+    <<T as Queryable>::Method as RpcMethod>::Response: Debug + Send + Sync,
+    <<T as Queryable>::Method as RpcMethod>::Error: Debug + Display + Send + Sync,
 {
     type Output = Result<R>;
 
@@ -98,14 +97,14 @@ where
 trait Queryable {
     // TODO: associated default type is unstable. So for now, will require writing
     // the manual impls for query_request
-    type QueryMethod: RpcMethod;
+    type Method: RpcMethod;
 
     /// Expected output after performing a query. This is mainly to convert over
     /// the type from near-primitives to a workspace type.
     type Output;
 
-    fn into_query_request(self, block_ref: BlockReference) -> Self::QueryMethod;
-    fn process_response(query: <Self::QueryMethod as RpcMethod>::Response) -> Result<Self::Output>;
+    fn into_query_request(self, block_ref: BlockReference) -> Self::Method;
+    fn process_response(query: <Self::Method as RpcMethod>::Response) -> Result<Self::Output>;
 }
 
 pub struct ViewFunction {
@@ -138,11 +137,11 @@ pub struct ViewAccessKeyList {
 }
 
 impl Queryable for ViewFunction {
-    type QueryMethod = methods::query::RpcQueryRequest;
+    type Method = methods::query::RpcQueryRequest;
     type Output = ViewResultDetails;
 
-    fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
-        Self::QueryMethod {
+    fn into_query_request(self, block_reference: BlockReference) -> Self::Method {
+        Self::Method {
             block_reference,
             request: QueryRequest::CallFunction {
                 account_id: self.account_id,
@@ -188,11 +187,11 @@ impl Query<'_, ViewFunction> {
 }
 
 impl Queryable for ViewCode {
-    type QueryMethod = methods::query::RpcQueryRequest;
+    type Method = methods::query::RpcQueryRequest;
     type Output = Vec<u8>;
 
-    fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
-        Self::QueryMethod {
+    fn into_query_request(self, block_reference: BlockReference) -> Self::Method {
+        Self::Method {
             block_reference,
             request: QueryRequest::ViewCode {
                 account_id: self.account_id,
@@ -209,11 +208,11 @@ impl Queryable for ViewCode {
 }
 
 impl Queryable for ViewAccount {
-    type QueryMethod = methods::query::RpcQueryRequest;
+    type Method = methods::query::RpcQueryRequest;
     type Output = AccountDetails;
 
-    fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
-        Self::QueryMethod {
+    fn into_query_request(self, block_reference: BlockReference) -> Self::Method {
+        Self::Method {
             block_reference,
             request: QueryRequest::ViewAccount {
                 account_id: self.account_id,
@@ -230,11 +229,11 @@ impl Queryable for ViewAccount {
 }
 
 impl Queryable for ViewBlock {
-    type QueryMethod = methods::block::RpcBlockRequest;
+    type Method = methods::block::RpcBlockRequest;
     type Output = Block;
 
-    fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
-        Self::QueryMethod { block_reference }
+    fn into_query_request(self, block_reference: BlockReference) -> Self::Method {
+        Self::Method { block_reference }
     }
 
     fn process_response(view: BlockView) -> Result<Self::Output> {
@@ -243,11 +242,11 @@ impl Queryable for ViewBlock {
 }
 
 impl Queryable for ViewState {
-    type QueryMethod = methods::query::RpcQueryRequest;
+    type Method = methods::query::RpcQueryRequest;
     type Output = HashMap<Vec<u8>, Vec<u8>>;
 
-    fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
-        Self::QueryMethod {
+    fn into_query_request(self, block_reference: BlockReference) -> Self::Method {
+        Self::Method {
             block_reference,
             request: QueryRequest::ViewState {
                 account_id: self.account_id,
@@ -256,7 +255,7 @@ impl Queryable for ViewState {
         }
     }
 
-    fn process_response(query: <Self::QueryMethod as RpcMethod>::Response) -> Result<Self::Output> {
+    fn process_response(query: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
         match query.kind {
             QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(&state.values)?),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
@@ -283,11 +282,11 @@ impl<'a> Query<'a, ViewState> {
 }
 
 impl Queryable for ViewAccessKey {
-    type QueryMethod = methods::query::RpcQueryRequest;
+    type Method = methods::query::RpcQueryRequest;
     type Output = AccessKey;
 
-    fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
-        Self::QueryMethod {
+    fn into_query_request(self, block_reference: BlockReference) -> Self::Method {
+        Self::Method {
             block_reference,
             request: QueryRequest::ViewAccessKey {
                 account_id: self.account_id,
@@ -296,7 +295,7 @@ impl Queryable for ViewAccessKey {
         }
     }
 
-    fn process_response(query: <Self::QueryMethod as RpcMethod>::Response) -> Result<Self::Output> {
+    fn process_response(query: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
         match query.kind {
             QueryResponseKind::AccessKey(key) => Ok(key.into()),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
@@ -305,11 +304,11 @@ impl Queryable for ViewAccessKey {
 }
 
 impl Queryable for ViewAccessKeyList {
-    type QueryMethod = methods::query::RpcQueryRequest;
+    type Method = methods::query::RpcQueryRequest;
     type Output = Vec<AccessKeyInfo>;
 
-    fn into_query_request(self, block_reference: BlockReference) -> Self::QueryMethod {
-        Self::QueryMethod {
+    fn into_query_request(self, block_reference: BlockReference) -> Self::Method {
+        Self::Method {
             block_reference,
             request: QueryRequest::ViewAccessKeyList {
                 account_id: self.account_id,
@@ -317,7 +316,7 @@ impl Queryable for ViewAccessKeyList {
         }
     }
 
-    fn process_response(query: <Self::QueryMethod as RpcMethod>::Response) -> Result<Self::Output> {
+    fn process_response(query: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
         match query.kind {
             QueryResponseKind::AccessKeyList(keylist) => {
                 Ok(keylist.keys.into_iter().map(Into::into).collect())
