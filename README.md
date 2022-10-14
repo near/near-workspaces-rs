@@ -14,19 +14,24 @@
 </div>
 
 ## Release notes
+
 **Release notes and unreleased changes can be found in the [CHANGELOG](CHANGELOG.md)**
 
 ## Requirements
+
 - Rust v1.60.0 and up
 - MacOS (x86 and M1) or Linux (x86) for sandbox tests.
 
 ### WASM compilation not supported
+
 `workspaces-rs`, the library itself, does not currently compile to WASM. Best to put this dependency in `[dev-dependencies]` section of `Cargo.toml` if we were trying to run this library alongside something that already does compile to WASM, such as `near-sdk-rs`.
 
 ## Simple Testing Case
+
 A simple test to get us going and familiar with `workspaces` framework. Here, we will be going through the NFT contract and how we can test it with `workspaces-rs`.
 
 ### Setup -- Imports
+
 First, we need to declare some imports for convenience.
 
 ```rust
@@ -40,9 +45,11 @@ use serde_json::json;
 We will need to have our pre-compiled WASM contract ahead of time and know its path. Refer to the respective near-sdk-{rs, js} repos/language for where these paths are located.
 
 In this showcase, we will be pointing to the example's NFT contract:
+
 ```rust
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 ```
+
 NOTE: there is an unstable feature that will allow us to compile our projects during testing time as well. Take a look at the feature section [Compiling Contracts During Test Time](#compiling-contracts-during-test-time)
 
 ### Setup -- Setting up Sandbox and Deploying NFT Contract
@@ -57,14 +64,17 @@ async fn test_nft_contract() -> anyhow::Result<()> {
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 ```
+
 Where
-* `anyhow` - A crate that deals with error handling, making it more robust for developers.
-* `worker` - Our gateway towards interacting with our sandbox environment.
-* `contract`- The deployed contract on sandbox the developer interacts with.
+
+- `anyhow` - A crate that deals with error handling, making it more robust for developers.
+- `worker` - Our gateway towards interacting with our sandbox environment.
+- `contract`- The deployed contract on sandbox the developer interacts with.
 
 ### Initialize Contract & Test Output
 
 Then we'll go directly into making a call into the contract, and initialize the NFT contract's metadata:
+
 ```rust
     let outcome = contract
         .call("new_default_meta")
@@ -101,7 +111,9 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
 
     println!("nft_mint outcome: {:#?}", outcome);
 ```
+
 Then later on, we can view our minted NFT's metadata via our `view` call into `nft_metadata`:
+
 ```rust
     let result: serde_json::Value = contract
         .call("nft_metadata")
@@ -117,12 +129,14 @@ Then later on, we can view our minted NFT's metadata via our `view` call into `n
 
 ### Updating Contract Afterwards
 
-Note that if our contract code changes, `workspaces-rs` does nothing about it since we are utilizing `deploy`/`dev_deploy` to merely send the contract bytes to the network. So if it does change, we will have to recompile the contract as usual, and point `deploy`/`dev_deploy` again to the right WASM files. However, there is a workspaces feature that will recompile contract changes for us: refer to the experimental/unstable [`compile_project`](#compiling-contracts-during-test-time) function for telling workspaces to compile a *Rust* project for us.
+Note that if our contract code changes, `workspaces-rs` does nothing about it since we are utilizing `deploy`/`dev_deploy` to merely send the contract bytes to the network. So if it does change, we will have to recompile the contract as usual, and point `deploy`/`dev_deploy` again to the right WASM files. However, there is a workspaces feature that will recompile contract changes for us: refer to the experimental/unstable [`compile_project`](#compiling-contracts-during-test-time) function for telling workspaces to compile a _Rust_ project for us.
 
 ## Examples
+
 More standalone examples can be found in `examples/src/*.rs`.
 
 To run the above NFT example, execute:
+
 ```
 cargo run --example nft
 ```
@@ -163,6 +177,7 @@ async fn call_my_func(contract: &Contract) -> anyhow::Result<()> {
 ```
 
 Or to pass around workers regardless of networks:
+
 ```rust
 use workspaces::{DevNetwork, Worker};
 
@@ -178,6 +193,7 @@ async fn deploy_my_contract(worker: Worker<impl DevNetwork>) -> anyhow::Result<C
 ### View Account Details
 
 We can check the balance of our accounts like so:
+
 ```rs
 #[test(tokio::test)]
 async fn test_contract_transfer() -> anyhow::Result<()> {
@@ -214,9 +230,11 @@ async fn test_contract_transfer() -> anyhow::Result<()> {
 For viewing other chain related details, look at the docs for [Worker](https://docs.rs/workspaces/0.4.1/workspaces/struct.Worker.html), [Account](https://docs.rs/workspaces/0.4.1/workspaces/struct.Account.html) and [Contract](https://docs.rs/workspaces/0.4.1/workspaces/struct.Contract.html)
 
 ### Spooning - Pulling Existing State and Contracts from Mainnet/Testnet
+
 This example will showcase spooning state from a testnet contract into our local sandbox environment.
 
 We will first start with the usual imports:
+
 ```rust
 use near_units::{parse_gas, parse_near};
 use workspaces::network::Sandbox;
@@ -224,6 +242,7 @@ use workspaces::{Account, AccountId, BlockHeight, Contract, Worker};
 ```
 
 Then specify the contract name from testnet we want to be pulling:
+
 ```rust
 const CONTRACT_ACCOUNT: &str = "contract_account_name_on_testnet.testnet";
 ```
@@ -235,6 +254,7 @@ const BLOCK_HEIGHT: BlockHeight = 12345;
 ```
 
 Create a function called `pull_contract` which will pull the contract's `.wasm` file from the chain and deploy it onto our local sandbox. We'll have to re-initialize it with all the data to run tests.
+
 ```rust
 async fn pull_contract(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
     let testnet = workspaces::testnet_archival().await?;
@@ -243,7 +263,7 @@ async fn pull_contract(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Res
 
 This next line will actually pull down the relevant contract from testnet and set an initial balance on it with 1000 NEAR.
 
-Following that we will have to init the contract again with our own metadata. This is because the contract's data is to big for the RPC service to pull down, who's limits are set to 50mb.
+Following that we will have to init the contract again with our own metadata. This is because the contract's data is to big for the RPC service to pull down, who's limits are set to 50kb.
 
 ```rust
 
@@ -268,6 +288,7 @@ Following that we will have to init the contract again with our own metadata. Th
 ```
 
 ### Time Traveling
+
 `workspaces` testing offers support for forwarding the state of the blockchain to the future. This means contracts which require time sensitive data do not need to sit and wait the same amount of time for blocks on the sandbox to be produced. We can simply just call `worker.fast_forward` to get us further in time:
 
 ```rust
@@ -285,16 +306,20 @@ async fn test_contract() -> anyhow::Result<()> {
         .await?;
 }
 ```
+
 For a full example, take a look at [examples/src/fast_forward.rs](https://github.com/near/workspaces-rs/blob/main/examples/src/fast_forward.rs).
 
-
 ### Compiling Contracts During Test Time
+
 Note, this is an unstable feature and will very likely change. To enable it, add the `unstable` feature flag to `workspaces` dependency in `Cargo.toml`:
+
 ```toml
 [dependencies]
 workspaces = { version = "...", features = ["unstable"] }
 ```
+
 Then, in our tests right before we call into `deploy` or `dev_deploy`, we can compile our projects:
+
 ```rust
 #[tokio::test]
 async fn test_contract() -> anyhow::Result<()> {
@@ -305,10 +330,12 @@ async fn test_contract() -> anyhow::Result<()> {
     ...
 }
 ```
+
 For a full example, take a look at [workspaces/tests/deploy_project.rs](https://github.com/near/workspaces-rs/blob/main/workspaces/tests/deploy_project.rs).
 
-
 ### Environment Variables
+
 These environment variables will be useful if there was ever a snag hit:
+
 - `NEAR_RPC_TIMEOUT_SECS`: The default is 10 seconds, but this is the amount of time beforing timing out waiting for a RPC service when talking to the sandbox or any other network such as testnet.
 - `NEAR_SANDBOX_BIN_PATH`: Set this to our own prebuilt `neard-sandbox` bin path if we want to use a non-default version of the sandbox or configure nearcore with our own custom features that we want to test in workspaces.
