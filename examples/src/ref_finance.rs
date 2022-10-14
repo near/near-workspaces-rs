@@ -32,7 +32,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
 
     // NOTE: We are not pulling down the contract's data here, so we'll need to initalize
     // our own set of metadata. This is because the contract's data is too big for the rpc
-    // service to pull down (i.e. greater than 50mb).
+    // service to pull down (i.e. greater than 50kb).
 
     owner
         .call(ref_finance.id(), "new")

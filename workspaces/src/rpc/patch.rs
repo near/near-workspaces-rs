@@ -69,7 +69,7 @@ impl<'a, 'b> ImportContractTransaction<'a> {
 
     /// Along with importing the contract code, this will import the state from the
     /// contract itself. This is useful for testing current network state or state
-    /// at a specific block. Note that there is a limit of 50mb of state data that
+    /// at a specific block. Note that there is a limit of 50kb of state data that
     /// can be pulled down using the usual RPC service. To get beyond this, our own
     /// RPC node has to be spun up and used instead.
     pub fn with_data(mut self) -> Self {
