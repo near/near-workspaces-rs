@@ -3,13 +3,14 @@
 use crate::error::ErrorKind;
 use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{
-    send_batch_tx_and_retry, Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS,
+    send_batch_tx_and_retry, send_batch_tx_async_and_retry, Client, DEFAULT_CALL_DEPOSIT,
+    DEFAULT_CALL_FN_GAS,
 };
 use crate::types::{
     AccessKey, AccountId, Balance, Gas, InMemorySigner, KeyType, PublicKey, SecretKey,
 };
 use crate::worker::Worker;
-use crate::{Account, Network};
+use crate::{Account, CryptoHash, Network};
 
 use near_account_id::ParseAccountError;
 use near_primitives::transaction::{
@@ -232,6 +233,11 @@ impl<'a> Transaction<'a> {
             .map(ExecutionFinalResult::from_view)
             .map_err(crate::error::Error::from)
     }
+
+    pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
+        send_batch_tx_async_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?)
+            .await
+    }
 }
 
 /// Similiar to a [`Transaction`], but more specific to making a call into a contract.
@@ -318,6 +324,22 @@ impl<'a> CallTransaction<'a> {
             .map_err(crate::error::Error::from)
     }
 
+    pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
+        send_batch_tx_async_and_retry(
+            self.worker.client(),
+            &self.signer,
+            &self.contract_id,
+            vec![FunctionCallAction {
+                args: self.function.args?,
+                method_name: self.function.name.into(),
+                gas: self.function.gas,
+                deposit: self.function.deposit,
+            }
+            .into()],
+        )
+        .await
+    }
+
     /// Instead of transacting the transaction, call into the specified view function.
     pub async fn view(self) -> Result<ViewResultDetails> {
         self.worker
@@ -391,5 +413,63 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
             result: account,
             details: ExecutionFinalResult::from_view(outcome),
         })
+    }
+}
+
+/// TransactionStatus object of an [`asynchronous transaction`]. Used to query into
+/// the transaction status of
+///
+/// [`asynchrouns transaction`]: https://docs.near.org/api/rpc/transactions#send-transaction-async
+#[must_use]
+pub struct TransactionStatus<'a> {
+    client: &'a Client,
+    sender_id: AccountId,
+    hash: CryptoHash,
+}
+
+impl<'a> TransactionStatus<'a> {
+    pub(crate) fn new(
+        client: &'a Client,
+        id: AccountId,
+        hash: near_primitives::hash::CryptoHash,
+    ) -> Self {
+        Self {
+            client,
+            sender_id: id,
+            hash: CryptoHash(hash.0),
+        }
+    }
+
+    /// Checks the status of the transaction. If an `Err` is returned, then the
+    /// transaction has not completed yet.
+    pub async fn status(&self) -> Result<ExecutionFinalResult> {
+        self.client
+            .tx_async_status(
+                &self.sender_id,
+                near_primitives::hash::CryptoHash(self.hash.0),
+            )
+            .await
+            .map(ExecutionFinalResult::from_view)
+    }
+
+    /// Wait till completion of the transaction.
+    pub async fn wait(self) -> ExecutionFinalResult {
+        loop {
+            if let Ok(val) = self.status().await {
+                break val;
+            }
+
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        }
+    }
+
+    /// Get the [`AccountId`] of the account that initiated this transaction.
+    pub fn sender_id(&self) -> &AccountId {
+        &self.sender_id
+    }
+
+    /// Reference [`CryptoHash`] to the submitted transaction, pending completion.
+    pub fn hash(&self) -> &CryptoHash {
+        &self.hash
     }
 }
