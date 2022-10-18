@@ -226,7 +226,7 @@ impl<'a> Transaction<'a> {
         send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?).await
     }
 
-    /// Process the trannsaction, and return the result of the execution.
+    /// Process the transaction, and return the result of the execution.
     pub async fn transact(self) -> Result<ExecutionFinalResult> {
         self.transact_raw()
             .await
@@ -234,6 +234,13 @@ impl<'a> Transaction<'a> {
             .map_err(crate::error::Error::from)
     }
 
+    /// Send the transaction to the network to be processed. This will be done asynchronously
+    /// without waiting for the transaction to complete. This returns us a [`TransactionStatus`]
+    /// for which we can call into [`status`] and/or [`wait`] to retrieve info about whether
+    /// the transaction has been completed or not.
+    ///
+    /// [`status`]: TransactionStatus::status
+    /// [`wait`]: TransactionStatus::wait
     pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
         send_batch_tx_async_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?)
             .await
@@ -324,6 +331,13 @@ impl<'a> CallTransaction<'a> {
             .map_err(crate::error::Error::from)
     }
 
+    /// Send the transaction to the network to be processed. This will be done asynchronously
+    /// without waiting for the transaction to complete. This returns us a [`TransactionStatus`]
+    /// for which we can call into [`status`] and/or [`wait`] to retrieve info about whether
+    /// the transaction has been completed or not.
+    ///
+    /// [`status`]: TransactionStatus::status
+    /// [`wait`]: TransactionStatus::wait
     pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
         send_batch_tx_async_and_retry(
             self.worker.client(),
@@ -416,10 +430,10 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
     }
 }
 
-/// TransactionStatus object of an [`asynchronous transaction`]. Used to query into
-/// the transaction status of
+/// `TransactionStatus` object relating to an [`asynchronous transaction`] on the network.
+/// Used to query into the status of the Transaction for whether it has completed or not.
 ///
-/// [`asynchrouns transaction`]: https://docs.near.org/api/rpc/transactions#send-transaction-async
+/// [`asynchronous transaction`]: https://docs.near.org/api/rpc/transactions#send-transaction-async
 #[must_use]
 pub struct TransactionStatus<'a> {
     client: &'a Client,
