@@ -35,7 +35,10 @@ impl Error {
         }
     }
 
-    pub(crate) fn full<T, E>(kind: ErrorKind, msg: T, error: E) -> Self
+    /// Construct a workspaces [`Error`] with the full details of an error which includes
+    /// the internal error it references, the custom error message with further context
+    /// and the [`ErrorKind`] that represents the category of error.
+    pub fn full<T, E>(kind: ErrorKind, msg: T, error: E) -> Self
     where
         T: Into<Cow<'static, str>>,
         E: Into<Box<dyn std::error::Error + Send + Sync>>,
@@ -49,7 +52,10 @@ impl Error {
         }
     }
 
-    pub(crate) fn custom<E>(kind: ErrorKind, error: E) -> Self
+    /// Construct a workspaces [`Error`] with the details of an error which includes
+    /// the internal error it references and the [`ErrorKind`] that represents the
+    /// category of error.
+    pub fn custom<E>(kind: ErrorKind, error: E) -> Self
     where
         E: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
@@ -61,7 +67,10 @@ impl Error {
         }
     }
 
-    pub(crate) fn message<T>(kind: ErrorKind, msg: T) -> Self
+    /// Construct a workspaces [`Error`] with the details of an error which includes
+    /// the custom error message with further context and the [`ErrorKind`] that
+    /// represents the category of error.
+    pub fn message<T>(kind: ErrorKind, msg: T) -> Self
     where
         T: Into<Cow<'static, str>>,
     {
@@ -73,7 +82,9 @@ impl Error {
         }
     }
 
-    pub(crate) fn simple(kind: ErrorKind) -> Self {
+    /// Construct a workspaces [`Error`] with the details of an error which only
+    /// includes the [`ErrorKind`] that represents the category of error.
+    pub fn simple(kind: ErrorKind) -> Self {
         Self {
             repr: ErrorRepr::Simple(kind),
         }
