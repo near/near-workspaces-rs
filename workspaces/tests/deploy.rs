@@ -43,11 +43,7 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
         .await?
         .into_result()?;
 
-    let actual: NftMetadata = contract
-        .view("nft_metadata")
-        .args(Vec::new())
-        .await?
-        .json()?;
+    let actual: NftMetadata = contract.view("nft_metadata").await?.json()?;
 
     assert_eq!(actual, expected());
 

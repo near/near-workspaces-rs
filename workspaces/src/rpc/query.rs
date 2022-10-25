@@ -1,3 +1,30 @@
+//! This module defines a bunch of internal types used solely for querying into RPC
+//! methods to retrieve info about what's on the chain. Note that the types defined
+//! exposed as-is for users to reference in their own functions or structs as needed.
+//! These types cannot be created outside of workspaces. To use them, refer to
+//! surface level types like [`Account`], [`Contract`] and [`Worker`].
+//!
+//! For example, to query into downloading
+//! contract state:
+//! ```ignore
+//! fn my_func(worker: &Worker<impl Network>>) -> anyhow::Result<()> {
+//!     let contract_id: AccountId = "some-contract.near"
+//!     let query: Query<'_, ViewCode> = worker.view_state(&contract_id);
+//!     let bytes = query.await?;
+//!     Ok(())
+//! }
+//! ```
+//! But most of the time, we do not need to worry about these types as they are
+//! meant to be transitory, and only exist while calling into their immediate
+//! methods. So the above example should look more like the following:
+//! //! ```ignore
+//! fn my_func(worker: &Worker<impl Network>>) -> anyhow::Result<()> {
+//!     let contract_id: AccountId = "some-contract.near"
+//!     let bytes = worker.view_state(&contract_id).await?;
+//!     Ok(())
+//! }
+//! ```
+
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 
@@ -216,7 +243,7 @@ impl ProcessQuery for ViewCode {
     fn from_response(resp: RpcQueryResponse) -> Result<Self::Output> {
         match resp.kind {
             QueryResponseKind::ViewCode(contract) => Ok(contract.code),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying account")),
+            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying code")),
         }
     }
 }
@@ -313,7 +340,7 @@ impl ProcessQuery for ViewAccessKey {
     fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
         match resp.kind {
             QueryResponseKind::AccessKey(key) => Ok(key.into()),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
+            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying access key")),
         }
     }
 }
@@ -336,7 +363,7 @@ impl ProcessQuery for ViewAccessKeyList {
             QueryResponseKind::AccessKeyList(keylist) => {
                 Ok(keylist.keys.into_iter().map(Into::into).collect())
             }
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
+            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying access keys")),
         }
     }
 }
@@ -347,9 +374,16 @@ impl ProcessQuery for GasPrice {
 
     fn into_request(self, block_ref: BlockReference) -> Result<Self::Method> {
         let block_id = match block_ref {
+            // User provided input via `block_hash` or `block_height` functions.
             BlockReference::BlockId(block_id) => Some(block_id),
+            // default case, set by `Query` struct via BlockReference::latest.
             BlockReference::Finality(_finality) => None,
-            _ => panic!(""),
+            // Should not be reachable, unless code got changed.
+            other => {
+                return Err(RpcErrorCode::QueryFailure.message(format!(
+                    "Invalid block reference provided to gas price: {other:?}"
+                )))
+            }
         };
 
         Ok(Self::Method { block_id })

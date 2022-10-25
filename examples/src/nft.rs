@@ -38,12 +38,10 @@ async fn main() -> anyhow::Result<()> {
 
     let result: serde_json::Value = worker
         .view(contract.id(), "nft_metadata")
-        .args(Vec::new())
         .await?
         .json()?;
 
     println!("--------------\n{}", result);
-
     println!("Dev Account ID: {}", contract.id());
 
     Ok(())

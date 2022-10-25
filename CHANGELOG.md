@@ -4,23 +4,23 @@
 
 ### Added
 
-- `view_*` asynchronous builders have been added which provides being able to query from a specific [`BlockReference`]()
+- [`view_*` asynchronous builders have been added which provides being able to query from a specific block hash or block height](https://github.com/near/workspaces-rs/pull/218)
 
 ### Changed
 
-- Apart of the changes from adding `view_*` async builders, we can have a couple breaking changes to the `view_*` functions:
+- [Apart of the changes from adding `view_*` async builders, we can have a couple breaking changes to the `view_*` functions](https://github.com/near/workspaces-rs/pull/218):
   - `{Account, Contract, Worker}::view_state` moved `prefix` parameter into builder. i.e.
+    ```
+    worker.view_state("account_id", Some(prefix)).await?;
+    // is now
+    worker.view_state("account_id")
+        .prefix(prefix)
+        .await?;
+    // if prefix was `None`, then simply delete the None argument.
+    ```
   - `view` function changed to be a builder, and no longer take in `args` as a parameter. It instead has been moved to the builder side.
   - Changed `Worker::view_latest_block` to `Worker::view_block` as the default behavior is equivalent.
 
-```
-worker.view_state("account_id", Some(prefix)).await?;
-// is now
-worker.view_state("account_id")
-    .prefix(prefix)
-    .await?;
-// if prefix was `None`, then simply delete the None argument.
-```
 ## [0.6.0]
 
 ### Added
@@ -174,12 +174,8 @@ worker.view_state("account_id")
 
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
-<<<<<<< HEAD
-[unreleased]: https://github.com/near/workspaces-rs/compare/0.5.0...HEAD
-=======
 [unreleased]: https://github.com/near/workspaces-rs/compare/0.6.0...HEAD
 [0.6.0]: https://github.com/near/workspaces-rs/compare/0.5.0...0.6.0
->>>>>>> 3d9a76a593470643342d7acb8f2903e941d901b1
 [0.5.0]: https://github.com/near/workspaces-rs/compare/0.4.1...0.5.0
 [0.4.1]: https://github.com/near/workspaces-rs/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/near/workspaces-rs/compare/0.3.1...0.4.0
