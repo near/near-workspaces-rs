@@ -28,8 +28,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 
-use futures::future::BoxFuture;
-
 use near_account_id::AccountId;
 use near_jsonrpc_client::methods::query::RpcQueryResponse;
 use near_jsonrpc_client::methods::{self, RpcMethod};
@@ -41,7 +39,7 @@ use crate::error::RpcErrorCode;
 use crate::operations::FunctionOwned;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
-use crate::rpc::tool;
+use crate::rpc::{tool, BoxFuture};
 use crate::types::{AccessKey, AccessKeyInfo, Balance, BlockHeight, Finality, PublicKey};
 use crate::{AccountDetails, Block, CryptoHash, Result};
 
