@@ -48,9 +48,16 @@ async fn test_parallel_async() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
     let account = worker.dev_create_account().await?;
 
+    // nonce of access key before any transactions occured.
+    let nonce_start = worker
+        .view_access_key(account.id(), &account.secret_key().public_key())
+        .await?
+        .nonce;
+
     // Create a queue statuses we can check the status of later.
     let mut statuses = VecDeque::new();
-    for msg in ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"] {
+    let messages = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+    for msg in messages {
         let status = account
             .call(contract.id(), "set_status")
             .args_json(json!({
@@ -64,8 +71,10 @@ async fn test_parallel_async() -> anyhow::Result<()> {
     // Retry checking the statuses of all transactions until the queue is empty
     // with all transactions completed.
     while let Some(status) = statuses.pop_front() {
-        if matches!(status.status().await, TransactionPoll::Pending) {
-            statuses.push_back(status);
+        match status.status().await {
+            TransactionPoll::Ready(_) => (),
+            TransactionPoll::Pending => statuses.push_back(status),
+            TransactionPoll::Error(err) => Err(err)?,
         }
     }
 
@@ -77,6 +86,14 @@ async fn test_parallel_async() -> anyhow::Result<()> {
         .await?
         .json::<String>()?;
     assert_eq!(final_set_msg, "j");
+
+    let nonce_end = worker
+        .view_access_key(account.id(), &account.secret_key().public_key())
+        .await?
+        .nonce;
+
+    // The amount of transactions should equal the increase in nonce:
+    assert!(nonce_end - nonce_start == messages.len() as u64);
 
     Ok(())
 }

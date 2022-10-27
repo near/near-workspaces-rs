@@ -349,7 +349,7 @@ impl<'a> CallTransaction<'a> {
             &self.contract_id,
             vec![FunctionCallAction {
                 args: self.function.args?,
-                method_name: self.function.name.into(),
+                method_name: self.function.name,
                 gas: self.function.gas,
                 deposit: self.function.deposit,
             }

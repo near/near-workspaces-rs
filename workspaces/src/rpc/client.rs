@@ -40,7 +40,7 @@ pub struct Client {
     rpc_addr: String,
     rpc_client: JsonRpcClient,
     /// AccessKey nonces to reference when sending transactions.
-    access_key_nonces: RwLock<HashMap<AccountId, AtomicU64>>,
+    pub(crate) access_key_nonces: RwLock<HashMap<AccountId, AtomicU64>>,
 }
 
 impl Client {
@@ -331,7 +331,7 @@ impl Client {
     }
 }
 
-async fn access_key(
+pub(crate) async fn access_key(
     client: &Client,
     account_id: near_primitives::account::id::AccountId,
     public_key: near_crypto::PublicKey,
