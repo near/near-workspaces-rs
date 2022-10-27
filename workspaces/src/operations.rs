@@ -12,6 +12,7 @@ use crate::types::{
 use crate::worker::Worker;
 use crate::{Account, CryptoHash, Network};
 
+use futures::future::BoxFuture;
 use near_account_id::ParseAccountError;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
@@ -19,6 +20,7 @@ use near_primitives::transaction::{
 };
 use near_primitives::views::FinalExecutionOutcomeView;
 use std::convert::TryInto;
+use std::future::IntoFuture;
 
 const MAX_GAS: Gas = 300_000_000_000_000;
 
@@ -456,20 +458,26 @@ impl<'a> TransactionStatus<'a> {
 
     /// Checks the status of the transaction. If an `Err` is returned, then the
     /// transaction has not completed yet.
-    pub async fn status(&self) -> Result<ExecutionFinalResult> {
-        self.client
+    pub async fn status(&self) -> TransactionPoll<ExecutionFinalResult> {
+        let result = self
+            .client
             .tx_async_status(
                 &self.sender_id,
                 near_primitives::hash::CryptoHash(self.hash.0),
             )
             .await
-            .map(ExecutionFinalResult::from_view)
+            .map(ExecutionFinalResult::from_view);
+
+        match result {
+            Ok(result) => TransactionPoll::Complete(result),
+            Err(err) => TransactionPoll::Pending(err.to_string()),
+        }
     }
 
     /// Wait till completion of the transaction.
-    pub async fn wait(self) -> ExecutionFinalResult {
+    pub(crate) async fn wait(self) -> ExecutionFinalResult {
         loop {
-            if let Ok(val) = self.status().await {
+            if let TransactionPoll::Complete(val) = self.status().await {
                 break val;
             }
 
@@ -485,5 +493,20 @@ impl<'a> TransactionStatus<'a> {
     /// Reference [`CryptoHash`] to the submitted transaction, pending completion.
     pub fn hash(&self) -> &CryptoHash {
         &self.hash
+    }
+}
+
+#[derive(Debug)]
+pub enum TransactionPoll<T> {
+    Pending(String),
+    Complete(T),
+}
+
+impl<'a> IntoFuture for TransactionStatus<'a> {
+    type Output = ExecutionFinalResult;
+    type IntoFuture = BoxFuture<'a, Self::Output>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(async { self.wait().await })
     }
 }

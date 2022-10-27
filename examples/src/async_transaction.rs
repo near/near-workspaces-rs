@@ -13,7 +13,8 @@ async fn main() -> anyhow::Result<()> {
         }))
         .transact_async()
         .await?;
-    let outcome = status.wait().await;
+
+    let outcome = status.await;
     println!(
         "Async transaction result from setting hello world: {:#?}",
         outcome
