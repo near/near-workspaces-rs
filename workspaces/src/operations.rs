@@ -474,7 +474,7 @@ impl<'a> TransactionStatus<'a> {
         }
     }
 
-    /// Wait till completion of the transaction.
+    /// Wait until the completion of the transaction by polling [`TransactionStatus::status`].
     pub(crate) async fn wait(self) -> ExecutionFinalResult {
         loop {
             if let TransactionPoll::Complete(val) = self.status().await {
