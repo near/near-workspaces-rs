@@ -17,7 +17,7 @@
 //! But most of the time, we do not need to worry about these types as they are
 //! meant to be transitory, and only exist while calling into their immediate
 //! methods. So the above example should look more like the following:
-//! //! ```ignore
+//! ```ignore
 //! fn my_func(worker: &Worker<impl Network>>) -> anyhow::Result<()> {
 //!     let contract_id: AccountId = "some-contract.near"
 //!     let bytes = worker.view_state(&contract_id).await?;
@@ -36,7 +36,7 @@ use near_primitives::types::{BlockId, BlockReference, StoreKey};
 use near_primitives::views::{BlockView, QueryRequest};
 
 use crate::error::RpcErrorCode;
-use crate::operations::FunctionOwned;
+use crate::operations::Function;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
 use crate::rpc::{tool, BoxFuture};
@@ -147,7 +147,7 @@ pub trait ProcessQuery {
 
 pub struct ViewFunction {
     pub(crate) account_id: AccountId,
-    pub(crate) function: FunctionOwned,
+    pub(crate) function: Function,
 }
 
 pub struct ViewCode {

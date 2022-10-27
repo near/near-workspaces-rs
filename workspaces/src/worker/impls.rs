@@ -1,6 +1,6 @@
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
-use crate::operations::FunctionOwned;
+use crate::operations::Function;
 use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
@@ -67,11 +67,19 @@ where
 
     /// Call into a contract's view function.
     pub fn view(&self, contract_id: &AccountId, function: &str) -> Query<'_, ViewFunction> {
+        self.view_by_function(contract_id, Function::new(function))
+    }
+
+    pub(crate) fn view_by_function(
+        &self,
+        contract_id: &AccountId,
+        function: Function,
+    ) -> Query<'_, ViewFunction> {
         Query::new(
             self.client(),
             ViewFunction {
                 account_id: contract_id.clone(),
-                function: FunctionOwned::new(function.into()),
+                function,
             },
         )
     }

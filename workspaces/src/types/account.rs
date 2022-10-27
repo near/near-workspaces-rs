@@ -74,7 +74,7 @@ impl Account {
         &'a self,
         contract_id: &AccountId,
         function: &'b str,
-    ) -> CallTransaction<'a, 'b> {
+    ) -> CallTransaction<'a> {
         CallTransaction::new(
             &self.worker,
             contract_id.to_owned(),
@@ -275,7 +275,7 @@ impl Contract {
     ///
     /// If we want to make use of the contract's secret key as a signer to call
     /// into another contract, use `contract.as_account().call` instead.
-    pub fn call<'a>(&self, function: &'a str) -> CallTransaction<'_, 'a> {
+    pub fn call(&self, function: &str) -> CallTransaction<'_> {
         self.account.call(self.id(), function)
     }
 

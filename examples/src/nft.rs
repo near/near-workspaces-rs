@@ -36,10 +36,7 @@ async fn main() -> anyhow::Result<()> {
 
     println!("nft_mint outcome: {:#?}", outcome);
 
-    let result: serde_json::Value = worker
-        .view(contract.id(), "nft_metadata")
-        .await?
-        .json()?;
+    let result: serde_json::Value = worker.view(contract.id(), "nft_metadata").await?.json()?;
 
     println!("--------------\n{}", result);
     println!("Dev Account ID: {}", contract.id());

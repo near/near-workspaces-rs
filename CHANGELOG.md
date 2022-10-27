@@ -8,7 +8,7 @@
 
 ### Changed
 
-- [Apart of the changes from adding `view_*` async builders, we can have a couple breaking changes to the `view_*` functions](https://github.com/near/workspaces-rs/pull/218):
+- [Apart of the changes from adding `view_*` async builders, we have a couple breaking changes to the `view_*` functions](https://github.com/near/workspaces-rs/pull/218):
   - `{Account, Contract, Worker}::view_state` moved `prefix` parameter into builder. i.e.
     ```
     worker.view_state("account_id", Some(prefix)).await?;
@@ -20,6 +20,7 @@
     ```
   - `view` function changed to be a builder, and no longer take in `args` as a parameter. It instead has been moved to the builder side.
   - Changed `Worker::view_latest_block` to `Worker::view_block` as the default behavior is equivalent.
+  - `operations::Function` type no longer takes a lifetime parameter.
 
 ## [0.6.0]
 
