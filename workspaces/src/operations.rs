@@ -6,13 +6,13 @@ use crate::rpc::client::{
     send_batch_tx_and_retry, send_batch_tx_async_and_retry, Client, DEFAULT_CALL_DEPOSIT,
     DEFAULT_CALL_FN_GAS,
 };
+use crate::rpc::BoxFuture;
 use crate::types::{
     AccessKey, AccountId, Balance, Gas, InMemorySigner, KeyType, PublicKey, SecretKey,
 };
 use crate::worker::Worker;
 use crate::{Account, CryptoHash, Network};
 
-use futures::future::BoxFuture;
 use near_account_id::ParseAccountError;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
