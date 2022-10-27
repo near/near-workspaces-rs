@@ -206,10 +206,10 @@ pub struct AccessKey {
     /// NOTE: In some cases the access key needs to be recreated. If the new access key reuses the
     /// same public key, the nonce of the new access key should be equal to the nonce of the old
     /// access key. It's required to avoid replaying old transactions again.
-    nonce: Nonce,
+    pub nonce: Nonce,
 
     /// Defines permissions for this access key.
-    permission: AccessKeyPermission,
+    pub permission: AccessKeyPermission,
 }
 
 impl AccessKey {
@@ -253,7 +253,7 @@ impl From<near_primitives::views::AccessKeyInfoView> for AccessKeyInfo {
 
 /// Defines permissions for AccessKey
 #[derive(Clone, Debug)]
-enum AccessKeyPermission {
+pub enum AccessKeyPermission {
     FunctionCall(FunctionCallPermission),
 
     /// Grants full access to the account.
