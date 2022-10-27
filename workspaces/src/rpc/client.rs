@@ -289,7 +289,7 @@ impl Client {
         &self,
         sender_id: &AccountId,
         hash: CryptoHash,
-    ) -> Result<FinalExecutionOutcomeView> {
+    ) -> Result<FinalExecutionOutcomeView, JsonRpcError<RpcTransactionError>> {
         self.query(methods::tx::RpcTransactionStatusRequest {
             transaction_info: methods::tx::TransactionInfo::TransactionId {
                 account_id: sender_id.clone(),
@@ -297,7 +297,6 @@ impl Client {
             },
         })
         .await
-        .map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))
     }
 
     pub(crate) async fn wait_for_rpc(&self) -> Result<()> {

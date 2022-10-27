@@ -1,6 +1,6 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
-use crate::error::ErrorKind;
+use crate::error::{Error, ErrorKind, RpcErrorCode};
 use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, send_batch_tx_async_and_retry, Client, DEFAULT_CALL_DEPOSIT,
@@ -14,6 +14,8 @@ use crate::worker::Worker;
 use crate::{Account, CryptoHash, Network};
 
 use near_account_id::ParseAccountError;
+use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
+use near_jsonrpc_client::methods::tx::RpcTransactionError;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
     DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
@@ -456,7 +458,7 @@ impl<'a> TransactionStatus<'a> {
         }
     }
 
-    /// Checks the status of the transaction. If an `Err` is returned, then the
+    /// Checks the status of the transaction. If an [`TransactionPoll::Pending`] is returned, then the
     /// transaction has not completed yet.
     pub async fn status(&self) -> TransactionPoll<ExecutionFinalResult> {
         let result = self
@@ -469,16 +471,23 @@ impl<'a> TransactionStatus<'a> {
             .map(ExecutionFinalResult::from_view);
 
         match result {
-            Ok(result) => TransactionPoll::Complete(result),
-            Err(err) => TransactionPoll::Pending(err.to_string()),
+            Ok(result) => TransactionPoll::Ready(result),
+            Err(err) => match err {
+                JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
+                    RpcTransactionError::UnknownTransaction { .. },
+                )) => TransactionPoll::Pending,
+                other => TransactionPoll::Error(RpcErrorCode::BroadcastTxFailure.custom(other)),
+            },
         }
     }
 
     /// Wait until the completion of the transaction by polling [`TransactionStatus::status`].
-    pub(crate) async fn wait(self) -> ExecutionFinalResult {
+    pub(crate) async fn wait(self) -> Result<ExecutionFinalResult> {
         loop {
-            if let TransactionPoll::Complete(val) = self.status().await {
-                break val;
+            match self.status().await {
+                TransactionPoll::Ready(val) => break Ok(val),
+                TransactionPoll::Error(err) => break Err(err),
+                TransactionPoll::Pending => (),
             }
 
             tokio::time::sleep(std::time::Duration::from_millis(300)).await;
@@ -498,12 +507,13 @@ impl<'a> TransactionStatus<'a> {
 
 #[derive(Debug)]
 pub enum TransactionPoll<T> {
-    Pending(String),
-    Complete(T),
+    Ready(T),
+    Pending,
+    Error(Error),
 }
 
 impl<'a> IntoFuture for TransactionStatus<'a> {
-    type Output = ExecutionFinalResult;
+    type Output = Result<ExecutionFinalResult>;
     type IntoFuture = BoxFuture<'a, Self::Output>;
 
     fn into_future(self) -> Self::IntoFuture {

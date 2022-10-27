@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use serde_json::json;
+use workspaces::operations::TransactionPoll;
 
 const STATUS_MSG_CONTRACT: &[u8] = include_bytes!("../../examples/res/status_message.wasm");
 
@@ -63,7 +64,7 @@ async fn test_parallel_async() -> anyhow::Result<()> {
     // Retry checking the statuses of all transactions until the queue is empty
     // with all transactions completed.
     while let Some(status) = statuses.pop_front() {
-        if let Err(_err) = status.status().await {
+        if matches!(status.status().await, TransactionPoll::Pending) {
             statuses.push_back(status);
         }
     }
