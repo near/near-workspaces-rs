@@ -1,6 +1,6 @@
 //! All operation types that are generated/used when making transactions or view calls.
 
-use crate::error::{Error, ErrorKind, RpcErrorCode};
+use crate::error::{ErrorKind, RpcErrorCode};
 use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{
     send_batch_tx_and_retry, send_batch_tx_async_and_retry, Client, DEFAULT_CALL_DEPOSIT,
