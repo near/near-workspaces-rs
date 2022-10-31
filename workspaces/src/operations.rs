@@ -23,6 +23,7 @@ use near_primitives::transaction::{
 use near_primitives::views::FinalExecutionOutcomeView;
 use std::convert::TryInto;
 use std::future::IntoFuture;
+use std::task::Poll;
 
 const MAX_GAS: Gas = 300_000_000_000_000;
 
@@ -458,9 +459,10 @@ impl<'a> TransactionStatus<'a> {
         }
     }
 
-    /// Checks the status of the transaction. If an [`TransactionPoll::Pending`] is returned, then the
-    /// transaction has not completed yet.
-    pub async fn status(&self) -> TransactionPoll<ExecutionFinalResult> {
+    /// Checks the status of the transaction. If an `Err` is returned, then the transaction
+    /// is in an unexpected state. The error should have further context. Otherwise, if an
+    /// `Ok` value with [`Poll::Pending`] is returned, then the transaction has not finished.
+    pub async fn status(&self) -> Result<Poll<ExecutionFinalResult>> {
         let result = self
             .client
             .tx_async_status(
@@ -471,12 +473,12 @@ impl<'a> TransactionStatus<'a> {
             .map(ExecutionFinalResult::from_view);
 
         match result {
-            Ok(result) => TransactionPoll::Ready(result),
+            Ok(result) => Ok(Poll::Ready(result)),
             Err(err) => match err {
                 JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
                     RpcTransactionError::UnknownTransaction { .. },
-                )) => TransactionPoll::Pending,
-                other => TransactionPoll::Error(RpcErrorCode::BroadcastTxFailure.custom(other)),
+                )) => Ok(Poll::Pending),
+                other => Err(RpcErrorCode::BroadcastTxFailure.custom(other)),
             },
         }
     }
@@ -484,10 +486,9 @@ impl<'a> TransactionStatus<'a> {
     /// Wait until the completion of the transaction by polling [`TransactionStatus::status`].
     pub(crate) async fn wait(self) -> Result<ExecutionFinalResult> {
         loop {
-            match self.status().await {
-                TransactionPoll::Ready(val) => break Ok(val),
-                TransactionPoll::Error(err) => break Err(err),
-                TransactionPoll::Pending => (),
+            match self.status().await? {
+                Poll::Ready(val) => break Ok(val),
+                Poll::Pending => (),
             }
 
             tokio::time::sleep(std::time::Duration::from_millis(300)).await;
@@ -503,13 +504,6 @@ impl<'a> TransactionStatus<'a> {
     pub fn hash(&self) -> &CryptoHash {
         &self.hash
     }
-}
-
-#[derive(Debug)]
-pub enum TransactionPoll<T> {
-    Ready(T),
-    Pending,
-    Error(Error),
 }
 
 impl<'a> IntoFuture for TransactionStatus<'a> {
