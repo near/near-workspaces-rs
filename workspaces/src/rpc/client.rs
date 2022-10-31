@@ -27,6 +27,7 @@ use near_primitives::views::{
 };
 
 use crate::error::{Error, ErrorKind, RpcErrorCode};
+use crate::operations::TransactionStatus;
 use crate::result::Result;
 use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 
@@ -39,7 +40,7 @@ pub struct Client {
     rpc_addr: String,
     rpc_client: JsonRpcClient,
     /// AccessKey nonces to reference when sending transactions.
-    access_key_nonces: RwLock<HashMap<AccountId, AtomicU64>>,
+    pub(crate) access_key_nonces: RwLock<HashMap<AccountId, AtomicU64>>,
 }
 
 impl Client {
@@ -284,6 +285,20 @@ impl Client {
         result
     }
 
+    pub(crate) async fn tx_async_status(
+        &self,
+        sender_id: &AccountId,
+        hash: CryptoHash,
+    ) -> Result<FinalExecutionOutcomeView, JsonRpcError<RpcTransactionError>> {
+        self.query(methods::tx::RpcTransactionStatusRequest {
+            transaction_info: methods::tx::TransactionInfo::TransactionId {
+                account_id: sender_id.clone(),
+                hash,
+            },
+        })
+        .await
+    }
+
     pub(crate) async fn wait_for_rpc(&self) -> Result<()> {
         let timeout_secs = match std::env::var("NEAR_RPC_TIMEOUT_SECS") {
             // hard fail on not being able to parse the env var, since this isn't something
@@ -316,7 +331,7 @@ impl Client {
     }
 }
 
-async fn access_key(
+pub(crate) async fn access_key(
     client: &Client,
     account_id: near_primitives::account::id::AccountId,
     public_key: near_crypto::PublicKey,
@@ -452,6 +467,41 @@ pub(crate) async fn send_batch_tx_and_retry(
             &signer as &dyn Signer,
             actions.clone(),
             block_hash,
+        ))
+    })
+    .await
+}
+
+pub(crate) async fn send_batch_tx_async_and_retry<'a>(
+    client: &'a Client,
+    signer: &InMemorySigner,
+    receiver_id: &AccountId,
+    actions: Vec<Action>,
+) -> Result<TransactionStatus<'a>> {
+    let signer = signer.inner();
+
+    retry(|| async {
+        let (block_hash, nonce) =
+            fetch_tx_nonce(client, signer.account_id.clone(), signer.public_key()).await?;
+
+        let hash = client
+            .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+                signed_transaction: SignedTransaction::from_actions(
+                    nonce,
+                    signer.account_id.clone(),
+                    receiver_id.clone(),
+                    &signer as &dyn Signer,
+                    actions.clone(),
+                    block_hash,
+                ),
+            })
+            .await
+            .map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))?;
+
+        Ok(TransactionStatus::new(
+            client,
+            signer.account_id.clone(),
+            hash,
         ))
     })
     .await

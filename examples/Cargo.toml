@@ -19,6 +19,10 @@ tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 workspaces = { path = "../workspaces" }
 
 [[example]]
+name = "async_transaction"
+path = "src/async_transaction.rs"
+
+[[example]]
 name = "nft"
 path = "src/nft.rs"
 
