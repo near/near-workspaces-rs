@@ -243,7 +243,7 @@ pub struct CallTransaction<'a> {
     function: Function,
 }
 
-impl<'a, 'b> CallTransaction<'a> {
+impl<'a> CallTransaction<'a> {
     pub(crate) fn new(
         worker: &'a Worker<dyn Network>,
         contract_id: AccountId,

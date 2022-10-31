@@ -1,15 +1,17 @@
 //! This module defines a bunch of internal types used solely for querying into RPC
 //! methods to retrieve info about what's on the chain. Note that the types defined
-//! exposed as-is for users to reference in their own functions or structs as needed.
-//! These types cannot be created outside of workspaces. To use them, refer to
-//! surface level types like [`Account`], [`Contract`] and [`Worker`].
+//! are exposed as-is for users to reference in their own functions or structs as
+//! needed. These types cannot be created outside of workspaces. To use them, refer
+//! to surface level types like [`Account`], [`Contract`] and [`Worker`].
 //!
-//! For example, to query into downloading
-//! contract state:
-//! ```ignore
-//! fn my_func(worker: &Worker<impl Network>>) -> anyhow::Result<()> {
-//!     let contract_id: AccountId = "some-contract.near"
-//!     let query: Query<'_, ViewCode> = worker.view_state(&contract_id);
+//! For example, to query into downloading contract state:
+//! ```
+//! use workspaces::{AccountId, Network, Worker};
+//! use workspaces::rpc::query::{Query, ViewState};
+//!
+//! async fn my_func(worker: &Worker<impl Network>) -> anyhow::Result<()> {
+//!     let contract_id: AccountId = "some-contract.near".parse()?;
+//!     let query: Query<'_, ViewState> = worker.view_state(&contract_id);
 //!     let bytes = query.await?;
 //!     Ok(())
 //! }
@@ -18,12 +20,16 @@
 //! meant to be transitory, and only exist while calling into their immediate
 //! methods. So the above example should look more like the following:
 //! ```ignore
-//! fn my_func(worker: &Worker<impl Network>>) -> anyhow::Result<()> {
-//!     let contract_id: AccountId = "some-contract.near"
+//! async fn my_func(worker: &Worker<impl Network>) -> anyhow::Result<()> {
+//!     let contract_id: AccountId = "some-contract.near".parse()?;
 //!     let bytes = worker.view_state(&contract_id).await?;
 //!     Ok(())
 //! }
 //! ```
+//!
+//! [`Account`]: crate::Account
+//! [`Contract`]: crate::Contract
+//! [`Worker`]: crate::Worker
 
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
@@ -377,9 +383,9 @@ impl ProcessQuery for GasPrice {
             // default case, set by `Query` struct via BlockReference::latest.
             BlockReference::Finality(_finality) => None,
             // Should not be reachable, unless code got changed.
-            other => {
+            BlockReference::SyncCheckpoint(point) => {
                 return Err(RpcErrorCode::QueryFailure.message(format!(
-                    "Invalid block reference provided to gas price: {other:?}"
+                    "Cannot supply sync checkpoint to gas price: {point:?}. Potential API bug?"
                 )))
             }
         };

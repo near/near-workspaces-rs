@@ -21,6 +21,7 @@
   - `view` function changed to be a builder, and no longer take in `args` as a parameter. It instead has been moved to the builder side.
   - Changed `Worker::view_latest_block` to `Worker::view_block` as the default behavior is equivalent.
   - `operations::Function` type no longer takes a lifetime parameter.
+  - `operations::CallTransaction` type takes one less lifetime parameter.
 
 ## [0.6.0]
 
