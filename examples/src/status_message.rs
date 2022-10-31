@@ -18,14 +18,10 @@ async fn main() -> anyhow::Result<()> {
     println!("set_status: {:?}", outcome);
 
     let result: String = contract
-        .view(
-            "get_status",
-            json!({
-                "account_id": contract.id(),
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view("get_status")
+        .args_json(json!({
+            "account_id": contract.id(),
+        }))
         .await?
         .json()?;
 

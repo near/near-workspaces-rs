@@ -18,7 +18,7 @@ async fn main() -> anyhow::Result<()> {
         contract.call("current_env_data").view().await?.json()?;
     println!("timestamp = {}, epoch_height = {}", timestamp, epoch_height);
 
-    let block_info = worker.view_latest_block().await?;
+    let block_info = worker.view_block().await?;
     println!("BlockInfo pre-fast_forward {:?}", block_info);
 
     // Call into fast_forward. This will take a bit of time to invoke, but is
@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
         contract.call("current_env_data").view().await?.json()?;
     println!("timestamp = {}, epoch_height = {}", timestamp, epoch_height);
 
-    let block_info = worker.view_latest_block().await?;
+    let block_info = worker.view_block().await?;
     println!("BlockInfo post-fast_forward {:?}", block_info);
 
     Ok(())

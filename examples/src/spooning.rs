@@ -1,5 +1,7 @@
-use borsh::{self, BorshDeserialize, BorshSerialize};
 use std::env;
+
+use borsh::{self, BorshDeserialize, BorshSerialize};
+use serde_json::json;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
@@ -51,7 +53,7 @@ async fn deploy_status_contract(
     // This will `call` into `set_status` with the message we want to set.
     contract
         .call("set_status")
-        .args_json(serde_json::json!({
+        .args_json(json!({
             "message": msg,
         }))
         .transact()
@@ -79,7 +81,7 @@ async fn main() -> anyhow::Result<()> {
             .parse()
             .map_err(anyhow::Error::msg)?;
 
-        let mut state_items = worker.view_state(&contract_id, None).await?;
+        let mut state_items = worker.view_state(&contract_id).await?;
 
         let state = state_items.remove(b"STATE".as_slice()).unwrap();
         let status_msg = StatusMessage::try_from_slice(&state)?;
@@ -106,14 +108,10 @@ async fn main() -> anyhow::Result<()> {
 
     // Now grab the state to see that it has indeed been patched:
     let status: String = sandbox_contract
-        .view(
-            "get_status",
-            serde_json::json!({
-                "account_id": testnet_contract_id,
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view("get_status")
+        .args_json(json!({
+            "account_id": testnet_contract_id,
+        }))
         .await?
         .json()?;
 
@@ -122,14 +120,10 @@ async fn main() -> anyhow::Result<()> {
 
     // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
     let result: Option<String> = sandbox_contract
-        .view(
-            "get_status",
-            serde_json::json!({
-                "account_id": sandbox_contract.id(),
-            })
-            .to_string()
-            .into_bytes(),
-        )
+        .view("get_status")
+        .args_json(json!({
+            "account_id": sandbox_contract.id(),
+        }))
         .await?
         .json()?;
     assert_eq!(result, None);

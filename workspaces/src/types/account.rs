@@ -1,15 +1,17 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 
 use near_primitives::views::AccountView;
 
 use crate::error::ErrorKind;
-use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
-use crate::{CryptoHash, Network, Worker};
+use crate::rpc::query::{
+    Query, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewCode, ViewFunction, ViewState,
+};
+use crate::types::{AccountId, Balance, InMemorySigner, PublicKey, SecretKey};
+use crate::{BlockHeight, CryptoHash, Network, Worker};
 
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
-use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
+use crate::result::{Execution, ExecutionFinalResult, Result};
 
 /// `Account` is directly associated to an account in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
@@ -72,7 +74,7 @@ impl Account {
         &'a self,
         contract_id: &AccountId,
         function: &'b str,
-    ) -> CallTransaction<'a, 'b> {
+    ) -> CallTransaction<'a> {
         CallTransaction::new(
             &self.worker,
             contract_id.to_owned(),
@@ -83,13 +85,8 @@ impl Account {
 
     /// View call to a specified contract function. Returns a result which can
     /// be deserialized into borsh or JSON.
-    pub async fn view(
-        &self,
-        contract_id: &AccountId,
-        function: &str,
-        args: Vec<u8>,
-    ) -> Result<ViewResultDetails> {
-        self.worker.view(contract_id, function, args).await
+    pub fn view(&self, contract_id: &AccountId, function: &str) -> Query<'_, ViewFunction> {
+        self.worker.view(contract_id, function)
     }
 
     /// Transfer NEAR to an account specified by `receiver_id` with the amount
@@ -113,8 +110,32 @@ impl Account {
     }
 
     /// Views the current account's details such as balance and storage usage.
-    pub async fn view_account(&self) -> Result<AccountDetails> {
-        self.worker.view_account(&self.id).await
+    pub fn view_account(&self) -> Query<'_, ViewAccount> {
+        self.worker.view_account(&self.id)
+    }
+
+    /// Views the current accounts's access key, given the [`PublicKey`] associated to it.
+    pub fn view_access_key(&self, pk: &PublicKey) -> Query<'_, ViewAccessKey> {
+        Query::new(
+            self.worker.client(),
+            ViewAccessKey {
+                account_id: self.id().clone(),
+                public_key: pk.clone(),
+            },
+        )
+    }
+
+    /// Views all the [`AccessKey`]s of the current account. This will return a list of
+    /// [`AccessKey`]s along with each associated [`PublicKey`].
+    ///
+    /// [`AccessKey`]: crate::types::AccessKey
+    pub fn view_access_keys(&self) -> Query<'_, ViewAccessKeyList> {
+        Query::new(
+            self.worker.client(),
+            ViewAccessKeyList {
+                account_id: self.id.clone(),
+            },
+        )
     }
 
     /// Create a new sub account. Returns a [`CreateAccountTransaction`] object
@@ -254,29 +275,42 @@ impl Contract {
     ///
     /// If we want to make use of the contract's secret key as a signer to call
     /// into another contract, use `contract.as_account().call` instead.
-    pub fn call<'a>(&self, function: &'a str) -> CallTransaction<'_, 'a> {
+    pub fn call(&self, function: &str) -> CallTransaction<'_> {
         self.account.call(self.id(), function)
     }
 
     /// Call a view function into the current contract. Returns a result which can
     /// be deserialized into borsh or JSON.
-    pub async fn view(&self, function: &str, args: Vec<u8>) -> Result<ViewResultDetails> {
-        self.account.worker.view(self.id(), function, args).await
+    pub fn view(&self, function: &str) -> Query<'_, ViewFunction> {
+        self.account.view(self.id(), function)
     }
 
     /// View the WASM code bytes of this contract.
-    pub async fn view_code(&self) -> Result<Vec<u8>> {
-        self.account.worker.view_code(self.id()).await
+    pub fn view_code(&self) -> Query<'_, ViewCode> {
+        self.account.worker.view_code(self.id())
     }
 
     /// View a contract's state map of key value pairs.
-    pub async fn view_state(&self, prefix: Option<&[u8]>) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
-        self.account.worker.view_state(self.id(), prefix).await
+    pub fn view_state(&self) -> Query<'_, ViewState> {
+        self.account.worker.view_state(self.id())
     }
 
     /// Views the current contract's details such as balance and storage usage.
-    pub async fn view_account(&self) -> Result<AccountDetails> {
-        self.account.worker.view_account(self.id()).await
+    pub fn view_account(&self) -> Query<'_, ViewAccount> {
+        self.account.worker.view_account(self.id())
+    }
+
+    /// Views the current contract's access key, given the [`PublicKey`] associated to it.
+    pub fn view_access_key(&self, pk: &PublicKey) -> Query<'_, ViewAccessKey> {
+        self.account.view_access_key(pk)
+    }
+
+    /// Views all the [`AccessKey`]s of the current contract. This will return a list of
+    /// [`AccessKey`]s along with each associated [`PublicKey`].
+    ///
+    /// [`AccessKey`]: crate::types::AccessKey
+    pub fn view_access_keys(&self) -> Query<'_, ViewAccessKeyList> {
+        self.account.view_access_keys()
     }
 
     /// Deletes the current contract, and returns the execution details of this
@@ -303,6 +337,23 @@ pub struct AccountDetails {
     pub locked: Balance,
     pub code_hash: CryptoHash,
     pub storage_usage: u64,
+
+    // Deprecated value. Mainly used to be able to convert back into an AccountView
+    pub(crate) storage_paid_at: BlockHeight,
+}
+
+impl AccountDetails {
+    pub(crate) fn into_near_account(self) -> near_primitives::account::Account {
+        AccountView {
+            amount: self.balance,
+            locked: self.locked,
+            // unwrap guranteed to succeed unless CryptoHash impls have changed in near_primitives.
+            code_hash: near_primitives::hash::CryptoHash(self.code_hash.0),
+            storage_usage: self.storage_usage,
+            storage_paid_at: self.storage_paid_at,
+        }
+        .into()
+    }
 }
 
 impl From<AccountView> for AccountDetails {
@@ -312,6 +363,7 @@ impl From<AccountView> for AccountDetails {
             locked: account.locked,
             code_hash: CryptoHash(account.code_hash.0),
             storage_usage: account.storage_usage,
+            storage_paid_at: account.storage_paid_at,
         }
     }
 }

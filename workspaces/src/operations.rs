@@ -24,19 +24,19 @@ const MAX_GAS: Gas = 300_000_000_000_000;
 /// A set of arguments we can provide to a transaction, containing
 /// the function name, arguments, the amount of gas to use and deposit.
 #[derive(Debug)]
-pub struct Function<'a> {
-    name: &'a str,
-    args: Result<Vec<u8>>,
-    deposit: Balance,
-    gas: Gas,
+pub struct Function {
+    pub(crate) name: String,
+    pub(crate) args: Result<Vec<u8>>,
+    pub(crate) deposit: Balance,
+    pub(crate) gas: Gas,
 }
 
-impl<'a> Function<'a> {
+impl Function {
     /// Initialize a new instance of [`Function`], tied to a specific function on a
     /// contract that lives directly on a contract we've specified in [`Transaction`].
-    pub fn new(name: &'a str) -> Self {
+    pub fn new(name: &str) -> Self {
         Self {
-            name,
+            name: name.into(),
             args: Ok(vec![]),
             deposit: DEFAULT_CALL_DEPOSIT,
             gas: DEFAULT_CALL_FN_GAS,
@@ -236,19 +236,19 @@ impl<'a> Transaction<'a> {
 
 /// Similiar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
-pub struct CallTransaction<'a, 'b> {
+pub struct CallTransaction<'a> {
     worker: &'a Worker<dyn Network>,
     signer: InMemorySigner,
     contract_id: AccountId,
-    function: Function<'b>,
+    function: Function,
 }
 
-impl<'a, 'b> CallTransaction<'a, 'b> {
+impl<'a> CallTransaction<'a> {
     pub(crate) fn new(
         worker: &'a Worker<dyn Network>,
         contract_id: AccountId,
         signer: InMemorySigner,
-        function: &'b str,
+        function: &str,
     ) -> Self {
         Self {
             worker,
@@ -321,12 +321,7 @@ impl<'a, 'b> CallTransaction<'a, 'b> {
     /// Instead of transacting the transaction, call into the specified view function.
     pub async fn view(self) -> Result<ViewResultDetails> {
         self.worker
-            .client()
-            .view(
-                self.contract_id,
-                self.function.name.to_string(),
-                self.function.args?,
-            )
+            .view_by_function(&self.contract_id, self.function)
             .await
     }
 }

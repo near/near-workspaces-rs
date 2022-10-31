@@ -1,15 +1,18 @@
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
-use crate::result::{ExecutionFinalResult, Result, ViewResultDetails};
+use crate::operations::Function;
+use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
-use crate::types::{AccountId, Gas, InMemorySigner};
+use crate::rpc::query::{
+    GasPrice, Query, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock, ViewCode,
+    ViewFunction, ViewState,
+};
+use crate::types::{AccountId, Gas, InMemorySigner, PublicKey};
 use crate::worker::Worker;
-use crate::{Account, Block, Contract};
-use crate::{AccountDetails, Network};
+use crate::{Account, Contract, Network};
 
 use near_primitives::types::Balance;
-use std::collections::HashMap;
 
 impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -63,39 +66,72 @@ where
     }
 
     /// Call into a contract's view function.
-    pub async fn view(
+    pub fn view(&self, contract_id: &AccountId, function: &str) -> Query<'_, ViewFunction> {
+        self.view_by_function(contract_id, Function::new(function))
+    }
+
+    pub(crate) fn view_by_function(
         &self,
         contract_id: &AccountId,
-        function: &str,
-        args: Vec<u8>,
-    ) -> Result<ViewResultDetails> {
-        self.client()
-            .view(contract_id.clone(), function.into(), args)
-            .await
+        function: Function,
+    ) -> Query<'_, ViewFunction> {
+        Query::new(
+            self.client(),
+            ViewFunction {
+                account_id: contract_id.clone(),
+                function,
+            },
+        )
     }
 
     /// View the WASM code bytes of a contract on the network.
-    pub async fn view_code(&self, contract_id: &AccountId) -> Result<Vec<u8>> {
-        let code_view = self.client().view_code(contract_id.clone(), None).await?;
-        Ok(code_view.code)
+    pub fn view_code(&self, contract_id: &AccountId) -> Query<'_, ViewCode> {
+        Query::new(
+            self.client(),
+            ViewCode {
+                account_id: contract_id.clone(),
+            },
+        )
     }
 
     /// View the state of a account/contract on the network. This will return the internal
     /// state of the account in the form of a map of key-value pairs; where STATE contains
     /// info on a contract's internal data.
-    pub async fn view_state(
-        &self,
-        contract_id: &AccountId,
-        prefix: Option<&[u8]>,
-    ) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
-        self.client()
-            .view_state(contract_id.clone(), prefix, None)
-            .await
+    pub fn view_state(&self, contract_id: &AccountId) -> Query<'_, ViewState> {
+        Query::view_state(self.client(), contract_id)
     }
 
-    /// View the latest block from the network
-    pub async fn view_latest_block(&self) -> Result<Block> {
-        self.client().view_block(None).await.map(Into::into)
+    /// View the block from the network. Supply additional parameters such as `block_height`
+    /// or `block_hash` to get the block.
+    pub fn view_block(&self) -> Query<'_, ViewBlock> {
+        Query::new(self.client(), ViewBlock)
+    }
+
+    /// Views the [`AccessKey`] of the account specified by [`AccountId`] associated with
+    /// the [`PublicKey`]
+    ///
+    /// [`AccessKey`]: crate::types::AccessKey
+    pub fn view_access_key(&self, id: &AccountId, pk: &PublicKey) -> Query<'_, ViewAccessKey> {
+        Query::new(
+            self.client(),
+            ViewAccessKey {
+                account_id: id.clone(),
+                public_key: pk.clone(),
+            },
+        )
+    }
+
+    /// Views all the [`AccessKey`]s of the account specified by [`AccountId`]. This will
+    /// return a list of [`AccessKey`]s along with the associated [`PublicKey`].
+    ///
+    /// [`AccessKey`]: crate::types::AccessKey
+    pub fn view_access_keys(&self, id: &AccountId) -> Query<'_, ViewAccessKeyList> {
+        Query::new(
+            self.client(),
+            ViewAccessKeyList {
+                account_id: id.clone(),
+            },
+        )
     }
 
     /// Transfer tokens from one account to another. The signer is the account
@@ -129,11 +165,17 @@ where
     }
 
     /// View account details of a specific account on the network.
-    pub async fn view_account(&self, account_id: &AccountId) -> Result<AccountDetails> {
-        self.client()
-            .view_account(account_id.clone(), None)
-            .await
-            .map(Into::into)
+    pub fn view_account(&self, account_id: &AccountId) -> Query<'_, ViewAccount> {
+        Query::new(
+            self.client(),
+            ViewAccount {
+                account_id: account_id.clone(),
+            },
+        )
+    }
+
+    pub fn gas_price(&self) -> Query<'_, GasPrice> {
+        Query::new(self.client(), GasPrice)
     }
 }
 
@@ -149,10 +191,10 @@ impl Worker<Sandbox> {
     /// how far back in time we wanna grab the contract.
     pub fn import_contract<'a>(
         &self,
-        id: &AccountId,
-        worker: &'a Worker<impl Network>,
+        id: &'a AccountId,
+        worker: &Worker<impl Network + 'static>,
     ) -> ImportContractTransaction<'a> {
-        ImportContractTransaction::new(id.to_owned(), worker.client(), self.clone().coerce())
+        ImportContractTransaction::new(id, worker.clone().coerce(), self.clone().coerce())
     }
 
     /// Patch state into the sandbox network, given a key and value. This will allow us to set

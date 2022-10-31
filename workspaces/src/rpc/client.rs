@@ -11,7 +11,6 @@ use tokio_retry::Retry;
 use near_crypto::Signer;
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::health::RpcStatusError;
-use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_client::methods::tx::RpcTransactionError;
 use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
@@ -22,15 +21,13 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{Balance, BlockId, BlockReference, Finality, Gas, StoreKey};
+use near_primitives::types::{Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{
-    AccessKeyView, AccountView, BlockView, ContractCodeView, FinalExecutionOutcomeView,
-    QueryRequest, StatusResponse,
+    AccessKeyView, BlockView, FinalExecutionOutcomeView, QueryRequest, StatusResponse,
 };
 
 use crate::error::{Error, ErrorKind, RpcErrorCode};
-use crate::result::{Result, ViewResultDetails};
-use crate::rpc::tool;
+use crate::result::Result;
 use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
@@ -101,21 +98,21 @@ impl Client {
         .await
     }
 
-    pub(crate) async fn query_nolog<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
+    pub(crate) async fn query_nolog<M>(&self, method: M) -> MethodCallResult<M::Response, M::Error>
     where
         M: methods::RpcMethod,
     {
-        retry(|| async { self.rpc_client.call(method).await }).await
+        retry(|| async { self.rpc_client.call(&method).await }).await
     }
 
-    pub(crate) async fn query<M>(&self, method: &M) -> MethodCallResult<M::Response, M::Error>
+    pub(crate) async fn query<M>(&self, method: M) -> MethodCallResult<M::Response, M::Error>
     where
         M: methods::RpcMethod + Debug,
         M::Response: Debug,
         M::Error: Debug,
     {
         retry(|| async {
-            let result = self.rpc_client.call(method).await;
+            let result = self.rpc_client.call(&method).await;
             tracing::debug!(
                 target: "workspaces",
                 "Querying RPC with {:?} resulted in {:?}",
@@ -157,104 +154,6 @@ impl Client {
             .into(),
         )
         .await
-    }
-
-    pub(crate) async fn view(
-        &self,
-        contract_id: AccountId,
-        method_name: String,
-        args: Vec<u8>,
-    ) -> Result<ViewResultDetails> {
-        let query_resp = self
-            .query(&RpcQueryRequest {
-                block_reference: Finality::None.into(), // Optimisitic query
-                request: QueryRequest::CallFunction {
-                    account_id: contract_id,
-                    method_name,
-                    args: args.into(),
-                },
-            })
-            .await
-            .map_err(|e| RpcErrorCode::ViewFunctionFailure.custom(e))?;
-
-        match query_resp.kind {
-            QueryResponseKind::CallResult(result) => Ok(result.into()),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while viewing function")),
-        }
-    }
-
-    pub(crate) async fn view_state(
-        &self,
-        contract_id: AccountId,
-        prefix: Option<&[u8]>,
-        block_id: Option<BlockId>,
-    ) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
-        let query_resp = self
-            .query(&methods::query::RpcQueryRequest {
-                block_reference,
-                request: QueryRequest::ViewState {
-                    account_id: contract_id,
-                    prefix: StoreKey::from(prefix.map(Vec::from).unwrap_or_default()),
-                    include_proof: false,
-                },
-            })
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-
-        match query_resp.kind {
-            QueryResponseKind::ViewState(state) => Ok(tool::into_state_map(state.values)),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying state")),
-        }
-    }
-
-    pub(crate) async fn view_account(
-        &self,
-        account_id: AccountId,
-        block_id: Option<BlockId>,
-    ) -> Result<AccountView> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
-        let query_resp = self
-            .query(&methods::query::RpcQueryRequest {
-                block_reference,
-                request: QueryRequest::ViewAccount { account_id },
-            })
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-
-        match query_resp.kind {
-            QueryResponseKind::ViewAccount(account) => Ok(account),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying account")),
-        }
-    }
-
-    pub(crate) async fn view_code(
-        &self,
-        account_id: AccountId,
-        block_id: Option<BlockId>,
-    ) -> Result<ContractCodeView> {
-        let block_reference = block_id
-            .map(Into::into)
-            .unwrap_or_else(|| Finality::None.into());
-
-        let query_resp = self
-            .query(&methods::query::RpcQueryRequest {
-                block_reference,
-                request: QueryRequest::ViewCode { account_id },
-            })
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-
-        match query_resp.kind {
-            QueryResponseKind::ViewCode(code) => Ok(code),
-            _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying code")),
-        }
     }
 
     pub(crate) async fn view_block(&self, block_ref: Option<BlockReference>) -> Result<BlockView> {
