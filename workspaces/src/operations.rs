@@ -22,6 +22,7 @@ use near_primitives::transaction::{
 };
 use near_primitives::views::FinalExecutionOutcomeView;
 use std::convert::TryInto;
+use std::fmt;
 use std::future::IntoFuture;
 use std::task::Poll;
 
@@ -503,6 +504,15 @@ impl<'a> TransactionStatus<'a> {
     /// Reference [`CryptoHash`] to the submitted transaction, pending completion.
     pub fn hash(&self) -> &CryptoHash {
         &self.hash
+    }
+}
+
+impl<'a> fmt::Debug for TransactionStatus<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TransactionStatus")
+            .field("sender_id", &self.sender_id)
+            .field("hash", &self.hash)
+            .finish()
     }
 }
 

@@ -237,6 +237,7 @@ impl AccessKey {
 }
 
 /// Similar to an [`AccessKey`], but also has the [`PublicKey`] associated with it.
+#[derive(Clone, Debug)]
 pub struct AccessKeyInfo {
     pub public_key: PublicKey,
     pub access_key: AccessKey,
@@ -333,7 +334,7 @@ impl From<near_primitives::views::AccessKeyView> for AccessKey {
 
 /// Finality of a transaction or block in which transaction is included in. For more info
 /// go to the [NEAR finality](https://docs.near.org/docs/concepts/transaction#finality) docs.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum Finality {
     /// Optimistic finality. The latest block recorded on the node that responded to our query
