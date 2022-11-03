@@ -40,7 +40,7 @@ pub struct Client {
     rpc_addr: String,
     rpc_client: JsonRpcClient,
     /// AccessKey nonces to reference when sending transactions.
-    pub(crate) access_key_nonces: RwLock<HashMap<near_crypto::PublicKey, AtomicU64>>,
+    pub(crate) access_key_nonces: RwLock<HashMap<(AccountId, near_crypto::PublicKey), AtomicU64>>,
 }
 
 impl Client {
@@ -333,15 +333,15 @@ impl Client {
 
 pub(crate) async fn access_key(
     client: &Client,
-    account_id: near_primitives::account::id::AccountId,
-    public_key: near_crypto::PublicKey,
+    account_id: &near_primitives::account::id::AccountId,
+    public_key: &near_crypto::PublicKey,
 ) -> Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::None.into(),
             request: QueryRequest::ViewAccessKey {
-                account_id,
-                public_key,
+                account_id: account_id.clone(),
+                public_key: public_key.clone(),
             },
         })
         .await
@@ -373,22 +373,22 @@ async fn cached_nonce(nonce: &AtomicU64, client: &Client) -> Result<(CryptoHash,
 /// into contention with others.
 async fn fetch_tx_nonce(
     client: &Client,
-    account_id: AccountId,
-    public_key: near_crypto::PublicKey,
+    cache_key: &(AccountId, near_crypto::PublicKey),
 ) -> Result<(CryptoHash, Nonce)> {
     let nonces = client.access_key_nonces.read().await;
-    if let Some(nonce) = nonces.get(&public_key) {
+    if let Some(nonce) = nonces.get(cache_key) {
         cached_nonce(nonce, client).await
     } else {
         drop(nonces);
         let mut nonces = client.access_key_nonces.write().await;
-        match nonces.entry(public_key.clone()) {
+        match nonces.entry(cache_key.clone()) {
             // case where multiple writers end up at the same lock acquisition point and tries
             // to overwrite the cached value that a previous writer already wrote.
             Entry::Occupied(entry) => cached_nonce(entry.get(), client).await,
 
             // Write the cached value. This value will get invalidated when an InvalidNonce error is returned.
             Entry::Vacant(entry) => {
+                let (account_id, public_key) = entry.key();
                 let (access_key, block_hash) = access_key(client, account_id, public_key).await?;
                 entry.insert(AtomicU64::new(access_key.nonce + 1));
                 Ok((block_hash, access_key.nonce + 1))
@@ -411,7 +411,7 @@ where
 
 pub(crate) async fn send_tx(
     client: &Client,
-    public_key: near_crypto::PublicKey,
+    cache_key: (AccountId, near_crypto::PublicKey),
     tx: SignedTransaction,
 ) -> Result<FinalExecutionOutcomeView> {
     let result = client
@@ -429,7 +429,7 @@ pub(crate) async fn send_tx(
     ))) = &result
     {
         let mut nonces = client.access_key_nonces.write().await;
-        if let Entry::Occupied(entry) = nonces.entry(public_key.clone()) {
+        if let Entry::Occupied(entry) = nonces.entry(cache_key) {
             entry.remove_entry();
         }
     }
@@ -445,12 +445,12 @@ pub(crate) async fn send_batch_tx_and_retry(
 ) -> Result<FinalExecutionOutcomeView> {
     let signer = signer.inner();
     retry(|| async {
-        let (block_hash, nonce) =
-            fetch_tx_nonce(client, signer.account_id.clone(), signer.public_key()).await?;
+        let cache_key = (signer.account_id.clone(), signer.public_key());
+        let (block_hash, nonce) = fetch_tx_nonce(client, &cache_key).await?;
 
         send_tx(
             client,
-            signer.public_key(),
+            cache_key,
             SignedTransaction::from_actions(
                 nonce,
                 signer.account_id.clone(),
@@ -475,7 +475,7 @@ pub(crate) async fn send_batch_tx_async_and_retry<'a>(
 
     retry(|| async {
         let (block_hash, nonce) =
-            fetch_tx_nonce(client, signer.account_id.clone(), signer.public_key()).await?;
+            fetch_tx_nonce(client, &(signer.account_id.clone(), signer.public_key())).await?;
 
         let hash = client
             .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
