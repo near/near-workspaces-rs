@@ -38,7 +38,7 @@ impl Error {
     /// Construct a workspaces [`Error`] with the full details of an error which includes
     /// the internal error it references, the custom error message with further context
     /// and the [`ErrorKind`] that represents the category of error.
-    pub fn full<T, E>(kind: ErrorKind, msg: T, error: E) -> Self
+    pub(crate) fn full<T, E>(kind: ErrorKind, msg: T, error: E) -> Self
     where
         T: Into<Cow<'static, str>>,
         E: Into<Box<dyn std::error::Error + Send + Sync>>,
