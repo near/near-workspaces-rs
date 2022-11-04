@@ -39,6 +39,7 @@ impl<T> Execution<T> {
         self.into_result().unwrap()
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn into_result(self) -> Result<T, ExecutionFailure> {
         self.details.into_result()?;
         Ok(self.result)
@@ -194,6 +195,7 @@ impl ExecutionFinalResult {
     }
 
     /// Converts this object into a [`Result`] holding either [`ExecutionSuccess`] or [`ExecutionFailure`].
+    #[allow(clippy::result_large_err)]
     pub fn into_result(self) -> Result<ExecutionSuccess, ExecutionFailure> {
         match self.status {
             FinalExecutionStatus::SuccessValue(value) => Ok(ExecutionResult {
