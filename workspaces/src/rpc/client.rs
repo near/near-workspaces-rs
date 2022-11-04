@@ -333,15 +333,15 @@ impl Client {
 
 pub(crate) async fn access_key(
     client: &Client,
-    account_id: &near_primitives::account::id::AccountId,
-    public_key: &near_crypto::PublicKey,
+    account_id: near_primitives::account::id::AccountId,
+    public_key: near_crypto::PublicKey,
 ) -> Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
         .query(&methods::query::RpcQueryRequest {
             block_reference: Finality::None.into(),
             request: QueryRequest::ViewAccessKey {
-                account_id: account_id.clone(),
-                public_key: public_key.clone(),
+                account_id,
+                public_key,
             },
         })
         .await
@@ -389,7 +389,8 @@ async fn fetch_tx_nonce(
             // Write the cached value. This value will get invalidated when an InvalidNonce error is returned.
             Entry::Vacant(entry) => {
                 let (account_id, public_key) = entry.key();
-                let (access_key, block_hash) = access_key(client, account_id, public_key).await?;
+                let (access_key, block_hash) =
+                    access_key(client, account_id.clone(), public_key.clone()).await?;
                 entry.insert(AtomicU64::new(access_key.nonce + 1));
                 Ok((block_hash, access_key.nonce + 1))
             }
@@ -411,7 +412,7 @@ where
 
 pub(crate) async fn send_tx(
     client: &Client,
-    cache_key: (AccountId, near_crypto::PublicKey),
+    cache_key: &(AccountId, near_crypto::PublicKey),
     tx: SignedTransaction,
 ) -> Result<FinalExecutionOutcomeView> {
     let result = client
@@ -429,9 +430,7 @@ pub(crate) async fn send_tx(
     ))) = &result
     {
         let mut nonces = client.access_key_nonces.write().await;
-        if let Entry::Occupied(entry) = nonces.entry(cache_key) {
-            entry.remove_entry();
-        }
+        nonces.remove(cache_key);
     }
 
     result.map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))
@@ -444,13 +443,13 @@ pub(crate) async fn send_batch_tx_and_retry(
     actions: Vec<Action>,
 ) -> Result<FinalExecutionOutcomeView> {
     let signer = signer.inner();
-    retry(|| async {
-        let cache_key = (signer.account_id.clone(), signer.public_key());
-        let (block_hash, nonce) = fetch_tx_nonce(client, &cache_key).await?;
+    let cache_key = (signer.account_id.clone(), signer.public_key());
 
+    retry(|| async {
+        let (block_hash, nonce) = fetch_tx_nonce(client, &cache_key).await?;
         send_tx(
             client,
-            cache_key,
+            &cache_key,
             SignedTransaction::from_actions(
                 nonce,
                 signer.account_id.clone(),
@@ -472,11 +471,10 @@ pub(crate) async fn send_batch_tx_async_and_retry<'a>(
     actions: Vec<Action>,
 ) -> Result<TransactionStatus<'a>> {
     let signer = signer.inner();
+    let cache_key = (signer.account_id.clone(), signer.public_key());
 
     retry(|| async {
-        let (block_hash, nonce) =
-            fetch_tx_nonce(client, &(signer.account_id.clone(), signer.public_key())).await?;
-
+        let (block_hash, nonce) = fetch_tx_nonce(client, &cache_key).await?;
         let hash = client
             .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
                 signed_transaction: SignedTransaction::from_actions(
