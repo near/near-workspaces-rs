@@ -40,7 +40,7 @@ pub struct Client {
     rpc_addr: String,
     rpc_client: JsonRpcClient,
     /// AccessKey nonces to reference when sending transactions.
-    pub(crate) access_key_nonces: RwLock<HashMap<AccountId, AtomicU64>>,
+    pub(crate) access_key_nonces: RwLock<HashMap<(AccountId, near_crypto::PublicKey), AtomicU64>>,
 }
 
 impl Client {
@@ -373,23 +373,24 @@ async fn cached_nonce(nonce: &AtomicU64, client: &Client) -> Result<(CryptoHash,
 /// into contention with others.
 async fn fetch_tx_nonce(
     client: &Client,
-    account_id: AccountId,
-    public_key: near_crypto::PublicKey,
+    cache_key: &(AccountId, near_crypto::PublicKey),
 ) -> Result<(CryptoHash, Nonce)> {
     let nonces = client.access_key_nonces.read().await;
-    if let Some(nonce) = nonces.get(&account_id) {
+    if let Some(nonce) = nonces.get(cache_key) {
         cached_nonce(nonce, client).await
     } else {
         drop(nonces);
         let mut nonces = client.access_key_nonces.write().await;
-        match nonces.entry(account_id.clone()) {
+        match nonces.entry(cache_key.clone()) {
             // case where multiple writers end up at the same lock acquisition point and tries
             // to overwrite the cached value that a previous writer already wrote.
             Entry::Occupied(entry) => cached_nonce(entry.get(), client).await,
 
             // Write the cached value. This value will get invalidated when an InvalidNonce error is returned.
             Entry::Vacant(entry) => {
-                let (access_key, block_hash) = access_key(client, account_id, public_key).await?;
+                let (account_id, public_key) = entry.key();
+                let (access_key, block_hash) =
+                    access_key(client, account_id.clone(), public_key.clone()).await?;
                 entry.insert(AtomicU64::new(access_key.nonce + 1));
                 Ok((block_hash, access_key.nonce + 1))
             }
@@ -411,7 +412,7 @@ where
 
 pub(crate) async fn send_tx(
     client: &Client,
-    receiver_id: &AccountId,
+    cache_key: &(AccountId, near_crypto::PublicKey),
     tx: SignedTransaction,
 ) -> Result<FinalExecutionOutcomeView> {
     let result = client
@@ -429,24 +430,10 @@ pub(crate) async fn send_tx(
     ))) = &result
     {
         let mut nonces = client.access_key_nonces.write().await;
-        if let Entry::Occupied(entry) = nonces.entry(receiver_id.clone()) {
-            entry.remove_entry();
-        }
+        nonces.remove(cache_key);
     }
 
     result.map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))
-}
-
-pub(crate) async fn send_tx_and_retry<T, F>(
-    client: &Client,
-    receiver_id: &AccountId,
-    task: F,
-) -> Result<FinalExecutionOutcomeView>
-where
-    F: Fn() -> T,
-    T: core::future::Future<Output = Result<SignedTransaction>>,
-{
-    retry(|| async { send_tx(client, receiver_id, task().await?).await }).await
 }
 
 pub(crate) async fn send_batch_tx_and_retry(
@@ -456,18 +443,23 @@ pub(crate) async fn send_batch_tx_and_retry(
     actions: Vec<Action>,
 ) -> Result<FinalExecutionOutcomeView> {
     let signer = signer.inner();
-    send_tx_and_retry(client, receiver_id, || async {
-        let (block_hash, nonce) =
-            fetch_tx_nonce(client, signer.account_id.clone(), signer.public_key()).await?;
+    let cache_key = (signer.account_id.clone(), signer.public_key());
 
-        Ok(SignedTransaction::from_actions(
-            nonce,
-            signer.account_id.clone(),
-            receiver_id.clone(),
-            &signer as &dyn Signer,
-            actions.clone(),
-            block_hash,
-        ))
+    retry(|| async {
+        let (block_hash, nonce) = fetch_tx_nonce(client, &cache_key).await?;
+        send_tx(
+            client,
+            &cache_key,
+            SignedTransaction::from_actions(
+                nonce,
+                signer.account_id.clone(),
+                receiver_id.clone(),
+                &signer as &dyn Signer,
+                actions.clone(),
+                block_hash,
+            ),
+        )
+        .await
     })
     .await
 }
@@ -479,11 +471,10 @@ pub(crate) async fn send_batch_tx_async_and_retry<'a>(
     actions: Vec<Action>,
 ) -> Result<TransactionStatus<'a>> {
     let signer = signer.inner();
+    let cache_key = (signer.account_id.clone(), signer.public_key());
 
     retry(|| async {
-        let (block_hash, nonce) =
-            fetch_tx_nonce(client, signer.account_id.clone(), signer.public_key()).await?;
-
+        let (block_hash, nonce) = fetch_tx_nonce(client, &cache_key).await?;
         let hash = client
             .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
                 signed_transaction: SignedTransaction::from_actions(
