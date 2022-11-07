@@ -112,11 +112,7 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match &self.repr {
-            ErrorRepr::Custom { error, .. } => error.source(),
-            ErrorRepr::Full { error, .. } => error.source(),
-            _ => None,
-        }
+        self.repr.source()
     }
 }
 
