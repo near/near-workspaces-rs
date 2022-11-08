@@ -390,7 +390,7 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        let account = Account::new(id, signer, self.worker.clone());
+        let account = Account::new(signer, self.worker.clone());
 
         Ok(Execution {
             result: account,

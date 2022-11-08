@@ -144,9 +144,8 @@ where
 
 impl Worker<Sandbox> {
     pub fn root_account(&self) -> Result<Account> {
-        let account_id = self.info().root_id.clone();
         let signer = self.workspace.root_signer()?;
-        Ok(Account::new(account_id, signer, self.clone().coerce()))
+        Ok(Account::new(signer, self.clone().coerce()))
     }
 
     /// Import a contract from the the given network, and return us a [`ImportContractTransaction`]
