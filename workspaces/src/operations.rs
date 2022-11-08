@@ -242,11 +242,11 @@ impl<'a> Transaction<'a> {
 
     /// Send the transaction to the network to be processed. This will be done asynchronously
     /// without waiting for the transaction to complete. This returns us a [`TransactionStatus`]
-    /// for which we can call into [`status`] and/or [`wait`] to retrieve info about whether
-    /// the transaction has been completed or not.
+    /// for which we can call into [`status`] and/or `.await` to retrieve info about whether
+    /// the transaction has been completed or not. Note that `.await` will wait till completion
+    /// of the transaction.
     ///
     /// [`status`]: TransactionStatus::status
-    /// [`wait`]: TransactionStatus::wait
     pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
         send_batch_tx_async_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?)
             .await
@@ -339,11 +339,11 @@ impl<'a> CallTransaction<'a> {
 
     /// Send the transaction to the network to be processed. This will be done asynchronously
     /// without waiting for the transaction to complete. This returns us a [`TransactionStatus`]
-    /// for which we can call into [`status`] and/or [`wait`] to retrieve info about whether
-    /// the transaction has been completed or not.
+    /// for which we can call into [`status`] and/or `.await` to retrieve info about whether
+    /// the transaction has been completed or not. Note that `.await` will wait till completion
+    /// of the transaction.
     ///
     /// [`status`]: TransactionStatus::status
-    /// [`wait`]: TransactionStatus::wait
     pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
         send_batch_tx_async_and_retry(
             self.worker.client(),

@@ -37,6 +37,7 @@ use std::fmt::{Debug, Display};
 use near_account_id::AccountId;
 use near_jsonrpc_client::methods::query::RpcQueryResponse;
 use near_jsonrpc_client::methods::{self, RpcMethod};
+use near_jsonrpc_primitives::types::chunks::ChunkReference;
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::types::{BlockId, BlockReference, StoreKey};
 use near_primitives::views::{BlockView, QueryRequest};
@@ -46,8 +47,8 @@ use crate::operations::Function;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
 use crate::rpc::{tool, BoxFuture};
-use crate::types::{AccessKey, AccessKeyInfo, Balance, BlockHeight, Finality, PublicKey};
-use crate::{AccountDetails, Block, CryptoHash, Result};
+use crate::types::{AccessKey, AccessKeyInfo, Balance, BlockHeight, Finality, PublicKey, ShardId};
+use crate::{AccountDetails, Block, Chunk, CryptoHash, Result};
 
 /// `Query` object allows creating queries into the network of our choice. This object is
 /// usually given from making calls from other functions such as [`view_state`].
@@ -69,16 +70,16 @@ impl<'a, T> Query<'a, T> {
     }
 
     /// Specify at which block height to query from. Note that only archival
-    /// networks will have the full history while networks like mainnet or testnet
-    /// only has the history from 5 or less epochs ago.
+    /// networks will have the full history while networks like mainnet or testnet will
+    /// only have the history from 5 or less epochs ago.
     pub fn block_height(mut self, height: BlockHeight) -> Self {
         self.block_ref = Some(BlockId::Height(height).into());
         self
     }
 
     /// Specify at which block hash to query from. Note that only archival
-    /// networks will have the full history while networks like mainnet or testnet
-    /// only has the history from 5 or less epochs ago.
+    /// networks will have the full history while networks like mainnet or testnet will
+    /// only have the history from 5 or less epochs ago.
     pub fn block_hash(mut self, hash: CryptoHash) -> Self {
         self.block_ref = Some(BlockId::Hash(near_primitives::hash::CryptoHash(hash.0)).into());
         self
@@ -395,5 +396,85 @@ impl ProcessQuery for GasPrice {
 
     fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
         Ok(resp.gas_price)
+    }
+}
+
+/// Query object used to query for chunk related details at a specific `ChunkReference` which
+/// consists of either a chunk [`CryptoHash`], or a `BlockShardId` (which consists of [`ShardId`]
+/// and either block [`CryptoHash`] or [`BlockHeight`]).
+///
+/// The default behavior where a `ChunkReference` is not supplied will use a `BlockShardId`
+/// referencing the lastest block `CryptoHash` with `ShardId` of 0.
+pub struct QueryChunk<'a> {
+    client: &'a Client,
+    chunk_ref: Option<ChunkReference>,
+}
+
+impl<'a> QueryChunk<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self {
+            client,
+            chunk_ref: None,
+        }
+    }
+
+    /// Specify at which block hash and shard id to query the chunk from. Note that only
+    /// archival networks will have the full history while networks like mainnet or testnet
+    /// will only have the history from 5 or less epochs ago.
+    pub fn block_hash_and_shard(mut self, hash: CryptoHash, shard_id: ShardId) -> Self {
+        self.chunk_ref = Some(ChunkReference::BlockShardId {
+            block_id: BlockId::Hash(near_primitives::hash::CryptoHash(hash.0)),
+            shard_id,
+        });
+        self
+    }
+
+    /// Specify at which block height and shard id to query the chunk from. Note that only
+    /// archival networks will have the full history while networks like mainnet or testnet
+    /// will only have the history from 5 or less epochs ago.
+    pub fn block_height_and_shard(mut self, height: BlockHeight, shard_id: ShardId) -> Self {
+        self.chunk_ref = Some(ChunkReference::BlockShardId {
+            block_id: BlockId::Height(height),
+            shard_id,
+        });
+        self
+    }
+
+    /// Specify at which chunk hash to query the chunk from.
+    pub fn chunk_hash(mut self, hash: CryptoHash) -> Self {
+        self.chunk_ref = Some(ChunkReference::ChunkHash {
+            chunk_id: near_primitives::hash::CryptoHash(hash.0),
+        });
+        self
+    }
+}
+
+impl<'a> std::future::IntoFuture for QueryChunk<'a> {
+    type Output = Result<Chunk>;
+    type IntoFuture = BoxFuture<'a, Self::Output>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(async move {
+            let chunk_reference = if let Some(chunk_ref) = self.chunk_ref {
+                chunk_ref
+            } else {
+                // Use the latest block hash in the case the user doesn't supply the ChunkReference. Note that
+                // shard_id 0 is used in the default case.
+                let block_view = self.client.view_block(None).await?;
+                ChunkReference::BlockShardId {
+                    block_id: BlockId::Hash(block_view.header.hash),
+                    shard_id: 0,
+                }
+            };
+
+            // let block_reference = self.chunk_ref.unwrap_or_else();
+            let chunk_view = self
+                .client
+                .query(methods::chunk::RpcChunkRequest { chunk_reference })
+                .await
+                .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+
+            Ok(chunk_view.into())
+        })
     }
 }

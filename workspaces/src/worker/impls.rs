@@ -5,8 +5,8 @@ use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
 use crate::rpc::patch::ImportContractTransaction;
 use crate::rpc::query::{
-    GasPrice, Query, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock, ViewCode,
-    ViewFunction, ViewState,
+    GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
+    ViewCode, ViewFunction, ViewState,
 };
 use crate::types::{AccountId, Gas, InMemorySigner, PublicKey};
 use crate::worker::Worker;
@@ -101,10 +101,26 @@ where
         Query::view_state(self.client(), contract_id)
     }
 
-    /// View the block from the network. Supply additional parameters such as `block_height`
-    /// or `block_hash` to get the block.
+    /// View the block from the network. Supply additional parameters such as [`block_height`]
+    /// or [`block_hash`] to get the block.
+    ///
+    /// [`block_height`]: Query::block_height
+    /// [`block_hash`]: Query::block_hash
     pub fn view_block(&self) -> Query<'_, ViewBlock> {
         Query::new(self.client(), ViewBlock)
+    }
+
+    /// View the chunk from the network once awaited. Supply additional parameters such as
+    /// [`block_hash_and_shard`], [`block_height_and_shard`] or [`chunk_hash`] to get the
+    /// chunk at a specific reference point. If none of those are supplied, the default
+    /// reference point will be used, which will be the latest block_hash with a shard_id
+    /// of 0.
+    ///
+    /// [`block_hash_and_shard`]: QueryChunk::block_hash_and_shard
+    /// [`block_height_and_shard`]: QueryChunk::block_height_and_shard
+    /// [`chunk_hash`]: QueryChunk::chunk_hash
+    pub fn view_chunk(&self) -> QueryChunk<'_> {
+        QueryChunk::new(self.client())
     }
 
     /// Views the [`AccessKey`] of the account specified by [`AccountId`] associated with
