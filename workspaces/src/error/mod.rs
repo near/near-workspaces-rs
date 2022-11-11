@@ -13,13 +13,13 @@ use crate::result::ExecutionFailure;
 #[non_exhaustive]
 pub enum ErrorKind {
     /// An error occurred while performing an RPC request.
-    #[error("Rpc({0})")]
+    #[error("{0}")]
     Rpc(#[from] RpcErrorCode),
     /// An error occurred while processing a transaction.
     #[error("Execution")]
     Execution,
     /// An error having to do with running sandbox.
-    #[error("Sandbox({0})")]
+    #[error("{0}")]
     Sandbox(#[from] SandboxErrorCode),
     /// An error from performing IO.
     #[error("IO")]
@@ -38,15 +38,17 @@ enum ErrorRepr {
         kind: ErrorKind,
         message: Cow<'static, str>,
     },
-    #[error("{error}")]
+    #[error("{kind}")]
     Custom {
         kind: ErrorKind,
+        #[source]
         error: Box<dyn std::error::Error + Send + Sync>,
     },
-    #[error("{message}: {error}")]
+    #[error("{message}")]
     Full {
         kind: ErrorKind,
         message: Cow<'static, str>,
+        #[source]
         error: Box<dyn std::error::Error + Send + Sync>,
     },
     #[error("{error}")]
