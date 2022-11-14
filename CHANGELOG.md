@@ -24,6 +24,12 @@
   - `operations::Function` type no longer takes a lifetime parameter.
   - `operations::CallTransaction` type takes one less lifetime parameter.
 
+## [0.6.1]
+
+### Fixed
+
+- Fixed query variant error when supply invalid function name or arguments: https://github.com/near/workspaces-rs/pull/239
+
 ## [0.6.0]
 
 ### Added
@@ -177,7 +183,8 @@
 
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
-[unreleased]: https://github.com/near/workspaces-rs/compare/0.6.0...HEAD
+[unreleased]: https://github.com/near/workspaces-rs/compare/0.6.1...HEAD
+[0.6.1]: https://github.com/near/workspaces-rs/compare/0.6.0...0.6.1
 [0.6.0]: https://github.com/near/workspaces-rs/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/near/workspaces-rs/compare/0.4.1...0.5.0
 [0.4.1]: https://github.com/near/workspaces-rs/compare/0.4.0...0.4.1
