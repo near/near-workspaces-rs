@@ -192,7 +192,7 @@ impl fmt::Debug for CryptoHash {
 
 impl fmt::Display for CryptoHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&to_base58(&self.0), f)
+        fmt::Display::fmt(&to_base58(self.0), f)
     }
 }
 
