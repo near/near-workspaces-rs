@@ -1,15 +1,16 @@
 use near_account_id::AccountId;
 use near_primitives::views::{BlockHeaderView, BlockView};
 
-use crate::types::Balance;
+use crate::types::{Balance, ChunkHeader};
 use crate::{BlockHeight, CryptoHash};
 
 /// Struct containing information on block coming from the network
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct Block {
     pub author: AccountId,
     pub header: BlockHeader,
+    pub chunks: Vec<ChunkHeader>,
 }
 
 impl Block {
@@ -36,7 +37,10 @@ impl Block {
 
 /// The block header info. This is a non-exhaustive list of items that
 /// could be present in a block header. More can be added in the future.
-#[derive(Clone, Debug, PartialEq)]
+///
+/// NOTE: For maintainability purposes, some items have been excluded. If required,
+/// please submit an issue to [workspaces](https://github.com/near/workspaces-rs/issues).
+#[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct BlockHeader {
     pub height: BlockHeight,
@@ -68,6 +72,7 @@ impl From<BlockView> for Block {
         Self {
             author: view.author,
             header: view.header.into(),
+            chunks: view.chunks.into_iter().map(Into::into).collect(),
         }
     }
 }
