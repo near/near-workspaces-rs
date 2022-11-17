@@ -64,11 +64,6 @@ impl From<ChunkView> for Chunk {
 }
 
 impl Chunk {
-    /// The author's [`AccountId`] relating to the creation of this chunk.
-    pub fn author(&self) -> &AccountId {
-        &self.author
-    }
-
     /// The hash of the chunk itself.
     pub fn hash(&self) -> &CryptoHash {
         &self.header.chunk_hash

@@ -467,7 +467,6 @@ impl<'a> std::future::IntoFuture for QueryChunk<'a> {
                 }
             };
 
-            // let block_reference = self.chunk_ref.unwrap_or_else();
             let chunk_view = self
                 .client
                 .query(methods::chunk::RpcChunkRequest { chunk_reference })
