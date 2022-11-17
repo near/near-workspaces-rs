@@ -27,6 +27,9 @@ pub enum ErrorKind {
     /// An error from converting data.
     #[error("DataConversion")]
     DataConversion,
+    /// An error that cannot be categorized into the other error kinds.
+    #[error("Other")]
+    Other,
 }
 
 #[derive(Debug, thiserror::Error)]
