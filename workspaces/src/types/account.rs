@@ -16,7 +16,7 @@ use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 /// network, such as creating transactions and calling into contract functions.
 #[derive(Clone)]
 pub struct Account {
-    pub(crate) signer: InMemorySigner,
+    signer: InMemorySigner,
     worker: Worker<dyn Network>,
 }
 
@@ -35,7 +35,6 @@ impl Account {
         worker: &Worker<impl Network + 'static>,
     ) -> Result<Self> {
         let signer = InMemorySigner::from_file(path.as_ref())?;
-        let id = signer.account_id.clone();
         Ok(Self::new(signer, worker.clone().coerce()))
     }
 
@@ -190,7 +189,7 @@ impl Account {
 /// network, such as creating transactions and calling into contract functions.
 #[derive(Clone)]
 pub struct Contract {
-    pub(crate) account: Account,
+    account: Account,
 }
 
 impl fmt::Debug for Contract {
