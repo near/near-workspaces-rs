@@ -1,6 +1,7 @@
 pub(crate) mod account;
 pub(crate) mod block;
 pub(crate) mod chunk;
+pub mod status;
 
 /// Types copied over from near_primitives since those APIs are not yet stable.
 /// and internal libraries like near-jsonrpc-client requires specific versions
@@ -18,6 +19,7 @@ use crate::error::{Error, ErrorKind};
 use crate::result::Result;
 
 pub use self::chunk::{Chunk, ChunkHeader};
+pub use status::*;
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
@@ -35,6 +37,9 @@ pub type BlockHeight = u64;
 
 /// Shard index, from 0 to NUM_SHARDS - 1.
 pub type ShardId = u64;
+
+/// ID value related to an Epoch. This is usually a crypto hash.
+pub type EpochId = CryptoHash;
 
 fn from_base58(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
     bs58::decode(s).into_vec().map_err(|err| err.into())

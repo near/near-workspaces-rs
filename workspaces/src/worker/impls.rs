@@ -193,6 +193,10 @@ where
     pub fn gas_price(&self) -> Query<'_, GasPrice> {
         Query::new(self.client(), GasPrice)
     }
+
+    // pub async fn network_status(&self) {
+    //     self.client().status().await
+    // }
 }
 
 impl Worker<Sandbox> {
