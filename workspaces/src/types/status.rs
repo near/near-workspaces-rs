@@ -243,16 +243,81 @@ impl From<StatusResponse> for Status {
                 latest_state_root: status.sync_info.latest_state_root.into(),
                 latest_block_time: status.sync_info.latest_block_time,
                 syncing: status.sync_info.syncing,
-                earliest_block_hash: status.sync_info.earliest_block_hash.into(),
+                earliest_block_hash: status.sync_info.earliest_block_hash.map(Into::into),
                 earliest_block_height: status.sync_info.earliest_block_height,
                 earliest_block_time: status.sync_info.earliest_block_time,
-                epoch_id: status.sync_info.epoch_id,
+                epoch_id: status.sync_info.epoch_id.map(|epoch| epoch.0.into()),
                 epoch_start_height: status.sync_info.epoch_start_height,
             },
             validator_account_id: status.validator_account_id,
-            node_key: status.node_key,
+            node_key: status.node_key.map(PublicKey),
             uptime_sec: status.uptime_sec,
-            detailed_debug_status: status.detailed_debug_status,
+            detailed_debug_status: status
+                .detailed_debug_status
+                .map(|debug| DetailedDebugStatus {
+                    network_info: NetworkInfoView {
+                        peer_max_count: debug.network_info.peer_max_count,
+                        num_connected_peers: debug.network_info.num_connected_peers,
+                        connected_peers: debug
+                            .network_info
+                            .connected_peers
+                            .into_iter()
+                            .map(|peer| PeerInfoView {
+                                addr: peer.addr,
+                                account_id: peer.account_id,
+                                height: peer.height,
+                                tracked_shards: peer.tracked_shards,
+                                archival: peer.archival,
+                                peer_id: PublicKey(peer.peer_id),
+                                received_bytes_per_sec: peer.received_bytes_per_sec,
+                                sent_bytes_per_sec: peer.sent_bytes_per_sec,
+                                last_time_peer_requested_millis: peer
+                                    .last_time_peer_requested_millis,
+                                last_time_received_message_millis: peer
+                                    .last_time_received_message_millis,
+                                connection_established_time_millis: peer
+                                    .connection_established_time_millis,
+                                is_outbound_peer: peer.is_outbound_peer,
+                            })
+                            .collect(),
+                        known_producers: debug
+                            .network_info
+                            .known_producers
+                            .into_iter()
+                            .map(|prod| KnownProducerView {
+                                account_id: prod.account_id,
+                                peer_id: PublicKey(prod.peer_id),
+                                next_hops: prod.next_hops.map(|hops| {
+                                    hops.into_iter().map(PublicKey).collect::<Vec<_>>()
+                                }),
+                            })
+                            .collect(),
+                    },
+                    sync_status: debug.sync_status,
+                    catchup_status: debug
+                        .catchup_status
+                        .into_iter()
+                        .map(|status| CatchupStatusView {
+                            sync_block_hash: status.sync_block_hash.into(),
+                            sync_block_height: status.sync_block_height,
+                            shard_sync_status: status.shard_sync_status,
+                            blocks_to_catchup: status
+                                .blocks_to_catchup
+                                .into_iter()
+                                .map(|blocks| BlockStatusView {
+                                    height: blocks.height,
+                                    hash: blocks.hash.into(),
+                                })
+                                .collect(),
+                        })
+                        .collect(),
+                    current_head_status: debug.current_head_status,
+                    current_header_head_status: todo!(),
+                    block_production_delay_millis: todo!(),
+                    chain_processing_info: todo!(),
+                }),
         }
     }
 }
+
+
