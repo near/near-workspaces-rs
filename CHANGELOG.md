@@ -10,6 +10,7 @@
 - [`{CallTransaction, Transaction}::transact_async` for performing transactions without directly having to wait for it complete it on chain](https://github.com/near/workspaces-rs/pull/222)
 - [`view_chunk` added for querying into chunk related info on the network.](https://github.com/near/workspaces-rs/pull/234)
   - Adds `Chunk` and `ChunkHeader` type to reference specific chunk info.
+- [`Error::{simple, message, custom}` are now public and usable for custom errors](https://github.com/near/workspaces-rs/pull/224)
 
 ### Changed
 
