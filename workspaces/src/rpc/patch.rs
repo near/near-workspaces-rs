@@ -154,6 +154,6 @@ impl<'a, 'b> ImportContractTransaction<'a> {
             .await
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
-        Ok(Contract::new(account_id, signer, self.into_network))
+        Ok(Contract::new(signer, self.into_network))
     }
 }

@@ -6,6 +6,7 @@ use crate::rpc::client::{
     send_batch_tx_and_retry, send_batch_tx_async_and_retry, Client, DEFAULT_CALL_DEPOSIT,
     DEFAULT_CALL_FN_GAS,
 };
+use crate::rpc::query::{Query, ViewFunction};
 use crate::rpc::BoxFuture;
 use crate::types::{
     AccessKey, AccountId, Balance, Gas, InMemorySigner, KeyType, PublicKey, SecretKey,
@@ -256,7 +257,7 @@ impl<'a> Transaction<'a> {
 /// Similiar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
 pub struct CallTransaction<'a> {
-    worker: &'a Worker<dyn Network>,
+    client: &'a Client,
     signer: InMemorySigner,
     contract_id: AccountId,
     function: Function,
@@ -264,13 +265,13 @@ pub struct CallTransaction<'a> {
 
 impl<'a> CallTransaction<'a> {
     pub(crate) fn new(
-        worker: &'a Worker<dyn Network>,
+        client: &'a Client,
         contract_id: AccountId,
         signer: InMemorySigner,
         function: &str,
     ) -> Self {
         Self {
-            worker,
+            client,
             signer,
             contract_id,
             function: Function::new(function),
@@ -322,8 +323,7 @@ impl<'a> CallTransaction<'a> {
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
     pub async fn transact(self) -> Result<ExecutionFinalResult> {
-        self.worker
-            .client()
+        self.client
             .call(
                 &self.signer,
                 &self.contract_id,
@@ -346,7 +346,7 @@ impl<'a> CallTransaction<'a> {
     /// [`status`]: TransactionStatus::status
     pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
         send_batch_tx_async_and_retry(
-            self.worker.client(),
+            self.client,
             &self.signer,
             &self.contract_id,
             vec![FunctionCallAction {
@@ -362,9 +362,14 @@ impl<'a> CallTransaction<'a> {
 
     /// Instead of transacting the transaction, call into the specified view function.
     pub async fn view(self) -> Result<ViewResultDetails> {
-        self.worker
-            .view_by_function(&self.contract_id, self.function)
-            .await
+        Query::new(
+            self.client,
+            ViewFunction {
+                account_id: self.contract_id.clone(),
+                function: self.function,
+            },
+        )
+        .await
     }
 }
 
@@ -426,8 +431,8 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
             .create_account(&self.signer, &id, sk.public_key(), self.initial_balance)
             .await?;
 
-        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        let account = Account::new(id, signer, self.worker.clone());
+        let signer = InMemorySigner::from_secret_key(id, sk);
+        let account = Account::new(signer, self.worker.clone());
 
         Ok(Execution {
             result: account,
