@@ -46,12 +46,12 @@ where
     /// will be used to sign the transaction.
     ///
     /// [`signer`]: crate::types::InMemorySigner
-    pub fn call<'a>(
-        &'a self,
+    pub fn call(
+        &self,
         signer: &InMemorySigner,
         contract_id: &AccountId,
         function: &str,
-    ) -> CallTransaction<'a> {
+    ) -> CallTransaction<'_> {
         CallTransaction::new(
             self.client(),
             contract_id.to_owned(),
