@@ -28,6 +28,8 @@
   - Changed `Worker::view_latest_block` to `Worker::view_block` as the default behavior is equivalent.
   - `operations::Function` type no longer takes a lifetime parameter.
   - `operations::CallTransaction` type takes one less lifetime parameter.
+- [`Worker::call` signature changed to be more in line with `view_*` async builders. It will now return a builder like `{Account, Contract}::call`](https://github.com/near/workspaces-rs/pull/245)
+  - This `call` no longer accepts `Contract` since that was not as accessible. Instead a `InMemorySigner` is now required to sign transactions (which can be retrieved from `{Account, Contract}::signer` or `InMemorySigner::{from_secret_key, from_file}`).
 
 ### Fixed
 
