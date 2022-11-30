@@ -18,14 +18,15 @@ use crate::result::{Execution, ExecutionFinalResult, Result};
 /// network, such as creating transactions and calling into contract functions.
 #[derive(Clone)]
 pub struct Account {
-    pub(crate) id: AccountId,
-    pub(crate) signer: InMemorySigner,
+    signer: InMemorySigner,
     worker: Worker<dyn Network>,
 }
 
 impl fmt::Debug for Account {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Account").field("id", &self.id).finish()
+        f.debug_struct("Account")
+            .field("id", &self.signer.account_id)
+            .finish()
     }
 }
 
@@ -36,8 +37,7 @@ impl Account {
         worker: &Worker<impl Network + 'static>,
     ) -> Result<Self> {
         let signer = InMemorySigner::from_file(path.as_ref())?;
-        let id = signer.account_id.clone();
-        Ok(Self::new(id, signer, worker.clone().coerce()))
+        Ok(Self::new(signer, worker.clone().coerce()))
     }
 
     /// Create an [`Account`] object from an [`AccountId`] and [`SecretKey`].
@@ -47,22 +47,23 @@ impl Account {
         worker: &Worker<impl Network + 'static>,
     ) -> Self {
         Self {
-            id: id.clone(),
             signer: InMemorySigner::from_secret_key(id, sk),
             worker: worker.clone().coerce(),
         }
     }
 
-    pub(crate) fn new(id: AccountId, signer: InMemorySigner, worker: Worker<dyn Network>) -> Self {
-        Self { id, signer, worker }
+    pub(crate) fn new(signer: InMemorySigner, worker: Worker<dyn Network>) -> Self {
+        Self { signer, worker }
     }
 
     /// Grab the current account identifier
     pub fn id(&self) -> &AccountId {
-        &self.id
+        &self.signer.account_id
     }
 
-    pub(crate) fn signer(&self) -> &InMemorySigner {
+    /// Grab the signer of the account. This signer is used to sign all transactions
+    /// sent to the network.
+    pub fn signer(&self) -> &InMemorySigner {
         &self.signer
     }
 
@@ -70,13 +71,9 @@ impl Account {
     /// a [`CallTransaction`] object that we will make use to populate the
     /// rest of the call details. Note that the current [`Account`]'s secret
     /// key is used as the signer of the transaction.
-    pub fn call<'a, 'b>(
-        &'a self,
-        contract_id: &AccountId,
-        function: &'b str,
-    ) -> CallTransaction<'a> {
+    pub fn call(&self, contract_id: &AccountId, function: &str) -> CallTransaction<'_> {
         CallTransaction::new(
-            &self.worker,
+            self.worker.client(),
             contract_id.to_owned(),
             self.signer.clone(),
             function,
@@ -105,13 +102,13 @@ impl Account {
     /// transaction. The beneficiary will receive the funds of the account deleted
     pub async fn delete_account(self, beneficiary_id: &AccountId) -> Result<ExecutionFinalResult> {
         self.worker
-            .delete_account(&self.id, &self.signer, beneficiary_id)
+            .delete_account(self.id(), &self.signer, beneficiary_id)
             .await
     }
 
     /// Views the current account's details such as balance and storage usage.
     pub fn view_account(&self) -> Query<'_, ViewAccount> {
-        self.worker.view_account(&self.id)
+        self.worker.view_account(self.id())
     }
 
     /// Views the current accounts's access key, given the [`PublicKey`] associated to it.
@@ -133,7 +130,7 @@ impl Account {
         Query::new(
             self.worker.client(),
             ViewAccessKeyList {
-                account_id: self.id.clone(),
+                account_id: self.id().clone(),
             },
         )
     }
@@ -163,11 +160,7 @@ impl Account {
             .await?;
 
         Ok(Execution {
-            result: Contract::new(
-                self.id().clone(),
-                self.signer().clone(),
-                self.worker.clone(),
-            ),
+            result: Contract::new(self.signer().clone(), self.worker.clone()),
             details: ExecutionFinalResult::from_view(outcome),
         })
     }
@@ -190,10 +183,10 @@ impl Account {
         let savepath = save_dir.as_ref().to_path_buf();
         std::fs::create_dir_all(save_dir).map_err(|e| ErrorKind::Io.custom(e))?;
 
-        let mut savepath = savepath.join(self.id.to_string());
+        let mut savepath = savepath.join(self.id().to_string());
         savepath.set_extension("json");
 
-        crate::rpc::tool::write_cred_to_file(&savepath, &self.id, &self.secret_key().0);
+        crate::rpc::tool::write_cred_to_file(&savepath, self.id(), &self.secret_key().0);
 
         Ok(())
     }
@@ -221,7 +214,7 @@ pub struct Contract {
 impl fmt::Debug for Contract {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Contract")
-            .field("id", &self.account.id)
+            .field("id", self.account.id())
             .finish()
     }
 }
@@ -236,9 +229,9 @@ impl Contract {
         Self::account(Account::from_secret_key(id, sk, worker))
     }
 
-    pub(crate) fn new(id: AccountId, signer: InMemorySigner, worker: Worker<dyn Network>) -> Self {
+    pub(crate) fn new(signer: InMemorySigner, worker: Worker<dyn Network>) -> Self {
         Self {
-            account: Account::new(id, signer, worker),
+            account: Account::new(signer, worker),
         }
     }
 
@@ -248,7 +241,7 @@ impl Contract {
 
     /// Grab the current contract's account identifier
     pub fn id(&self) -> &AccountId {
-        &self.account.id
+        self.account.id()
     }
 
     /// Treat this [`Contract`] object as an [`Account`] type. This does nothing
@@ -265,7 +258,9 @@ impl Contract {
         &mut self.account
     }
 
-    pub(crate) fn signer(&self) -> &InMemorySigner {
+    /// Grab the signer of the account. This signer is used to sign all transactions
+    /// sent to the network.
+    pub fn signer(&self) -> &InMemorySigner {
         self.account.signer()
     }
 
