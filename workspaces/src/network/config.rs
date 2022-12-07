@@ -12,7 +12,7 @@
 
 use std::fs::File;
 use std::io::BufReader;
-use std::path::PathBuf;
+use std::path::Path;
 
 use serde_json::{Map, Value};
 
@@ -56,7 +56,7 @@ fn overwrite_map(from: Map<String, Value>, mut into: Map<String, Value>) -> Resu
 /// Overwrite the $home_dir/config.json file over a set of entries. `value` will be used per (key, value) pair
 /// where value can also be another dict. This recursively sets all entry in `value` dict to the config
 /// dict, and saves back into `home_dir` at the end of the day.
-fn overwrite(home_dir: &PathBuf, value: Value) -> Result<()> {
+fn overwrite(home_dir: &Path, value: Value) -> Result<()> {
     let config_file =
         File::open(home_dir.join("config.json")).map_err(|err| ErrorKind::Io.custom(err))?;
     let config = BufReader::new(config_file);
@@ -79,7 +79,7 @@ fn overwrite(home_dir: &PathBuf, value: Value) -> Result<()> {
 /// larger than 10mb.
 fn max_sandbox_json_payload_size() -> Result<u64> {
     let max_files = match std::env::var("NEAR_SANDBOX_MAX_PAYLOAD_SIZE") {
-        Ok(val) => (&val)
+        Ok(val) => val
             .parse::<u64>()
             .map_err(|err| ErrorKind::DataConversion.custom(err))?,
 
@@ -91,7 +91,7 @@ fn max_sandbox_json_payload_size() -> Result<u64> {
 }
 
 /// Set extra configs for the sandbox defined by workspaces.
-pub(crate) fn set_sandbox_configs(home_dir: &PathBuf) -> Result<()> {
+pub(crate) fn set_sandbox_configs(home_dir: &Path) -> Result<()> {
     overwrite(
         home_dir,
         serde_json::json!({
