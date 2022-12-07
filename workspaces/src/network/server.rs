@@ -43,6 +43,10 @@ impl SandboxServer {
             .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?;
         info!(target: "workspaces", "sandbox init: {:?}", output);
 
+        // Configure `$home_dir/config.json` to our liking. Sandbox requires extra settings
+        // for the best user experience, and being able to offer patching large state payloads.
+        crate::network::config::set_sandbox_configs(&home_dir)?;
+
         let child = sandbox::run(&home_dir, self.rpc_port, self.net_port)
             .map_err(|e| SandboxErrorCode::RunFailure.custom(e))?;
 
