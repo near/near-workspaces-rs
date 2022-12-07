@@ -339,3 +339,4 @@ These environment variables will be useful if there was ever a snag hit:
 
 - `NEAR_RPC_TIMEOUT_SECS`: The default is 10 seconds, but this is the amount of time beforing timing out waiting for a RPC service when talking to the sandbox or any other network such as testnet.
 - `NEAR_SANDBOX_BIN_PATH`: Set this to our own prebuilt `neard-sandbox` bin path if we want to use a non-default version of the sandbox or configure nearcore with our own custom features that we want to test in workspaces.
+- `NEAR_SANDBOX_MAX_PAYLOAD_SIZE`: Sets the max payload size for sending transaction commits to sandbox. The default is 1gb and is necessary for patching large states.
