@@ -53,6 +53,20 @@ fn max_sandbox_json_payload_size() -> Result<u64> {
     Ok(max_files)
 }
 
+/// Get the max files for workspaces. `NEAR_SANDBOX_MAX_FILES` env var will be used and if not
+/// specified, will default to a max of 5000 handles by default as to not ulimit errors on certain
+/// platforms like Windows WSL2.
+fn max_files() -> Result<u64> {
+    let max_files = match std::env::var("NEAR_SANDBOX_MAX_FILES") {
+        Ok(val) => (&val)
+            .parse::<u64>()
+            .map_err(|err| ErrorKind::DataConversion.custom(err))?,
+        Err(_err) => 4096,
+    };
+
+    Ok(max_files)
+}
+
 /// Set extra configs for the sandbox defined by workspaces.
 pub(crate) fn set_sandbox_configs(home_dir: &Path) -> Result<()> {
     overwrite(
@@ -63,6 +77,9 @@ pub(crate) fn set_sandbox_configs(home_dir: &Path) -> Result<()> {
                     "json_payload_max_size": max_sandbox_json_payload_size()?,
                 },
             },
+            "store": {
+                "max_open_files": max_files()?,
+            }
         }),
     )
 }
