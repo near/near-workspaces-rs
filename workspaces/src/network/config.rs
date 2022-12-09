@@ -14,44 +14,10 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 use crate::error::ErrorKind;
 use crate::Result;
-
-/// Replaces all entries recursively from `from` into `into`.
-fn overwrite_map(from: Map<String, Value>, mut into: Map<String, Value>) -> Result<Value> {
-    for (key, from_val) in from.into_iter() {
-        let Some(into_val) = into.remove(&key) else {
-            // key not present in the `into` map. Just insert and move on.
-            into.insert(key, from_val);
-            continue;
-        };
-
-        let val = match (from_val, into_val) {
-            // Overwrite the map recursively:
-            (Value::Object(from), Value::Object(into)) => overwrite_map(from, into)?,
-
-            // Not the same types. One's a map and one's not
-            (value, map @ Value::Object(_)) => {
-                return Err(ErrorKind::DataConversion.message(format!(
-                    "sandbox set config with not the same type: {value:?} vs {map:?}"
-                )))
-            }
-            (map @ Value::Object(_), value) => {
-                return Err(ErrorKind::DataConversion.message(format!(
-                    "sandbox set config with not the same type: {map:?} vs {value:?}"
-                )))
-            }
-
-            // Both are non Map types: just overwrite it.
-            (from, _) => from,
-        };
-        into.insert(key, val);
-    }
-
-    serde_json::to_value(into).map_err(|e| ErrorKind::DataConversion.custom(e))
-}
 
 /// Overwrite the $home_dir/config.json file over a set of entries. `value` will be used per (key, value) pair
 /// where value can also be another dict. This recursively sets all entry in `value` dict to the config
@@ -60,13 +26,10 @@ fn overwrite(home_dir: &Path, value: Value) -> Result<()> {
     let config_file =
         File::open(home_dir.join("config.json")).map_err(|err| ErrorKind::Io.custom(err))?;
     let config = BufReader::new(config_file);
-    let config: Map<String, Value> =
+    let mut config: Value =
         serde_json::from_reader(config).map_err(|err| ErrorKind::DataConversion.custom(err))?;
 
-    let Value::Object(value) = value else {
-        return Err(ErrorKind::DataConversion.message(format!("Setting sandbox's config.json with invalid value: {value:?}")));
-    };
-    let config = overwrite_map(value, config)?;
+    json_patch::merge(&mut config, &value);
     let config_file =
         File::create(home_dir.join("config.json")).map_err(|err| ErrorKind::Io.custom(err))?;
     serde_json::to_writer(config_file, &config).map_err(|err| ErrorKind::Io.custom(err))?;
@@ -107,11 +70,10 @@ pub(crate) fn set_sandbox_configs(home_dir: &Path) -> Result<()> {
 #[cfg(test)]
 mod test {
     use crate::Result;
-    use serde_json::Value;
 
     #[test]
     fn test_setting_configs() -> Result<()> {
-        let Value::Object(from) = serde_json::json!({
+        let patch = serde_json::json!({
             "a": 1,
             "b": 2,
             "f": {
@@ -120,22 +82,19 @@ mod test {
                     "c": 10,
                 },
             }
-        }) else {
-            panic!("expected map type from json! macro");
-        };
-        let Value::Object(into) = serde_json::json!({
+        });
+
+        let mut base = serde_json::json!({
             "x": 3,
             "y": 4,
             "f": {
                 "a": 1,
             }
-        }) else {
-            panic!("expected map type from json! macro");
-        };
+        });
 
-        let into = super::overwrite_map(from, into)?;
+        json_patch::merge(&mut base, &patch);
         assert_eq!(
-            into,
+            base,
             serde_json::json!({
                 "a": 1,
                 "b": 2,
