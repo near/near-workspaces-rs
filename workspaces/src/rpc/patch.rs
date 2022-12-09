@@ -3,9 +3,12 @@ use near_primitives::types::{BlockId, BlockReference};
 use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
 
 use crate::error::SandboxErrorCode;
-use crate::network::DEV_ACCOUNT_SEED;
-use crate::types::{BlockHeight, KeyType, SecretKey};
-use crate::{AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
+use crate::network::{Sandbox, DEV_ACCOUNT_SEED};
+use crate::types::{BlockHeight, KeyType, PublicKey, SecretKey};
+use crate::Result;
+use crate::{AccountDetails, AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
+
+use super::BoxFuture;
 
 /// A [`Transaction`]-like object that allows us to specify details about importing
 /// a contract from a different network into our sandbox local network. This creates
@@ -170,5 +173,147 @@ impl<'a> ImportContractTransaction<'a> {
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
         Ok(Contract::new(signer, self.into_network))
+    }
+}
+
+enum UpdateAccount {
+    Update(AccountDetails),
+    FromCurrent(Box<dyn Fn(AccountDetails) -> AccountDetails>),
+}
+
+pub struct PatchTransaction<'a> {
+    account_id: AccountId,
+    records: Vec<StateRecord>,
+    worker: &'a Worker<Sandbox>,
+    update_account: Option<UpdateAccount>,
+}
+
+impl<'a> PatchTransaction<'a> {
+    pub(crate) fn new(worker: &'a Worker<Sandbox>, account_id: AccountId) -> Self {
+        PatchTransaction {
+            account_id,
+            records: vec![],
+            worker,
+            update_account: None,
+        }
+    }
+
+    /// Patch and overwrite the info contained inside an [`Account`] in sandbox.
+    pub fn account(mut self, account: AccountDetails) -> Self {
+        self.update_account = Some(UpdateAccount::Update(account));
+        self
+    }
+
+    /// Patch and overwrite the info contained inside an [`Account`] in sandbox. This
+    /// will allow us to fetch the current details on the chain and allow us to update
+    /// the account details w.r.t to them.
+    pub fn account_from_current<F>(mut self, f: F) -> Self
+    where
+        F: Fn(AccountDetails) -> AccountDetails + 'static,
+    {
+        self.update_account = Some(UpdateAccount::FromCurrent(Box::new(f)));
+        self
+    }
+
+    /// Patch the access keys of an account. This will add or overwrite the current access key
+    /// contained in sandbox with the access key we specify.
+    pub fn access_key(mut self, pk: PublicKey, ak: AccessKey) -> Self {
+        self.records.push(StateRecord::AccessKey {
+            account_id: self.account_id.clone(),
+            public_key: pk.into(),
+            access_key: ak,
+        });
+        self
+    }
+
+    /// Patch the access keys of an account. This will add or overwrite the current access keys
+    /// contained in sandbox with a list of access keys we specify.
+    ///
+    /// Similar to [`PatchTransaction::access_key`], but allows us to specify multiple access keys
+    pub fn access_keys<'b, 'c, I>(mut self, access_keys: I) -> Self
+    where
+        I: IntoIterator<Item = (PublicKey, AccessKey)>,
+    {
+        // Move account_id out of self struct so we can appease borrow checker.
+        // We'll put it back in after we're done.
+        let account_id = self.account_id;
+
+        self.records.extend(
+            access_keys
+                .into_iter()
+                .map(|(pk, ak)| StateRecord::AccessKey {
+                    account_id: account_id.clone(),
+                    public_key: pk.into(),
+                    access_key: ak,
+                }),
+        );
+
+        self.account_id = account_id;
+        self
+    }
+
+    /// Patch state into the sandbox network, given a prefix key and value. This will allow us
+    /// to set contract state that we have acquired in some manner, where we are able to test
+    /// random cases that are hard to come up naturally as state evolves.
+    pub fn state(mut self, key: &[u8], value: &[u8]) -> Self {
+        self.records.push(StateRecord::Data {
+            account_id: self.account_id.clone(),
+            data_key: key.to_vec(),
+            value: value.to_vec(),
+        });
+        self
+    }
+
+    /// Patch a series of states into the sandbox network. Similar to [`PatchTransaction::state`],
+    /// but allows us to specify multiple state patches at once.
+    pub fn states<'b, 'c, I>(mut self, states: I) -> Self
+    where
+        I: IntoIterator<Item = (&'b [u8], &'c [u8])>,
+    {
+        // Move account_id out of self struct so we can appease borrow checker.
+        // We'll put it back in after we're done.
+        let account_id = self.account_id;
+
+        self.records
+            .extend(states.into_iter().map(|(key, value)| StateRecord::Data {
+                account_id: account_id.clone(),
+                data_key: key.to_vec(),
+                value: value.to_vec(),
+            }));
+
+        self.account_id = account_id;
+        self
+    }
+
+    /// Perform the state patch transaction into the sandbox network.
+    pub async fn transact(mut self) -> Result<()> {
+        if let Some(update_account) = self.update_account {
+            let account = match update_account {
+                UpdateAccount::Update(account) => account,
+                UpdateAccount::FromCurrent(f) => {
+                    let account = self.worker.view_account(&self.account_id).await?;
+                    f(account)
+                }
+            };
+
+            self.records.push(StateRecord::Account {
+                account_id: self.account_id.clone(),
+                account: near_primitives::account::Account::new(
+                    account.balance,
+                    account.locked,
+                    near_primitives::hash::CryptoHash(account.code_hash.0),
+                    account.storage_usage,
+                ),
+            });
+        }
+
+        self.worker
+            .client()
+            .query(&RpcSandboxPatchStateRequest {
+                records: self.records,
+            })
+            .await
+            .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
+        Ok(())
     }
 }

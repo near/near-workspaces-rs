@@ -3,7 +3,7 @@ use crate::network::{Info, Sandbox};
 use crate::operations::{CallTransaction, Function};
 use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
-use crate::rpc::patch::ImportContractTransaction;
+use crate::rpc::patch::{ImportContractTransaction, PatchTransaction};
 use crate::rpc::query::{
     GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
     ViewCode, ViewFunction, ViewState,
@@ -214,9 +214,17 @@ impl Worker<Sandbox> {
         ImportContractTransaction::new(id, worker.clone().coerce(), self.clone().coerce())
     }
 
-    /// Patch state into the sandbox network, given a key and value. This will allow us to set
-    /// state that we have acquired in some manner. This allows us to test random cases that
-    /// are hard to come up naturally as state evolves.
+    /// Start patching the state of the account specified by the [`AccountId`]. This will create
+    /// a [`PatchTransaction`] that will allow us to patch access keys, code, and contract state.
+    /// This is similar to functions like [`Account::batch`] where we can perform multiple actions
+    /// in one transaction.
+    pub fn patch<'a>(&'a self, account_id: &AccountId) -> PatchTransaction {
+        PatchTransaction::new(self, account_id.clone())
+    }
+
+    /// Patch state into the sandbox network, given a prefix key and value. This will allow us
+    /// to set contract state that we have acquired in some manner, where we are able to test
+    /// random cases that are hard to come up naturally as state evolves.
     pub async fn patch_state(
         &self,
         contract_id: &AccountId,
