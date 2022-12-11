@@ -524,7 +524,7 @@ impl TransactionStatus {
     }
 }
 
-impl<'a> fmt::Debug for TransactionStatus {
+impl fmt::Debug for TransactionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TransactionStatus")
             .field("sender_id", &self.sender_id)
