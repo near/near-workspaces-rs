@@ -113,7 +113,7 @@ impl Function {
 ///
 /// [`Contract::batch`]: crate::Contract::batch
 pub struct Transaction {
-    client: Worker<dyn Network>,
+    worker: Worker<dyn Network>,
     signer: InMemorySigner,
     receiver_id: AccountId,
     // Result used to defer errors in argument parsing to later when calling into transact
@@ -122,12 +122,12 @@ pub struct Transaction {
 
 impl Transaction {
     pub(crate) fn new(
-        client: Worker<dyn Network>,
+        worker: Worker<dyn Network>,
         signer: InMemorySigner,
         receiver_id: AccountId,
     ) -> Self {
         Self {
-            client,
+            worker,
             signer,
             receiver_id,
             actions: Ok(Vec::new()),
@@ -235,7 +235,7 @@ impl Transaction {
 
     async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(
-            self.client.client(),
+            self.worker.client(),
             &self.signer,
             &self.receiver_id,
             self.actions?,
@@ -259,7 +259,7 @@ impl Transaction {
     ///
     /// [`status`]: TransactionStatus::status
     pub async fn transact_async(self) -> Result<TransactionStatus> {
-        send_batch_tx_async_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?)
+        send_batch_tx_async_and_retry(self.worker, &self.signer, &self.receiver_id, self.actions?)
             .await
     }
 }
@@ -267,7 +267,7 @@ impl Transaction {
 /// Similiar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
 pub struct CallTransaction {
-    client: Worker<dyn Network>,
+    worker: Worker<dyn Network>,
     signer: InMemorySigner,
     contract_id: AccountId,
     function: Function,
@@ -275,13 +275,13 @@ pub struct CallTransaction {
 
 impl CallTransaction {
     pub(crate) fn new(
-        client: Worker<dyn Network>,
+        worker: Worker<dyn Network>,
         contract_id: AccountId,
         signer: InMemorySigner,
         function: &str,
     ) -> Self {
         Self {
-            client,
+            worker,
             signer,
             contract_id,
             function: Function::new(function),
@@ -333,7 +333,7 @@ impl CallTransaction {
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
     pub async fn transact(self) -> Result<ExecutionFinalResult> {
-        self.client
+        self.worker
             .client()
             .call(
                 &self.signer,
@@ -357,7 +357,7 @@ impl CallTransaction {
     /// [`status`]: TransactionStatus::status
     pub async fn transact_async(self) -> Result<TransactionStatus> {
         send_batch_tx_async_and_retry(
-            self.client,
+            self.worker,
             &self.signer,
             &self.contract_id,
             vec![FunctionCallAction {
@@ -374,7 +374,7 @@ impl CallTransaction {
     /// Instead of transacting the transaction, call into the specified view function.
     pub async fn view(self) -> Result<ViewResultDetails> {
         Query::new(
-            self.client.client(),
+            self.worker.client(),
             ViewFunction {
                 account_id: self.contract_id.clone(),
                 function: self.function,
@@ -458,19 +458,19 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
 /// [`asynchronous transaction`]: https://docs.near.org/api/rpc/transactions#send-transaction-async
 #[must_use]
 pub struct TransactionStatus {
-    client: Worker<dyn Network>,
+    worker: Worker<dyn Network>,
     sender_id: AccountId,
     hash: CryptoHash,
 }
 
 impl TransactionStatus {
     pub(crate) fn new(
-        client: Worker<dyn Network>,
+        worker: Worker<dyn Network>,
         id: AccountId,
         hash: near_primitives::hash::CryptoHash,
     ) -> Self {
         Self {
-            client,
+            worker,
             sender_id: id,
             hash: CryptoHash(hash.0),
         }
@@ -481,7 +481,7 @@ impl TransactionStatus {
     /// `Ok` value with [`Poll::Pending`] is returned, then the transaction has not finished.
     pub async fn status(&self) -> Result<Poll<ExecutionFinalResult>> {
         let result = self
-            .client
+            .worker
             .client()
             .tx_async_status(
                 &self.sender_id,

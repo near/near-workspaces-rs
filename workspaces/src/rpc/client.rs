@@ -466,7 +466,7 @@ pub(crate) async fn send_batch_tx_and_retry(
 }
 
 pub(crate) async fn send_batch_tx_async_and_retry(
-    client: Worker<dyn Network>,
+    worker: Worker<dyn Network>,
     signer: &InMemorySigner,
     receiver_id: &AccountId,
     actions: Vec<Action>,
@@ -475,8 +475,8 @@ pub(crate) async fn send_batch_tx_async_and_retry(
     let cache_key = (signer.account_id.clone(), signer.public_key());
 
     retry(|| async {
-        let (block_hash, nonce) = fetch_tx_nonce(client.client(), &cache_key).await?;
-        let hash = client
+        let (block_hash, nonce) = fetch_tx_nonce(worker.client(), &cache_key).await?;
+        let hash = worker
             .client()
             .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
                 signed_transaction: SignedTransaction::from_actions(
@@ -492,7 +492,7 @@ pub(crate) async fn send_batch_tx_async_and_retry(
             .map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))?;
 
         Ok(TransactionStatus::new(
-            client.clone(),
+            worker.clone(),
             signer.account_id.clone(),
             hash,
         ))
