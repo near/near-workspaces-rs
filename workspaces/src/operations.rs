@@ -3,11 +3,10 @@
 use crate::error::{ErrorKind, RpcErrorCode};
 use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{
-    send_batch_tx_and_retry, send_batch_tx_async_and_retry, Client, DEFAULT_CALL_DEPOSIT,
+    send_batch_tx_and_retry, send_batch_tx_async_and_retry, DEFAULT_CALL_DEPOSIT,
     DEFAULT_CALL_FN_GAS,
 };
 use crate::rpc::query::{Query, ViewFunction};
-use crate::rpc::BoxFuture;
 use crate::types::{
     AccessKey, AccountId, Balance, Gas, InMemorySigner, KeyType, PublicKey, SecretKey,
 };
@@ -25,6 +24,7 @@ use near_primitives::views::FinalExecutionOutcomeView;
 use std::convert::TryInto;
 use std::fmt;
 use std::future::IntoFuture;
+use std::pin::Pin;
 use std::task::Poll;
 
 const MAX_GAS: Gas = 300_000_000_000_000;
@@ -112,16 +112,20 @@ impl Function {
 /// is used by default for `Contract::batch`.
 ///
 /// [`Contract::batch`]: crate::Contract::batch
-pub struct Transaction<'a> {
-    client: &'a Client,
+pub struct Transaction {
+    client: Worker<dyn Network>,
     signer: InMemorySigner,
     receiver_id: AccountId,
     // Result used to defer errors in argument parsing to later when calling into transact
     actions: Result<Vec<Action>>,
 }
 
-impl<'a> Transaction<'a> {
-    pub(crate) fn new(client: &'a Client, signer: InMemorySigner, receiver_id: AccountId) -> Self {
+impl Transaction {
+    pub(crate) fn new(
+        client: Worker<dyn Network>,
+        signer: InMemorySigner,
+        receiver_id: AccountId,
+    ) -> Self {
         Self {
             client,
             signer,
@@ -230,7 +234,13 @@ impl<'a> Transaction<'a> {
     }
 
     async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?).await
+        send_batch_tx_and_retry(
+            self.client.client(),
+            &self.signer,
+            &self.receiver_id,
+            self.actions?,
+        )
+        .await
     }
 
     /// Process the transaction, and return the result of the execution.
@@ -248,7 +258,7 @@ impl<'a> Transaction<'a> {
     /// of the transaction.
     ///
     /// [`status`]: TransactionStatus::status
-    pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
+    pub async fn transact_async(self) -> Result<TransactionStatus> {
         send_batch_tx_async_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?)
             .await
     }
@@ -256,16 +266,16 @@ impl<'a> Transaction<'a> {
 
 /// Similiar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
-pub struct CallTransaction<'a> {
-    client: &'a Client,
+pub struct CallTransaction {
+    client: Worker<dyn Network>,
     signer: InMemorySigner,
     contract_id: AccountId,
     function: Function,
 }
 
-impl<'a> CallTransaction<'a> {
+impl CallTransaction {
     pub(crate) fn new(
-        client: &'a Client,
+        client: Worker<dyn Network>,
         contract_id: AccountId,
         signer: InMemorySigner,
         function: &str,
@@ -324,6 +334,7 @@ impl<'a> CallTransaction<'a> {
     /// failed in any process along the way.
     pub async fn transact(self) -> Result<ExecutionFinalResult> {
         self.client
+            .client()
             .call(
                 &self.signer,
                 &self.contract_id,
@@ -344,7 +355,7 @@ impl<'a> CallTransaction<'a> {
     /// of the transaction.
     ///
     /// [`status`]: TransactionStatus::status
-    pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
+    pub async fn transact_async(self) -> Result<TransactionStatus> {
         send_batch_tx_async_and_retry(
             self.client,
             &self.signer,
@@ -363,7 +374,7 @@ impl<'a> CallTransaction<'a> {
     /// Instead of transacting the transaction, call into the specified view function.
     pub async fn view(self) -> Result<ViewResultDetails> {
         Query::new(
-            self.client,
+            self.client.client(),
             ViewFunction {
                 account_id: self.contract_id.clone(),
                 function: self.function,
@@ -446,15 +457,15 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
 ///
 /// [`asynchronous transaction`]: https://docs.near.org/api/rpc/transactions#send-transaction-async
 #[must_use]
-pub struct TransactionStatus<'a> {
-    client: &'a Client,
+pub struct TransactionStatus {
+    client: Worker<dyn Network>,
     sender_id: AccountId,
     hash: CryptoHash,
 }
 
-impl<'a> TransactionStatus<'a> {
+impl TransactionStatus {
     pub(crate) fn new(
-        client: &'a Client,
+        client: Worker<dyn Network>,
         id: AccountId,
         hash: near_primitives::hash::CryptoHash,
     ) -> Self {
@@ -471,6 +482,7 @@ impl<'a> TransactionStatus<'a> {
     pub async fn status(&self) -> Result<Poll<ExecutionFinalResult>> {
         let result = self
             .client
+            .client()
             .tx_async_status(
                 &self.sender_id,
                 near_primitives::hash::CryptoHash(self.hash.0),
@@ -512,7 +524,7 @@ impl<'a> TransactionStatus<'a> {
     }
 }
 
-impl<'a> fmt::Debug for TransactionStatus<'a> {
+impl<'a> fmt::Debug for TransactionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TransactionStatus")
             .field("sender_id", &self.sender_id)
@@ -521,9 +533,9 @@ impl<'a> fmt::Debug for TransactionStatus<'a> {
     }
 }
 
-impl<'a> IntoFuture for TransactionStatus<'a> {
+impl IntoFuture for TransactionStatus {
     type Output = Result<ExecutionFinalResult>;
-    type IntoFuture = BoxFuture<'a, Self::Output>;
+    type IntoFuture = Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(async { self.wait().await })

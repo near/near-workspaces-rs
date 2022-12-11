@@ -30,6 +30,7 @@ use crate::error::{Error, ErrorKind, RpcErrorCode};
 use crate::operations::TransactionStatus;
 use crate::result::Result;
 use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
+use crate::{Network, Worker};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
@@ -464,18 +465,19 @@ pub(crate) async fn send_batch_tx_and_retry(
     .await
 }
 
-pub(crate) async fn send_batch_tx_async_and_retry<'a>(
-    client: &'a Client,
+pub(crate) async fn send_batch_tx_async_and_retry(
+    client: Worker<dyn Network>,
     signer: &InMemorySigner,
     receiver_id: &AccountId,
     actions: Vec<Action>,
-) -> Result<TransactionStatus<'a>> {
+) -> Result<TransactionStatus> {
     let signer = signer.inner();
     let cache_key = (signer.account_id.clone(), signer.public_key());
 
     retry(|| async {
-        let (block_hash, nonce) = fetch_tx_nonce(client, &cache_key).await?;
+        let (block_hash, nonce) = fetch_tx_nonce(client.client(), &cache_key).await?;
         let hash = client
+            .client()
             .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
                 signed_transaction: SignedTransaction::from_actions(
                     nonce,
@@ -490,7 +492,7 @@ pub(crate) async fn send_batch_tx_async_and_retry<'a>(
             .map_err(|e| RpcErrorCode::BroadcastTxFailure.custom(e))?;
 
         Ok(TransactionStatus::new(
-            client,
+            client.clone(),
             signer.account_id.clone(),
             hash,
         ))
