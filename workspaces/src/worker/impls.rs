@@ -173,7 +173,10 @@ where
     }
 }
 
-impl Worker<dyn Network> {
+impl<T> Worker<T>
+where
+    T: Network + 'static,
+{
     /// Call into a contract's change function. Returns a [`CallTransaction`] object
     /// that we will make use to populate the rest of the call details. The [`signer`]
     /// will be used to sign the transaction.
