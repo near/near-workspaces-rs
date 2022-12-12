@@ -189,7 +189,7 @@ where
         function: &str,
     ) -> CallTransaction {
         CallTransaction::new(
-            self.clone(),
+            self.clone().coerce(),
             contract_id.to_owned(),
             signer.clone(),
             function,
