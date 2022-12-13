@@ -1,67 +1,68 @@
-use crate::error::SandboxErrorCode;
-use crate::network::Sandbox;
+use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::result::Result;
 
 use async_process::Child;
 use portpicker::pick_unused_port;
+use tempfile::TempDir;
 use tracing::info;
 
 use near_sandbox_utils as sandbox;
 
+async fn init() -> Result<TempDir> {
+    let home_dir = tempfile::tempdir().map_err(|e| ErrorKind::Io.custom(e))?;
+    let output = sandbox::init(&home_dir)
+        .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
+        .output()
+        .await
+        .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?;
+    info!(target: "workspaces", "sandbox init: {:?}", output);
+
+    Ok(home_dir)
+}
+
 pub struct SandboxServer {
     pub(crate) rpc_port: u16,
     pub(crate) net_port: u16,
+    pub(crate) home_dir: TempDir,
     process: Option<Child>,
 }
 
 impl SandboxServer {
-    pub fn new(rpc_port: u16, net_port: u16) -> Self {
-        Self {
-            rpc_port,
-            net_port,
-            process: None,
-        }
-    }
-
-    pub async fn start(&mut self) -> Result<()> {
-        if self.process.is_some() {
-            return Err(SandboxErrorCode::AlreadyStarted.into());
-        }
-
-        info!(target: "workspaces", "Starting up sandbox at localhost:{}", self.rpc_port);
-        let home_dir = Sandbox::home_dir(self.rpc_port);
+    pub(crate) async fn run_new() -> Result<Self> {
+        let home_dir = init().await?;
 
         // Supress logs for the sandbox binary by default:
         supress_sandbox_logs_if_required();
 
-        // Remove dir if it already exists:
-        let _ = std::fs::remove_dir_all(&home_dir);
-        let output = sandbox::init(&home_dir)
-            .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
-            .output()
-            .await
-            .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?;
-        info!(target: "workspaces", "sandbox init: {:?}", output);
+        let (rpc_port, net_port, child) = loop {
+            // Try running the server with the follow provided rpc_ports and net_ports
+            let rpc_port = pick_unused_port().expect("no ports free");
+            let net_port = pick_unused_port().expect("no ports free");
+            match sandbox::run(home_dir.path(), rpc_port, net_port) {
+                Ok(child) => break (rpc_port, net_port, child),
+                Err(err) => {
+                    if format!("{:?}", err).contains("AddrInUse") {
+                        // continue the search for an unused port.
+                        continue;
+                    } else {
+                        return Err(SandboxErrorCode::RunFailure.custom(err));
+                    }
+                }
+            }
+        };
 
-        let child = sandbox::run(&home_dir, self.rpc_port, self.net_port)
-            .map_err(|e| SandboxErrorCode::RunFailure.custom(e))?;
+        info!(target: "workspaces", "Started up sandbox at localhost:{} with pid={:?}", rpc_port, child.id());
 
-        info!(target: "workspaces", "Started sandbox: pid={:?}", child.id());
-        self.process = Some(child);
-
-        Ok(())
+        Ok(Self {
+            rpc_port,
+            net_port,
+            home_dir,
+            process: Some(child),
+        })
     }
 
     pub fn rpc_addr(&self) -> String {
         format!("http://localhost:{}", self.rpc_port)
-    }
-}
-
-impl Default for SandboxServer {
-    fn default() -> Self {
-        let rpc_port = pick_unused_port().expect("no ports free");
-        let net_port = pick_unused_port().expect("no ports free");
-        Self::new(rpc_port, net_port)
     }
 }
 
