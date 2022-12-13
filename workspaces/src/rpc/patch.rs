@@ -1,14 +1,12 @@
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::types::{BlockId, BlockReference};
-use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
+use near_primitives::{state_record::StateRecord, types::Balance};
 
 use crate::error::SandboxErrorCode;
 use crate::network::{Sandbox, DEV_ACCOUNT_SEED};
 use crate::types::{BlockHeight, KeyType, PublicKey, SecretKey};
-use crate::Result;
+use crate::{AccessKey, Result};
 use crate::{AccountDetails, AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
-
-use super::BoxFuture;
 
 /// A [`Transaction`]-like object that allows us to specify details about importing
 /// a contract from a different network into our sandbox local network. This creates
@@ -124,7 +122,7 @@ impl<'a> ImportContractTransaction<'a> {
             StateRecord::AccessKey {
                 account_id: into_account_id.clone(),
                 public_key: pk.clone().into(),
-                access_key: AccessKey::full_access(),
+                access_key: near_primitives::account::AccessKey::full_access(),
             },
         ];
 
@@ -181,19 +179,19 @@ enum UpdateAccount {
     FromCurrent(Box<dyn Fn(AccountDetails) -> AccountDetails>),
 }
 
-pub struct PatchTransaction<'a> {
+pub struct PatchTransaction {
     account_id: AccountId,
     records: Vec<StateRecord>,
-    worker: &'a Worker<Sandbox>,
+    worker: Worker<Sandbox>,
     update_account: Option<UpdateAccount>,
 }
 
-impl<'a> PatchTransaction<'a> {
-    pub(crate) fn new(worker: &'a Worker<Sandbox>, account_id: AccountId) -> Self {
+impl PatchTransaction {
+    pub(crate) fn new(worker: &Worker<Sandbox>, account_id: AccountId) -> Self {
         PatchTransaction {
             account_id,
             records: vec![],
-            worker,
+            worker: worker.clone(),
             update_account: None,
         }
     }
@@ -221,7 +219,7 @@ impl<'a> PatchTransaction<'a> {
         self.records.push(StateRecord::AccessKey {
             account_id: self.account_id.clone(),
             public_key: pk.into(),
-            access_key: ak,
+            access_key: ak.into(),
         });
         self
     }
@@ -244,7 +242,7 @@ impl<'a> PatchTransaction<'a> {
                 .map(|(pk, ak)| StateRecord::AccessKey {
                     account_id: account_id.clone(),
                     public_key: pk.into(),
-                    access_key: ak,
+                    access_key: ak.into(),
                 }),
         );
 
