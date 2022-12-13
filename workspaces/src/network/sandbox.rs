@@ -33,7 +33,7 @@ pub struct Sandbox {
 
 impl Sandbox {
     pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
-        let path = self.server.home_dir.path().join("validator_key.json");
+        let path = self.server.home_dir.join("validator_key.json");
         InMemorySigner::from_file(&path)
     }
 

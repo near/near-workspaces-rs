@@ -1,15 +1,21 @@
 use fs2::FileExt;
 use std::fs::File;
+use std::path::PathBuf;
 
 use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::result::Result;
 
 use async_process::Child;
 use portpicker::pick_unused_port;
-use tempfile::TempDir;
 use tracing::info;
 
 use near_sandbox_utils as sandbox;
+
+fn home_dir(port: u16) -> PathBuf {
+    let mut path = std::env::temp_dir();
+    path.push(format!("sandbox-{}", port));
+    path
+}
 
 fn acquire_unused_port() -> Result<(u16, File)> {
     loop {
@@ -25,8 +31,18 @@ fn acquire_unused_port() -> Result<(u16, File)> {
     }
 }
 
-async fn init() -> Result<TempDir> {
-    let home_dir = tempfile::tempdir().map_err(|e| ErrorKind::Io.custom(e))?;
+async fn init(port: u16) -> Result<PathBuf> {
+    // let home_dir = tempfile::tempdir().map_err(|e| ErrorKind::Io.custom(e))?;
+    let home_dir = home_dir(port);
+    let _ = std::fs::remove_dir_all(&home_dir);
+
+    // .map_err(|err| {
+    //     ErrorKind::Io.full(
+    //         format!("Unable to start from fresh $tmp_dir/sandbox-{}", port),
+    //         err,
+    //     )
+    // })?;
+
     let output = sandbox::init(&home_dir)
         .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
         .output()
@@ -40,21 +56,21 @@ async fn init() -> Result<TempDir> {
 pub struct SandboxServer {
     pub(crate) rpc_port: u16,
     pub(crate) net_port: u16,
-    pub(crate) home_dir: TempDir,
+    pub(crate) home_dir: PathBuf,
     process: Option<Child>,
 }
 
 impl SandboxServer {
     pub(crate) async fn run_new() -> Result<Self> {
-        let home_dir = init().await?;
-
         // Supress logs for the sandbox binary by default:
         supress_sandbox_logs_if_required();
 
         // Try running the server with the follow provided rpc_ports and net_ports
         let (rpc_port, rpc_port_lock) = acquire_unused_port()?;
         let (net_port, net_port_lock) = acquire_unused_port()?;
-        let child = sandbox::run(home_dir.path(), rpc_port, net_port)
+
+        let home_dir = init(rpc_port).await?;
+        let child = sandbox::run(&home_dir, rpc_port, net_port)
             .map_err(|e| SandboxErrorCode::RunFailure.custom(e))?;
 
         // At this point, sandbox was able to run successfully, so unlock the ports since they are being used
