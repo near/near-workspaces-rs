@@ -1,3 +1,6 @@
+use fs2::FileExt;
+use std::fs::File;
+
 use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::result::Result;
 
@@ -7,6 +10,20 @@ use tempfile::TempDir;
 use tracing::info;
 
 use near_sandbox_utils as sandbox;
+
+fn acquire_unused_port() -> Result<(u16, File)> {
+    loop {
+        let port = pick_unused_port()
+            .ok_or_else(|| SandboxErrorCode::InitFailure.message("no ports free"))?;
+        let lockpath = std::env::temp_dir().join(format!("near-sandbox-port{}.lock", port));
+        let lockfile = File::create(lockpath).map_err(|err| {
+            ErrorKind::Io.full(format!("failed to create lockfile for port {}", port), err)
+        })?;
+        if lockfile.try_lock_exclusive().is_ok() {
+            break Ok((port, lockfile));
+        }
+    }
+}
 
 async fn init() -> Result<TempDir> {
     let home_dir = tempfile::tempdir().map_err(|e| ErrorKind::Io.custom(e))?;
@@ -34,22 +51,26 @@ impl SandboxServer {
         // Supress logs for the sandbox binary by default:
         supress_sandbox_logs_if_required();
 
-        let (rpc_port, net_port, child) = loop {
-            // Try running the server with the follow provided rpc_ports and net_ports
-            let rpc_port = pick_unused_port().expect("no ports free");
-            let net_port = pick_unused_port().expect("no ports free");
-            match sandbox::run(home_dir.path(), rpc_port, net_port) {
-                Ok(child) => break (rpc_port, net_port, child),
-                Err(err) => {
-                    if format!("{:?}", err).contains("AddrInUse") {
-                        // continue the search for an unused port.
-                        continue;
-                    } else {
-                        return Err(SandboxErrorCode::RunFailure.custom(err));
-                    }
-                }
-            }
-        };
+        // Try running the server with the follow provided rpc_ports and net_ports
+        let (rpc_port, rpc_port_lock) = acquire_unused_port()?;
+        let (net_port, net_port_lock) = acquire_unused_port()?;
+        let child = sandbox::run(home_dir.path(), rpc_port, net_port)
+            .map_err(|e| SandboxErrorCode::RunFailure.custom(e))?;
+
+        // At this point, sandbox was able to run successfully, so unlock the ports since they are being used
+        // and the OS has a lock on them now.
+        rpc_port_lock.unlock().map_err(|e| {
+            ErrorKind::Io.full(
+                format!("failed to unlock lockfile for port {}", rpc_port),
+                e,
+            )
+        })?;
+        net_port_lock.unlock().map_err(|e| {
+            ErrorKind::Io.full(
+                format!("failed to unlock lockfile for port {}", net_port),
+                e,
+            )
+        })?;
 
         info!(target: "workspaces", "Started up sandbox at localhost:{} with pid={:?}", rpc_port, child.id());
 
