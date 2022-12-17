@@ -148,29 +148,11 @@ impl<'a, 'b> ImportContractTransaction<'a> {
             .await
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
-        println!("PATCHING INTO: {account_id:?}");
         self.into_network
             .client()
             .query(&RpcSandboxPatchStateRequest { records })
             .await
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
-
-        for i in 0..20 {
-            let account_view = self
-                .into_network
-                .view_account(&account_id)
-                .block_reference(BlockReference::latest())
-                .await;
-
-            println!("Waiting on {account_id:?} to exist but got {account_view:?}. Retrying for the {i}th in 500ms...");
-            if account_view.is_err() {
-                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-            } else {
-                break;
-            }
-        }
-
-        // tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
 
         Ok(Contract::new(signer, self.into_network))
     }
