@@ -140,13 +140,13 @@ impl<'a, 'b> ImportContractTransaction<'a> {
 
         // NOTE: For some reason, patching anything with account/contract related items takes two patches
         // otherwise its super non-deterministic and mostly just fails to locate the account afterwards: ¯\_(ツ)_/¯
-        // self.into_network
-        //     .client()
-        //     .query(&RpcSandboxPatchStateRequest {
-        //         records: records.clone(),
-        //     })
-        //     .await
-        //     .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
+        self.into_network
+            .client()
+            .query(&RpcSandboxPatchStateRequest {
+                records: records.clone(),
+            })
+            .await
+            .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
         println!("PATCHING INTO: {account_id:?}");
         self.into_network
