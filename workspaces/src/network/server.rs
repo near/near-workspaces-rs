@@ -113,8 +113,6 @@ impl Drop for SandboxServer {
             .map_err(|e| format!("Could not cleanup sandbox due to: {:?}", e))
             .unwrap();
 
-        // At this point, sandbox was able to run successfully, so unlock the ports since they are being used
-        // and the OS has a lock on them now.
         self.rpc_port_lock
             .unlock()
             .map_err(|e| {

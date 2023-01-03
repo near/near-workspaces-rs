@@ -26,7 +26,7 @@ const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
 ///
 /// [`workspaces::sandbox`]: crate::sandbox
 pub struct Sandbox {
-    server: SandboxServer,
+    pub(crate) server: SandboxServer,
     client: Client,
     info: Info,
 }

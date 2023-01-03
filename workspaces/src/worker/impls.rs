@@ -235,4 +235,8 @@ impl Worker<Sandbox> {
     pub fn rpc_port(&self) -> u16 {
         self.workspace.rpc_port()
     }
+
+    pub fn home_dir(&self) -> &std::path::Path {
+        self.workspace.server.home_dir.as_path()
+    }
 }
