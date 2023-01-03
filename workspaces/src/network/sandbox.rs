@@ -32,17 +32,8 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
-    pub(crate) fn home_dir(port: u16) -> PathBuf {
-        let mut path = std::env::temp_dir();
-        path.push(format!("sandbox-{}", port));
-        path
-    }
-
     pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
-        let mut path = Self::home_dir(self.server.rpc_port);
-        path.push("validator_key.json");
-
-        InMemorySigner::from_file(&path)
+        InMemorySigner::from_file(&self.server.home_dir.join("validator_key.json"))
     }
 
     pub(crate) async fn new() -> Result<Self> {
