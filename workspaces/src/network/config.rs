@@ -37,34 +37,18 @@ fn overwrite(home_dir: &Path, value: Value) -> Result<()> {
     Ok(())
 }
 
-/// Limit how much nearcore/sandbox can receive per payload. The default set by nearcore is not
-/// enough for certain sandbox operations like patching contract state in the case of contracts
-/// larger than 10mb.
-fn max_sandbox_json_payload_size() -> Result<u64> {
-    let max_files = match std::env::var("NEAR_SANDBOX_MAX_PAYLOAD_SIZE") {
+/// Parse an environment variable or return a default value.
+fn parse_env_or<T>(env_var: &str, default: T) -> Result<T>
+where
+    T: std::str::FromStr,
+    T::Err: std::error::Error + Send + Sync + 'static,
+{
+    match std::env::var(env_var) {
         Ok(val) => val
-            .parse::<u64>()
-            .map_err(|err| ErrorKind::DataConversion.custom(err))?,
-
-        // Default is 1GB which should suit most contract sizes.
-        Err(_err) => 1024 * 1024 * 1024,
-    };
-
-    Ok(max_files)
-}
-
-/// Get the max files for workspaces. `NEAR_SANDBOX_MAX_FILES` env var will be used and if not
-/// specified, will default to a max of 5000 handles by default as to not ulimit errors on certain
-/// platforms like Windows WSL2.
-fn max_files() -> Result<u64> {
-    let max_files = match std::env::var("NEAR_SANDBOX_MAX_FILES") {
-        Ok(val) => (&val)
-            .parse::<u64>()
-            .map_err(|err| ErrorKind::DataConversion.custom(err))?,
-        Err(_err) => 4096,
-    };
-
-    Ok(max_files)
+            .parse::<T>()
+            .map_err(|err| ErrorKind::DataConversion.custom(err)),
+        Err(_err) => Ok(default),
+    }
 }
 
 /// Set extra configs for the sandbox defined by workspaces.
@@ -74,11 +58,13 @@ pub(crate) fn set_sandbox_configs(home_dir: &Path) -> Result<()> {
         serde_json::json!({
             "rpc": {
                 "limits_config": {
-                    "json_payload_max_size": max_sandbox_json_payload_size()?,
+                    // default to 1GB payload size so that large state patches can work.
+                    "json_payload_max_size": parse_env_or("NEAR_SANDBOX_MAX_PAYLOAD_SIZE", 1024 * 1024 * 1024)?,
                 },
             },
             "store": {
-                "max_open_files": max_files()?,
+                // default to 3,000 files open at a time so that windows WSL can work without configuring.
+                "max_open_files": parse_env_or("NEAR_SANDBOX_MAX_FILES", 3000)?,
             }
         }),
     )
