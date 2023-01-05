@@ -138,8 +138,9 @@ impl<'a, 'b> ImportContractTransaction<'a> {
             );
         }
 
-        // NOTE: For some reason, patching anything with account/contract related items takes two patches
-        // otherwise its super non-deterministic and mostly just fails to locate the account afterwards: ¯\_(ツ)_/¯
+        // NOTE: Patching twice here since it takes a while for the first patch to be
+        // committed to the network. Where the account wouldn't exist until the block
+        // finality is reached.
         self.into_network
             .client()
             .query(&RpcSandboxPatchStateRequest {

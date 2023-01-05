@@ -22,7 +22,8 @@ use crate::Result;
 /// Overwrite the $home_dir/config.json file over a set of entries. `value` will be used per (key, value) pair
 /// where value can also be another dict. This recursively sets all entry in `value` dict to the config
 /// dict, and saves back into `home_dir` at the end of the day.
-fn overwrite(home_dir: &Path, value: Value) -> Result<()> {
+fn overwrite(home_dir: impl AsRef<Path>, value: Value) -> Result<()> {
+    let home_dir = home_dir.as_ref();
     let config_file =
         File::open(home_dir.join("config.json")).map_err(|err| ErrorKind::Io.custom(err))?;
     let config = BufReader::new(config_file);
@@ -54,7 +55,7 @@ fn max_sandbox_json_payload_size() -> Result<u64> {
 }
 
 /// Set extra configs for the sandbox defined by workspaces.
-pub(crate) fn set_sandbox_configs(home_dir: &Path) -> Result<()> {
+pub(crate) fn set_sandbox_configs(home_dir: impl AsRef<Path>) -> Result<()> {
     overwrite(
         home_dir,
         serde_json::json!({
