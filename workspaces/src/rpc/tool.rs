@@ -57,15 +57,20 @@ pub(crate) async fn url_create_account(
     Ok(())
 }
 
-pub(crate) fn write_cred_to_file(path: &Path, id: &AccountId, sk: &SecretKey) {
-    let mut file = File::create(path).expect("Failed to create / write a key file.");
+pub(crate) fn write_cred_to_file(path: &Path, id: &AccountId, sk: &SecretKey) -> Result<()> {
+    let mut file = File::create(path).map_err(|err| {
+        ErrorKind::Io.full(
+            format!("failed to open {path:?} for writing credentials"),
+            err,
+        )
+    })?;
 
     #[cfg(unix)]
     {
         use std::os::unix::prelude::PermissionsExt;
         let mut perm = file
             .metadata()
-            .expect("Failed to retrieve key file metadata.")
+            .map_err(|err| ErrorKind::Io.full("Failed to retrieve key file metadata.", err))?
             .permissions();
 
         #[cfg(target_os = "macos")]
@@ -74,7 +79,7 @@ pub(crate) fn write_cred_to_file(path: &Path, id: &AccountId, sk: &SecretKey) {
         perm.set_mode(libc::S_IWUSR | libc::S_IRUSR);
 
         file.set_permissions(perm)
-            .expect("Failed to set permissions for a key file.");
+            .map_err(|err| ErrorKind::Io.full("Failed to set permissions for a key file.", err))?;
     }
 
     let content = serde_json::json!({
@@ -85,7 +90,6 @@ pub(crate) fn write_cred_to_file(path: &Path, id: &AccountId, sk: &SecretKey) {
     .to_string()
     .into_bytes();
 
-    if let Err(err) = file.write_all(&content) {
-        panic!("Failed to write a key file {}", err);
-    }
+    file.write_all(&content)
+        .map_err(|err| ErrorKind::Io.full("Failed to write a key file", err))
 }

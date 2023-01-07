@@ -20,6 +20,14 @@ impl ErrorKind {
         Error::message(self, msg)
     }
 
+    pub(crate) fn full<T, E>(self, msg: T, error: E) -> Error
+    where
+        T: Into<Cow<'static, str>>,
+        E: Into<Box<dyn std::error::Error + Send + Sync>>,
+    {
+        Error::full(self, msg, error)
+    }
+
     pub(crate) fn detailed(self, error: ExecutionFailure) -> Error {
         Error::detailed(self, error)
     }
