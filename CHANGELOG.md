@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+- [`Transaction::transact_async` no longer has a lifetime parameter to make it easier to use](https://github.com/near/workspaces-rs/pull/249)
+
+### Fixed
+
 ## [0.7.0]
 
 ### Added
