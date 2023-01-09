@@ -41,25 +41,6 @@ where
         self.workspace.client()
     }
 
-    /// Call into a contract's change function. Returns a [`CallTransaction`] object
-    /// that we will make use to populate the rest of the call details. The [`signer`]
-    /// will be used to sign the transaction.
-    ///
-    /// [`signer`]: crate::types::InMemorySigner
-    pub fn call(
-        &self,
-        signer: &InMemorySigner,
-        contract_id: &AccountId,
-        function: &str,
-    ) -> CallTransaction<'_> {
-        CallTransaction::new(
-            self.client(),
-            contract_id.to_owned(),
-            signer.clone(),
-            function,
-        )
-    }
-
     /// Call into a contract's view function. Returns a [`Query`] which allows us
     /// to specify further details like the arguments of the view call, or at what
     /// point in the chain we want to view.
@@ -189,6 +170,30 @@ where
 
     pub fn gas_price(&self) -> Query<'_, GasPrice> {
         Query::new(self.client(), GasPrice)
+    }
+}
+
+impl<T> Worker<T>
+where
+    T: Network + 'static,
+{
+    /// Call into a contract's change function. Returns a [`CallTransaction`] object
+    /// that we will make use to populate the rest of the call details. The [`signer`]
+    /// will be used to sign the transaction.
+    ///
+    /// [`signer`]: crate::types::InMemorySigner
+    pub fn call(
+        &self,
+        signer: &InMemorySigner,
+        contract_id: &AccountId,
+        function: &str,
+    ) -> CallTransaction {
+        CallTransaction::new(
+            self.clone().coerce(),
+            contract_id.to_owned(),
+            signer.clone(),
+            function,
+        )
     }
 }
 
