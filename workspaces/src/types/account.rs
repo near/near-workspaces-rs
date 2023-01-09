@@ -71,9 +71,9 @@ impl Account {
     /// a [`CallTransaction`] object that we will make use to populate the
     /// rest of the call details. Note that the current [`Account`]'s secret
     /// key is used as the signer of the transaction.
-    pub fn call(&self, contract_id: &AccountId, function: &str) -> CallTransaction<'_> {
+    pub fn call(&self, contract_id: &AccountId, function: &str) -> CallTransaction {
         CallTransaction::new(
-            self.worker.client(),
+            self.worker.clone(),
             contract_id.to_owned(),
             self.signer.clone(),
             function,
@@ -172,7 +172,7 @@ impl Account {
     /// network.
     pub fn batch(&self, contract_id: &AccountId) -> Transaction {
         Transaction::new(
-            self.worker.client(),
+            self.worker.clone(),
             self.signer().clone(),
             contract_id.clone(),
         )
@@ -270,7 +270,7 @@ impl Contract {
     ///
     /// If we want to make use of the contract's secret key as a signer to call
     /// into another contract, use `contract.as_account().call` instead.
-    pub fn call(&self, function: &str) -> CallTransaction<'_> {
+    pub fn call(&self, function: &str) -> CallTransaction {
         self.account.call(self.id(), function)
     }
 
