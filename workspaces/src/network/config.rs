@@ -38,16 +38,20 @@ fn overwrite(home_dir: &Path, value: Value) -> Result<()> {
 }
 
 /// Parse an environment variable or return a default value.
-fn parse_env_or<T>(env_var: &str, default: T) -> Result<T>
+fn parse_env<T>(env_var: &str) -> Result<Option<T>>
 where
     T: std::str::FromStr,
     T::Err: std::error::Error + Send + Sync + 'static,
 {
     match std::env::var(env_var) {
-        Ok(val) => val
-            .parse::<T>()
-            .map_err(|err| ErrorKind::DataConversion.custom(err)),
-        Err(_err) => Ok(default),
+        Ok(val) => {
+            let val = val
+                .parse::<T>()
+                .map_err(|err| ErrorKind::DataConversion.custom(err))?;
+
+            Ok(Some(val))
+        }
+        Err(_err) => Ok(None),
     }
 }
 
@@ -59,12 +63,12 @@ pub(crate) fn set_sandbox_configs(home_dir: &Path) -> Result<()> {
             "rpc": {
                 "limits_config": {
                     // default to 1GB payload size so that large state patches can work.
-                    "json_payload_max_size": parse_env_or("NEAR_SANDBOX_MAX_PAYLOAD_SIZE", 1024 * 1024 * 1024)?,
+                    "json_payload_max_size": parse_env("NEAR_SANDBOX_MAX_PAYLOAD_SIZE")?.unwrap_or(1024 * 1024 * 1024),
                 },
             },
             "store": {
                 // default to 3,000 files open at a time so that windows WSL can work without configuring.
-                "max_open_files": parse_env_or("NEAR_SANDBOX_MAX_FILES", 3000)?,
+                "max_open_files": parse_env("NEAR_SANDBOX_MAX_FILES")?.unwrap_or(3000),
             }
         }),
     )
