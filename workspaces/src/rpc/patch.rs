@@ -96,11 +96,11 @@ impl<'a> ImportContractTransaction<'a> {
     /// Process the transaction, and return the result of the execution.
     pub async fn transact(self) -> crate::result::Result<Contract> {
         let from_account_id = self.account_id;
-        let into_account_id = self.into_account_id.as_ref().unwrap_or(&from_account_id);
+        let into_account_id = self.into_account_id.as_ref().unwrap_or(from_account_id);
 
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();
-        let signer = InMemorySigner::from_secret_key(from_account_id.clone(), sk);
+        let signer = InMemorySigner::from_secret_key(into_account_id.clone(), sk);
         let block_ref = self.block_ref.unwrap_or_else(BlockReference::latest);
 
         let mut account_view = self
@@ -128,7 +128,7 @@ impl<'a> ImportContractTransaction<'a> {
         if account_view.code_hash() != near_primitives::hash::CryptoHash::default() {
             let code = self
                 .from_network
-                .view_code(&from_account_id)
+                .view_code(from_account_id)
                 .block_reference(block_ref.clone())
                 .await?;
             records.push(StateRecord::Contract {
@@ -140,7 +140,7 @@ impl<'a> ImportContractTransaction<'a> {
         if self.import_data {
             records.extend(
                 self.from_network
-                    .view_state(&from_account_id)
+                    .view_state(from_account_id)
                     .block_reference(block_ref)
                     .await?
                     .into_iter()
