@@ -24,7 +24,7 @@ async fn test_subaccount_creation() -> anyhow::Result<()> {
     // Check if the stored credentials match with the subaccount created.
     let savedir = Path::new("../target/credentials");
     sub.store_credentials(savedir).await?;
-    let creds = File::open(savedir.join(&format!("{}.json", sub.id())))?;
+    let creds = File::open(savedir.join(format!("{}.json", sub.id())))?;
     let contents: Map<String, Value> = serde_json::from_reader(creds)?;
     assert_eq!(
         contents.get("account_id"),
