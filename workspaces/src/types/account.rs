@@ -180,15 +180,10 @@ impl Account {
 
     /// Store the credentials of this account locally in the directory provided.
     pub async fn store_credentials(&self, save_dir: impl AsRef<Path>) -> Result<()> {
-        let savepath = save_dir.as_ref().to_path_buf();
-        std::fs::create_dir_all(save_dir).map_err(|e| ErrorKind::Io.custom(e))?;
-
-        let mut savepath = savepath.join(self.id().to_string());
-        savepath.set_extension("json");
-
-        crate::rpc::tool::write_cred_to_file(&savepath, self.id(), &self.secret_key().0);
-
-        Ok(())
+        let savepath = save_dir.as_ref();
+        std::fs::create_dir_all(&save_dir).map_err(|e| ErrorKind::Io.custom(e))?;
+        let savepath = savepath.join(format!("{}.json", self.id()));
+        crate::rpc::tool::write_cred_to_file(&savepath, self.id(), &self.secret_key().0)
     }
 
     /// Get the keys of this account. The public key can be retrieved from the secret key.
