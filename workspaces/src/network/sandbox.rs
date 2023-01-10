@@ -32,24 +32,21 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
-    pub(crate) fn home_dir(port: u16) -> PathBuf {
-        let mut path = std::env::temp_dir();
-        path.push(format!("sandbox-{}", port));
-        path
-    }
-
     pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
-        let mut path = Self::home_dir(self.server.rpc_port);
-        path.push("validator_key.json");
-
+        let path = self.server.home_dir.path().join("validator_key.json");
         InMemorySigner::from_file(&path)
     }
 
     pub(crate) async fn new() -> Result<Self> {
-        let mut server = SandboxServer::default();
-        server.start().await?;
+        let mut server = SandboxServer::run_new().await?;
         let client = Client::new(&server.rpc_addr());
         client.wait_for_rpc().await?;
+
+        // Server locks some ports on startup due to potential port collision, so we need
+        // to unlock the lockfiles after RPC is ready. Not necessarily needed here since
+        // they get unlocked anyways on the server's drop, but it is nice to clean up the
+        // lockfiles as soon as possible.
+        server.unlock_lockfiles()?;
 
         let info = Info {
             name: "sandbox".to_string(),
