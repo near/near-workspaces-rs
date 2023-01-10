@@ -38,20 +38,22 @@ fn overwrite(home_dir: impl AsRef<Path>, value: Value) -> Result<()> {
     Ok(())
 }
 
-/// Limit how much nearcore/sandbox can receive per payload. The default set by nearcore is not
-/// enough for certain sandbox operations like patching contract state in the case of contracts
-/// larger than 10mb.
-fn max_sandbox_json_payload_size() -> Result<u64> {
-    let max_files = match std::env::var("NEAR_SANDBOX_MAX_PAYLOAD_SIZE") {
-        Ok(val) => val
-            .parse::<u64>()
-            .map_err(|err| ErrorKind::DataConversion.custom(err))?,
+/// Parse an environment variable or return a default value.
+fn parse_env<T>(env_var: &str) -> Result<Option<T>>
+where
+    T: std::str::FromStr,
+    T::Err: std::error::Error + Send + Sync + 'static,
+{
+    match std::env::var(env_var) {
+        Ok(val) => {
+            let val = val
+                .parse::<T>()
+                .map_err(|err| ErrorKind::DataConversion.custom(err))?;
 
-        // Default is 1GB which should suit most contract sizes.
-        Err(_err) => 1024 * 1024 * 1024,
-    };
-
-    Ok(max_files)
+            Ok(Some(val))
+        }
+        Err(_err) => Ok(None),
+    }
 }
 
 /// Set extra configs for the sandbox defined by workspaces.
@@ -61,9 +63,14 @@ pub(crate) fn set_sandbox_configs(home_dir: impl AsRef<Path>) -> Result<()> {
         serde_json::json!({
             "rpc": {
                 "limits_config": {
-                    "json_payload_max_size": max_sandbox_json_payload_size()?,
+                    // default to 1GB payload size so that large state patches can work.
+                    "json_payload_max_size": parse_env("NEAR_SANDBOX_MAX_PAYLOAD_SIZE")?.unwrap_or(1024 * 1024 * 1024),
                 },
             },
+            "store": {
+                // default to 3,000 files open at a time so that windows WSL can work without configuring.
+                "max_open_files": parse_env("NEAR_SANDBOX_MAX_FILES")?.unwrap_or(3000),
+            }
         }),
     )
 }
