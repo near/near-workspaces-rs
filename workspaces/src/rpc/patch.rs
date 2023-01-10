@@ -27,9 +27,12 @@ pub struct ImportContractTransaction<'a> {
     initial_balance: Option<Balance>,
 
     block_ref: Option<BlockReference>,
+
+    /// AccountId if specified, will be the destination account to clone the contract to.
+    into_account_id: Option<AccountId>,
 }
 
-impl<'a, 'b> ImportContractTransaction<'a> {
+impl<'a> ImportContractTransaction<'a> {
     pub(crate) fn new(
         account_id: &'a AccountId,
         from_network: Worker<dyn Network>,
@@ -42,6 +45,7 @@ impl<'a, 'b> ImportContractTransaction<'a> {
             import_data: false,
             initial_balance: None,
             block_ref: None,
+            into_account_id: None,
         }
     }
 
@@ -81,17 +85,27 @@ impl<'a, 'b> ImportContractTransaction<'a> {
         self
     }
 
+    /// Sets the destination [`AccountId`] where the import will be transacted to.
+    /// This function is provided so users can import to a different [`AccountId`]
+    /// than the one initially provided to import from.
+    pub fn dest_account_id(mut self, account_id: &AccountId) -> Self {
+        self.into_account_id = Some(account_id.clone());
+        self
+    }
+
     /// Process the transaction, and return the result of the execution.
     pub async fn transact(self) -> crate::result::Result<Contract> {
-        let account_id = self.account_id.clone();
+        let from_account_id = self.account_id;
+        let into_account_id = self.into_account_id.as_ref().unwrap_or(&from_account_id);
+
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         let pk = sk.public_key();
-        let signer = InMemorySigner::from_secret_key(account_id.clone(), sk);
+        let signer = InMemorySigner::from_secret_key(from_account_id.clone(), sk);
         let block_ref = self.block_ref.unwrap_or_else(BlockReference::latest);
 
         let mut account_view = self
             .from_network
-            .view_account(&account_id)
+            .view_account(from_account_id)
             .block_reference(block_ref.clone())
             .await?
             .into_near_account();
@@ -101,11 +115,11 @@ impl<'a, 'b> ImportContractTransaction<'a> {
 
         let mut records = vec![
             StateRecord::Account {
-                account_id: account_id.clone(),
+                account_id: into_account_id.clone(),
                 account: account_view.clone(),
             },
             StateRecord::AccessKey {
-                account_id: account_id.clone(),
+                account_id: into_account_id.clone(),
                 public_key: pk.clone().into(),
                 access_key: AccessKey::full_access(),
             },
@@ -114,11 +128,11 @@ impl<'a, 'b> ImportContractTransaction<'a> {
         if account_view.code_hash() != near_primitives::hash::CryptoHash::default() {
             let code = self
                 .from_network
-                .view_code(&account_id)
+                .view_code(&from_account_id)
                 .block_reference(block_ref.clone())
                 .await?;
             records.push(StateRecord::Contract {
-                account_id: account_id.clone(),
+                account_id: into_account_id.clone(),
                 code,
             });
         }
@@ -126,12 +140,12 @@ impl<'a, 'b> ImportContractTransaction<'a> {
         if self.import_data {
             records.extend(
                 self.from_network
-                    .view_state(&account_id)
+                    .view_state(&from_account_id)
                     .block_reference(block_ref)
                     .await?
                     .into_iter()
                     .map(|(key, value)| StateRecord::Data {
-                        account_id: account_id.clone(),
+                        account_id: into_account_id.clone(),
                         data_key: key,
                         value,
                     }),
