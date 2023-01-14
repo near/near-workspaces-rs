@@ -61,17 +61,9 @@ impl<'a, T> NetworkBuilder<'a, T> {
     /// node than the default one provided by near.org. This enables certain features that
     /// the default node doesn't provide such as getting beyond the data cap when downloading
     /// state from the network.
-    /// Example:
-    /// ```
-    /// async fn connect_custom() -> anyhow::Result<()> {
-    ///     let worker = workspaces::testnet()
-    ///         .rpc_addr("https://rpc.testnet.near.org")
-    ///         .await?;
-    ///     Ok(())
-    /// }
-    /// ```
     ///
-    /// Note that, for sandbox, we also are required to specify `home_dir`
+    /// Note that, for sandbox, we are required to specify `home_dir` as well to connect to
+    /// a manually spawned sandbox node.
     pub fn rpc_addr(mut self, addr: &str) -> Self {
         self.rpc_addr = Some(addr.into());
         self
