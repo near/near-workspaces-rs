@@ -3,6 +3,7 @@ mod impls;
 use std::fmt;
 use std::sync::Arc;
 
+use crate::network::builder::NetworkBuilder;
 use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
 use crate::{Network, Result};
 
@@ -42,8 +43,8 @@ impl<T: fmt::Debug> fmt::Debug for Worker<T> {
 }
 
 /// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
-pub async fn sandbox() -> Result<Worker<Sandbox>> {
-    Ok(Worker::new(Sandbox::new().await?))
+pub fn sandbox() -> NetworkBuilder<'static, Sandbox> {
+    NetworkBuilder::new("sandbox")
 }
 
 /// Connect to the [testnet](https://explorer.testnet.near.org/) network, and grab

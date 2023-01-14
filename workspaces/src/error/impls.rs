@@ -6,14 +6,6 @@ use crate::result::ExecutionFailure;
 use super::{Error, ErrorKind, ErrorRepr, RpcErrorCode, SandboxErrorCode};
 
 impl ErrorKind {
-    pub(crate) fn full<E, T>(self, msg: T, error: E) -> Error
-    where
-        E: Into<Box<dyn std::error::Error + Send + Sync>>,
-        T: Into<Cow<'static, str>>,
-    {
-        Error::full(self, msg, error)
-    }
-
     pub(crate) fn custom<E>(self, error: E) -> Error
     where
         E: Into<Box<dyn std::error::Error + Send + Sync>>,
@@ -144,6 +136,13 @@ impl std::error::Error for Error {
 }
 
 impl SandboxErrorCode {
+    pub(crate) fn message<T>(self, msg: T) -> Error
+    where
+        T: Into<Cow<'static, str>>,
+    {
+        Error::message(ErrorKind::Sandbox(self), msg)
+    }
+
     pub(crate) fn custom<E>(self, error: E) -> Error
     where
         E: Into<Box<dyn std::error::Error + Send + Sync>>,
@@ -151,11 +150,12 @@ impl SandboxErrorCode {
         Error::custom(ErrorKind::Sandbox(self), error)
     }
 
-    pub(crate) fn message<T>(self, msg: T) -> Error
+    pub(crate) fn full<T, E>(self, msg: T, error: E) -> Error
     where
         T: Into<Cow<'static, str>>,
+        E: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
-        Error::message(ErrorKind::Sandbox(self), msg)
+        Error::full(ErrorKind::Sandbox(self), msg, error)
     }
 }
 

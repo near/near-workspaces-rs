@@ -333,6 +333,10 @@ async fn test_contract() -> anyhow::Result<()> {
 
 For a full example, take a look at [workspaces/tests/deploy_project.rs](https://github.com/near/workspaces-rs/blob/main/workspaces/tests/deploy_project.rs).
 
+### Other Features
+
+Other features can be directly found in the `examples/` folder, with some documentation outlining how they can be used.
+
 ### Environment Variables
 
 These environment variables will be useful if there was ever a snag hit:
