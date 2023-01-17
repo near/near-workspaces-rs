@@ -31,3 +31,4 @@ Ensure the following are satisfied before opening a PR:
 - Run tests with `cargo test`
 - Ensure any new functionality is adequately tested
 - If any new public types or functions are added, ensure they have appropriate [rustdoc](https://doc.rust-lang.org/rustdoc/what-is-rustdoc.html) documentation
+- Add an entry to the CHANGELOG.md
