@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-use workspaces::types::{KeyType, SecretKey};
+use borsh::{BorshDeserialize, BorshSerialize};
+
+use workspaces::types::{KeyType, PublicKey, SecretKey};
 use workspaces::AccountId;
 
 #[test]
@@ -25,10 +27,32 @@ fn test_keypair_secp256k1() -> anyhow::Result<()> {
 
     let sk = SecretKey::from_seed(KeyType::SECP256K1, "test");
     let pk = sk.public_key();
+
+    println!("{}", pk.len());
+    println!("{}", pk.key_data().len());
+    let st = format!("{}", pk);
+    println!("{}", st.len());
     assert_eq!(serde_json::to_string(&pk)?, pk_expected);
     assert_eq!(serde_json::to_string(&sk)?, sk_expected);
     assert_eq!(pk, serde_json::from_str(pk_expected)?);
     assert_eq!(sk, serde_json::from_str(sk_expected)?);
+
+    Ok(())
+}
+
+#[test]
+fn test_borsh_on_pubkey() -> anyhow::Result<()> {
+    for key_type in vec![KeyType::ED25519, KeyType::SECP256K1] {
+        let sk = SecretKey::from_seed(key_type, "test");
+        let pk = sk.public_key();
+        let bytes = pk.try_to_vec()?;
+
+        // Deserialization should equate to the original public key:
+        assert_eq!(PublicKey::try_from_slice(&bytes)?, pk);
+
+        // invalid public key should error out on deserialization:
+        assert!(PublicKey::try_from_slice(&[0]).is_err());
+    }
 
     Ok(())
 }
