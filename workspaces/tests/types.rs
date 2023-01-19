@@ -42,7 +42,7 @@ fn test_keypair_secp256k1() -> anyhow::Result<()> {
 
 #[test]
 fn test_borsh_on_pubkey() -> anyhow::Result<()> {
-    for key_type in &[KeyType::ED25519, KeyType::SECP256K1] {
+    for key_type in [KeyType::ED25519, KeyType::SECP256K1] {
         let sk = SecretKey::from_seed(key_type, "test");
         let pk = sk.public_key();
         let bytes = pk.try_to_vec()?;
