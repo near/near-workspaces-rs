@@ -373,6 +373,12 @@ impl AccountDetails {
     }
 }
 
+impl Default for AccountDetails {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl From<AccountView> for AccountDetails {
     fn from(account: AccountView) -> Self {
         Self {

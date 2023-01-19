@@ -218,7 +218,7 @@ impl Worker<Sandbox> {
     /// a [`PatchTransaction`] that will allow us to patch access keys, code, and contract state.
     /// This is similar to functions like [`Account::batch`] where we can perform multiple actions
     /// in one transaction.
-    pub fn patch<'a>(&'a self, account_id: &AccountId) -> PatchTransaction {
+    pub fn patch(&self, account_id: &AccountId) -> PatchTransaction {
         PatchTransaction::new(self, account_id.clone())
     }
 

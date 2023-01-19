@@ -130,7 +130,7 @@ impl<'a> ImportContractTransaction<'a> {
         if self.import_data {
             let states = self
                 .from_network
-                .view_state(&from_account_id)
+                .view_state(from_account_id)
                 .block_reference(block_ref)
                 .await?;
 
@@ -204,7 +204,7 @@ impl PatchTransaction {
     /// contained in sandbox with a list of access keys we specify.
     ///
     /// Similar to [`PatchTransaction::access_key`], but allows us to specify multiple access keys
-    pub fn access_keys<'b, 'c, I>(mut self, access_keys: I) -> Self
+    pub fn access_keys<I>(mut self, access_keys: I) -> Self
     where
         I: IntoIterator<Item = (PublicKey, AccessKey)>,
     {
