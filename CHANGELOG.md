@@ -4,6 +4,12 @@
 
 ### Added
 
+- [Import a couple functions over from near_crypto for PublicKey](https://github.com/near/workspaces-rs/pull/265)
+  - Impl `Ord`, `PartialOrd`, `Hash`, `BorshSerialize`, `BorshDeserialize`, `Display`, `FromStr` for `PublicKey`
+  - Added `PublicKey::{empty, len, key_data}`
+  - Impl `Display` for `SecretKey`.
+  - more docs were added to both `SecretKey` and `PublicKey`.
+
 ### Changed
 
 - [`Transaction::transact_async` no longer has a lifetime parameter to make it easier to use](https://github.com/near/workspaces-rs/pull/249)
