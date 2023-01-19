@@ -18,7 +18,7 @@ use crate::{AccountDetails, AccountId, Contract, CryptoHash, InMemorySigner, Net
 pub struct ImportContractTransaction<'a> {
     account_id: &'a AccountId,
     from_network: Worker<dyn Network>,
-    into_network: Worker<dyn Network>,
+    into_network: Worker<Sandbox>,
 
     /// Whether to grab data down from the other contract or not
     import_data: bool,
@@ -37,7 +37,7 @@ impl<'a> ImportContractTransaction<'a> {
     pub(crate) fn new(
         account_id: &'a AccountId,
         from_network: Worker<dyn Network>,
-        into_network: Worker<dyn Network>,
+        into_network: Worker<Sandbox>,
     ) -> Self {
         ImportContractTransaction {
             account_id,
@@ -108,97 +108,49 @@ impl<'a> ImportContractTransaction<'a> {
             .from_network
             .view_account(from_account_id)
             .block_reference(block_ref.clone())
-            .await?
-            .into_near_account();
+            .await?;
+        let code_hash = account_view.code_hash;
         if let Some(initial_balance) = self.initial_balance {
-            account_view.set_amount(initial_balance);
+            account_view.balance = initial_balance;
         }
 
-        let mut records = vec![
-            StateRecord::Account {
-                account_id: into_account_id.clone(),
-                account: account_view.clone(),
-            },
-            StateRecord::AccessKey {
-                account_id: into_account_id.clone(),
-                public_key: pk.clone().into(),
-                access_key: near_primitives::account::AccessKey::full_access(),
-            },
-        ];
+        let mut patch = PatchTransaction::new(&self.into_network, into_account_id.clone())
+            .account(account_view)
+            .access_key(pk, AccessKey::full_access());
 
-        if account_view.code_hash() != near_primitives::hash::CryptoHash::default() {
+        if code_hash != CryptoHash::default() {
             let code = self
                 .from_network
                 .view_code(from_account_id)
                 .block_reference(block_ref.clone())
                 .await?;
-            records.push(StateRecord::Contract {
-                account_id: into_account_id.clone(),
-                code,
-            });
+            patch = patch.code(&code);
         }
 
         if self.import_data {
-            records.extend(
-                self.from_network
-                    .view_state(from_account_id)
-                    .block_reference(block_ref)
-                    .await?
-                    .into_iter()
-                    .map(|(key, value)| StateRecord::Data {
-                        account_id: into_account_id.clone(),
-                        data_key: key,
-                        value,
-                    }),
+            let states = self
+                .from_network
+                .view_state(&from_account_id)
+                .block_reference(block_ref)
+                .await?;
+
+            patch = patch.states(
+                states
+                    .iter()
+                    .map(|(key, value)| (key.as_slice(), value.as_slice())),
             );
         }
 
-        // NOTE: Patching twice here since it takes a while for the first patch to be
-        // committed to the network. Where the account wouldn't exist until the block
-        // finality is reached.
-        self.into_network
-            .client()
-            .query(&RpcSandboxPatchStateRequest {
-                records: records.clone(),
-            })
-            .await
-            .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
-
-        self.into_network
-            .client()
-            .query(&RpcSandboxPatchStateRequest { records })
-            .await
-            .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
-
-        Ok(Contract::new(signer, self.into_network))
-    }
-}
-
-/// What to details to update about the account.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AccountUpdate {
-    pub balance: Balance,
-    pub locked: Balance,
-    pub code_hash: CryptoHash,
-    pub storage_usage: u64,
-}
-
-impl From<AccountDetails> for AccountUpdate {
-    fn from(value: AccountDetails) -> Self {
-        Self {
-            balance: value.balance,
-            locked: value.locked,
-            code_hash: value.code_hash,
-            storage_usage: value.storage_usage,
-        }
+        patch.transact().await?;
+        Ok(Contract::new(signer, self.into_network.coerce()))
     }
 }
 
 /// Internal enum for determining whether to update the account on chain
 /// or to patch an entire account.
 enum UpdateAccount {
-    Update(AccountUpdate),
-    FromCurrent(Box<dyn Fn(AccountUpdate) -> AccountUpdate>),
+    Update(AccountDetails),
+    FromCurrent(Box<dyn Fn(AccountDetails) -> AccountDetails>),
 }
 
 pub struct PatchTransaction {
@@ -221,7 +173,7 @@ impl PatchTransaction {
     }
 
     /// Patch and overwrite the info contained inside an [`Account`] in sandbox.
-    pub fn account(mut self, account: AccountUpdate) -> Self {
+    pub fn account(mut self, account: AccountDetails) -> Self {
         self.update_account = Some(UpdateAccount::Update(account));
         self
     }
@@ -231,7 +183,7 @@ impl PatchTransaction {
     /// the account details w.r.t to them.
     pub fn account_from_current<F: 'static>(mut self, f: F) -> Self
     where
-        F: Fn(AccountUpdate) -> AccountUpdate,
+        F: Fn(AccountDetails) -> AccountDetails,
     {
         self.update_account = Some(UpdateAccount::FromCurrent(Box::new(f)));
         self
@@ -371,14 +323,14 @@ impl PatchTransaction {
     }
 }
 
-fn update_code_hash(code_hash: Option<CryptoHash>, mut details: AccountUpdate) -> AccountUpdate {
+fn update_code_hash(code_hash: Option<CryptoHash>, mut details: AccountDetails) -> AccountDetails {
     if let Some(code_hash) = code_hash {
         details.code_hash = code_hash;
     }
     details
 }
 
-fn state_record_from_details(account_id: &AccountId, details: AccountUpdate) -> StateRecord {
+fn state_record_from_details(account_id: &AccountId, details: AccountDetails) -> StateRecord {
     StateRecord::Account {
         account_id: account_id.clone(),
         account: near_primitives::account::Account::new(

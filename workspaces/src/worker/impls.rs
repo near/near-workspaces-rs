@@ -211,7 +211,7 @@ impl Worker<Sandbox> {
         id: &'a AccountId,
         worker: &Worker<impl Network + 'static>,
     ) -> ImportContractTransaction<'a> {
-        ImportContractTransaction::new(id, worker.clone().coerce(), self.clone().coerce())
+        ImportContractTransaction::new(id, worker.clone().coerce(), self.clone())
     }
 
     /// Start patching the state of the account specified by the [`AccountId`]. This will create

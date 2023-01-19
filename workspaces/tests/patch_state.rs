@@ -5,9 +5,8 @@ use borsh::{self, BorshDeserialize, BorshSerialize};
 use serde_json::json;
 use test_log::test;
 
-use workspaces::rpc::patch::AccountUpdate;
 use workspaces::types::{KeyType, SecretKey};
-use workspaces::{AccessKey, AccountId, Contract, DevNetwork, Worker};
+use workspaces::{AccessKey, AccountDetails, AccountId, Contract, DevNetwork, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
 
@@ -74,7 +73,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
     });
 
     worker
-        .patch_state(&contract_id, "STATE".as_bytes(), &status_msg.try_to_vec()?)
+        .patch_state(&contract_id, b"STATE", &status_msg.try_to_vec()?)
         .await?;
 
     let status: String = worker
@@ -131,12 +130,13 @@ async fn test_patch_full() -> anyhow::Result<()> {
     // Equivalent to worker.import_contract()
     worker
         .patch(&bob_id)
-        .account(AccountUpdate {
-            balance: near_units::parse_near!("100 N"),
-            locked: status_msg_acc.locked,
-            code_hash: status_msg_acc.code_hash,
-            storage_usage: status_msg_acc.storage_usage,
-        })
+        .account(
+            AccountDetails::new()
+                .balance(near_units::parse_near!("100 N"))
+                .locked(status_msg_acc.locked)
+                .code_hash(status_msg_acc.code_hash)
+                .storage_usage(status_msg_acc.storage_usage),
+        )
         .access_key(sk.public_key(), AccessKey::full_access())
         .code(&status_msg_code)
         .state(b"STATE", &status_msg.try_to_vec()?)

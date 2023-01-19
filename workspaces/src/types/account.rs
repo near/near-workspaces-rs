@@ -333,6 +333,36 @@ pub struct AccountDetails {
 }
 
 impl AccountDetails {
+    pub fn new() -> Self {
+        Self {
+            balance: 0,
+            locked: 0,
+            code_hash: CryptoHash::default(),
+            storage_usage: 0,
+            storage_paid_at: 0,
+        }
+    }
+
+    pub fn balance(mut self, balance: Balance) -> Self {
+        self.balance = balance;
+        self
+    }
+
+    pub fn locked(mut self, locked: Balance) -> Self {
+        self.locked = locked;
+        self
+    }
+
+    pub fn code_hash(mut self, code_hash: CryptoHash) -> Self {
+        self.code_hash = code_hash;
+        self
+    }
+
+    pub fn storage_usage(mut self, storage_usage: u64) -> Self {
+        self.storage_usage = storage_usage;
+        self
+    }
+
     pub(crate) fn into_near_account(self) -> near_primitives::account::Account {
         AccountView {
             amount: self.balance,
