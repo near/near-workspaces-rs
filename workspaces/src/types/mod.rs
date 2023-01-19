@@ -47,8 +47,8 @@ fn from_base58(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sy
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum KeyType {
-    ED25519,
-    SECP256K1,
+    ED25519 = 0,
+    SECP256K1 = 1,
 }
 
 impl KeyType {
@@ -63,6 +63,36 @@ impl KeyType {
         match key_type {
             near_crypto::KeyType::ED25519 => Self::ED25519,
             near_crypto::KeyType::SECP256K1 => Self::SECP256K1,
+        }
+    }
+}
+
+impl Display for KeyType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.into_near_keytype())
+    }
+}
+
+impl FromStr for KeyType {
+    type Err = Error;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let key_type = near_crypto::KeyType::from_str(value)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+
+        Ok(Self::from_near_keytype(key_type))
+    }
+}
+
+impl TryFrom<u8> for KeyType {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(KeyType::ED25519),
+            1 => Ok(KeyType::SECP256K1),
+            unknown_key_type => Err(ErrorKind::DataConversion
+                .custom(format!("Unknown key type provided: {unknown_key_type}"))),
         }
     }
 }
@@ -131,6 +161,25 @@ impl FromStr for PublicKey {
             .map_err(|e| ErrorKind::DataConversion.custom(e))?;
 
         Ok(Self(pk))
+    }
+}
+
+impl From<PublicKey> for Vec<u8> {
+    fn from(pk: PublicKey) -> Vec<u8> {
+        let mut data = vec![pk.key_type() as u8];
+        data.extend(pk.key_data());
+        data
+    }
+}
+
+impl TryFrom<&[u8]> for PublicKey {
+    type Error = Error;
+
+    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+        // Expected format:
+        // 1st byte: key type
+        // consecutive butes: key data
+        BorshDeserialize::try_from_slice(data).map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 }
 

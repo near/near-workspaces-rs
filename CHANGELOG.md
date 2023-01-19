@@ -5,10 +5,11 @@
 ### Added
 
 - [Import a couple functions over from near_crypto for PublicKey](https://github.com/near/workspaces-rs/pull/265)
-  - Impl `Ord`, `PartialOrd`, `Hash`, `BorshSerialize`, `BorshDeserialize`, `Display`, `FromStr` for `PublicKey`
+  - Impl `Ord`, `PartialOrd`, `Hash`, `BorshSerialize`, `BorshDeserialize`, `Display`, `FromStr`, `TryFrom<&[u8]>`, and `Into<Vec<u8>>` for `PublicKey`
   - Added `PublicKey::{empty, len, key_data}`
   - Impl `Display` for `SecretKey`.
   - more docs were added to both `SecretKey` and `PublicKey`.
+  - Impl `Display`, `FromStr`, `TryFrom<u8>` for `KeyType`.
 
 ### Changed
 

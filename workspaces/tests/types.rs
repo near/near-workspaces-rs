@@ -1,3 +1,4 @@
+use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -27,11 +28,6 @@ fn test_keypair_secp256k1() -> anyhow::Result<()> {
 
     let sk = SecretKey::from_seed(KeyType::SECP256K1, "test");
     let pk = sk.public_key();
-
-    println!("{}", pk.len());
-    println!("{}", pk.key_data().len());
-    let st = format!("{}", pk);
-    println!("{}", st.len());
     assert_eq!(serde_json::to_string(&pk)?, pk_expected);
     assert_eq!(serde_json::to_string(&sk)?, sk_expected);
     assert_eq!(pk, serde_json::from_str(pk_expected)?);
@@ -41,18 +37,57 @@ fn test_keypair_secp256k1() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_borsh_on_pubkey() -> anyhow::Result<()> {
+fn test_pubkey_serialization() -> anyhow::Result<()> {
     for key_type in [KeyType::ED25519, KeyType::SECP256K1] {
         let sk = SecretKey::from_seed(key_type, "test");
         let pk = sk.public_key();
         let bytes = pk.try_to_vec()?;
 
-        // Deserialization should equate to the original public key:
+        // Borsh Deserialization should equate to the original public key:
         assert_eq!(PublicKey::try_from_slice(&bytes)?, pk);
+
+        // [key_type, key_data...] should equate to the original public key:
+        let bytes: Vec<u8> = pk.clone().into();
+        assert_eq!(PublicKey::try_from(bytes.as_slice())?, pk);
 
         // invalid public key should error out on deserialization:
         assert!(PublicKey::try_from_slice(&[0]).is_err());
     }
+
+    Ok(())
+}
+
+#[test]
+fn test_pubkey_borsh_format_change() -> anyhow::Result<()> {
+    // Original struct to reference Borsh serialization from
+    struct PublicKeyRef(Vec<u8>);
+    impl BorshSerialize for PublicKeyRef {
+        fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+            writer.write_all(self.0.as_slice())
+        }
+    }
+    impl BorshDeserialize for PublicKeyRef {
+        fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
+            Ok(PublicKeyRef(buf.to_vec()))
+        }
+    }
+
+    let mut data = vec![KeyType::ED25519 as u8];
+    data.extend(bs58::decode("6E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?);
+
+    // Test internal serialization of Vec<u8> is the same:
+    let old_key = PublicKeyRef(data.clone());
+    let old_encoded_key = old_key.try_to_vec()?;
+    let new_key: PublicKey = data.as_slice().try_into()?;
+    let new_encoded_key = new_key.try_to_vec()?;
+    assert_eq!(new_encoded_key, old_encoded_key);
+    assert_eq!(
+        new_encoded_key,
+        bs58::decode("16E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?
+    );
+
+    let decoded_key = PublicKey::try_from_slice(&new_encoded_key)?;
+    assert_eq!(decoded_key, new_key);
 
     Ok(())
 }
