@@ -90,8 +90,10 @@ impl From<PublicKey> for near_crypto::PublicKey {
 )]
 pub struct PublicKey(pub(crate) near_crypto::PublicKey);
 
+#[allow(clippy::len_without_is_empty)] // PublicKey is guaranteed to never be empty due to KeyType restrictions.
 impl PublicKey {
-    /// Create an empty `PublicKey` with the given [`KeyType`].
+    /// Create an empty `PublicKey` with the given [`KeyType`]. This is a zero-ed out public key with the
+    /// length of the bytes determined by the associated key type.
     pub fn empty(key_type: KeyType) -> Self {
         Self(near_crypto::PublicKey::empty(key_type.into_near_keytype()))
     }
