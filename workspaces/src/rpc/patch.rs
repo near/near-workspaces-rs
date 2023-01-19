@@ -174,9 +174,31 @@ impl<'a> ImportContractTransaction<'a> {
     }
 }
 
+/// What to details to update about the account.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountUpdate {
+    pub balance: Balance,
+    pub locked: Balance,
+    pub code_hash: CryptoHash,
+    pub storage_usage: u64,
+}
+
+impl From<AccountDetails> for AccountUpdate {
+    fn from(value: AccountDetails) -> Self {
+        Self {
+            balance: value.balance,
+            locked: value.locked,
+            code_hash: value.code_hash,
+            storage_usage: value.storage_usage,
+        }
+    }
+}
+
+/// Internal enum for determining whether to update the account on chain
+/// or to patch an entire account.
 enum UpdateAccount {
-    Update(AccountDetails),
-    FromCurrent(Box<dyn Fn(AccountDetails) -> AccountDetails>),
+    Update(AccountUpdate),
+    FromCurrent(Box<dyn Fn(AccountUpdate) -> AccountUpdate>),
 }
 
 pub struct PatchTransaction {
@@ -184,6 +206,7 @@ pub struct PatchTransaction {
     records: Vec<StateRecord>,
     worker: Worker<Sandbox>,
     update_account: Option<UpdateAccount>,
+    code_hash_update: Option<CryptoHash>,
 }
 
 impl PatchTransaction {
@@ -193,11 +216,12 @@ impl PatchTransaction {
             records: vec![],
             worker: worker.clone(),
             update_account: None,
+            code_hash_update: None,
         }
     }
 
     /// Patch and overwrite the info contained inside an [`Account`] in sandbox.
-    pub fn account(mut self, account: AccountDetails) -> Self {
+    pub fn account(mut self, account: AccountUpdate) -> Self {
         self.update_account = Some(UpdateAccount::Update(account));
         self
     }
@@ -205,9 +229,9 @@ impl PatchTransaction {
     /// Patch and overwrite the info contained inside an [`Account`] in sandbox. This
     /// will allow us to fetch the current details on the chain and allow us to update
     /// the account details w.r.t to them.
-    pub fn account_from_current<F>(mut self, f: F) -> Self
+    pub fn account_from_current<F: 'static>(mut self, f: F) -> Self
     where
-        F: Fn(AccountDetails) -> AccountDetails + 'static,
+        F: Fn(AccountUpdate) -> AccountUpdate,
     {
         self.update_account = Some(UpdateAccount::FromCurrent(Box::new(f)));
         self
@@ -250,6 +274,18 @@ impl PatchTransaction {
         self
     }
 
+    /// Sets the code for this account. This will overwrite the current code contained in the account.
+    /// Note that if a patch for [`account`] or [`account_from_current`] is specified, the code hash
+    /// in those will be overwritten with the code hash of the code we specify here.
+    pub fn code(mut self, wasm_bytes: &[u8]) -> Self {
+        self.code_hash_update = Some(CryptoHash::hash_bytes(wasm_bytes));
+        self.records.push(StateRecord::Contract {
+            account_id: self.account_id.clone(),
+            code: wasm_bytes.to_vec(),
+        });
+        self
+    }
+
     /// Patch state into the sandbox network, given a prefix key and value. This will allow us
     /// to set contract state that we have acquired in some manner, where we are able to test
     /// random cases that are hard to come up naturally as state evolves.
@@ -285,33 +321,71 @@ impl PatchTransaction {
 
     /// Perform the state patch transaction into the sandbox network.
     pub async fn transact(mut self) -> Result<()> {
-        if let Some(update_account) = self.update_account {
+        // NOTE: updating the account is done here because we need to fetch the current
+        // account details from the chain. This is an async operation so it is deferred
+        // till the transact function.
+        let account_patch = if let Some(update_account) = self.update_account {
             let account = match update_account {
                 UpdateAccount::Update(account) => account,
                 UpdateAccount::FromCurrent(f) => {
                     let account = self.worker.view_account(&self.account_id).await?;
-                    f(account)
+                    f(account.into())
                 }
             };
 
-            self.records.push(StateRecord::Account {
-                account_id: self.account_id.clone(),
-                account: near_primitives::account::Account::new(
-                    account.balance,
-                    account.locked,
-                    near_primitives::hash::CryptoHash(account.code_hash.0),
-                    account.storage_usage,
-                ),
-            });
-        }
+            // Update the code hash if the user supplied a code patch.
+            let account = update_code_hash(self.code_hash_update.take(), account);
+            Some(account)
+        } else if let Some(code_hash) = self.code_hash_update {
+            // No account patch, but we have a code patch. We need to fetch the current account
+            // to reflect the code hash change.
+            let mut account = self.worker.view_account(&self.account_id).await?;
+            account.code_hash = code_hash;
+            Some(account.into())
+        } else {
+            None
+        };
+
+        let records = if let Some(account) = account_patch {
+            let mut records = vec![state_record_from_details(&self.account_id, account)];
+            records.extend(self.records);
+            records
+        } else {
+            self.records
+        };
 
         self.worker
             .client()
             .query(&RpcSandboxPatchStateRequest {
-                records: self.records,
+                records: records.clone(),
             })
             .await
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
+
+        self.worker
+            .client()
+            .query(&RpcSandboxPatchStateRequest { records })
+            .await
+            .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
         Ok(())
+    }
+}
+
+fn update_code_hash(code_hash: Option<CryptoHash>, mut details: AccountUpdate) -> AccountUpdate {
+    if let Some(code_hash) = code_hash {
+        details.code_hash = code_hash;
+    }
+    details
+}
+
+fn state_record_from_details(account_id: &AccountId, details: AccountUpdate) -> StateRecord {
+    StateRecord::Account {
+        account_id: account_id.clone(),
+        account: near_primitives::account::Account::new(
+            details.balance,
+            details.locked,
+            near_primitives::hash::CryptoHash(details.code_hash.0),
+            details.storage_usage,
+        ),
     }
 }

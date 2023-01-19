@@ -13,6 +13,7 @@ pub use near_account_id::AccountId;
 use near_primitives::logging::pretty_hash;
 use near_primitives::serialize::to_base58;
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 
 use crate::error::{Error, ErrorKind};
 use crate::result::Result;
@@ -153,6 +154,13 @@ impl InMemorySigner {
 /// CryptoHash is type for storing the hash of a specific block.
 #[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct CryptoHash(pub [u8; 32]);
+
+impl CryptoHash {
+    pub(crate) fn hash_bytes(bytes: &[u8]) -> Self {
+        let hash = sha2::Sha256::digest(bytes).into();
+        Self(hash)
+    }
+}
 
 impl std::str::FromStr for CryptoHash {
     type Err = Error;

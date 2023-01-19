@@ -4,10 +4,10 @@
 use borsh::{self, BorshDeserialize, BorshSerialize};
 use serde_json::json;
 use test_log::test;
-use workspaces::{
-    types::{KeyType, SecretKey},
-    AccessKey, Account, AccountDetails, AccountId, DevNetwork, Worker,
-};
+
+use workspaces::rpc::patch::AccountUpdate;
+use workspaces::types::{KeyType, SecretKey};
+use workspaces::{AccessKey, AccountId, Contract, DevNetwork, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
 
@@ -23,7 +23,7 @@ struct StatusMessage {
 }
 
 async fn view_status_state(
-    worker: Worker<impl DevNetwork>,
+    worker: &Worker<impl DevNetwork>,
 ) -> anyhow::Result<(AccountId, StatusMessage)> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await.unwrap();
@@ -31,7 +31,7 @@ async fn view_status_state(
     contract
         .call("set_status")
         .args_json(json!({
-                "message": "hello",
+            "message": "hello",
         }))
         .transact()
         .await?
@@ -49,7 +49,7 @@ async fn view_status_state(
 #[test(tokio::test)]
 async fn test_view_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let (contract_id, status_msg) = view_status_state(worker).await?;
+    let (contract_id, status_msg) = view_status_state(&worker).await?;
 
     assert_eq!(
         status_msg,
@@ -67,7 +67,7 @@ async fn test_view_state() -> anyhow::Result<()> {
 #[test(tokio::test)]
 async fn test_patch_state() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let (contract_id, mut status_msg) = view_status_state(worker.clone()).await?;
+    let (contract_id, mut status_msg) = view_status_state(&worker).await?;
     status_msg.records.push(Record {
         k: "alice.near".to_string(),
         v: "hello world".to_string(),
@@ -93,7 +93,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
 #[test(tokio::test)]
 async fn test_patch() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let (contract_id, mut status_msg) = view_status_state(worker.clone()).await?;
+    let (contract_id, mut status_msg) = view_status_state(&worker).await?;
     status_msg.records.push(Record {
         k: "alice.near".to_string(),
         v: "hello world".to_string(),
@@ -119,27 +119,42 @@ async fn test_patch() -> anyhow::Result<()> {
 }
 
 #[test(tokio::test)]
-async fn test_patch_keys() -> anyhow::Result<()> {
+async fn test_patch_full() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-    let (contract_id, mut status_msg) = view_status_state(worker.clone()).await?;
+    let (contract_id, status_msg) = view_status_state(&worker).await?;
+    let status_msg_acc = worker.view_account(&contract_id).await?;
+    let status_msg_code = worker.view_code(&contract_id).await?;
 
+    let bob_id: AccountId = "bob.test.near".parse()?;
     let sk = SecretKey::from_seed(KeyType::ED25519, "bob's test key");
-    let bob = "bob.test.near".parse()?;
-    let bob = Account::from_secret_key(bob, sk, &worker);
 
-    let code_hash = worker.view_account(&contract_id).await?.code_hash;
-
+    // Equivalent to worker.import_contract()
     worker
-        .patch(bob.id())
-        // .account(AccountDetails {
-        //     balance: near_units::parse_near!("100 N"),
-        //     locked: 0,
-        //     code_hash,
-        //     storage_usage: 100000,
-        // })
-        .access_key(bob.secret_key().public_key(), AccessKey::full_access())
+        .patch(&bob_id)
+        .account(AccountUpdate {
+            balance: near_units::parse_near!("100 N"),
+            locked: status_msg_acc.locked,
+            code_hash: status_msg_acc.code_hash,
+            storage_usage: status_msg_acc.storage_usage,
+        })
+        .access_key(sk.public_key(), AccessKey::full_access())
+        .code(&status_msg_code)
+        .state(b"STATE", &status_msg.try_to_vec()?)
         .transact()
         .await?;
+
+    let bob_status_msg_acc = Contract::from_secret_key(bob_id, sk, &worker);
+    let msg: String = bob_status_msg_acc
+        .view("get_status")
+        .args_json(json!({
+           "account_id": contract_id,
+        }))
+        .await?
+        .json()?;
+
+    // Check that a complete contract got imported over correctly. This should be return "hello"
+    // from the original contract `set_status("hello")`
+    assert_eq!(msg, "hello".to_string());
 
     Ok(())
 }
