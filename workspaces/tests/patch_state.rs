@@ -147,7 +147,7 @@ async fn test_patch_full() -> anyhow::Result<()> {
     let msg: String = bob_status_msg_acc
         .view("get_status")
         .args_json(json!({
-           "account_id": contract_id,
+            "account_id": contract_id,
         }))
         .await?
         .json()?;
