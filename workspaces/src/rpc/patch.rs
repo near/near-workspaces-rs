@@ -277,29 +277,37 @@ impl PatchTransaction {
         // account details from the chain. This is an async operation so it is deferred
         // till the transact function.
         let account_patch = if let Some(update_account) = self.update_account {
-            let account = match update_account {
+            let mut account = match update_account {
                 UpdateAccount::Update(account) => account,
                 UpdateAccount::FromCurrent(f) => {
                     let account = self.worker.view_account(&self.account_id).await?;
-                    f(account.into())
+                    f(account)
                 }
             };
 
             // Update the code hash if the user supplied a code patch.
-            let account = update_code_hash(self.code_hash_update.take(), account);
+            if let Some(code_hash) = self.code_hash_update.take() {
+                account.code_hash = code_hash;
+            }
+
             Some(account)
         } else if let Some(code_hash) = self.code_hash_update {
             // No account patch, but we have a code patch. We need to fetch the current account
             // to reflect the code hash change.
             let mut account = self.worker.view_account(&self.account_id).await?;
             account.code_hash = code_hash;
-            Some(account.into())
+            Some(account)
         } else {
             None
         };
 
+        // Account patch should be the first entry in the records, since the account might not
+        // exist yet and the consequent patches might lookup the account on the chain.
         let records = if let Some(account) = account_patch {
-            let mut records = vec![state_record_from_details(&self.account_id, account)];
+            let mut records = vec![StateRecord::Account {
+                account_id: self.account_id.clone(),
+                account: account.into_near_account(),
+            }];
             records.extend(self.records);
             records
         } else {
@@ -320,24 +328,5 @@ impl PatchTransaction {
             .await
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
         Ok(())
-    }
-}
-
-fn update_code_hash(code_hash: Option<CryptoHash>, mut details: AccountDetails) -> AccountDetails {
-    if let Some(code_hash) = code_hash {
-        details.code_hash = code_hash;
-    }
-    details
-}
-
-fn state_record_from_details(account_id: &AccountId, details: AccountDetails) -> StateRecord {
-    StateRecord::Account {
-        account_id: account_id.clone(),
-        account: near_primitives::account::Account::new(
-            details.balance,
-            details.locked,
-            near_primitives::hash::CryptoHash(details.code_hash.0),
-            details.storage_usage,
-        ),
     }
 }

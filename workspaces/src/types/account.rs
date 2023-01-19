@@ -364,15 +364,12 @@ impl AccountDetails {
     }
 
     pub(crate) fn into_near_account(self) -> near_primitives::account::Account {
-        AccountView {
-            amount: self.balance,
-            locked: self.locked,
-            // unwrap guranteed to succeed unless CryptoHash impls have changed in near_primitives.
-            code_hash: near_primitives::hash::CryptoHash(self.code_hash.0),
-            storage_usage: self.storage_usage,
-            storage_paid_at: self.storage_paid_at,
-        }
-        .into()
+        near_primitives::account::Account::new(
+            self.balance,
+            self.locked,
+            near_primitives::hash::CryptoHash(self.code_hash.0),
+            self.storage_usage,
+        )
     }
 }
 

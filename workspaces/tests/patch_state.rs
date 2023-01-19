@@ -158,3 +158,26 @@ async fn test_patch_full() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_patch_code_hash() -> anyhow::Result<()> {
+    let worker = workspaces::sandbox().await?;
+    let (contract_id, _) = view_status_state(&worker).await?;
+    let status_msg_acc = worker.view_account(&contract_id).await?;
+    let status_msg_code = worker.view_code(&contract_id).await?;
+
+    let bob = worker.dev_create_account().await?;
+
+    // Patching code bytes should also set the code hash, otherwise the node will crash
+    // when we try to do anything with the contract.
+    worker
+        .patch(bob.id())
+        .code(&status_msg_code)
+        .transact()
+        .await?;
+
+    let code_hash = worker.view_account(bob.id()).await?.code_hash;
+    assert_eq!(status_msg_acc.code_hash, code_hash);
+
+    Ok(())
+}
