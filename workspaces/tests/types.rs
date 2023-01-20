@@ -1,4 +1,3 @@
-use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -46,10 +45,6 @@ fn test_pubkey_serialization() -> anyhow::Result<()> {
         // Borsh Deserialization should equate to the original public key:
         assert_eq!(PublicKey::try_from_slice(&bytes)?, pk);
 
-        // [key_type, key_data...] should equate to the original public key:
-        let bytes: Vec<u8> = pk.clone().into();
-        assert_eq!(PublicKey::try_from(bytes.as_slice())?, pk);
-
         // invalid public key should error out on deserialization:
         assert!(PublicKey::try_from_slice(&[0]).is_err());
     }
@@ -78,7 +73,7 @@ fn test_pubkey_borsh_format_change() -> anyhow::Result<()> {
     // Test internal serialization of Vec<u8> is the same:
     let old_key = PublicKeyRef(data.clone());
     let old_encoded_key = old_key.try_to_vec()?;
-    let new_key: PublicKey = data.as_slice().try_into()?;
+    let new_key = PublicKey::try_from_slice(data.as_slice())?;
     let new_encoded_key = new_key.try_to_vec()?;
     assert_eq!(new_encoded_key, old_encoded_key);
     assert_eq!(

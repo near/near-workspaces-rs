@@ -164,25 +164,6 @@ impl FromStr for PublicKey {
     }
 }
 
-impl From<PublicKey> for Vec<u8> {
-    fn from(pk: PublicKey) -> Vec<u8> {
-        let mut data = vec![pk.key_type() as u8];
-        data.extend(pk.key_data());
-        data
-    }
-}
-
-impl TryFrom<&[u8]> for PublicKey {
-    type Error = Error;
-
-    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-        // Expected format:
-        // 1st byte: key type
-        // consecutive butes: key data
-        BorshDeserialize::try_from_slice(data).map_err(|e| ErrorKind::DataConversion.custom(e))
-    }
-}
-
 /// Secret key of an account on chain. Usually created along with a [`PublicKey`]
 /// to form a keypair associated to the account. To generate a new keypair, use
 /// one of the creation methods found here, such as [`SecretKey::from_seed`]
