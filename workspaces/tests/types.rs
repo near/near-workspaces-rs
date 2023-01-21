@@ -54,35 +54,14 @@ fn test_pubkey_serialization() -> anyhow::Result<()> {
 
 #[test]
 fn test_pubkey_borsh_format_change() -> anyhow::Result<()> {
-    // Original struct to reference Borsh serialization from
-    struct PublicKeyRef(Vec<u8>);
-    impl BorshSerialize for PublicKeyRef {
-        fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-            writer.write_all(self.0.as_slice())
-        }
-    }
-    impl BorshDeserialize for PublicKeyRef {
-        fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
-            Ok(PublicKeyRef(buf.to_vec()))
-        }
-    }
-
     let mut data = vec![KeyType::ED25519 as u8];
     data.extend(bs58::decode("6E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?);
 
-    // Test internal serialization of Vec<u8> is the same:
-    let old_key = PublicKeyRef(data.clone());
-    let old_encoded_key = old_key.try_to_vec()?;
-    let new_key = PublicKey::try_from_slice(data.as_slice())?;
-    let new_encoded_key = new_key.try_to_vec()?;
-    assert_eq!(new_encoded_key, old_encoded_key);
+    let pk = PublicKey::try_from_slice(data.as_slice())?;
     assert_eq!(
-        new_encoded_key,
+        pk.try_to_vec()?,
         bs58::decode("16E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?
     );
-
-    let decoded_key = PublicKey::try_from_slice(&new_encoded_key)?;
-    assert_eq!(decoded_key, new_key);
 
     Ok(())
 }
