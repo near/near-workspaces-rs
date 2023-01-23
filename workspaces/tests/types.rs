@@ -60,6 +60,7 @@ fn test_pubkey_serialization() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "interop_sdk")]
 #[tokio::test]
 async fn test_pubkey_from_sdk_ser() -> anyhow::Result<()> {
     const TYPE_SER_BYTES: &[u8] =
