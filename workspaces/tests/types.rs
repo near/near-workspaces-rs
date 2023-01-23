@@ -9,8 +9,7 @@ use workspaces::AccountId;
 use near_sdk as sdk;
 
 fn default_workspaces_pubkey() -> anyhow::Result<PublicKey> {
-    let mut data = vec![KeyType::ED25519 as u8];
-    data.extend(bs58::decode("6E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?);
+    let data = bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?;
     Ok(PublicKey::try_from_slice(data.as_slice())?)
 }
 
@@ -63,11 +62,12 @@ fn test_pubkey_serialization() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_pubkey_from_sdk_ser() -> anyhow::Result<()> {
-    const PUBKEY_MANAGE_BYTES: &[u8] =
+    const TYPE_SER_BYTES: &[u8] =
         include_bytes!("test-contracts/type-serialize/res/test_contract_type_serialization.wasm");
     let worker = workspaces::sandbox().await?;
-    let contract = worker.dev_deploy(PUBKEY_MANAGE_BYTES).await?;
+    let contract = worker.dev_deploy(TYPE_SER_BYTES).await?;
 
+    // Test out serde serialization and deserialization for PublicKey
     let ws_pk = default_workspaces_pubkey()?;
     let sdk_pk: sdk::PublicKey = contract
         .call("pass_pk_back_and_forth")
@@ -75,8 +75,17 @@ async fn test_pubkey_from_sdk_ser() -> anyhow::Result<()> {
         .transact()
         .await?
         .json()?;
-
     assert_eq!(ws_pk, PublicKey::try_from(sdk_pk)?);
+
+    // Test out borsh serialization and deserialization for PublicKey
+    let sdk_pk: sdk::PublicKey = contract
+        .call("pass_borsh_pk_back_and_forth")
+        .args_borsh(&ws_pk)
+        .transact()
+        .await?
+        .borsh()?;
+    assert_eq!(ws_pk, PublicKey::try_from(sdk_pk)?);
+
     Ok(())
 }
 
@@ -85,7 +94,7 @@ fn test_pubkey_borsh_format_change() -> anyhow::Result<()> {
     let pk = default_workspaces_pubkey()?;
     assert_eq!(
         pk.try_to_vec()?,
-        bs58::decode("16E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?
+        bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?
     );
 
     Ok(())

@@ -11,6 +11,7 @@ mod sdk;
 
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display};
+use std::io;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -68,6 +69,14 @@ impl KeyType {
             near_crypto::KeyType::SECP256K1 => Self::SECP256K1,
         }
     }
+
+    /// Length of the bytes of the public key associated with this key type.
+    pub const fn len(&self) -> usize {
+        match self {
+            Self::ED25519 => 32,
+            Self::SECP256K1 => 64,
+        }
+    }
 }
 
 impl Display for KeyType {
@@ -108,19 +117,7 @@ impl From<PublicKey> for near_crypto::PublicKey {
 
 /// Public key of an account on chain. Usually created along with a [`SecretKey`]
 /// to form a keypair associated to the account.
-#[derive(
-    Debug,
-    Clone,
-    Hash,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Serialize,
-    Deserialize,
-    BorshSerialize,
-    BorshDeserialize,
-)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct PublicKey(pub(crate) near_crypto::PublicKey);
 
 #[allow(clippy::len_without_is_empty)] // PublicKey is guaranteed to never be empty due to KeyType restrictions.
@@ -129,6 +126,19 @@ impl PublicKey {
     /// length of the bytes determined by the associated key type.
     pub fn empty(key_type: KeyType) -> Self {
         Self(near_crypto::PublicKey::empty(key_type.into_near_keytype()))
+    }
+
+    /// Create a new [`PublicKey`] from the given bytes. This will return an error if the bytes are not in the
+    /// correct format. Expected to have key type be the first byte encoded, with the remaining bytes being the
+    /// key data.
+    pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
+        let key_type = KeyType::try_from(bytes[0])?;
+        Ok(Self(
+            near_crypto::PublicKey::try_from_slice(bytes).map_err(|e| {
+                ErrorKind::DataConversion
+                    .full(format!("Invalid key data for key type: {key_type}"), e)
+            })?,
+        ))
     }
 
     /// Get the number of bytes this key uses. This will differ depending on the [`KeyType`]. i.e. for
@@ -163,6 +173,36 @@ impl FromStr for PublicKey {
         let pk = near_crypto::PublicKey::from_str(value)
             .map_err(|e| ErrorKind::DataConversion.custom(e))?;
 
+        Ok(Self(pk))
+    }
+}
+
+impl BorshSerialize for PublicKey {
+    fn serialize<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        // NOTE: sdk::PublicKey requires that we serialize the length of the key first, then the key itself.
+        // Casted usize to u32 since the length in WASM is only 4 bytes long.
+        BorshSerialize::serialize(&(self.len() as u32), writer)?;
+        // Serialize key type and key data:
+        BorshSerialize::serialize(&self.0, writer)
+    }
+}
+
+impl BorshDeserialize for PublicKey {
+    fn deserialize(buf: &mut &[u8]) -> io::Result<Self> {
+        let len: u32 = BorshDeserialize::deserialize(buf)?;
+        let pk: near_crypto::PublicKey = BorshDeserialize::deserialize(buf)?;
+
+        // Check that the length of the key matches the length we read from the buffer:
+        if pk.len() != len as usize {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "Key length of {} does not match length of {} read from buffer",
+                    pk.len(),
+                    len
+                ),
+            ));
+        }
         Ok(Self(pk))
     }
 }
