@@ -6,6 +6,9 @@ pub(crate) mod account;
 pub(crate) mod block;
 pub(crate) mod chunk;
 
+#[cfg(feature = "interop_sdk")]
+mod sdk;
+
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display};
 use std::path::Path;
