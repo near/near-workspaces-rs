@@ -71,6 +71,7 @@ impl KeyType {
     }
 
     /// Length of the bytes of the public key associated with this key type.
+    #[allow(clippy::len_without_is_empty)] // This is an associated length.
     pub const fn len(&self) -> usize {
         match self {
             Self::ED25519 => 32,
