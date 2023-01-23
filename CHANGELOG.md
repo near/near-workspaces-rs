@@ -6,10 +6,13 @@
 
 - [Import a couple functions over from near_crypto for PublicKey](https://github.com/near/workspaces-rs/pull/265)
   - Impl `Ord`, `PartialOrd`, `Hash`, `BorshSerialize`, `BorshDeserialize`, `Display`, and `FromStr` for `PublicKey`
+    - NOTE: Borsh bytes format is the same as near-sdk, where it is in the form of [bytes_len, key_type, key_data..]
   - Added `PublicKey::{empty, len, key_data}`
   - Impl `Display` for `SecretKey`.
   - more docs were added to both `SecretKey` and `PublicKey`.
   - Impl `Display`, `FromStr`, `TryFrom<u8>` for `KeyType`.
+- [Added `TryFrom<near_sdk::PublicKey>` for `workspaces::PublicKey`](https://github.com/near/workspaces-rs/pull/267)
+  - Added `KeyType::len` and `PublicKey::try_from_bytes`
 
 ### Changed
 
