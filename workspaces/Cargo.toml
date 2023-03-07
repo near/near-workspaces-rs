@@ -32,11 +32,11 @@ tokio-retry = "0.3"
 tracing = "0.1"
 url = { version = "2.2.2", features = ["serde"] }
 
-near-account-id = "0.15.0"
-near-crypto = "0.15.0"
-near-primitives = "0.15.0"
-near-jsonrpc-primitives = "0.15.0"
-near-jsonrpc-client = { version = "0.4.1", features = ["sandbox"] }
+near-account-id = "0.16.0"
+near-crypto = "0.16.0"
+near-primitives = "0.16.0"
+near-jsonrpc-primitives = "0.16.0"
+near-jsonrpc-client = { version = "0.5", features = ["sandbox"] }
 near-sandbox-utils = "0.6.1"
 
 [build-dependencies]
