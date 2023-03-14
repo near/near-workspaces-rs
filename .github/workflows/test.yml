@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest]
-        toolchain: [stable, 1.60.0]
+        toolchain: [stable, 1.67.1]
 
     runs-on: ${{ matrix.platform }}
     steps:
