@@ -10,6 +10,7 @@ mod sandbox;
 mod server;
 mod testnet;
 
+pub(crate) mod builder;
 pub(crate) mod variants;
 
 pub(crate) use variants::DEV_ACCOUNT_SEED;

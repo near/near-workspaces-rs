@@ -2,6 +2,9 @@
 use serde::{Deserialize, Serialize};
 use test_log::test;
 
+use workspaces::network::Sandbox;
+use workspaces::Worker;
+
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{
   "spec": "nft-1.0.0",
@@ -28,9 +31,7 @@ fn expected() -> NftMetadata {
     serde_json::from_str(EXPECTED_NFT_METADATA).unwrap()
 }
 
-#[test(tokio::test)]
-async fn test_dev_deploy() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+async fn deploy_and_assert(worker: Worker<Sandbox>) -> anyhow::Result<()> {
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 
@@ -46,6 +47,38 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
     let actual: NftMetadata = contract.view("nft_metadata").await?.json()?;
 
     assert_eq!(actual, expected());
+    Ok(())
+}
 
+#[test(tokio::test)]
+async fn test_dev_deploy() -> anyhow::Result<()> {
+    let worker = workspaces::sandbox().await?;
+    deploy_and_assert(worker).await?;
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
+    let rpc_port =
+        portpicker::pick_unused_port().ok_or_else(|| anyhow::anyhow!("no free ports"))?;
+    let net_port =
+        portpicker::pick_unused_port().ok_or_else(|| anyhow::anyhow!("no free ports"))?;
+    let mut home_dir = std::env::temp_dir();
+    home_dir.push(format!("test-sandbox-{}", rpc_port));
+
+    // intialize chain data with supplied home dir
+    let output = near_sandbox_utils::init(&home_dir)?.output().await?;
+    tracing::info!(target: "workspaces-test", "sandbox-init: {:?}", output);
+
+    let mut child = near_sandbox_utils::run(&home_dir, rpc_port, net_port)?;
+
+    // connect to local sandbox node
+    let worker = workspaces::sandbox()
+        .rpc_addr(&format!("http://localhost:{}", rpc_port))
+        .home_dir(home_dir)
+        .await?;
+    deploy_and_assert(worker).await?;
+
+    child.kill()?;
     Ok(())
 }
