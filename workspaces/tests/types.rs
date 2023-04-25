@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-use workspaces::types::{KeyType, SecretKey};
+use borsh::{BorshDeserialize, BorshSerialize};
+
+use workspaces::types::{KeyType, PublicKey, SecretKey};
 use workspaces::AccountId;
 
 #[test]
@@ -29,6 +31,37 @@ fn test_keypair_secp256k1() -> anyhow::Result<()> {
     assert_eq!(serde_json::to_string(&sk)?, sk_expected);
     assert_eq!(pk, serde_json::from_str(pk_expected)?);
     assert_eq!(sk, serde_json::from_str(sk_expected)?);
+
+    Ok(())
+}
+
+#[test]
+fn test_pubkey_serialization() -> anyhow::Result<()> {
+    for key_type in [KeyType::ED25519, KeyType::SECP256K1] {
+        let sk = SecretKey::from_seed(key_type, "test");
+        let pk = sk.public_key();
+        let bytes = pk.try_to_vec()?;
+
+        // Borsh Deserialization should equate to the original public key:
+        assert_eq!(PublicKey::try_from_slice(&bytes)?, pk);
+
+        // invalid public key should error out on deserialization:
+        assert!(PublicKey::try_from_slice(&[0]).is_err());
+    }
+
+    Ok(())
+}
+
+#[test]
+fn test_pubkey_borsh_format_change() -> anyhow::Result<()> {
+    let mut data = vec![KeyType::ED25519 as u8];
+    data.extend(bs58::decode("6E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?);
+
+    let pk = PublicKey::try_from_slice(data.as_slice())?;
+    assert_eq!(
+        pk.try_to_vec()?,
+        bs58::decode("16E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?
+    );
 
     Ok(())
 }
