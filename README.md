@@ -19,7 +19,7 @@
 
 ## Requirements
 
-- Rust v1.60.0 and up
+- Rust v1.68.0 and up
 - MacOS (x86 and M1) or Linux (x86) for sandbox tests.
 
 ### WASM compilation not supported
