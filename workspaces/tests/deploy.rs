@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 use test_log::test;
 
-use workspaces::network::Sandbox;
+use workspaces::network::{Sandbox, ValidatorKeyTactic};
 use workspaces::Worker;
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
@@ -75,7 +75,7 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
     // connect to local sandbox node
     let worker = workspaces::sandbox()
         .rpc_addr(&format!("http://localhost:{}", rpc_port))
-        .home_dir(home_dir)
+        .validator_key(ValidatorKeyTactic::HomeDir(home_dir))
         .await?;
     deploy_and_assert(worker).await?;
 

@@ -3,9 +3,11 @@ use std::path::PathBuf;
 
 use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::result::Result;
+use crate::types::SecretKey;
 
 use async_process::Child;
 use fs2::FileExt;
+use near_account_id::AccountId;
 use portpicker::pick_unused_port;
 use reqwest::Url;
 use tempfile::TempDir;
@@ -43,8 +45,14 @@ async fn init_home_dir() -> Result<TempDir> {
     Ok(home_dir)
 }
 
+#[derive(Debug)]
+pub enum ValidatorKeyTactic {
+    HomeDir(PathBuf),
+    Known(AccountId, SecretKey),
+}
+
 pub struct SandboxServer {
-    pub(crate) home_dir: PathBuf,
+    pub(crate) validator_key: ValidatorKeyTactic,
 
     rpc_addr: Url,
     net_port: Option<u16>,
@@ -56,12 +64,15 @@ pub struct SandboxServer {
 impl SandboxServer {
     /// Connect a sandbox server that's already been running, provided we know the rpc_addr
     /// and home_dir pointing to the sandbox process.
-    pub(crate) async fn connect(rpc_addr: String, home_dir: PathBuf) -> Result<Self> {
+    pub(crate) async fn connect(
+        rpc_addr: String,
+        validator_key: ValidatorKeyTactic,
+    ) -> Result<Self> {
         let rpc_addr = Url::parse(&rpc_addr).map_err(|e| {
             SandboxErrorCode::InitFailure.full(format!("Invalid rpc_url={rpc_addr}"), e)
         })?;
         Ok(Self {
-            home_dir,
+            validator_key,
             rpc_addr,
             net_port: None,
             rpc_port_lock: None,
@@ -94,7 +105,7 @@ impl SandboxServer {
         info!(target: "workspaces", "Started up sandbox at localhost:{} with pid={:?}", rpc_port, child.id());
 
         Ok(Self {
-            home_dir,
+            validator_key: ValidatorKeyTactic::HomeDir(home_dir),
             rpc_addr,
             net_port: Some(net_port),
             rpc_port_lock: Some(rpc_port_lock),

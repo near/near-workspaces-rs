@@ -7,6 +7,7 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::state_record::StateRecord;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
+use super::server::ValidatorKeyTactic;
 use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
@@ -34,8 +35,15 @@ pub struct Sandbox {
 
 impl Sandbox {
     pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
-        let path = self.server.home_dir.join("validator_key.json");
-        InMemorySigner::from_file(&path)
+        match &self.server.validator_key {
+            ValidatorKeyTactic::HomeDir(home_dir) => {
+                let path = home_dir.join("validator_key.json");
+                InMemorySigner::from_file(&path)
+            }
+            ValidatorKeyTactic::Known(account_id, secret_key) => Ok(
+                InMemorySigner::from_secret_key(account_id.clone(), secret_key.clone()),
+            ),
+        }
     }
 }
 
@@ -53,22 +61,25 @@ impl std::fmt::Debug for Sandbox {
 #[async_trait]
 impl FromNetworkBuilder for Sandbox {
     async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
-        // Check the conditions of the provided rpc_url and home_dir
-        let mut server = match (build.rpc_addr, build.home_dir) {
+        // Check the conditions of the provided rpc_url and validator_key
+        let mut server = match (build.rpc_addr, build.validator_key) {
             // Connect to a provided sandbox:
-            (Some(rpc_url), Some(home_dir)) => SandboxServer::connect(rpc_url, home_dir).await?,
+            (Some(rpc_url), Some(validator_key)) => {
+                SandboxServer::connect(rpc_url, validator_key).await?
+            }
 
             // Spawn a new sandbox since rpc_url and home_dir weren't specified:
             (None, None) => SandboxServer::run_new().await?,
 
             // Missing inputted paramters for sandbox:
             (Some(rpc_url), None) => {
-                return Err(SandboxErrorCode::InitFailure
-                    .message(format!("Custom rpc_url={rpc_url} requires home_dir set.")));
-            }
-            (None, Some(home_dir)) => {
                 return Err(SandboxErrorCode::InitFailure.message(format!(
-                    "Custom home_dir={home_dir:?} requires rpc_url set."
+                    "Custom rpc_url={rpc_url} requires validator_key set."
+                )));
+            }
+            (None, Some(validator_key)) => {
+                return Err(SandboxErrorCode::InitFailure.message(format!(
+                    "Custom validator_key={validator_key:?} requires rpc_url set."
                 )));
             }
         };
