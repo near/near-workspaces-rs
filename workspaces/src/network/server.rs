@@ -46,13 +46,14 @@ async fn init_home_dir() -> Result<TempDir> {
 }
 
 #[derive(Debug)]
-pub enum ValidatorKeyTactic {
+#[non_exhaustive]
+pub enum ValidatorKey {
     HomeDir(PathBuf),
     Known(AccountId, SecretKey),
 }
 
 pub struct SandboxServer {
-    pub(crate) validator_key: ValidatorKeyTactic,
+    pub(crate) validator_key: ValidatorKey,
 
     rpc_addr: Url,
     net_port: Option<u16>,
@@ -64,10 +65,7 @@ pub struct SandboxServer {
 impl SandboxServer {
     /// Connect a sandbox server that's already been running, provided we know the rpc_addr
     /// and home_dir pointing to the sandbox process.
-    pub(crate) async fn connect(
-        rpc_addr: String,
-        validator_key: ValidatorKeyTactic,
-    ) -> Result<Self> {
+    pub(crate) async fn connect(rpc_addr: String, validator_key: ValidatorKey) -> Result<Self> {
         let rpc_addr = Url::parse(&rpc_addr).map_err(|e| {
             SandboxErrorCode::InitFailure.full(format!("Invalid rpc_url={rpc_addr}"), e)
         })?;
@@ -105,7 +103,7 @@ impl SandboxServer {
         info!(target: "workspaces", "Started up sandbox at localhost:{} with pid={:?}", rpc_port, child.id());
 
         Ok(Self {
-            validator_key: ValidatorKeyTactic::HomeDir(home_dir),
+            validator_key: ValidatorKey::HomeDir(home_dir),
             rpc_addr,
             net_port: Some(net_port),
             rpc_port_lock: Some(rpc_port_lock),

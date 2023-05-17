@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use crate::network::Sandbox;
 use crate::{Network, Worker};
 
-use super::server::ValidatorKeyTactic;
+use super::server::ValidatorKey;
 
 pub(crate) type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
@@ -28,7 +28,7 @@ pub(crate) trait FromNetworkBuilder: Sized {
 pub struct NetworkBuilder<'a, T> {
     pub(crate) name: &'a str,
     pub(crate) rpc_addr: Option<String>,
-    pub(crate) validator_key: Option<ValidatorKeyTactic>,
+    pub(crate) validator_key: Option<ValidatorKey>,
     _network: PhantomData<T>,
 }
 
@@ -78,7 +78,7 @@ impl NetworkBuilder<'_, Sandbox> {
     /// about initalizing and  starting our own sandbox, go to [near-sandbox](https://github.com/near/sandbox).
     /// This can be either set to a known key value or to the home directory where all the chain data lives.
     /// This is the `my_home_folder` we passed into `near-sandbox --home {my_home_folder} init`.
-    pub fn validator_key(mut self, validator_key: ValidatorKeyTactic) -> Self {
+    pub fn validator_key(mut self, validator_key: ValidatorKey) -> Self {
         self.validator_key = Some(validator_key);
         self
     }

@@ -7,7 +7,7 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::state_record::StateRecord;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
-use super::server::ValidatorKeyTactic;
+use super::server::ValidatorKey;
 use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
@@ -36,13 +36,14 @@ pub struct Sandbox {
 impl Sandbox {
     pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
         match &self.server.validator_key {
-            ValidatorKeyTactic::HomeDir(home_dir) => {
+            ValidatorKey::HomeDir(home_dir) => {
                 let path = home_dir.join("validator_key.json");
                 InMemorySigner::from_file(&path)
             }
-            ValidatorKeyTactic::Known(account_id, secret_key) => Ok(
-                InMemorySigner::from_secret_key(account_id.clone(), secret_key.clone()),
-            ),
+            ValidatorKey::Known(account_id, secret_key) => Ok(InMemorySigner::from_secret_key(
+                account_id.clone(),
+                secret_key.clone(),
+            )),
         }
     }
 }

@@ -19,7 +19,7 @@ pub use self::betanet::Betanet;
 pub use self::info::Info;
 pub use self::mainnet::Mainnet;
 pub use self::sandbox::Sandbox;
-pub use self::server::ValidatorKeyTactic;
+pub use self::server::ValidatorKey;
 pub use self::testnet::Testnet;
 pub use self::variants::{
     AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator,
