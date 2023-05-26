@@ -1,9 +1,10 @@
 use std::future::{Future, IntoFuture};
 use std::marker::PhantomData;
-use std::path::PathBuf;
 
 use crate::network::Sandbox;
 use crate::{Network, Worker};
+
+use super::server::ValidatorKey;
 
 pub(crate) type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
@@ -27,7 +28,7 @@ pub(crate) trait FromNetworkBuilder: Sized {
 pub struct NetworkBuilder<'a, T> {
     pub(crate) name: &'a str,
     pub(crate) rpc_addr: Option<String>,
-    pub(crate) home_dir: Option<PathBuf>,
+    pub(crate) validator_key: Option<ValidatorKey>,
     _network: PhantomData<T>,
 }
 
@@ -52,7 +53,7 @@ impl<'a, T> NetworkBuilder<'a, T> {
         Self {
             name,
             rpc_addr: None,
-            home_dir: None,
+            validator_key: None,
             _network: PhantomData,
         }
     }
@@ -62,7 +63,7 @@ impl<'a, T> NetworkBuilder<'a, T> {
     /// the default node doesn't provide such as getting beyond the data cap when downloading
     /// state from the network.
     ///
-    /// Note that, for sandbox, we are required to specify `home_dir` as well to connect to
+    /// Note that, for sandbox, we are required to specify `validator_key` as well to connect to
     /// a manually spawned sandbox node.
     pub fn rpc_addr(mut self, addr: &str) -> Self {
         self.rpc_addr = Some(addr.into());
@@ -70,15 +71,15 @@ impl<'a, T> NetworkBuilder<'a, T> {
     }
 }
 
-// So far, only Sandbox makes use of home_dir.
+// So far, only Sandbox makes use of validator_key.
 impl NetworkBuilder<'_, Sandbox> {
-    /// Specify at which location the home_dir of the manually spawned sandbox node is at.
+    /// Specify how to fetch the validator key of the manually spawned sandbox node.
     /// We are expected to init our own sandbox before running this builder. To learn more
     /// about initalizing and  starting our own sandbox, go to [near-sandbox](https://github.com/near/sandbox).
-    /// Also required to set the home directory where all the chain data lives. This is
-    /// the `my_home_folder` we passed into `near-sandbox --home {my_home_folder} init`.
-    pub fn home_dir(mut self, home_dir: impl AsRef<std::path::Path>) -> Self {
-        self.home_dir = Some(home_dir.as_ref().into());
+    /// This can be either set to a known key value or to the home directory where all the chain data lives.
+    /// This is the `my_home_folder` we passed into `near-sandbox --home {my_home_folder} init`.
+    pub fn validator_key(mut self, validator_key: ValidatorKey) -> Self {
+        self.validator_key = Some(validator_key);
         self
     }
 }
