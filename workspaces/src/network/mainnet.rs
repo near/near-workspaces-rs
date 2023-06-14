@@ -3,8 +3,13 @@ use crate::result::Result;
 use crate::rpc::client::Client;
 use std::path::PathBuf;
 
-const RPC_URL: &str = "https://rpc.mainnet.near.org";
-const ARCHIVAL_URL: &str = "https://archival-rpc.mainnet.near.org";
+use super::builder::{FromNetworkBuilder, NetworkBuilder};
+
+/// URL to the mainnet RPC node provided by near.org.
+pub const RPC_URL: &str = "https://rpc.mainnet.near.org";
+
+/// URL to the mainnet archival RPC node provided by near.org.
+pub const ARCHIVAL_URL: &str = "https://archival-rpc.mainnet.near.org";
 
 /// Mainnet related configuration for interacting with mainnet. Look at
 /// [`workspaces::mainnet`] and [`workspaces::mainnet_archival`] for how to
@@ -21,33 +26,20 @@ pub struct Mainnet {
     info: Info,
 }
 
-impl Mainnet {
-    pub(crate) async fn new() -> Result<Self> {
-        let client = Client::new(RPC_URL);
+#[async_trait::async_trait]
+impl FromNetworkBuilder for Mainnet {
+    async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
+        let rpc_url = build.rpc_addr.unwrap_or_else(|| RPC_URL.into());
+        let client = Client::new(&rpc_url);
         client.wait_for_rpc().await?;
 
         Ok(Self {
             client,
             info: Info {
-                name: "mainnet".into(),
+                name: build.name.into(),
                 root_id: "near".parse().unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/mainnet/"),
-                rpc_url: RPC_URL.into(),
-            },
-        })
-    }
-
-    pub(crate) async fn archival() -> Result<Self> {
-        let client = Client::new(ARCHIVAL_URL);
-        client.wait_for_rpc().await?;
-
-        Ok(Self {
-            client,
-            info: Info {
-                name: "mainnet-archival".into(),
-                root_id: "near".parse().unwrap(),
-                keystore_path: PathBuf::from(".near-credentials/mainnet/"),
-                rpc_url: ARCHIVAL_URL.into(),
+                rpc_url,
             },
         })
     }
