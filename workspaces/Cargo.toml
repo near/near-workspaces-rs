@@ -55,8 +55,6 @@ near-sdk = "4.0.0"
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
-
-
 [features]
 default = ["install"]
 install = []  # Install the sandbox binary during compile time
