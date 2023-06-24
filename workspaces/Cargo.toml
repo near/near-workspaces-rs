@@ -16,7 +16,7 @@ base64 = "0.13"
 borsh = "0.10"
 bs58 = "0.4"
 cargo_metadata = { version = "0.15.4", optional = true }
-cargo-near = { git = "https://github.com/ghimire007/cargo-near.git" }
+cargo-near = "0.3.1"
 chrono = "0.4.19"
 fs2 = "0.4"
 hex = "0.4.2"
