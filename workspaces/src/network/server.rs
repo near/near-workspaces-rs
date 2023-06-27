@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
 
 use crate::error::{ErrorKind, SandboxErrorCode};
@@ -8,21 +9,41 @@ use crate::types::SecretKey;
 use async_process::Child;
 use fs2::FileExt;
 use near_account_id::AccountId;
-use portpicker::pick_unused_port;
 use reqwest::Url;
 use tempfile::TempDir;
 use tracing::info;
 
 use near_sandbox_utils as sandbox;
+use tokio::net::TcpListener;
 
-pub const DEFAULT_RPC_URL: &str = "http://localhost";
+// Must be an IP address as `neard` expects socket address for network address.
+const DEFAULT_RPC_HOST: &str = "127.0.0.1";
+
+fn rpc_socket(port: u16) -> String {
+    format!("{DEFAULT_RPC_HOST}:{}", port)
+}
+
+/// Request an unused port from the OS.
+pub async fn pick_unused_port() -> Result<u16> {
+    // Port 0 means the OS gives us an unused port
+    // Important to use localhost as using 0.0.0.0 leads to users getting brief firewall popups to
+    // allow inbound connections on MacOS.
+    let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0);
+    let listener = TcpListener::bind(addr)
+        .await
+        .map_err(|err| ErrorKind::Io.full("failed to bind to random port", err))?;
+    let port = listener
+        .local_addr()
+        .map_err(|err| ErrorKind::Io.full("failed to get local address for random port", err))?
+        .port();
+    Ok(port)
+}
 
 /// Acquire an unused port and lock it for the duration until the sandbox server has
 /// been started.
-fn acquire_unused_port() -> Result<(u16, File)> {
+async fn acquire_unused_port() -> Result<(u16, File)> {
     loop {
-        let port = pick_unused_port()
-            .ok_or_else(|| SandboxErrorCode::InitFailure.message("no ports free"))?;
+        let port = pick_unused_port().await?;
         let lockpath = std::env::temp_dir().join(format!("near-sandbox-port{}.lock", port));
         let lockfile = File::create(lockpath).map_err(|err| {
             ErrorKind::Io.full(format!("failed to create lockfile for port {}", port), err)
@@ -90,17 +111,36 @@ impl SandboxServer {
         crate::network::config::set_sandbox_configs(&home_dir)?;
 
         // Try running the server with the follow provided rpc_ports and net_ports
-        let (rpc_port, rpc_port_lock) = acquire_unused_port()?;
-        let (net_port, net_port_lock) = acquire_unused_port()?;
-        let rpc_addr = format!("{}:{}", DEFAULT_RPC_URL, rpc_port);
-        // This is guaranteed to be a valid URL, since this is using the default URL.
-        let rpc_addr = Url::parse(&rpc_addr).unwrap();
+        let (rpc_port, rpc_port_lock) = acquire_unused_port().await?;
+        let (net_port, net_port_lock) = acquire_unused_port().await?;
+        // It's important that the address doesn't have a scheme, since the sandbox expects
+        // a valid socket address.
+        let rpc_addr = rpc_socket(rpc_port);
+        let net_addr = rpc_socket(net_port);
 
         info!(target: "workspaces", "Starting up sandbox at localhost:{}", rpc_port);
-        let child = sandbox::run(&home_dir, rpc_port, net_port)
+
+        let options = &[
+            "--home",
+            home_dir
+                .as_os_str()
+                .to_str()
+                .expect("home_dir is valid utf8"),
+            "run",
+            "--rpc-addr",
+            &rpc_addr,
+            "--network-addr",
+            &net_addr,
+        ];
+
+        let child = sandbox::run_with_options(options)
             .map_err(|e| SandboxErrorCode::RunFailure.custom(e))?;
 
         info!(target: "workspaces", "Started up sandbox at localhost:{} with pid={:?}", rpc_port, child.id());
+
+        let rpc_addr: Url = format!("http://{rpc_addr}")
+            .parse()
+            .expect("static scheme and host name with variable u16 port numbers form valid urls");
 
         Ok(Self {
             validator_key: ValidatorKey::HomeDir(home_dir),
