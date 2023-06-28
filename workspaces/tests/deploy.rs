@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use test_log::test;
 
 use workspaces::network::{Sandbox, ValidatorKey};
-use workspaces::Worker;
+use workspaces::{pick_unused_port, Worker};
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{
@@ -59,10 +59,8 @@ async fn test_dev_deploy() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
-    let rpc_port =
-        portpicker::pick_unused_port().ok_or_else(|| anyhow::anyhow!("no free ports"))?;
-    let net_port =
-        portpicker::pick_unused_port().ok_or_else(|| anyhow::anyhow!("no free ports"))?;
+    let rpc_port = pick_unused_port().await?;
+    let net_port = pick_unused_port().await?;
     let mut home_dir = std::env::temp_dir();
     home_dir.push(format!("test-sandbox-{}", rpc_port));
 

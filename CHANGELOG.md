@@ -17,6 +17,8 @@
 
 ### Fixed
 
+- [Run `neard` on `localhost` instead of `0.0.0.0` to prevent firewall popups on MacOS](https://github.com/near/workspaces-rs/issues/276)
+
 ## [0.7.0]
 
 ### Added
