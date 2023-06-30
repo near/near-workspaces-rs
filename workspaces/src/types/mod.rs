@@ -71,8 +71,7 @@ impl KeyType {
     }
 
     /// Length of the bytes of the public key associated with this key type.
-    #[allow(clippy::len_without_is_empty)] // This is an associated length.
-    pub const fn len(&self) -> usize {
+    pub const fn data_len(&self) -> usize {
         match self {
             Self::ED25519 => 32,
             Self::SECP256K1 => 64,
@@ -132,7 +131,19 @@ impl PublicKey {
     /// Create a new [`PublicKey`] from the given bytes. This will return an error if the bytes are not in the
     /// correct format. Expected to have key type be the first byte encoded, with the remaining bytes being the
     /// key data.
-    pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
+    pub fn try_from_parts(key_type: KeyType, bytes: &[u8]) -> Result<Self> {
+        let mut buf = Vec::new();
+        buf.push(key_type as u8);
+        buf.extend(bytes);
+        Ok(Self(near_crypto::PublicKey::try_from_slice(&buf).map_err(
+            |e| {
+                ErrorKind::DataConversion
+                    .full(format!("Invalid key data for key type: {key_type}"), e)
+            },
+        )?))
+    }
+
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
         let key_type = KeyType::try_from(bytes[0])?;
         Ok(Self(
             near_crypto::PublicKey::try_from_slice(bytes).map_err(|e| {
