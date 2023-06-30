@@ -1,8 +1,11 @@
+use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::{Info, NetworkClient, NetworkInfo};
 use crate::rpc::client::Client;
+
 use std::path::PathBuf;
 
-const RPC_URL: &str = "https://rpc.betanet.near.org";
+/// URL to the betanet RPC node provided by near.org.
+pub const RPC_URL: &str = "https://rpc.betanet.near.org";
 
 /// Betanet related configuration for interacting with betanet. Look at
 /// [`workspaces::betanet`] for how to spin up a [`Worker`] that can be
@@ -20,18 +23,20 @@ pub struct Betanet {
     info: Info,
 }
 
-impl Betanet {
-    pub(crate) async fn new() -> crate::result::Result<Self> {
-        let client = Client::new(RPC_URL);
+#[async_trait::async_trait]
+impl FromNetworkBuilder for Betanet {
+    async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> crate::result::Result<Self> {
+        let rpc_url = build.rpc_addr.unwrap_or_else(|| RPC_URL.into());
+        let client = Client::new(&rpc_url);
         client.wait_for_rpc().await?;
 
         Ok(Self {
             client,
             info: Info {
-                name: "betanet".into(),
+                name: build.name.into(),
                 root_id: "near".parse().unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/betanet/"),
-                rpc_url: RPC_URL.into(),
+                rpc_url,
             },
         })
     }

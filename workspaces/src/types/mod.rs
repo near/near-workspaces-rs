@@ -17,8 +17,6 @@ use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
-use near_primitives::logging::pretty_hash;
-use near_primitives::serialize::to_base58;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, ErrorKind};
@@ -341,13 +339,13 @@ impl TryFrom<Vec<u8>> for CryptoHash {
 
 impl Debug for CryptoHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", pretty_hash(&self.to_string()))
+        write!(f, "{}", self)
     }
 }
 
 impl Display for CryptoHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(&to_base58(self.0), f)
+        Display::fmt(&bs58::encode(self.0).into_string(), f)
     }
 }
 

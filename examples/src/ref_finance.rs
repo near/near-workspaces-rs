@@ -197,7 +197,7 @@ async fn create_custom_ft(
         .await?;
 
     // Initialize our FT contract with owner metadata and total supply available
-    // to be traded and transfered into other contracts such as Ref-Finance
+    // to be traded and transferred into other contracts such as Ref-Finance
     ft.call("new_default_meta")
         .args_json(json!({
             "owner_id": owner.id(),

@@ -2,6 +2,8 @@
 **/target
 Cargo.lock
 
+#include all target folders
+target
 # Code Editor related files
 .idea
 .vscode

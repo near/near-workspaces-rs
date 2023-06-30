@@ -2,15 +2,17 @@
 //!
 //! Currently the builtin network types are [`Mainnet`], [`Testnet`], and [`Sandbox`].
 
-mod betanet;
 mod config;
 mod info;
-mod mainnet;
 mod sandbox;
 mod server;
-mod testnet;
 
+pub(crate) mod builder;
 pub(crate) mod variants;
+
+pub mod betanet;
+pub mod mainnet;
+pub mod testnet;
 
 pub(crate) use variants::DEV_ACCOUNT_SEED;
 
@@ -18,6 +20,7 @@ pub use self::betanet::Betanet;
 pub use self::info::Info;
 pub use self::mainnet::Mainnet;
 pub use self::sandbox::Sandbox;
+pub use self::server::{pick_unused_port, ValidatorKey};
 pub use self::testnet::Testnet;
 pub use self::variants::{
     AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator,

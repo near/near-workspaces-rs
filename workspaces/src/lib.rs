@@ -18,6 +18,7 @@ pub mod result;
 pub mod rpc;
 pub mod types;
 
+pub use network::pick_unused_port;
 pub use network::variants::{DevNetwork, Network};
 pub use result::Result;
 pub use types::account::{Account, AccountDetails, Contract};
