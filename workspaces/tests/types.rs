@@ -1,12 +1,9 @@
-use std::convert::TryFrom;
 use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 
 use workspaces::types::{KeyType, PublicKey, SecretKey};
 use workspaces::AccountId;
-
-use near_sdk as sdk;
 
 fn default_workspaces_pubkey() -> anyhow::Result<PublicKey> {
     let data = bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?;
@@ -70,22 +67,22 @@ async fn test_pubkey_from_sdk_ser() -> anyhow::Result<()> {
 
     // Test out serde serialization and deserialization for PublicKey
     let ws_pk = default_workspaces_pubkey()?;
-    let sdk_pk: sdk::PublicKey = contract
+    let sdk_pk: PublicKey = contract
         .call("pass_pk_back_and_forth")
         .args_json(serde_json::json!({ "pk": ws_pk }))
         .transact()
         .await?
         .json()?;
-    assert_eq!(ws_pk, PublicKey::try_from(sdk_pk)?);
+    assert_eq!(ws_pk, sdk_pk);
 
     // Test out borsh serialization and deserialization for PublicKey
-    let sdk_pk: sdk::PublicKey = contract
+    let sdk_pk: PublicKey = contract
         .call("pass_borsh_pk_back_and_forth")
         .args_borsh(&ws_pk)
         .transact()
         .await?
         .borsh()?;
-    assert_eq!(ws_pk, PublicKey::try_from(sdk_pk)?);
+    assert_eq!(ws_pk, sdk_pk);
 
     Ok(())
 }

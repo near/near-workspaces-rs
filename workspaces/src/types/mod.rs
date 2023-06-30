@@ -198,9 +198,9 @@ impl BorshSerialize for PublicKey {
 }
 
 impl BorshDeserialize for PublicKey {
-    fn deserialize(buf: &mut &[u8]) -> io::Result<Self> {
-        let len: u32 = BorshDeserialize::deserialize(buf)?;
-        let pk: near_crypto::PublicKey = BorshDeserialize::deserialize(buf)?;
+    fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
+        let len: u32 = BorshDeserialize::deserialize_reader(reader)?;
+        let pk: near_crypto::PublicKey = BorshDeserialize::deserialize_reader(reader)?;
 
         // Check that the length of the key matches the length we read from the buffer:
         if pk.len() != len as usize {
