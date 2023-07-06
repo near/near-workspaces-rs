@@ -102,8 +102,8 @@ impl SandboxServer {
 
     /// Run a new SandboxServer, spawning the sandbox node in the process.
     pub(crate) async fn run_new() -> Result<Self> {
-        // Supress logs for the sandbox binary by default:
-        supress_sandbox_logs_if_required();
+        // Suppress logs for the sandbox binary by default:
+        suppress_sandbox_logs_if_required();
 
         let home_dir = init_home_dir().await?.into_path();
         // Configure `$home_dir/config.json` to our liking. Sandbox requires extra settings
@@ -215,18 +215,18 @@ impl Drop for SandboxServer {
 }
 
 /// Turn off neard-sandbox logs by default. Users can turn them back on with
-/// NEAR_ENABLE_SANDBOX_LOG=1 and specify further paramters with the custom
+/// NEAR_ENABLE_SANDBOX_LOG=1 and specify further parameters with the custom
 /// NEAR_SANDBOX_LOG for higher levels of specificity. NEAR_SANDBOX_LOG args
 /// will be forward into RUST_LOG environment variable as to not conflict
 /// with similar named log targets.
-fn supress_sandbox_logs_if_required() {
+fn suppress_sandbox_logs_if_required() {
     if let Ok(val) = std::env::var("NEAR_ENABLE_SANDBOX_LOG") {
         if val != "0" {
             return;
         }
     }
 
-    // non-exhaustive list of targets to supress, since choosing a default LogLevel
+    // non-exhaustive list of targets to suppress, since choosing a default LogLevel
     // does nothing in this case, since nearcore seems to be overriding it somehow:
     std::env::set_var("NEAR_SANDBOX_LOG", "near=error,stats=error,network=error");
 }

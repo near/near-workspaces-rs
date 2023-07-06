@@ -382,7 +382,7 @@ pub struct FunctionCallPermission {
 
     // This isn't an AccountId because already existing records in testnet genesis have invalid
     // values for this field (see: https://github.com/near/nearcore/pull/4621#issuecomment-892099860)
-    // we accomodate those by using a string, allowing us to read and parse genesis.
+    // we accommodate those by using a string, allowing us to read and parse genesis.
     /// The access key only allows transactions with the given receiver's account id.
     pub receiver_id: String,
 
@@ -444,7 +444,7 @@ pub enum Finality {
     /// Optimistic finality. The latest block recorded on the node that responded to our query
     /// (<1 second delay after the transaction is submitted).
     Optimistic,
-    /// Near-final finality. Similiarly to `Final` finality, but delay should be roughly 1 second.
+    /// Near-final finality. Similarly to `Final` finality, but delay should be roughly 1 second.
     DoomSlug,
     /// Final finality. The block that has been validated on at least 66% of the nodes in the
     /// network. (At max, should be 2 second delay after the transaction is submitted.)

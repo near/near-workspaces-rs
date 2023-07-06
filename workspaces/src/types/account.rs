@@ -304,7 +304,7 @@ impl Contract {
     }
 
     /// Deletes the current contract, and returns the execution details of this
-    /// transaction. The beneciary will receive the funds of the account deleted
+    /// transaction. The beneficiary will receive the funds of the account deleted
     pub async fn delete_contract(self, beneficiary_id: &AccountId) -> Result<ExecutionFinalResult> {
         self.account.delete_account(beneficiary_id).await
     }
@@ -337,7 +337,7 @@ impl AccountDetails {
         AccountView {
             amount: self.balance,
             locked: self.locked,
-            // unwrap guranteed to succeed unless CryptoHash impls have changed in near_primitives.
+            // unwrap guaranteed to succeed unless CryptoHash impls have changed in near_primitives.
             code_hash: near_primitives::hash::CryptoHash(self.code_hash.0),
             storage_usage: self.storage_usage,
             storage_paid_at: self.storage_paid_at,
