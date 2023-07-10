@@ -136,7 +136,7 @@ async fn create_pool_with_liquidity(
         .await?
         .into_result()?;
 
-    deposit_tokens(owner, &ref_finance, tokens).await?;
+    deposit_tokens(owner, ref_finance, tokens).await?;
 
     owner
         .call(ref_finance.id(), "add_liquidity")
@@ -206,7 +206,6 @@ async fn create_custom_ft(
         .transact()
         .await?
         .into_result()?;
-    ();
 
     Ok(ft)
 }

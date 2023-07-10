@@ -146,8 +146,8 @@ impl<'a> ImportContractTransaction<'a> {
                     .into_iter()
                     .map(|(key, value)| StateRecord::Data {
                         account_id: into_account_id.clone(),
-                        data_key: key,
-                        value,
+                        data_key: key.into(),
+                        value: value.into(),
                     }),
             );
         }

@@ -33,8 +33,8 @@ jobs:
         platform: [ubuntu-latest, macos-latest]
         # TODO: Bring `stable` back to the matrix once Rust 1.70.0+ compatibility is resolved in nearcore:
         # https://github.com/near/nearcore/issues/9143
-        #toolchain: [stable, 1.68.0]
-        toolchain: [1.68.0]
+        #toolchain: [stable, 1.69.0]
+        toolchain: [1.69.0]
 
     runs-on: ${{ matrix.platform }}
     steps:
