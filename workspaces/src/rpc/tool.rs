@@ -18,7 +18,10 @@ use crate::types::{AccountId, PublicKey};
 /// Convert `StateItem`s over to a Map<data_key, value_bytes> representation.
 /// Assumes key and value are base64 encoded, so this also decodes them.
 pub(crate) fn into_state_map(state_items: Vec<StateItem>) -> HashMap<Vec<u8>, Vec<u8>> {
-    state_items.into_iter().map(|s| (s.key, s.value)).collect()
+    state_items
+        .into_iter()
+        .map(|s| (s.key.into(), s.value.into()))
+        .collect()
 }
 
 pub(crate) fn random_account_id() -> AccountId {
