@@ -62,7 +62,7 @@ impl Function {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is JSON serializable and can be
+    /// Similar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
@@ -73,7 +73,7 @@ impl Function {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is borsh serializable and can be
+    /// Similar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
         match args.try_to_vec() {
@@ -264,7 +264,7 @@ impl Transaction {
     }
 }
 
-/// Similiar to a [`Transaction`], but more specific to making a call into a contract.
+/// Similar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
 pub struct CallTransaction {
     worker: Worker<dyn Network>,
@@ -296,7 +296,7 @@ impl CallTransaction {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is JSON serializable and can be
+    /// Similar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
@@ -304,7 +304,7 @@ impl CallTransaction {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is borsh serializable and can be
+    /// Similar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
         self.function = self.function.args_borsh(args);
@@ -384,7 +384,7 @@ impl CallTransaction {
     }
 }
 
-/// Similiar to a [`Transaction`], but more specific to creating an account.
+/// Similar to a [`Transaction`], but more specific to creating an account.
 /// This transaction will create a new account with the specified `receiver_id`
 pub struct CreateAccountTransaction<'a, 'b> {
     worker: &'a Worker<dyn Network>,

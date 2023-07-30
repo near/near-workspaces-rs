@@ -75,7 +75,7 @@ impl<'a, T> NetworkBuilder<'a, T> {
 impl NetworkBuilder<'_, Sandbox> {
     /// Specify how to fetch the validator key of the manually spawned sandbox node.
     /// We are expected to init our own sandbox before running this builder. To learn more
-    /// about initalizing and  starting our own sandbox, go to [near-sandbox](https://github.com/near/sandbox).
+    /// about initializing and  starting our own sandbox, go to [near-sandbox](https://github.com/near/sandbox).
     /// This can be either set to a known key value or to the home directory where all the chain data lives.
     /// This is the `my_home_folder` we passed into `near-sandbox --home {my_home_folder} init`.
     pub fn validator_key(mut self, validator_key: ValidatorKey) -> Self {

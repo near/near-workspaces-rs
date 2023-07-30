@@ -13,7 +13,7 @@ pub const RPC_URL: &str = "https://rpc.betanet.near.org";
 /// is not currently supported, and these calls into creating a betanet
 /// worker is meant for retrieving data and/or making queries only.
 /// Also, note that betanet can be unstable and does not provide an
-/// archival endpoint similiar to that of mainnet.
+/// archival endpoint similar to that of mainnet.
 ///
 /// [`workspaces::betanet`]: crate::betanet
 /// [`workspaces::betanet_archival`]: crate::betanet_archival
