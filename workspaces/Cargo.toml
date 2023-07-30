@@ -32,6 +32,7 @@ tokio-retry = "0.3"
 tracing = "0.1"
 url = { version = "2.2.2", features = ["serde"] }
 
+near-sdk = { version = "4.1", optional = true }
 near-account-id = "0.16"
 near-crypto = "0.16"
 near-primitives = "0.16"
@@ -55,8 +56,9 @@ test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
 [features]
-default = ["install"]
+default = ["install", "interop_sdk"]
 install = []  # Install the sandbox binary during compile time
+interop_sdk = ["near-sdk"]
 unstable = ["cargo_metadata"]
 
 [package.metadata.docs.rs]
