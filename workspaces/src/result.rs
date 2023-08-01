@@ -289,6 +289,7 @@ impl ExecutionFinalResult {
         self.details.logs()
     }
 
+    /// Calls the given hook providing the total gas burnt by the transaction.
     pub fn on_transaction<F: Fn(Gas)>(self, func: F) -> Self {
         func(self.total_gas_burnt);
         self

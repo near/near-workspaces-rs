@@ -29,7 +29,7 @@ async fn test_parallel() -> anyhow::Result<()> {
                     .transact()
                     .await?
                     .on_transaction(|gas| {
-                        let mut gas_meter = gas_meter.lock().unwrap();
+                        let mut gas_meter = gas_meter.lock().expect("GasMeter mutex poisoned");
                         // debug
                         println!("Gas consumed for task {}: {}", msg, gas);
                         gas_meter.consume(gas);
@@ -40,12 +40,14 @@ async fn test_parallel() -> anyhow::Result<()> {
         });
     futures::future::join_all(parallel_tasks).await;
 
-    match gas_meter.lock() {
-        Ok(meter) => {
-            println!("Gas consumed: {}", meter.consumed());
-        }
-        Err(_) => println!("Mutex poisoned"),
-    }
+    // debug
+    println!(
+        "Total Gas consumed: {}",
+        gas_meter
+            .lock()
+            .expect("GasMeter mutex poisoned")
+            .consumed()
+    );
 
     // Check the final set message. This should be random each time this test function is called:
     let final_set_msg = account

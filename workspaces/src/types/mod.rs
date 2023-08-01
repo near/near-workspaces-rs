@@ -518,7 +518,6 @@ impl From<Finality> for near_primitives::types::BlockReference {
 }
 
 /// Allows you to meter the amount of gas consumed by transaction(s).
-#[derive(Clone)]
 pub struct GasMeter(Gas);
 
 impl GasMeter {
