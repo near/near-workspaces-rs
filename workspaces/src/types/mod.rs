@@ -516,3 +516,24 @@ impl From<Finality> for near_primitives::types::BlockReference {
         value.into()
     }
 }
+
+/// Allows you to meter the amount of gas consumed by transaction(s).
+#[derive(Clone)]
+pub struct GasMeter(Gas);
+
+impl GasMeter {
+    /// Create a new gas meter with 0 gas consumed.
+    pub fn new() -> Self {
+        Self(0)
+    }
+
+    /// Get the total amount of gas consumed.
+    pub fn consumed(&self) -> Gas {
+        self.0
+    }
+
+    /// Consume the given amount of gas.
+    pub fn consume(&mut self, consumed: Gas) {
+        self.0 += consumed;
+    }
+}

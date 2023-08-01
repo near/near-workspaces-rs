@@ -1,6 +1,7 @@
-use std::{collections::VecDeque, task::Poll};
+use std::{collections::VecDeque, sync::Arc, sync::Mutex, task::Poll};
 
 use serde_json::json;
+use workspaces::types::GasMeter;
 
 const STATUS_MSG_CONTRACT: &[u8] = include_bytes!("../../examples/res/status_message.wasm");
 
@@ -10,11 +11,15 @@ async fn test_parallel() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
     let account = worker.dev_create_account().await?;
 
+    let gas_meter = Arc::new(Mutex::new(GasMeter::new()));
+
     let parallel_tasks = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
         .iter()
         .map(|msg| {
             let id = contract.id().clone();
             let account = account.clone();
+            let gas_meter = Arc::clone(&gas_meter);
+
             tokio::spawn(async move {
                 account
                     .call(&id, "set_status")
@@ -23,11 +28,24 @@ async fn test_parallel() -> anyhow::Result<()> {
                     }))
                     .transact()
                     .await?
+                    .on_transaction(|gas| {
+                        let mut gas_meter = gas_meter.lock().unwrap();
+                        // debug
+                        println!("Gas consumed for task {}: {}", msg, gas);
+                        gas_meter.consume(gas);
+                    })
                     .into_result()?;
                 anyhow::Result::<()>::Ok(())
             })
         });
     futures::future::join_all(parallel_tasks).await;
+
+    match gas_meter.lock() {
+        Ok(meter) => {
+            println!("Gas consumed: {}", meter.consumed());
+        }
+        Err(_) => println!("Mutex poisoned"),
+    }
 
     // Check the final set message. This should be random each time this test function is called:
     let final_set_msg = account
