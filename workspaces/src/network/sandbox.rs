@@ -180,8 +180,8 @@ impl Sandbox {
     ) -> Result<()> {
         let state = StateRecord::Data {
             account_id: contract_id.to_owned(),
-            data_key: key.to_vec(),
-            value: value.to_vec(),
+            data_key: key.to_vec().into(),
+            value: value.to_vec().into(),
         };
         let records = vec![state];
 
