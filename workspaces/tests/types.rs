@@ -5,6 +5,11 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use workspaces::types::{KeyType, PublicKey, SecretKey};
 use workspaces::AccountId;
 
+fn default_workspaces_pubkey() -> anyhow::Result<PublicKey> {
+    let data = bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?;
+    Ok(PublicKey::try_from_slice(data.as_slice())?)
+}
+
 #[test]
 fn test_keypair_ed25519() -> anyhow::Result<()> {
     let pk_expected = "\"ed25519:DcA2MzgpJbrUATQLLceocVckhhAqrkingax4oJ9kZ847\"";
@@ -52,15 +57,42 @@ fn test_pubkey_serialization() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "interop_sdk")]
+#[tokio::test]
+async fn test_pubkey_from_sdk_ser() -> anyhow::Result<()> {
+    const TYPE_SER_BYTES: &[u8] =
+        include_bytes!("test-contracts/type-serialize/res/test_contract_type_serialization.wasm");
+    let worker = workspaces::sandbox().await?;
+    let contract = worker.dev_deploy(TYPE_SER_BYTES).await?;
+
+    // Test out serde serialization and deserialization for PublicKey
+    let ws_pk = default_workspaces_pubkey()?;
+    let sdk_pk: PublicKey = contract
+        .call("pass_pk_back_and_forth")
+        .args_json(serde_json::json!({ "pk": ws_pk }))
+        .transact()
+        .await?
+        .json()?;
+    assert_eq!(ws_pk, sdk_pk);
+
+    // Test out borsh serialization and deserialization for PublicKey
+    let sdk_pk: PublicKey = contract
+        .call("pass_borsh_pk_back_and_forth")
+        .args_borsh(&ws_pk)
+        .transact()
+        .await?
+        .borsh()?;
+    assert_eq!(ws_pk, sdk_pk);
+
+    Ok(())
+}
+
 #[test]
 fn test_pubkey_borsh_format_change() -> anyhow::Result<()> {
-    let mut data = vec![KeyType::ED25519 as u8];
-    data.extend(bs58::decode("6E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?);
-
-    let pk = PublicKey::try_from_slice(data.as_slice())?;
+    let pk = default_workspaces_pubkey()?;
     assert_eq!(
         pk.try_to_vec()?,
-        bs58::decode("16E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp").into_vec()?
+        bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?
     );
 
     Ok(())

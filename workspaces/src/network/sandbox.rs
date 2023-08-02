@@ -72,7 +72,7 @@ impl FromNetworkBuilder for Sandbox {
             // Spawn a new sandbox since rpc_url and home_dir weren't specified:
             (None, None) => SandboxServer::run_new().await?,
 
-            // Missing inputted paramters for sandbox:
+            // Missing inputted parameters for sandbox:
             (Some(rpc_url), None) => {
                 return Err(SandboxErrorCode::InitFailure.message(format!(
                     "Custom rpc_url={rpc_url} requires validator_key set."

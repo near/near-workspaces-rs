@@ -216,7 +216,7 @@ impl Query<'_, ViewFunction> {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is JSON serializable and can be
+    /// Similar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
@@ -224,7 +224,7 @@ impl Query<'_, ViewFunction> {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is borsh serializable and can be
+    /// Similar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
         self.method.function = self.method.function.args_borsh(args);
@@ -404,7 +404,7 @@ impl ProcessQuery for GasPrice {
 /// and either block [`CryptoHash`] or [`BlockHeight`]).
 ///
 /// The default behavior where a `ChunkReference` is not supplied will use a `BlockShardId`
-/// referencing the lastest block `CryptoHash` with `ShardId` of 0.
+/// referencing the latest block `CryptoHash` with `ShardId` of 0.
 pub struct QueryChunk<'a> {
     client: &'a Client,
     chunk_ref: Option<ChunkReference>,
