@@ -60,6 +60,7 @@ default = ["install", "interop_sdk"]
 install = []  # Install the sandbox binary during compile time
 interop_sdk = ["near-sdk"]
 unstable = ["cargo_metadata"]
+experimental = []
 
 [package.metadata.docs.rs]
 features = ["unstable"]

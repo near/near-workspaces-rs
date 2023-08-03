@@ -246,3 +246,6 @@ impl Worker<Sandbox> {
         self.workspace.server.rpc_addr()
     }
 }
+
+#[cfg(feature = "experimental")]
+impl Worker<Sandbox> {}
