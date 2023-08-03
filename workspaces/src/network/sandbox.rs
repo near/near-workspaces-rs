@@ -4,30 +4,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
-use near_jsonrpc_client::methods::{
-    EXPERIMENTAL_changes::RpcStateChangesInBlockByTypeRequest,
-    EXPERIMENTAL_changes_in_block::RpcStateChangesInBlockRequest,
-    EXPERIMENTAL_check_tx::RpcCheckTxRequest, EXPERIMENTAL_genesis_config::RpcGenesisConfigRequest,
-    EXPERIMENTAL_protocol_config::RpcProtocolConfigResponse,
-    EXPERIMENTAL_tx_status::RpcTransactionStatusRequest,
-};
-use near_jsonrpc_primitives::types::{
-    changes::RpcStateChangesInBlockResponse,
-    config::RpcProtocolConfigRequest,
-    receipts::{ReceiptReference, RpcReceiptRequest},
-    transactions::RpcBroadcastTxSyncResponse,
-    transactions::TransactionInfo,
-    validator::RpcValidatorsOrderedRequest,
-};
-use near_primitives::{
-    state_record::StateRecord,
-    transaction::SignedTransaction,
-    types::{BlockReference, MaybeBlockId},
-    views::{
-        validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
-        ReceiptView, StateChangesRequestView,
-    },
-};
+use near_primitives::state_record::StateRecord;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
@@ -39,6 +16,34 @@ use crate::result::{Execution, ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
 use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
 use crate::{Account, Contract, Network, Worker};
+
+#[cfg(feature = "experimental")]
+use near_chain_configs::ProtocolConfigView;
+#[cfg(feature = "experimental")]
+use near_jsonrpc_client::methods::{
+    EXPERIMENTAL_changes::RpcStateChangesInBlockByTypeRequest,
+    EXPERIMENTAL_changes_in_block::RpcStateChangesInBlockRequest,
+    EXPERIMENTAL_check_tx::RpcCheckTxRequest, EXPERIMENTAL_genesis_config::RpcGenesisConfigRequest,
+    EXPERIMENTAL_tx_status::RpcTransactionStatusRequest,
+};
+#[cfg(feature = "experimental")]
+use near_jsonrpc_primitives::types::{
+    changes::RpcStateChangesInBlockResponse,
+    config::RpcProtocolConfigRequest,
+    receipts::{ReceiptReference, RpcReceiptRequest},
+    transactions::RpcBroadcastTxSyncResponse,
+    transactions::TransactionInfo,
+    validator::RpcValidatorsOrderedRequest,
+};
+#[cfg(feature = "experimental")]
+use near_primitives::{
+    transaction::SignedTransaction,
+    types::{BlockReference, MaybeBlockId},
+    views::{
+        validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
+        ReceiptView, StateChangesRequestView,
+    },
+};
 
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
@@ -286,14 +291,14 @@ impl Sandbox {
     pub(crate) async fn protocol_config(
         &self,
         block_reference: BlockReference,
-    ) -> Result<RpcProtocolConfigResponse> {
+    ) -> Result<ProtocolConfigView> {
         let resp = self
             .client()
             .query_nolog(&RpcProtocolConfigRequest { block_reference })
             .await
             .map_err(|e| SandboxErrorCode::ProtocolConfigFailure.custom(e))?;
 
-        Ok(resp.into())
+        Ok(resp)
     }
 
     pub(crate) async fn receipt(&self, receipt_reference: ReceiptReference) -> Result<ReceiptView> {
