@@ -82,30 +82,6 @@ pub enum SandboxErrorCode {
     PatchStateFailure,
     #[error("Sandbox failed to fast forward")]
     FastForwardFailure,
-    #[cfg(feature = "experimental")]
-    #[error("Sandbox failed to check transaction")]
-    CheckTxFailure,
-    #[cfg(feature = "experimental")]
-    #[error("Sandbox failed to make changes in block")]
-    ChangesInBlockFailure,
-    #[cfg(feature = "experimental")]
-    #[error("Sandbox failed to make changes in block by type")]
-    ChangesFailure,
-    #[cfg(feature = "experimental")]
-    #[error("Sandbox failed to fetch the genesis config")]
-    GenesisConfigFailure,
-    #[cfg(feature = "experimental")]
-    #[error("Sandboc failed to fetch the protocl config")]
-    ProtocolConfigFailure,
-    #[cfg(feature = "experimental")]
-    #[error("Sandbox failed to fetch the receipt")]
-    ReceiptFailure,
-    #[cfg(feature = "experimental")]
-    #[error("Sandbox failed to fetch tx status")]
-    TXStatusFailure,
-    #[cfg(feature = "experimental")]
-    #[error("Sandbox failed to fetch validator info")]
-    ValidatorsOrderdFailure,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, thiserror::Error)]

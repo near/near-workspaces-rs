@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
-
 use tokio::sync::RwLock;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
@@ -24,6 +23,29 @@ use near_primitives::transaction::{
 use near_primitives::types::{Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{
     AccessKeyView, BlockView, FinalExecutionOutcomeView, QueryRequest, StatusResponse,
+};
+
+#[cfg(feature = "experimental")]
+use near_chain_configs::{GenesisConfig, ProtocolConfigView};
+#[cfg(feature = "experimental")]
+use near_jsonrpc_client::methods::EXPERIMENTAL_genesis_config::RpcGenesisConfigError;
+#[cfg(feature = "experimental")]
+use near_jsonrpc_primitives::types::{
+    changes::RpcStateChangesInBlockResponse,
+    changes::{RpcStateChangesError, RpcStateChangesInBlockByTypeResponse},
+    config::RpcProtocolConfigError,
+    receipts::ReceiptReference,
+    receipts::RpcReceiptError,
+    transactions::{RpcBroadcastTxSyncResponse, TransactionInfo},
+    validator::RpcValidatorError,
+};
+#[cfg(feature = "experimental")]
+use near_primitives::{
+    types::MaybeBlockId,
+    views::{
+        validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
+        ReceiptView, StateChangesRequestView,
+    },
 };
 
 use crate::error::{Error, ErrorKind, RpcErrorCode};
@@ -329,6 +351,96 @@ impl Client {
                 )
             })?;
         Ok(())
+    }
+}
+
+#[cfg(feature = "experimental")]
+impl Client {
+    pub async fn changes_in_block(
+        &self,
+        block_reference: BlockReference,
+    ) -> Result<RpcStateChangesInBlockByTypeResponse, JsonRpcError<RpcStateChangesError>> {
+        self.rpc_client
+            .call(
+                methods::EXPERIMENTAL_changes_in_block::RpcStateChangesInBlockRequest {
+                    block_reference,
+                },
+            )
+            .await
+    }
+
+    pub async fn changes(
+        &self,
+        block_reference: BlockReference,
+        state_changes_request: StateChangesRequestView,
+    ) -> Result<RpcStateChangesInBlockResponse, JsonRpcError<RpcStateChangesError>> {
+        self.rpc_client
+            .call(
+                methods::EXPERIMENTAL_changes::RpcStateChangesInBlockByTypeRequest {
+                    block_reference,
+                    state_changes_request,
+                },
+            )
+            .await
+    }
+
+    pub async fn check_tx(
+        &self,
+        signed_transaction: SignedTransaction,
+    ) -> Result<RpcBroadcastTxSyncResponse, JsonRpcError<RpcTransactionError>> {
+        self.rpc_client
+            .call(methods::EXPERIMENTAL_check_tx::RpcCheckTxRequest { signed_transaction })
+            .await
+    }
+
+    pub async fn genesis_config(
+        &self,
+    ) -> Result<GenesisConfig, JsonRpcError<RpcGenesisConfigError>> {
+        self.rpc_client
+            .call(methods::EXPERIMENTAL_genesis_config::RpcGenesisConfigRequest)
+            .await
+    }
+
+    pub async fn protocol_config(
+        &self,
+        block_reference: BlockReference,
+    ) -> Result<ProtocolConfigView, JsonRpcError<RpcProtocolConfigError>> {
+        self.rpc_client
+            .call(
+                methods::EXPERIMENTAL_protocol_config::RpcProtocolConfigRequest { block_reference },
+            )
+            .await
+    }
+
+    pub async fn receipt(
+        &self,
+        receipt_reference: ReceiptReference,
+    ) -> Result<ReceiptView, JsonRpcError<RpcReceiptError>> {
+        self.rpc_client
+            .call(methods::EXPERIMENTAL_receipt::RpcReceiptRequest { receipt_reference })
+            .await
+    }
+
+    pub async fn tx_status(
+        &self,
+        transaction_info: TransactionInfo,
+    ) -> Result<FinalExecutionOutcomeWithReceiptView, JsonRpcError<RpcTransactionError>> {
+        // self.workspace.tx_status(transaction_info).await
+        self.rpc_client
+            .call(methods::EXPERIMENTAL_tx_status::RpcTransactionStatusRequest { transaction_info })
+            .await
+    }
+
+    pub async fn validators_ordered(
+        &self,
+        block_id: MaybeBlockId,
+    ) -> Result<Vec<ValidatorStakeView>, JsonRpcError<RpcValidatorError>> {
+        // self.workspace.validators_ordered(block_id).await
+        self.rpc_client
+            .call(
+                methods::EXPERIMENTAL_validators_ordered::RpcValidatorsOrderedRequest { block_id },
+            )
+            .await
     }
 }
 
