@@ -8,9 +8,11 @@ use crate::rpc::query::{
     GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
     ViewCode, ViewFunction, ViewState,
 };
-use crate::types::{AccountId, Balance, InMemorySigner, PublicKey};
+use crate::types::{AccountId, InMemorySigner, PublicKey};
 use crate::worker::Worker;
 use crate::{Account, Network};
+
+use near_primitives::types::Balance;
 
 impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
