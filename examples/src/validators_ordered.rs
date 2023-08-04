@@ -3,9 +3,8 @@ async fn main() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
 
     // NOTE: this API is under the "experimental" flag.
-    let genesis_config = worker.genesis_config().await?;
+    let validators = worker.validators_ordered(None).await?;
 
-    // dump the genesis config info to stdout
-    println!("Genesis Config {:?}", genesis_config);
+    println!("Validators {validators:?}");
     Ok(())
 }

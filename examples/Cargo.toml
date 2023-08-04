@@ -9,6 +9,8 @@ anyhow = "1.0"
 borsh = "0.10"
 maplit = "1.0"
 near-units = "0.2.0"
+near-jsonrpc-primitives = "0.17"
+near-primitives = "0.17"
 serde = "1.0"
 serde_with = "1"
 # arbitrary_precision enabled for u128 types that workspaces requires for Balance types
@@ -17,6 +19,7 @@ tokio = { version = "1.10.0", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 workspaces = { path = "../workspaces", features = ["experimental"] }
+
 
 [[example]]
 name = "async_transaction"
@@ -53,3 +56,11 @@ path = "src/various_queries.rs"
 [[example]]
 name = "genesis_config"
 path = "src/genesis_config.rs"
+
+[[example]]
+name = "validators_ordered"
+path = "src/validators_ordered.rs"
+
+[[example]]
+name = "protocol_config"
+path = "src/protocol_config.rs"
