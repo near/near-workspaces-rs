@@ -227,7 +227,7 @@ impl ExecutionFinalResult {
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
     pub fn json<T: serde::de::DeserializeOwned>(self) -> Result<T> {
-        let val = self.clone().into_result()?;
+        let val = self.into_result()?;
         match val.value.repr.is_empty() {
             true => {
                 // This catches the case: `EOF while parsing a value at line 1 column 0`
