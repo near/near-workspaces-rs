@@ -7,9 +7,13 @@ async fn main() -> anyhow::Result<()> {
     let wasm = std::fs::read(NOOP_CONTRACT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 
-    if let Err(e) = contract.call("noop").transact().await?.json::<()>() {
-        println!("ExecutionOutcome from noop: {e:?}");
-    }
+    let res = contract.call("noop").transact().await?.json::<()>();
 
+    // Ok to error for call with no return value
+    assert_eq!(
+        *res.unwrap_err().kind(),
+        workspaces::error::ErrorKind::DataConversion,
+        "the Value from ExecutionOutcome is zero bytes"
+    );
     Ok(())
 }
