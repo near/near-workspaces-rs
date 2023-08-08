@@ -64,3 +64,23 @@ path = "src/validators_ordered.rs"
 [[example]]
 name = "protocol_config"
 path = "src/protocol_config.rs"
+
+[[example]]
+name = "changes_in_block"
+path = "src/changes_in_block.rs"
+
+[[example]]
+name = "changes"
+path = "src/changes.rs"
+
+[[example]]
+name = "check_tx"
+path = "src/check_tx.rs"
+
+[[example]]
+name = "receipt"
+path = "src/receipt.rs"
+
+[[example]]
+name = "tx_status"
+path = "src/tx_status.rs"

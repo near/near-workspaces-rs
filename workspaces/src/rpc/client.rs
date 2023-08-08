@@ -456,6 +456,39 @@ impl Client {
             .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
         Ok(resp)
     }
+
+    pub(crate) async fn signed_transaction<U: serde::Serialize>(
+        &self,
+        contract_id: &AccountId,
+        signer: &InMemorySigner,
+        func_name: String,
+        func_args: U,
+    ) -> Result<SignedTransaction> {
+        let args = match serde_json::to_vec(&func_args) {
+            Ok(args) => args,
+            _ => vec![],
+        };
+
+        let actions = vec![FunctionCallAction {
+            args,
+            method_name: func_name,
+            deposit: DEFAULT_CALL_DEPOSIT,
+            gas: DEFAULT_CALL_FN_GAS,
+        }
+        .into()];
+
+        let signer = signer.inner();
+        let cache_key = (signer.account_id.clone(), signer.public_key.clone());
+        let (block_hash, nonce) = fetch_tx_nonce(self, &cache_key).await?;
+        Ok(SignedTransaction::from_actions(
+            nonce,
+            signer.account_id.clone(),
+            contract_id.clone(),
+            &signer as &dyn Signer,
+            actions,
+            block_hash,
+        ))
+    }
 }
 
 pub(crate) async fn access_key(

@@ -15,7 +15,6 @@ use crate::{Account, Network};
 #[cfg(feature = "experimental")]
 use near_chain_configs::{GenesisConfig, ProtocolConfigView};
 #[cfg(feature = "experimental")]
-#[cfg(feature = "experimental")]
 use near_jsonrpc_primitives::types::{
     changes::{RpcStateChangesInBlockByTypeResponse, RpcStateChangesInBlockResponse},
     receipts::ReceiptReference,
@@ -246,6 +245,18 @@ where
         block_id: MaybeBlockId,
     ) -> Result<Vec<ValidatorStakeView>> {
         self.client().validators_ordered(block_id).await
+    }
+
+    pub async fn signed_transaction<U: serde::Serialize>(
+        &self,
+        contract_id: &AccountId,
+        signer: &InMemorySigner,
+        func_name: String,
+        func_args: U,
+    ) -> Result<SignedTransaction> {
+        self.client()
+            .signed_transaction(contract_id, signer, func_name, func_args)
+            .await
     }
 }
 
