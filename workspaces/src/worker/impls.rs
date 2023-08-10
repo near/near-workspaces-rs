@@ -255,7 +255,7 @@ where
         func_args: U,
     ) -> Result<SignedTransaction> {
         self.client()
-            .signed_transaction(contract_id, signer, func_name, func_args)
+            .signed_transaction(contract_id, signer, func_name, Some(func_args))
             .await
     }
 }

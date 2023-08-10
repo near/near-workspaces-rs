@@ -462,10 +462,14 @@ impl Client {
         contract_id: &AccountId,
         signer: &InMemorySigner,
         func_name: String,
-        func_args: U,
+        func_args: Option<U>,
     ) -> Result<SignedTransaction> {
-        let args = match serde_json::to_vec(&func_args) {
-            Ok(args) => args,
+        // parse the func_args 
+        let args = match func_args {
+            Some(val) => match serde_json::to_vec(&val) {
+                Ok(args) => args,
+                Err(e) => return Err(ErrorKind::DataConversion.custom(e)),
+            },
             _ => vec![],
         };
 
