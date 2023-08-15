@@ -14,7 +14,7 @@ use crate::{Network, Result};
 /// deploying a contract, or interacting with transactions.
 pub struct Worker<T: ?Sized> {
     pub(crate) workspace: Arc<T>,
-    pub(crate) gas_consumed: Option<Arc<Mutex<Gas>>>,
+    pub(crate) on_transact: Option<Arc<Mutex<dyn FnMut(Gas) -> Result<()> + Send>>>,
 }
 
 impl<T> Worker<T>
@@ -24,7 +24,7 @@ where
     pub(crate) fn new(network: T) -> Self {
         Self {
             workspace: Arc::new(network),
-            gas_consumed: None,
+            on_transact: None,
         }
     }
 }
@@ -33,7 +33,7 @@ impl<T: Network + 'static> Worker<T> {
     pub(crate) fn coerce(self) -> Worker<dyn Network> {
         Worker {
             workspace: self.workspace,
-            gas_consumed: self.gas_consumed,
+            on_transact: self.on_transact,
         }
     }
 }

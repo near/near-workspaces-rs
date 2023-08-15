@@ -65,7 +65,6 @@ async fn test_parallel() -> anyhow::Result<()> {
 #[tokio::test]
 async fn test_parallel_async() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
-
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
     let account = worker.dev_create_account().await?;
 

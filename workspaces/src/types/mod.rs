@@ -540,19 +540,31 @@ impl From<Finality> for near_primitives::types::BlockReference {
 ///  
 /// println!("Total Gas consumed: {}", meter.elapsed()?);
 /// ```
-pub struct GasMeter(Arc<Mutex<Gas>>);
+pub struct GasMeter {
+    gas: Arc<Mutex<Gas>>,
+    hook: Arc<Mutex<dyn FnMut(Gas) -> Result<()> + Send>>,
+}
 
 impl GasMeter {
     /// Create a new gas meter with 0 gas consumed.
     pub fn now<T: ?Sized>(worker: &mut Worker<T>) -> Self {
         let gas_consumed = Arc::new(Mutex::new(0));
-        worker.gas_consumed = Some(Arc::clone(&gas_consumed));
-        GasMeter(gas_consumed)
+
+        let meter = GasMeter {
+            gas: Arc::clone(&gas_consumed),
+            hook: Arc::new(Mutex::new(move |gas: Gas| {
+                *gas_consumed.lock()? += gas;
+                Ok(())
+            })),
+        };
+
+        worker.on_transact = Some(Arc::clone(&meter.hook));
+        meter
     }
 
     /// Get the total amount of gas consumed.
     pub fn elapsed(&self) -> Result<Gas> {
-        let meter = self.0.lock()?;
+        let meter = self.gas.lock()?;
         Ok(meter.deref().clone())
     }
 }
