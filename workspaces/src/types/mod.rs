@@ -12,8 +12,10 @@ mod sdk;
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display};
 use std::io;
+use std::ops::Deref;
 use std::path::Path;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
@@ -21,6 +23,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, ErrorKind};
 use crate::result::Result;
+use crate::Worker;
 
 pub use self::chunk::{Chunk, ChunkHeader};
 
@@ -518,21 +521,21 @@ impl From<Finality> for near_primitives::types::BlockReference {
 }
 
 /// Allows you to meter the amount of gas consumed by transaction(s).
-pub struct GasMeter(Gas);
+pub struct GasMeter(Arc<Mutex<Gas>>);
 
 impl GasMeter {
     /// Create a new gas meter with 0 gas consumed.
-    pub fn new() -> Self {
-        Self(0)
+    pub fn now<T: ?Sized>(worker: &mut Worker<T>) -> Self {
+        let gas_consumed = Arc::new(Mutex::new(0));
+        worker.gas_consumed = Some(Arc::clone(&gas_consumed));
+        GasMeter(gas_consumed)
     }
 
     /// Get the total amount of gas consumed.
-    pub fn consumed(&self) -> Gas {
-        self.0
-    }
-
-    /// Consume the given amount of gas.
-    pub fn consume(&mut self, consumed: Gas) {
-        self.0 += consumed;
+    pub fn elapsed(&self) -> Result<Gas> {
+        match self.0.lock() {
+            Ok(meter) => Ok(meter.deref().clone()),
+            Err(err) => Err(err.into()),
+        }
     }
 }

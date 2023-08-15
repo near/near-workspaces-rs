@@ -14,7 +14,6 @@
 - [Added `TryFrom<near_sdk::PublicKey>` for `workspaces::PublicKey`](https://github.com/near/workspaces-rs/pull/267)
   - Added `KeyType::len` and `PublicKey::try_from_bytes`
 - [Added API for measuring gas](https://github.com/near/workspaces-rs/pull/284)
-  - Added `ExecutionFinalResult::on_transact` that provides the gas used for the transaction.
   - Added `GasMeter` type that can be used to measure gas usage for transaction(s).
 
 ### Changed

@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, sync::Arc, sync::Mutex, task::Poll};
+use std::{collections::VecDeque, task::Poll};
 
 use serde_json::json;
 use workspaces::types::GasMeter;
@@ -7,18 +7,17 @@ const STATUS_MSG_CONTRACT: &[u8] = include_bytes!("../../examples/res/status_mes
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_parallel() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let mut worker = workspaces::sandbox().await?;
+    let gas_meter = GasMeter::now(&mut worker);
+
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
     let account = worker.dev_create_account().await?;
-
-    let gas_meter = Arc::new(Mutex::new(GasMeter::new()));
 
     let parallel_tasks = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
         .iter()
         .map(|msg| {
             let id = contract.id().clone();
             let account = account.clone();
-            let gas_meter = Arc::clone(&gas_meter);
 
             tokio::spawn(async move {
                 account
@@ -28,12 +27,6 @@ async fn test_parallel() -> anyhow::Result<()> {
                     }))
                     .transact()
                     .await?
-                    .on_transaction(|gas| {
-                        let mut gas_meter = gas_meter.lock().expect("GasMeter mutex poisoned");
-                        // debug
-                        println!("Gas consumed for task {}: {}", msg, gas);
-                        gas_meter.consume(gas);
-                    })
                     .into_result()?;
                 anyhow::Result::<()>::Ok(())
             })
@@ -41,13 +34,7 @@ async fn test_parallel() -> anyhow::Result<()> {
     futures::future::join_all(parallel_tasks).await;
 
     // debug
-    println!(
-        "Total Gas consumed: {}",
-        gas_meter
-            .lock()
-            .expect("GasMeter mutex poisoned")
-            .consumed()
-    );
+    println!("Total Gas consumed: {}", gas_meter.elapsed()?);
 
     // Check the final set message. This should be random each time this test function is called:
     let final_set_msg = account

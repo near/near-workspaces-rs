@@ -1,5 +1,5 @@
-use std::borrow::Cow;
 use std::fmt;
+use std::{borrow::Cow, sync::PoisonError};
 
 use crate::result::ExecutionFailure;
 
@@ -132,6 +132,12 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.repr.source()
+    }
+}
+
+impl<T> From<PoisonError<T>> for Error {
+    fn from(value: PoisonError<T>) -> Self {
+        Error::custom(ErrorKind::Other, value.to_string())
     }
 }
 

@@ -18,6 +18,7 @@ impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
         Self {
             workspace: self.workspace.clone(),
+            gas_consumed: self.gas_consumed.clone(),
         }
     }
 }

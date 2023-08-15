@@ -333,7 +333,8 @@ impl CallTransaction {
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
     pub async fn transact(self) -> Result<ExecutionFinalResult> {
-        self.worker
+        let txn = self
+            .worker
             .client()
             .call(
                 &self.signer,
@@ -345,7 +346,13 @@ impl CallTransaction {
             )
             .await
             .map(ExecutionFinalResult::from_view)
-            .map_err(crate::error::Error::from)
+            .map_err(crate::error::Error::from)?;
+
+        if let Some(meter) = self.worker.gas_consumed {
+            *meter.lock()? += txn.total_gas_burnt;
+        }
+
+        Ok(txn)
     }
 
     /// Send the transaction to the network to be processed. This will be done asynchronously
