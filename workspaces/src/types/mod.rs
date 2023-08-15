@@ -533,9 +533,7 @@ impl GasMeter {
 
     /// Get the total amount of gas consumed.
     pub fn elapsed(&self) -> Result<Gas> {
-        match self.0.lock() {
-            Ok(meter) => Ok(meter.deref().clone()),
-            Err(err) => Err(err.into()),
-        }
+        let meter = self.0.lock()?;
+        Ok(meter.deref().clone())
     }
 }
