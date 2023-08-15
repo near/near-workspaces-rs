@@ -1,4 +1,8 @@
-use std::{collections::VecDeque, task::Poll};
+use std::{
+    collections::VecDeque,
+    sync::{Arc, Mutex},
+    task::Poll,
+};
 
 use serde_json::json;
 use workspaces::types::GasMeter;
@@ -8,33 +12,40 @@ const STATUS_MSG_CONTRACT: &[u8] = include_bytes!("../../examples/res/status_mes
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_parallel() -> anyhow::Result<()> {
     let mut worker = workspaces::sandbox().await?;
-    let gas_meter = GasMeter::now(&mut worker);
+    let meter = GasMeter::now(&mut worker);
 
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
     let account = worker.dev_create_account().await?;
+
+    let total_gas_burnt = Arc::new(Mutex::new(0));
 
     let parallel_tasks = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
         .iter()
         .map(|msg| {
             let id = contract.id().clone();
             let account = account.clone();
+            let gas_burnt = Arc::clone(&total_gas_burnt);
 
             tokio::spawn(async move {
-                account
+                let txn = account
                     .call(&id, "set_status")
                     .args_json(json!({
                         "message": msg.to_string(),
                     }))
                     .transact()
-                    .await?
-                    .into_result()?;
+                    .await?;
+
+                let mut gas_burnt = gas_burnt.lock().unwrap();
+                *gas_burnt += txn.total_gas_burnt;
+
+                txn.into_result()?;
                 anyhow::Result::<()>::Ok(())
             })
         });
     futures::future::join_all(parallel_tasks).await;
 
     // debug
-    println!("Total Gas consumed: {}", gas_meter.elapsed()?);
+    println!("Total Gas consumed: {}", meter.elapsed()?);
 
     // Check the final set message. This should be random each time this test function is called:
     let final_set_msg = account
@@ -45,12 +56,16 @@ async fn test_parallel() -> anyhow::Result<()> {
         .json::<String>()?;
     println!("Final set message: {:?}", final_set_msg);
 
+    // The amount of Gas burnt should be equal to that in the GasMeter
+    assert!(meter.elapsed()? == *total_gas_burnt.lock().unwrap());
+
     Ok(())
 }
 
 #[tokio::test]
 async fn test_parallel_async() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
+
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
     let account = worker.dev_create_account().await?;
 

@@ -521,6 +521,25 @@ impl From<Finality> for near_primitives::types::BlockReference {
 }
 
 /// Allows you to meter the amount of gas consumed by transaction(s).
+/// Note: This only works with parallel transactions that resolve to [`crate::Result::ExecutionFinalResult`]
+/// Example
+/// ```
+/// let mut worker = workspaces::sandbox().await?;
+/// let meter = GasMeter::now(&mut worker);
+///
+/// let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
+/// let contract = worker.dev_deploy(&wasm).await?;
+///
+/// contract
+///    .call("set_status")
+///    .args_json(json!({
+///        "message": "hello_world",
+///    }))
+///    .transact()
+///    .await?;
+///  
+/// println!("Total Gas consumed: {}", meter.elapsed()?);
+/// ```
 pub struct GasMeter(Arc<Mutex<Gas>>);
 
 impl GasMeter {
