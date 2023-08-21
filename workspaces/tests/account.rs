@@ -38,16 +38,16 @@ async fn test_subaccount_creation() -> anyhow::Result<()> {
 async fn test_delete_account() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
 
-    let (first_account, second_account) = (
+    let (alice, bob) = (
         worker.dev_create_account().await?,
         worker.dev_create_account().await?,
     );
 
-    _ = first_account.delete_account(second_account.id()).await?;
+    _ = alice.delete_account(bob.id()).await?;
 
     // All sandbox accounts start with a balance of `1_000_000_000_000_000_000_000_000` tokens.
-    // On account deletion, first_account balance is debited to second_account as beneficary.
-    assert!(second_account.view_account().await?.balance > 1_900_000_000_000_000_000_000_000,);
+    // On account deletion, alice's balance is debited to bob as beneficary.
+    assert!(bob.view_account().await?.balance > 1_900_000_000_000_000_000_000_000,);
 
     Ok(())
 }
