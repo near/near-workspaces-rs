@@ -45,9 +45,9 @@ async fn test_delete_account() -> anyhow::Result<()> {
 
     _ = alice.delete_account(bob.id()).await?;
 
-    // All sandbox accounts start with a balance of `1_000_000_000_000_000_000_000_000` tokens.
+    // All sandbox accounts start with a balance of `100 * 1_000_000_000_000_000_000_000_000` tokens.
     // On account deletion, alice's balance is debited to bob as beneficary.
-    assert!(bob.view_account().await?.balance > 1_900_000_000_000_000_000_000_000,);
+    assert!(bob.view_account().await?.balance > 100 * 1_900_000_000_000_000_000_000_000,);
 
     Ok(())
 }
