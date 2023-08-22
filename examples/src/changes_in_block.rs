@@ -25,6 +25,28 @@ async fn main() -> anyhow::Result<()> {
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
     let res = worker.changes_in_block(block_ref).await?;
 
-    println!("StateChangesInBlockByType {res:?}");
+    // Example output:
+    //
+    // StateChangesInBlockByType RpcStateChangesInBlockByTypeResponse {
+    //     block_hash: 7ifRdyBsJMXVyp8zw8uGdBMaRShiXuD6yghrp66jqrst,
+    //     changes: [
+    //         AccountTouched {
+    //             account_id: AccountId(
+    //                 "dev-20230822100117-44171728969098",
+    //             ),
+    //         },
+    //         AccessKeyTouched {
+    //             account_id: AccountId(
+    //                 "dev-20230822100117-44171728969098",
+    //             ),
+    //         },
+    //         DataTouched {
+    //             account_id: AccountId(
+    //                 "dev-20230822100117-44171728969098",
+    //             ),
+    //         },
+    //     ],
+    // }
+    println!("StateChangesInBlockByType {res:#?}");
     Ok(())
 }

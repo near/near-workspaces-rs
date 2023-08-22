@@ -10,7 +10,7 @@ async fn main() -> anyhow::Result<()> {
 
     let (fn_name, fn_args) = ("set_status", json!({  "message": "hello_world"}));
 
-    let _outcome = contract
+    _ = contract
         .call(fn_name)
         .args_json(fn_args.clone())
         .transact()
@@ -21,13 +21,18 @@ async fn main() -> anyhow::Result<()> {
             contract.id(),
             contract.signer(),
             fn_name.to_string(),
-            fn_args,
+            Some(fn_args),
         )
         .await?;
 
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
     let resp = worker.check_tx(signed_tx).await?;
 
-    println!("RpcBroadcastTxSyncResponse {resp:?}");
+    // Example output:
+    //
+    // RpcBroadcastTxSyncResponse RpcBroadcastTxSyncResponse {
+    //     transaction_hash: CR7UqzYY7ewWeF1z3XXGYmJZ3ayjYQ4nskRPmngxyPRB,
+    // }
+    println!("RpcBroadcastTxSyncResponse {resp:#?}");
     Ok(())
 }

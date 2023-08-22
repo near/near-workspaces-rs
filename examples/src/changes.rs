@@ -31,6 +31,12 @@ async fn main() -> anyhow::Result<()> {
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
     let res = worker.changes(block_ref, state_changes).await?;
 
-    println!("StateChangesInBlock {res:?}");
+    // Example output:
+    //
+    // StateChangesInBlock RpcStateChangesInBlockResponse {
+    //     block_hash: 5SnL82tfQX1NtsSuqU5334ThZxM1B5KkUWUbeeMvVNRH,
+    //     changes: [],
+    // }
+    println!("StateChangesInBlock {res:#?}");
     Ok(())
 }

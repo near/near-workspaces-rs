@@ -252,10 +252,10 @@ where
         contract_id: &AccountId,
         signer: &InMemorySigner,
         func_name: String,
-        func_args: U,
+        func_args: Option<U>,
     ) -> Result<SignedTransaction> {
         self.client()
-            .signed_transaction(contract_id, signer, func_name, Some(func_args))
+            .signed_transaction(contract_id, signer, func_name, func_args)
             .await
     }
 }
