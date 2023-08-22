@@ -233,11 +233,12 @@ impl ExecutionFinalResult {
                 // This catches the case: `EOF while parsing a value at line 1 column 0`
                 // for a function that doesn't return anything; this is a more descriptive error.
                 if *err.kind() == ErrorKind::DataConversion && val.value.repr.is_empty() {
-                    return Err(ErrorKind::DataConversion
-                        .custom("the Value from ExecutionOutcome is zero bytes"));
+                    return Err(ErrorKind::DataConversion.custom(
+                        "the function call returned an empty value, which cannot be parsed as JSON",
+                    ));
                 }
 
-                return Err(err);
+                Err(err)
             }
             ok => ok,
         }

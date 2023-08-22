@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
     assert_eq!(
         *res.unwrap_err().kind(),
         workspaces::error::ErrorKind::DataConversion,
-        "the Value from ExecutionOutcome is zero bytes"
+        "the function call returned an empty value, which cannot be parsed as JSON"
     );
     Ok(())
 }
