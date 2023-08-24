@@ -244,8 +244,8 @@ impl PatchTransaction {
     pub fn state(mut self, key: &[u8], value: &[u8]) -> Self {
         self.records.push(StateRecord::Data {
             account_id: self.account_id.clone(),
-            data_key: key.to_vec(),
-            value: value.to_vec(),
+            data_key: key.to_vec().into(),
+            value: value.to_vec().into(),
         });
         self
     }
@@ -263,8 +263,8 @@ impl PatchTransaction {
         self.records
             .extend(states.into_iter().map(|(key, value)| StateRecord::Data {
                 account_id: account_id.clone(),
-                data_key: key.to_vec(),
-                value: value.to_vec(),
+                data_key: key.to_vec().into(),
+                value: value.to_vec().into(),
             }));
 
         self.account_id = account_id;
