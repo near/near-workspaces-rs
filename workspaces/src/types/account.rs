@@ -304,7 +304,7 @@ impl Contract {
     }
 
     /// Deletes the current contract, and returns the execution details of this
-    /// transaction. The beneciary will receive the funds of the account deleted
+    /// transaction. The beneficiary will receive the funds of the account deleted
     pub async fn delete_contract(self, beneficiary_id: &AccountId) -> Result<ExecutionFinalResult> {
         self.account.delete_account(beneficiary_id).await
     }

@@ -31,7 +31,9 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest]
-        toolchain: [stable, 1.60.0]
+        # TODO: Bring `stable` back to the matrix once Rust 1.70.0+ compatibility is resolved in nearcore:
+        # https://github.com/near/nearcore/issues/9143
+        toolchain: [1.69.0]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -41,6 +43,7 @@ jobs:
       with:
         profile: minimal
         toolchain: ${{ matrix.toolchain }}
+        default: true
     - uses: Swatinem/rust-cache@v1
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown

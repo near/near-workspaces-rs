@@ -3,6 +3,7 @@ mod impls;
 use std::fmt;
 use std::sync::Arc;
 
+use crate::network::builder::NetworkBuilder;
 use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
 use crate::{Network, Result};
 
@@ -42,37 +43,37 @@ impl<T: fmt::Debug> fmt::Debug for Worker<T> {
 }
 
 /// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
-pub async fn sandbox() -> Result<Worker<Sandbox>> {
-    Ok(Worker::new(Sandbox::new().await?))
+pub fn sandbox<'a>() -> NetworkBuilder<'a, Sandbox> {
+    NetworkBuilder::new("sandbox")
 }
 
 /// Connect to the [testnet](https://explorer.testnet.near.org/) network, and grab
 /// a [`Worker`] that can interact with it.
-pub async fn testnet() -> Result<Worker<Testnet>> {
-    Ok(Worker::new(Testnet::new().await?))
+pub fn testnet<'a>() -> NetworkBuilder<'a, Testnet> {
+    NetworkBuilder::new("testnet")
 }
 
 /// Connect to the [testnet archival](https://near-nodes.io/intro/node-types#archival-node)
 /// network, and grab a [`Worker`] that can interact with it.
-pub async fn testnet_archival() -> Result<Worker<Testnet>> {
-    Ok(Worker::new(Testnet::archival().await?))
+pub fn testnet_archival<'a>() -> NetworkBuilder<'a, Testnet> {
+    NetworkBuilder::new("testnet-archival").rpc_addr(crate::network::testnet::ARCHIVAL_URL)
 }
 
 /// Connect to the [mainnet](https://explorer.near.org/) network, and grab
 /// a [`Worker`] that can interact with it.
-pub async fn mainnet() -> Result<Worker<Mainnet>> {
-    Ok(Worker::new(Mainnet::new().await?))
+pub fn mainnet<'a>() -> NetworkBuilder<'a, Mainnet> {
+    NetworkBuilder::new("mainnet")
 }
 
 /// Connect to the [mainnet archival](https://near-nodes.io/intro/node-types#archival-node)
 /// network, and grab a [`Worker`] that can interact with it.
-pub async fn mainnet_archival() -> Result<Worker<Mainnet>> {
-    Ok(Worker::new(Mainnet::archival().await?))
+pub fn mainnet_archival<'a>() -> NetworkBuilder<'a, Mainnet> {
+    NetworkBuilder::new("mainnet-archival").rpc_addr(crate::network::mainnet::ARCHIVAL_URL)
 }
 
 /// Connect to the betanet network, and grab a [`Worker`] that can interact with it.
-pub async fn betanet() -> Result<Worker<Betanet>> {
-    Ok(Worker::new(Betanet::new().await?))
+pub fn betanet<'a>() -> NetworkBuilder<'a, Betanet> {
+    NetworkBuilder::new("betanet")
 }
 
 /// Run a locally scoped task where a [`sandbox`] instanced [`Worker`] is supplied.

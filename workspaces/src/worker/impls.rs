@@ -245,7 +245,12 @@ impl Worker<Sandbox> {
     }
 
     /// The port being used by RPC
-    pub fn rpc_port(&self) -> u16 {
-        self.workspace.rpc_port()
+    pub fn rpc_port(&self) -> Option<u16> {
+        self.workspace.server.rpc_port()
+    }
+
+    /// Get the address the client is using to connect to the RPC of the network.
+    pub fn rpc_addr(&self) -> String {
+        self.workspace.server.rpc_addr()
     }
 }

@@ -1,17 +1,22 @@
+//! Types used in the workspaces crate. A lot of these are types are copied over from near_primitives
+//! since those APIs are not yet stable. Once they are, we can directly reference them here, so no
+//! changes on the library consumer side is needed. Just keep using these types defined here as-is.
+
 pub(crate) mod account;
 pub(crate) mod block;
 pub(crate) mod chunk;
 
-/// Types copied over from near_primitives since those APIs are not yet stable.
-/// and internal libraries like near-jsonrpc-client requires specific versions
-/// of these types which shouldn't be exposed either.
-use std::convert::TryFrom;
-use std::fmt;
-use std::path::Path;
+#[cfg(feature = "interop_sdk")]
+mod sdk;
 
+use std::convert::TryFrom;
+use std::fmt::{self, Debug, Display};
+use std::io;
+use std::path::Path;
+use std::str::FromStr;
+
+use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
-use near_primitives::logging::pretty_hash;
-use near_primitives::serialize::to_base58;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
@@ -45,8 +50,8 @@ fn from_base58(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sy
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum KeyType {
-    ED25519,
-    SECP256K1,
+    ED25519 = 0,
+    SECP256K1 = 1,
 }
 
 impl KeyType {
@@ -63,6 +68,44 @@ impl KeyType {
             near_crypto::KeyType::SECP256K1 => Self::SECP256K1,
         }
     }
+
+    /// Length of the bytes of the public key associated with this key type.
+    pub const fn data_len(&self) -> usize {
+        match self {
+            Self::ED25519 => 32,
+            Self::SECP256K1 => 64,
+        }
+    }
+}
+
+impl Display for KeyType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.into_near_keytype())
+    }
+}
+
+impl FromStr for KeyType {
+    type Err = Error;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let key_type = near_crypto::KeyType::from_str(value)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+
+        Ok(Self::from_near_keytype(key_type))
+    }
+}
+
+impl TryFrom<u8> for KeyType {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(KeyType::ED25519),
+            1 => Ok(KeyType::SECP256K1),
+            unknown_key_type => Err(ErrorKind::DataConversion
+                .custom(format!("Unknown key type provided: {unknown_key_type}"))),
+        }
+    }
 }
 
 impl From<PublicKey> for near_crypto::PublicKey {
@@ -73,12 +116,105 @@ impl From<PublicKey> for near_crypto::PublicKey {
 
 /// Public key of an account on chain. Usually created along with a [`SecretKey`]
 /// to form a keypair associated to the account.
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct PublicKey(pub(crate) near_crypto::PublicKey);
 
+#[allow(clippy::len_without_is_empty)] // PublicKey is guaranteed to never be empty due to KeyType restrictions.
 impl PublicKey {
+    /// Create an empty `PublicKey` with the given [`KeyType`]. This is a zero-ed out public key with the
+    /// length of the bytes determined by the associated key type.
+    pub fn empty(key_type: KeyType) -> Self {
+        Self(near_crypto::PublicKey::empty(key_type.into_near_keytype()))
+    }
+
+    /// Create a new [`PublicKey`] from the given bytes. This will return an error if the bytes are not in the
+    /// correct format. Expected to have key type be the first byte encoded, with the remaining bytes being the
+    /// key data.
+    pub fn try_from_parts(key_type: KeyType, bytes: &[u8]) -> Result<Self> {
+        let mut buf = Vec::new();
+        buf.push(key_type as u8);
+        buf.extend(bytes);
+        Ok(Self(near_crypto::PublicKey::try_from_slice(&buf).map_err(
+            |e| {
+                ErrorKind::DataConversion
+                    .full(format!("Invalid key data for key type: {key_type}"), e)
+            },
+        )?))
+    }
+
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
+        let key_type = KeyType::try_from(bytes[0])?;
+        Ok(Self(
+            near_crypto::PublicKey::try_from_slice(bytes).map_err(|e| {
+                ErrorKind::DataConversion
+                    .full(format!("Invalid key data for key type: {key_type}"), e)
+            })?,
+        ))
+    }
+
+    /// Get the number of bytes this key uses. This will differ depending on the [`KeyType`]. i.e. for
+    /// ED25519 keys, this will return 32 + 1, while for SECP256K1 keys, this will return 64 + 1. The +1
+    /// is used to store the key type, and will appear at the start of the serialized key.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Get the [`KeyType`] of the public key.
     pub fn key_type(&self) -> KeyType {
         KeyType::from_near_keytype(self.0.key_type())
+    }
+
+    /// Get the key data of the public key. This is serialized bytes of the public key. This will not
+    /// include the key type, and will only contain the raw key data.
+    pub fn key_data(&self) -> &[u8] {
+        self.0.key_data()
+    }
+}
+
+impl Display for PublicKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for PublicKey {
+    type Err = Error;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let pk = near_crypto::PublicKey::from_str(value)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+
+        Ok(Self(pk))
+    }
+}
+
+impl BorshSerialize for PublicKey {
+    fn serialize<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        // NOTE: sdk::PublicKey requires that we serialize the length of the key first, then the key itself.
+        // Casted usize to u32 since the length in WASM is only 4 bytes long.
+        BorshSerialize::serialize(&(self.len() as u32), writer)?;
+        // Serialize key type and key data:
+        BorshSerialize::serialize(&self.0, writer)
+    }
+}
+
+impl BorshDeserialize for PublicKey {
+    fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
+        let len: u32 = BorshDeserialize::deserialize_reader(reader)?;
+        let pk: near_crypto::PublicKey = BorshDeserialize::deserialize_reader(reader)?;
+
+        // Check that the length of the key matches the length we read from the buffer:
+        if pk.len() != len as usize {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "Key length of {} does not match length of {} read from buffer",
+                    pk.len(),
+                    len
+                ),
+            ));
+        }
+        Ok(Self(pk))
     }
 }
 
@@ -89,26 +225,37 @@ impl PublicKey {
 pub struct SecretKey(pub(crate) near_crypto::SecretKey);
 
 impl SecretKey {
+    /// Get the [`KeyType`] of the secret key.
     pub fn key_type(&self) -> KeyType {
         KeyType::from_near_keytype(self.0.key_type())
     }
 
+    /// Get the [`PublicKey`] associated to this secret key.
     pub fn public_key(&self) -> PublicKey {
         PublicKey(self.0.public_key())
     }
 
+    /// Generate a new secret key provided the [`KeyType`] and seed.
     pub fn from_seed(key_type: KeyType, seed: &str) -> Self {
         let key_type = key_type.into_near_keytype();
         Self(near_crypto::SecretKey::from_seed(key_type, seed))
     }
 
+    /// Generate a new secret key provided the [`KeyType`]. This will use OS provided entropy
+    /// to generate the key.
     pub fn from_random(key_type: KeyType) -> Self {
         let key_type = key_type.into_near_keytype();
         Self(near_crypto::SecretKey::from_random(key_type))
     }
 }
 
-impl std::str::FromStr for SecretKey {
+impl Display for SecretKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for SecretKey {
     type Err = Error;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
@@ -162,7 +309,7 @@ impl CryptoHash {
     }
 }
 
-impl std::str::FromStr for CryptoHash {
+impl FromStr for CryptoHash {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -198,15 +345,15 @@ impl TryFrom<Vec<u8>> for CryptoHash {
     }
 }
 
-impl fmt::Debug for CryptoHash {
+impl Debug for CryptoHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", pretty_hash(&self.to_string()))
+        write!(f, "{}", self)
     }
 }
 
-impl fmt::Display for CryptoHash {
+impl Display for CryptoHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&to_base58(self.0), f)
+        Display::fmt(&bs58::encode(self.0).into_string(), f)
     }
 }
 
@@ -298,7 +445,7 @@ pub struct FunctionCallPermission {
 
     // This isn't an AccountId because already existing records in testnet genesis have invalid
     // values for this field (see: https://github.com/near/nearcore/pull/4621#issuecomment-892099860)
-    // we accomodate those by using a string, allowing us to read and parse genesis.
+    // we accommodate those by using a string, allowing us to read and parse genesis.
     /// The access key only allows transactions with the given receiver's account id.
     pub receiver_id: String,
 
@@ -360,7 +507,7 @@ pub enum Finality {
     /// Optimistic finality. The latest block recorded on the node that responded to our query
     /// (<1 second delay after the transaction is submitted).
     Optimistic,
-    /// Near-final finality. Similiarly to `Final` finality, but delay should be roughly 1 second.
+    /// Near-final finality. Similarly to `Final` finality, but delay should be roughly 1 second.
     DoomSlug,
     /// Final finality. The block that has been validated on at least 66% of the nodes in the
     /// network. (At max, should be 2 second delay after the transaction is submitted.)
