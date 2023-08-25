@@ -320,6 +320,9 @@ impl Contract {
 
 /// Details of an Account or Contract. This is an non-exhaustive list of items
 /// that the account stores in the blockchain state.
+///
+/// This struct is the same as [`AccountDetails`] with the exception that it provides
+/// optional fields that guard against 'null' overwrites when making a patch.
 #[derive(Debug, Default, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct AccountDetailsPatch {
