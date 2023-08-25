@@ -47,8 +47,9 @@ use crate::operations::Function;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
 use crate::rpc::{tool, BoxFuture};
+use crate::types::account::AccountDetails;
 use crate::types::{AccessKey, AccessKeyInfo, Balance, BlockHeight, Finality, PublicKey, ShardId};
-use crate::{AccountDetails, Block, Chunk, CryptoHash, Result};
+use crate::{Block, Chunk, CryptoHash, Result};
 
 /// `Query` object allows creating queries into the network of our choice. This object is
 /// usually given from making calls from other functions such as [`view_state`].

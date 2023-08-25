@@ -4,9 +4,10 @@ use near_primitives::{state_record::StateRecord, types::Balance};
 
 use crate::error::SandboxErrorCode;
 use crate::network::{Sandbox, DEV_ACCOUNT_SEED};
+use crate::types::account::AccountDetails;
 use crate::types::{BlockHeight, KeyType, PublicKey, SecretKey};
-use crate::{AccessKey, Result};
-use crate::{AccountDetails, AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
+use crate::{AccessKey, AccountDetailsPatch, Result};
+use crate::{AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
 
 /// A [`Transaction`]-like object that allows us to specify details about importing
 /// a contract from a different network into our sandbox local network. This creates
@@ -109,13 +110,14 @@ impl<'a> ImportContractTransaction<'a> {
             .view_account(from_account_id)
             .block_reference(block_ref.clone())
             .await?;
+
         let code_hash = account_view.code_hash;
         if let Some(initial_balance) = self.initial_balance {
             account_view.balance = initial_balance;
         }
 
         let mut patch = PatchTransaction::new(&self.into_network, into_account_id.clone())
-            .account(account_view)
+            .account(account_view.into())
             .access_key(pk, AccessKey::full_access());
 
         if code_hash != CryptoHash::default() {
@@ -148,16 +150,16 @@ impl<'a> ImportContractTransaction<'a> {
 
 /// Internal enum for determining whether to update the account on chain
 /// or to patch an entire account.
-enum UpdateAccount {
-    Update(AccountDetails),
-    FromCurrent(Box<dyn Fn(AccountDetails) -> AccountDetails>),
+enum AccountUpdate {
+    Update(AccountDetailsPatch),
+    FromCurrent(Box<dyn Fn(AccountDetails) -> AccountDetailsPatch>),
 }
 
 pub struct PatchTransaction {
     account_id: AccountId,
     records: Vec<StateRecord>,
     worker: Worker<Sandbox>,
-    update_account: Option<UpdateAccount>,
+    account_updates: Vec<AccountUpdate>,
     code_hash_update: Option<CryptoHash>,
 }
 
@@ -167,14 +169,14 @@ impl PatchTransaction {
             account_id,
             records: vec![],
             worker: worker.clone(),
-            update_account: None,
+            account_updates: vec![],
             code_hash_update: None,
         }
     }
 
     /// Patch and overwrite the info contained inside an [`Account`] in sandbox.
-    pub fn account(mut self, account: AccountDetails) -> Self {
-        self.update_account = Some(UpdateAccount::Update(account));
+    pub fn account(mut self, account: AccountDetailsPatch) -> Self {
+        self.account_updates.push(AccountUpdate::Update(account));
         self
     }
 
@@ -183,9 +185,10 @@ impl PatchTransaction {
     /// the account details w.r.t to them.
     pub fn account_from_current<F: 'static>(mut self, f: F) -> Self
     where
-        F: Fn(AccountDetails) -> AccountDetails,
+        F: Fn(AccountDetails) -> AccountDetailsPatch,
     {
-        self.update_account = Some(UpdateAccount::FromCurrent(Box::new(f)));
+        self.account_updates
+            .push(AccountUpdate::FromCurrent(Box::new(f)));
         self
     }
 
@@ -276,18 +279,22 @@ impl PatchTransaction {
         // NOTE: updating the account is done here because we need to fetch the current
         // account details from the chain. This is an async operation so it is deferred
         // till the transact function.
-        let account_patch = if let Some(update_account) = self.update_account {
-            let mut account = match update_account {
-                UpdateAccount::Update(account) => account,
-                UpdateAccount::FromCurrent(f) => {
-                    let account = self.worker.view_account(&self.account_id).await?;
-                    f(account)
-                }
-            };
+        let account_patch = if !self.account_updates.is_empty() {
+            let mut account = AccountDetailsPatch::default();
+            for update in self.account_updates {
+                // reduce the updates into a single account details patch
+                account.reduce(match update {
+                    AccountUpdate::Update(account) => account,
+                    AccountUpdate::FromCurrent(f) => {
+                        let account = self.worker.view_account(&self.account_id).await?;
+                        f(account)
+                    }
+                });
+            }
 
             // Update the code hash if the user supplied a code patch.
             if let Some(code_hash) = self.code_hash_update.take() {
-                account.code_hash = code_hash;
+                account.code_hash = Some(code_hash);
             }
 
             Some(account)
@@ -296,7 +303,7 @@ impl PatchTransaction {
             // to reflect the code hash change.
             let mut account = self.worker.view_account(&self.account_id).await?;
             account.code_hash = code_hash;
-            Some(account)
+            Some(account.into())
         } else {
             None
         };
@@ -304,6 +311,7 @@ impl PatchTransaction {
         // Account patch should be the first entry in the records, since the account might not
         // exist yet and the consequent patches might lookup the account on the chain.
         let records = if let Some(account) = account_patch {
+            let account: AccountDetails = account.into();
             let mut records = vec![StateRecord::Account {
                 account_id: self.account_id.clone(),
                 account: account.into_near_account(),

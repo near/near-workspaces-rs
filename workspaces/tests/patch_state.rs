@@ -6,7 +6,7 @@ use serde_json::json;
 use test_log::test;
 
 use workspaces::types::{KeyType, SecretKey};
-use workspaces::{AccessKey, AccountDetails, AccountId, Contract, DevNetwork, Worker};
+use workspaces::{AccessKey, AccountDetailsPatch, AccountId, Contract, DevNetwork, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
 
@@ -131,7 +131,7 @@ async fn test_patch_full() -> anyhow::Result<()> {
     worker
         .patch(&bob_id)
         .account(
-            AccountDetails::new()
+            AccountDetailsPatch::default()
                 .balance(near_units::parse_near!("100 N"))
                 .locked(status_msg_acc.locked)
                 .code_hash(status_msg_acc.code_hash)

@@ -320,6 +320,70 @@ impl Contract {
 
 /// Details of an Account or Contract. This is an non-exhaustive list of items
 /// that the account stores in the blockchain state.
+#[derive(Debug, Default, Eq, PartialEq)]
+#[non_exhaustive]
+pub struct AccountDetailsPatch {
+    pub balance: Option<Balance>,
+    pub locked: Option<Balance>,
+    pub code_hash: Option<CryptoHash>,
+    pub storage_usage: Option<u64>,
+    pub(crate) storage_paid_at: Option<BlockHeight>,
+}
+
+impl AccountDetailsPatch {
+    pub fn reduce(&mut self, acc: AccountDetailsPatch) {
+        if let Some(balance) = acc.balance {
+            self.balance = Some(balance);
+        }
+        if let Some(locked) = acc.locked {
+            self.locked = Some(locked);
+        }
+        if let Some(code_hash) = acc.code_hash {
+            self.code_hash = Some(code_hash);
+        }
+        if let Some(storage) = acc.storage_usage {
+            self.storage_usage = Some(storage);
+        }
+        if let Some(storage_paid_at) = acc.storage_paid_at {
+            self.storage_paid_at = Some(storage_paid_at);
+        }
+    }
+
+    pub fn balance(mut self, balance: Balance) -> Self {
+        self.balance = Some(balance);
+        self
+    }
+
+    pub fn locked(mut self, locked: Balance) -> Self {
+        self.locked = Some(locked);
+        self
+    }
+
+    pub fn code_hash(mut self, code_hash: CryptoHash) -> Self {
+        self.code_hash = Some(code_hash);
+        self
+    }
+
+    pub fn storage_usage(mut self, storage_usage: u64) -> Self {
+        self.storage_usage = Some(storage_usage);
+        self
+    }
+}
+
+impl From<AccountDetails> for AccountDetailsPatch {
+    fn from(account: AccountDetails) -> Self {
+        Self {
+            balance: Some(account.balance),
+            locked: Some(account.locked),
+            code_hash: Some(account.code_hash),
+            storage_usage: Some(account.storage_usage),
+            storage_paid_at: Some(account.storage_paid_at),
+        }
+    }
+}
+
+/// Details of an Account or Contract. This is an non-exhaustive list of items
+/// that the account stores in the blockchain state.
 #[derive(Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct AccountDetails {
@@ -327,7 +391,6 @@ pub struct AccountDetails {
     pub locked: Balance,
     pub code_hash: CryptoHash,
     pub storage_usage: u64,
-
     // Deprecated value. Mainly used to be able to convert back into an AccountView
     pub(crate) storage_paid_at: BlockHeight,
 }
@@ -341,26 +404,6 @@ impl AccountDetails {
             storage_usage: 0,
             storage_paid_at: 0,
         }
-    }
-
-    pub fn balance(mut self, balance: Balance) -> Self {
-        self.balance = balance;
-        self
-    }
-
-    pub fn locked(mut self, locked: Balance) -> Self {
-        self.locked = locked;
-        self
-    }
-
-    pub fn code_hash(mut self, code_hash: CryptoHash) -> Self {
-        self.code_hash = code_hash;
-        self
-    }
-
-    pub fn storage_usage(mut self, storage_usage: u64) -> Self {
-        self.storage_usage = storage_usage;
-        self
     }
 
     pub(crate) fn into_near_account(self) -> near_primitives::account::Account {
@@ -387,6 +430,18 @@ impl From<AccountView> for AccountDetails {
             code_hash: CryptoHash(account.code_hash.0),
             storage_usage: account.storage_usage,
             storage_paid_at: account.storage_paid_at,
+        }
+    }
+}
+
+impl From<AccountDetailsPatch> for AccountDetails {
+    fn from(value: AccountDetailsPatch) -> Self {
+        Self {
+            balance: value.balance.unwrap_or_default(),
+            locked: value.locked.unwrap_or_default(),
+            code_hash: value.code_hash.unwrap_or_default(),
+            storage_usage: value.storage_usage.unwrap_or_default(),
+            storage_paid_at: value.storage_paid_at.unwrap_or_default(),
         }
     }
 }
