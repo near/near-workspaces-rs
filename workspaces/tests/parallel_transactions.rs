@@ -18,21 +18,18 @@ async fn test_parallel() -> anyhow::Result<()> {
             let account = account.clone();
 
             tokio::spawn(async move {
-                let txn = account
+                account
                     .call(&id, "set_status")
                     .args_json(json!({
                         "message": msg.to_string(),
                     }))
                     .transact()
-                    .await?;
-
-                txn.into_result()?;
+                    .await?
+                    .into_result()?;
                 anyhow::Result::<()>::Ok(())
             })
         });
     futures::future::join_all(parallel_tasks).await;
-
-    // debug
 
     // Check the final set message. This should be random each time this test function is called:
     let final_set_msg = account
