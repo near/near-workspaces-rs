@@ -1,30 +1,21 @@
-use std::{
-    collections::VecDeque,
-    sync::{Arc, Mutex},
-    task::Poll,
-};
+use std::{collections::VecDeque, task::Poll};
 
 use serde_json::json;
-use workspaces::types::GasMeter;
 
 const STATUS_MSG_CONTRACT: &[u8] = include_bytes!("../../examples/res/status_message.wasm");
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_parallel() -> anyhow::Result<()> {
-    let mut worker = workspaces::sandbox().await?;
-    let meter = GasMeter::now(&mut worker);
+    let worker = workspaces::sandbox().await?;
 
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
     let account = worker.dev_create_account().await?;
-
-    let total_gas_burnt = Arc::new(Mutex::new(0));
 
     let parallel_tasks = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
         .iter()
         .map(|msg| {
             let id = contract.id().clone();
             let account = account.clone();
-            let gas_burnt = Arc::clone(&total_gas_burnt);
 
             tokio::spawn(async move {
                 let txn = account
@@ -35,9 +26,6 @@ async fn test_parallel() -> anyhow::Result<()> {
                     .transact()
                     .await?;
 
-                let mut gas_burnt = gas_burnt.lock().unwrap();
-                *gas_burnt += txn.total_gas_burnt;
-
                 txn.into_result()?;
                 anyhow::Result::<()>::Ok(())
             })
@@ -45,7 +33,6 @@ async fn test_parallel() -> anyhow::Result<()> {
     futures::future::join_all(parallel_tasks).await;
 
     // debug
-    println!("Total Gas consumed: {}", meter.elapsed()?);
 
     // Check the final set message. This should be random each time this test function is called:
     let final_set_msg = account
@@ -55,9 +42,6 @@ async fn test_parallel() -> anyhow::Result<()> {
         .await?
         .json::<String>()?;
     println!("Final set message: {:?}", final_set_msg);
-
-    // The amount of Gas burnt should be equal to that in the GasMeter
-    assert!(meter.elapsed()? == *total_gas_burnt.lock().unwrap());
 
     Ok(())
 }

@@ -1,11 +1,11 @@
 mod impls;
 
 use std::fmt;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::network::builder::NetworkBuilder;
 use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
-use crate::types::Gas;
+use crate::types::GasHook;
 use crate::{Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
@@ -14,7 +14,7 @@ use crate::{Network, Result};
 /// deploying a contract, or interacting with transactions.
 pub struct Worker<T: ?Sized> {
     pub(crate) workspace: Arc<T>,
-    pub(crate) on_transact: Option<Arc<Mutex<dyn FnMut(Gas) -> Result<()> + Send>>>,
+    pub(crate) on_transact: Option<GasHook>,
 }
 
 impl<T> Worker<T>

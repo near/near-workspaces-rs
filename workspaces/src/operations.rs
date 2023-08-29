@@ -234,18 +234,16 @@ impl Transaction {
     }
 
     async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
-        let mut _self = self;
-
-        let on_transact = _self.worker.on_transact.clone();
+        let on_transact = self.worker.on_transact.clone();
         let view = send_batch_tx_and_retry(
-            _self.worker.client(),
-            &_self.signer,
-            &_self.receiver_id,
-            _self.actions?,
+            self.worker.client(),
+            &self.signer,
+            &self.receiver_id,
+            self.actions?,
         )
         .await?;
 
-        if let Some(on_transact) = on_transact {
+        if let Some(on_transact) = &on_transact {
             let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt
                 + view
                     .receipts_outcome
@@ -253,8 +251,8 @@ impl Transaction {
                     .map(|t| t.outcome.gas_burnt)
                     .sum::<u64>();
 
-            let mut on_transact = on_transact.lock()?;
-            (*on_transact)(total_gas_burnt)?;
+            let mut on_transact_locked = on_transact.lock()?;
+            (*on_transact_locked)(total_gas_burnt)?;
         }
 
         Ok(view)

@@ -5,6 +5,7 @@
 pub(crate) mod account;
 pub(crate) mod block;
 pub(crate) mod chunk;
+pub(crate) mod gas_meter;
 
 #[cfg(feature = "interop_sdk")]
 mod sdk;
@@ -12,10 +13,8 @@ mod sdk;
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display};
 use std::io;
-use std::ops::Deref;
 use std::path::Path;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
@@ -23,9 +22,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, ErrorKind};
 use crate::result::Result;
-use crate::Worker;
 
 pub use self::chunk::{Chunk, ChunkHeader};
+
+pub use self::gas_meter::{GasHook, GasMeter};
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
@@ -517,54 +517,5 @@ impl From<Finality> for near_primitives::types::BlockReference {
             Finality::Final => near_primitives::types::Finality::Final,
         };
         value.into()
-    }
-}
-
-/// Allows you to meter the amount of gas consumed by transaction(s).
-/// Note: This only works with parallel transactions that resolve to [`crate::Result::ExecutionFinalResult`]
-/// Example
-/// ```
-/// let mut worker = workspaces::sandbox().await?;
-/// let meter = GasMeter::now(&mut worker);
-///
-/// let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
-/// let contract = worker.dev_deploy(&wasm).await?;
-///
-/// contract
-///    .call("set_status")
-///    .args_json(json!({
-///        "message": "hello_world",
-///    }))
-///    .transact()
-///    .await?;
-///  
-/// println!("Total Gas consumed: {}", meter.elapsed()?);
-/// ```
-pub struct GasMeter {
-    gas: Arc<Mutex<Gas>>,
-    hook: Arc<Mutex<dyn FnMut(Gas) -> Result<()> + Send>>,
-}
-
-impl GasMeter {
-    /// Create a new gas meter with 0 gas consumed.
-    pub fn now<T: ?Sized>(worker: &mut Worker<T>) -> Self {
-        let gas_consumed = Arc::new(Mutex::new(0));
-
-        let meter = GasMeter {
-            gas: Arc::clone(&gas_consumed),
-            hook: Arc::new(Mutex::new(move |gas: Gas| {
-                *gas_consumed.lock()? += gas;
-                Ok(())
-            })),
-        };
-
-        worker.on_transact = Some(Arc::clone(&meter.hook));
-        meter
-    }
-
-    /// Get the total amount of gas consumed.
-    pub fn elapsed(&self) -> Result<Gas> {
-        let meter = self.gas.lock()?;
-        Ok(meter.deref().clone())
     }
 }
