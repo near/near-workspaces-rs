@@ -251,8 +251,7 @@ impl Transaction {
                     .map(|t| t.outcome.gas_burnt)
                     .sum::<u64>();
 
-            let mut on_transact_locked = on_transact.lock()?;
-            (*on_transact_locked)(total_gas_burnt)?;
+            on_transact.lock()?(total_gas_burnt)?;
         }
 
         Ok(view)
@@ -364,7 +363,7 @@ impl CallTransaction {
             .map_err(crate::error::Error::from)?;
 
         if let Some(on_transact) = self.worker.on_transact {
-            (*on_transact.lock()?)(txn.total_gas_burnt)?;
+            on_transact.lock()?(txn.total_gas_burnt)?;
         }
 
         Ok(txn)
@@ -466,10 +465,15 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
 
         let signer = InMemorySigner::from_secret_key(id, sk);
         let account = Account::new(signer, self.worker.clone());
+        let details = ExecutionFinalResult::from_view(outcome);
+
+        if let Some(on_transact) = self.worker.on_transact.clone() {
+            on_transact.lock()?(details.total_gas_burnt)?;
+        }
 
         Ok(Execution {
             result: account,
-            details: ExecutionFinalResult::from_view(outcome),
+            details,
         })
     }
 }

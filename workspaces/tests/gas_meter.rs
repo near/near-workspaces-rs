@@ -7,11 +7,31 @@ use workspaces::types::GasMeter;
 async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
     let mut worker = workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
+    let mut total_gas = 0;
 
-    let status_msg = worker
-        .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
-        .await?;
-    let account = worker.dev_create_account().await?;
+    // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
+    let status_msg = {
+        let (id, sk) = worker.dev_generate().await;
+        let contract = worker
+            .create_tla_and_deploy(
+                id.clone(),
+                sk,
+                include_bytes!("../../examples/res/status_message.wasm"),
+            )
+            .await?;
+        total_gas += contract.details.total_gas_burnt;
+
+        contract.into_result()?
+    };
+
+    // analogous to: worker.dev_create_account().await?;
+    let account = {
+        let (id, sk) = worker.dev_generate().await;
+        let account = worker.create_tla(id.clone(), sk).await?;
+        total_gas += account.details.total_gas_burnt;
+
+        account.into_result()?
+    };
 
     let txn = account
         .call(status_msg.id(), "set_status")
@@ -20,8 +40,9 @@ async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
         }))
         .transact()
         .await?;
+    total_gas += txn.total_gas_burnt;
 
-    assert_eq!(txn.total_gas_burnt, gas_meter.elapsed().unwrap());
+    assert_eq!(total_gas, gas_meter.elapsed().unwrap());
 
     Ok(())
 }
@@ -30,13 +51,31 @@ async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
 async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
     let mut worker = workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-
     let mut total_gas = 0;
 
-    let status_msg = worker
-        .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
-        .await?;
-    let account = worker.dev_create_account().await?;
+    // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
+    let status_msg = {
+        let (id, sk) = worker.dev_generate().await;
+        let contract = worker
+            .create_tla_and_deploy(
+                id.clone(),
+                sk,
+                include_bytes!("../../examples/res/status_message.wasm"),
+            )
+            .await?;
+        total_gas += contract.details.total_gas_burnt;
+
+        contract.into_result()?
+    };
+
+    // analogous to: worker.dev_create_account().await?;
+    let account = {
+        let (id, sk) = worker.dev_generate().await;
+        let account = worker.create_tla(id.clone(), sk).await?;
+        total_gas += account.details.total_gas_burnt;
+
+        account.into_result()?
+    };
 
     let txn = account
         .call(status_msg.id(), "set_status")
@@ -45,9 +84,6 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
         }))
         .transact()
         .await?;
-
-    assert_eq!(txn.total_gas_burnt, gas_meter.elapsed().unwrap());
-
     total_gas += txn.total_gas_burnt;
 
     let txn = account
@@ -57,7 +93,6 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
         }))
         .transact()
         .await?;
-
     total_gas += txn.total_gas_burnt;
 
     assert_eq!(total_gas, gas_meter.elapsed().unwrap());
@@ -69,13 +104,31 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
 async fn test_gas_meter_with_parallel_transactions() -> anyhow::Result<()> {
     let mut worker = workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-
     let mut total_gas = 0;
 
-    let status_msg = worker
-        .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
-        .await?;
-    let account = worker.dev_create_account().await?;
+    // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
+    let status_msg = {
+        let (id, sk) = worker.dev_generate().await;
+        let contract = worker
+            .create_tla_and_deploy(
+                id.clone(),
+                sk,
+                include_bytes!("../../examples/res/status_message.wasm"),
+            )
+            .await?;
+        total_gas += contract.details.total_gas_burnt;
+
+        contract.into_result()?
+    };
+
+    // analogous to: worker.dev_create_account().await?;
+    let account = {
+        let (id, sk) = worker.dev_generate().await;
+        let account = worker.create_tla(id.clone(), sk).await?;
+        total_gas += account.details.total_gas_burnt;
+
+        account.into_result()?
+    };
 
     let mut tasks = Vec::new();
 
@@ -109,13 +162,31 @@ async fn test_gas_meter_with_parallel_transactions() -> anyhow::Result<()> {
 async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<()> {
     let mut worker = workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-
     let mut total_gas = 0;
 
-    let status_msg = worker
-        .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
-        .await?;
-    let account = worker.dev_create_account().await?;
+    // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
+    let status_msg = {
+        let (id, sk) = worker.dev_generate().await;
+        let contract = worker
+            .create_tla_and_deploy(
+                id.clone(),
+                sk,
+                include_bytes!("../../examples/res/status_message.wasm"),
+            )
+            .await?;
+        total_gas += contract.details.total_gas_burnt;
+
+        contract.into_result()?
+    };
+
+    // analogous to: worker.dev_create_account().await?;
+    let account = {
+        let (id, sk) = worker.dev_generate().await;
+        let account = worker.create_tla(id.clone(), sk).await?;
+        total_gas += account.details.total_gas_burnt;
+
+        account.into_result()?
+    };
 
     let txn = account
         .call(status_msg.id(), "set_status")
@@ -124,9 +195,6 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
         }))
         .transact()
         .await?;
-
-    assert_eq!(txn.total_gas_burnt, gas_meter.elapsed().unwrap());
-
     total_gas += txn.total_gas_burnt;
 
     let txn = account
@@ -136,7 +204,6 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
         }))
         .transact()
         .await?;
-
     total_gas += txn.total_gas_burnt;
 
     assert_eq!(total_gas, gas_meter.elapsed().unwrap());
@@ -158,12 +225,22 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
 async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
     let mut worker = workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-
     let mut total_gas = 0;
 
-    let contract = worker
-        .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
-        .await?;
+    // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
+    let contract = {
+        let (id, sk) = worker.dev_generate().await;
+        let contract = worker
+            .create_tla_and_deploy(
+                id.clone(),
+                sk,
+                include_bytes!("../../examples/res/status_message.wasm"),
+            )
+            .await?;
+        total_gas += contract.details.total_gas_burnt;
+
+        contract.into_result()?
+    };
 
     let txn = contract
         .batch()
@@ -179,9 +256,6 @@ async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
         })))
         .transact()
         .await?;
-
-    assert_eq!(txn.total_gas_burnt, gas_meter.elapsed().unwrap());
-
     total_gas += txn.total_gas_burnt;
 
     let txn = contract
@@ -200,6 +274,29 @@ async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
         .await?;
 
     total_gas += txn.total_gas_burnt;
+
+    assert_eq!(total_gas, gas_meter.elapsed().unwrap());
+
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn test_gas_meter_create_account_transaction() -> anyhow::Result<()> {
+    let mut worker = workspaces::sandbox().await?;
+    let gas_meter = GasMeter::now(&mut worker);
+    let mut total_gas = 0;
+
+    // analogous to: worker.dev_create_account().await?;
+    let account = {
+        let (id, sk) = worker.dev_generate().await;
+        let account = worker.create_tla(id.clone(), sk).await?;
+        total_gas += account.details.total_gas_burnt;
+
+        account.into_result()?
+    };
+
+    let sub = account.create_subaccount("subaccount").transact().await?;
+    total_gas += sub.details.total_gas_burnt;
 
     assert_eq!(total_gas, gas_meter.elapsed().unwrap());
 
