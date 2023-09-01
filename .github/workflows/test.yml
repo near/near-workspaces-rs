@@ -31,9 +31,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest]
-        # TODO: Bring `stable` back to the matrix once Rust 1.70.0+ compatibility is resolved in nearcore:
-        # https://github.com/near/nearcore/issues/9143
-        toolchain: [1.69.0]
+        toolchain: [stable]
 
     runs-on: ${{ matrix.platform }}
     steps:
