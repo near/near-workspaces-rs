@@ -19,7 +19,7 @@
 
 ## Requirements
 
-- Rust v1.69.0 and up (NOTE: [contracts compiled w/ 1.70+ will fail currently](https://github.com/near/nearcore/issues/9143))
+- Rust v1.69.0 and up.
 - MacOS (x86 and M1) or Linux (x86) for sandbox tests.
 
 ### WASM compilation not supported
