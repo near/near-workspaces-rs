@@ -18,6 +18,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 workspaces = { path = "../workspaces" }
 
+[build-dependencies]
+anyhow = "1.0"
+workspaces = { path = "../workspaces" }
+
 [[example]]
 name = "async_transaction"
 path = "src/async_transaction.rs"
@@ -49,3 +53,7 @@ path = "src/croncat.rs"
 [[example]]
 name = "various_queries"
 path = "src/various_queries.rs"
+
+[[example]]
+name = "view_abi"
+path = "src/view_abi.rs"

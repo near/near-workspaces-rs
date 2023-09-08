@@ -39,6 +39,7 @@ near-primitives = "0.17"
 near-jsonrpc-primitives = "0.17"
 near-jsonrpc-client = { version = "0.6", features = ["sandbox"] }
 near-sandbox-utils = "0.6.2"
+near-abi-client = "0.1.0"
 
 [build-dependencies]
 near-sandbox-utils = "0.6.2"
