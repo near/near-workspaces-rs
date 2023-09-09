@@ -34,7 +34,7 @@ async fn test_subaccount_creation() -> anyhow::Result<()> {
     Ok(())
 }
 
-[test(tokio::test)]
+#[test(tokio::test)]
 async fn test_transfer_near() -> anyhow::Result<()> {
     const INITIAL_BALANCE: u128 = 100 * 1_000_000_000_000_000_000_000_000;
     let worker = workspaces::sandbox().await?;
