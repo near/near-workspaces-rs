@@ -12,6 +12,8 @@ use near_primitives::views::{
 use crate::error::ErrorKind;
 use crate::types::{Balance, CryptoHash, Gas};
 
+use base64::{engine::general_purpose, Engine as _};
+
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
 
 /// Execution related info as a result of performing a successful transaction
@@ -200,7 +202,7 @@ impl ExecutionFinalResult {
         match self.status {
             FinalExecutionStatus::SuccessValue(value) => Ok(ExecutionResult {
                 total_gas_burnt: self.total_gas_burnt,
-                value: Value::from_string(base64::encode(value)),
+                value: Value::from_string(general_purpose::STANDARD.encode(value)),
                 details: self.details,
             }),
             FinalExecutionStatus::Failure(tx_error) => Err(ExecutionResult {
@@ -449,7 +451,7 @@ impl ExecutionOutcome {
     pub fn into_result(self) -> Result<ValueOrReceiptId> {
         match self.status {
             ExecutionStatusView::SuccessValue(value) => Ok(ValueOrReceiptId::Value(
-                Value::from_string(base64::encode(value)),
+                Value::from_string(general_purpose::STANDARD.encode(value)),
             )),
             ExecutionStatusView::SuccessReceiptId(hash) => {
                 Ok(ValueOrReceiptId::ReceiptId(CryptoHash(hash.0)))
@@ -510,7 +512,9 @@ impl Value {
     /// [`json`]: Value::json
     /// [`borsh`]: Value::borsh
     pub fn raw_bytes(&self) -> Result<Vec<u8>> {
-        base64::decode(&self.repr).map_err(|e| ErrorKind::DataConversion.custom(e))
+        general_purpose::STANDARD
+            .decode(&self.repr)
+            .map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 }
 
