@@ -34,6 +34,35 @@ async fn test_subaccount_creation() -> anyhow::Result<()> {
     Ok(())
 }
 
+[test(tokio::test)]
+async fn test_transfer_near() -> anyhow::Result<()> {
+    const INITIAL_BALANCE: u128 = 100 * 1_000_000_000_000_000_000_000_000;
+    let worker = workspaces::sandbox().await?;
+    let (alice, bob) = (
+        worker.dev_create_account().await?,
+        worker.dev_create_account().await?,
+    );
+
+    assert_eq!(alice.view_account().await?.balance, INITIAL_BALANCE);
+    assert_eq!(bob.view_account().await?.balance, INITIAL_BALANCE);
+
+    const SENT_AMOUNT: u128 = 500_000_000;
+
+    // transfer 500_000_000 token from alice to bob
+    let _ = alice.transfer_near(bob.id(), SENT_AMOUNT).await?;
+
+    // Assert the the tokens have been transferred.
+    assert_eq!(
+        bob.view_account().await?.balance,
+        INITIAL_BALANCE + SENT_AMOUNT,
+    );
+
+    // We can only assert that the balance is less than the initial balance - sent amount because of the gas fees.
+    assert!(alice.view_account().await?.balance <= INITIAL_BALANCE - SENT_AMOUNT);
+
+    Ok(())
+}
+
 #[test(tokio::test)]
 async fn test_delete_account() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;

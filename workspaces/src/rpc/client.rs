@@ -182,7 +182,6 @@ impl Client {
         .await
     }
 
-    // TODO: write tests that uses transfer_near
     pub(crate) async fn transfer_near(
         &self,
         signer: &InMemorySigner,

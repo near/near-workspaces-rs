@@ -10,7 +10,6 @@ pub struct Info {
     /// Path to the keystore directory
     pub keystore_path: PathBuf,
 
-    // TODO: change return type to Url instead of String
     /// Rpc endpoint to point our client to
-    pub rpc_url: String,
+    pub rpc_url: url::Url,
 }
