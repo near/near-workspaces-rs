@@ -49,3 +49,7 @@ path = "src/croncat.rs"
 [[example]]
 name = "various_queries"
 path = "src/various_queries.rs"
+
+[[example]]
+name = "noop"
+path = "src/noop.rs"
