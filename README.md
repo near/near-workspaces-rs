@@ -19,7 +19,7 @@
 
 ## Requirements
 
-- Rust v1.60.0 and up
+- Rust v1.69.0 and up.
 - MacOS (x86 and M1) or Linux (x86) for sandbox tests.
 
 ### WASM compilation not supported
@@ -333,9 +333,15 @@ async fn test_contract() -> anyhow::Result<()> {
 
 For a full example, take a look at [workspaces/tests/deploy_project.rs](https://github.com/near/workspaces-rs/blob/main/workspaces/tests/deploy_project.rs).
 
+### Other Features
+
+Other features can be directly found in the `examples/` folder, with some documentation outlining how they can be used.
+
 ### Environment Variables
 
 These environment variables will be useful if there was ever a snag hit:
 
-- `NEAR_RPC_TIMEOUT_SECS`: The default is 10 seconds, but this is the amount of time beforing timing out waiting for a RPC service when talking to the sandbox or any other network such as testnet.
+- `NEAR_RPC_TIMEOUT_SECS`: The default is 10 seconds, but this is the amount of time before timing out waiting for a RPC service when talking to the sandbox or any other network such as testnet.
 - `NEAR_SANDBOX_BIN_PATH`: Set this to our own prebuilt `neard-sandbox` bin path if we want to use a non-default version of the sandbox or configure nearcore with our own custom features that we want to test in workspaces.
+- `NEAR_SANDBOX_MAX_PAYLOAD_SIZE`: Sets the max payload size for sending transaction commits to sandbox. The default is 1gb and is necessary for patching large states.
+- `NEAR_SANDBOX_MAX_FILES`: Set the max amount of files that can be opened at a time in the sandbox. If none is specified, the default size of 4096 will be used. The actual near chain will use over 10,000 in practice, but for testing this should be much lower since we do not have a constantly running blockchain unless our tests take up that much time.

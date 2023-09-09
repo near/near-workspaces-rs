@@ -1,7 +1,14 @@
 use std::str::FromStr;
 
-use workspaces::types::{KeyType, SecretKey};
+use borsh::{BorshDeserialize, BorshSerialize};
+
+use workspaces::types::{KeyType, PublicKey, SecretKey};
 use workspaces::AccountId;
+
+fn default_workspaces_pubkey() -> anyhow::Result<PublicKey> {
+    let data = bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?;
+    Ok(PublicKey::try_from_slice(data.as_slice())?)
+}
 
 #[test]
 fn test_keypair_ed25519() -> anyhow::Result<()> {
@@ -29,6 +36,64 @@ fn test_keypair_secp256k1() -> anyhow::Result<()> {
     assert_eq!(serde_json::to_string(&sk)?, sk_expected);
     assert_eq!(pk, serde_json::from_str(pk_expected)?);
     assert_eq!(sk, serde_json::from_str(sk_expected)?);
+
+    Ok(())
+}
+
+#[test]
+fn test_pubkey_serialization() -> anyhow::Result<()> {
+    for key_type in [KeyType::ED25519, KeyType::SECP256K1] {
+        let sk = SecretKey::from_seed(key_type, "test");
+        let pk = sk.public_key();
+        let bytes = pk.try_to_vec()?;
+
+        // Borsh Deserialization should equate to the original public key:
+        assert_eq!(PublicKey::try_from_slice(&bytes)?, pk);
+
+        // invalid public key should error out on deserialization:
+        assert!(PublicKey::try_from_slice(&[0]).is_err());
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "interop_sdk")]
+#[tokio::test]
+async fn test_pubkey_from_sdk_ser() -> anyhow::Result<()> {
+    const TYPE_SER_BYTES: &[u8] =
+        include_bytes!("test-contracts/type-serialize/res/test_contract_type_serialization.wasm");
+    let worker = workspaces::sandbox().await?;
+    let contract = worker.dev_deploy(TYPE_SER_BYTES).await?;
+
+    // Test out serde serialization and deserialization for PublicKey
+    let ws_pk = default_workspaces_pubkey()?;
+    let sdk_pk: PublicKey = contract
+        .call("pass_pk_back_and_forth")
+        .args_json(serde_json::json!({ "pk": ws_pk }))
+        .transact()
+        .await?
+        .json()?;
+    assert_eq!(ws_pk, sdk_pk);
+
+    // Test out borsh serialization and deserialization for PublicKey
+    let sdk_pk: PublicKey = contract
+        .call("pass_borsh_pk_back_and_forth")
+        .args_borsh(&ws_pk)
+        .transact()
+        .await?
+        .borsh()?;
+    assert_eq!(ws_pk, sdk_pk);
+
+    Ok(())
+}
+
+#[test]
+fn test_pubkey_borsh_format_change() -> anyhow::Result<()> {
+    let pk = default_workspaces_pubkey()?;
+    assert_eq!(
+        pk.try_to_vec()?,
+        bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?
+    );
 
     Ok(())
 }

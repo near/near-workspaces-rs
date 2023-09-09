@@ -3,10 +3,10 @@
 use crate::error::{ErrorKind, RpcErrorCode};
 use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{
-    send_batch_tx_and_retry, send_batch_tx_async_and_retry, Client, DEFAULT_CALL_DEPOSIT,
+    send_batch_tx_and_retry, send_batch_tx_async_and_retry, DEFAULT_CALL_DEPOSIT,
     DEFAULT_CALL_FN_GAS,
 };
-use crate::rpc::BoxFuture;
+use crate::rpc::query::{Query, ViewFunction};
 use crate::types::{
     AccessKey, AccountId, Balance, Gas, InMemorySigner, KeyType, PublicKey, SecretKey,
 };
@@ -24,6 +24,7 @@ use near_primitives::views::FinalExecutionOutcomeView;
 use std::convert::TryInto;
 use std::fmt;
 use std::future::IntoFuture;
+use std::pin::Pin;
 use std::task::Poll;
 
 const MAX_GAS: Gas = 300_000_000_000_000;
@@ -61,7 +62,7 @@ impl Function {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is JSON serializable and can be
+    /// Similar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
@@ -72,7 +73,7 @@ impl Function {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is borsh serializable and can be
+    /// Similar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
         match args.try_to_vec() {
@@ -111,18 +112,22 @@ impl Function {
 /// is used by default for `Contract::batch`.
 ///
 /// [`Contract::batch`]: crate::Contract::batch
-pub struct Transaction<'a> {
-    client: &'a Client,
+pub struct Transaction {
+    worker: Worker<dyn Network>,
     signer: InMemorySigner,
     receiver_id: AccountId,
     // Result used to defer errors in argument parsing to later when calling into transact
     actions: Result<Vec<Action>>,
 }
 
-impl<'a> Transaction<'a> {
-    pub(crate) fn new(client: &'a Client, signer: InMemorySigner, receiver_id: AccountId) -> Self {
+impl Transaction {
+    pub(crate) fn new(
+        worker: Worker<dyn Network>,
+        signer: InMemorySigner,
+        receiver_id: AccountId,
+    ) -> Self {
         Self {
-            client,
+            worker,
             signer,
             receiver_id,
             actions: Ok(Vec::new()),
@@ -229,7 +234,13 @@ impl<'a> Transaction<'a> {
     }
 
     async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?).await
+        send_batch_tx_and_retry(
+            self.worker.client(),
+            &self.signer,
+            &self.receiver_id,
+            self.actions?,
+        )
+        .await
     }
 
     /// Process the transaction, and return the result of the execution.
@@ -247,24 +258,24 @@ impl<'a> Transaction<'a> {
     /// of the transaction.
     ///
     /// [`status`]: TransactionStatus::status
-    pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
-        send_batch_tx_async_and_retry(self.client, &self.signer, &self.receiver_id, self.actions?)
+    pub async fn transact_async(self) -> Result<TransactionStatus> {
+        send_batch_tx_async_and_retry(self.worker, &self.signer, &self.receiver_id, self.actions?)
             .await
     }
 }
 
-/// Similiar to a [`Transaction`], but more specific to making a call into a contract.
+/// Similar to a [`Transaction`], but more specific to making a call into a contract.
 /// Note, only one call can be made per `CallTransaction`.
-pub struct CallTransaction<'a> {
-    worker: &'a Worker<dyn Network>,
+pub struct CallTransaction {
+    worker: Worker<dyn Network>,
     signer: InMemorySigner,
     contract_id: AccountId,
     function: Function,
 }
 
-impl<'a> CallTransaction<'a> {
+impl CallTransaction {
     pub(crate) fn new(
-        worker: &'a Worker<dyn Network>,
+        worker: Worker<dyn Network>,
         contract_id: AccountId,
         signer: InMemorySigner,
         function: &str,
@@ -285,7 +296,7 @@ impl<'a> CallTransaction<'a> {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is JSON serializable and can be
+    /// Similar to `args`, specify an argument that is JSON serializable and can be
     /// accepted by the equivalent contract. Recommend to use something like
     /// `serde_json::json!` macro to easily serialize the arguments.
     pub fn args_json<U: serde::Serialize>(mut self, args: U) -> Self {
@@ -293,7 +304,7 @@ impl<'a> CallTransaction<'a> {
         self
     }
 
-    /// Similiar to `args`, specify an argument that is borsh serializable and can be
+    /// Similar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
         self.function = self.function.args_borsh(args);
@@ -344,9 +355,9 @@ impl<'a> CallTransaction<'a> {
     /// of the transaction.
     ///
     /// [`status`]: TransactionStatus::status
-    pub async fn transact_async(self) -> Result<TransactionStatus<'a>> {
+    pub async fn transact_async(self) -> Result<TransactionStatus> {
         send_batch_tx_async_and_retry(
-            self.worker.client(),
+            self.worker,
             &self.signer,
             &self.contract_id,
             vec![FunctionCallAction {
@@ -362,13 +373,18 @@ impl<'a> CallTransaction<'a> {
 
     /// Instead of transacting the transaction, call into the specified view function.
     pub async fn view(self) -> Result<ViewResultDetails> {
-        self.worker
-            .view_by_function(&self.contract_id, self.function)
-            .await
+        Query::new(
+            self.worker.client(),
+            ViewFunction {
+                account_id: self.contract_id.clone(),
+                function: self.function,
+            },
+        )
+        .await
     }
 }
 
-/// Similiar to a [`Transaction`], but more specific to creating an account.
+/// Similar to a [`Transaction`], but more specific to creating an account.
 /// This transaction will create a new account with the specified `receiver_id`
 pub struct CreateAccountTransaction<'a, 'b> {
     worker: &'a Worker<dyn Network>,
@@ -426,8 +442,8 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
             .create_account(&self.signer, &id, sk.public_key(), self.initial_balance)
             .await?;
 
-        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
-        let account = Account::new(id, signer, self.worker.clone());
+        let signer = InMemorySigner::from_secret_key(id, sk);
+        let account = Account::new(signer, self.worker.clone());
 
         Ok(Execution {
             result: account,
@@ -441,20 +457,20 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
 ///
 /// [`asynchronous transaction`]: https://docs.near.org/api/rpc/transactions#send-transaction-async
 #[must_use]
-pub struct TransactionStatus<'a> {
-    client: &'a Client,
+pub struct TransactionStatus {
+    worker: Worker<dyn Network>,
     sender_id: AccountId,
     hash: CryptoHash,
 }
 
-impl<'a> TransactionStatus<'a> {
+impl TransactionStatus {
     pub(crate) fn new(
-        client: &'a Client,
+        worker: Worker<dyn Network>,
         id: AccountId,
         hash: near_primitives::hash::CryptoHash,
     ) -> Self {
         Self {
-            client,
+            worker,
             sender_id: id,
             hash: CryptoHash(hash.0),
         }
@@ -465,7 +481,8 @@ impl<'a> TransactionStatus<'a> {
     /// `Ok` value with [`Poll::Pending`] is returned, then the transaction has not finished.
     pub async fn status(&self) -> Result<Poll<ExecutionFinalResult>> {
         let result = self
-            .client
+            .worker
+            .client()
             .tx_async_status(
                 &self.sender_id,
                 near_primitives::hash::CryptoHash(self.hash.0),
@@ -507,7 +524,7 @@ impl<'a> TransactionStatus<'a> {
     }
 }
 
-impl<'a> fmt::Debug for TransactionStatus<'a> {
+impl fmt::Debug for TransactionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TransactionStatus")
             .field("sender_id", &self.sender_id)
@@ -516,9 +533,9 @@ impl<'a> fmt::Debug for TransactionStatus<'a> {
     }
 }
 
-impl<'a> IntoFuture for TransactionStatus<'a> {
+impl IntoFuture for TransactionStatus {
     type Output = Result<ExecutionFinalResult>;
-    type IntoFuture = BoxFuture<'a, Self::Output>;
+    type IntoFuture = Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(async { self.wait().await })

@@ -6,6 +6,8 @@ use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardReq
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
 
+use super::builder::{FromNetworkBuilder, NetworkBuilder};
+use super::server::ValidatorKey;
 use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
@@ -26,33 +28,74 @@ const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
 ///
 /// [`workspaces::sandbox`]: crate::sandbox
 pub struct Sandbox {
-    server: SandboxServer,
+    pub(crate) server: SandboxServer,
     client: Client,
     info: Info,
 }
 
 impl Sandbox {
-    pub(crate) fn home_dir(port: u16) -> PathBuf {
-        let mut path = std::env::temp_dir();
-        path.push(format!("sandbox-{}", port));
-        path
-    }
-
     pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
-        let mut path = Self::home_dir(self.server.rpc_port);
-        path.push("validator_key.json");
-
-        InMemorySigner::from_file(&path)
+        match &self.server.validator_key {
+            ValidatorKey::HomeDir(home_dir) => {
+                let path = home_dir.join("validator_key.json");
+                InMemorySigner::from_file(&path)
+            }
+            ValidatorKey::Known(account_id, secret_key) => Ok(InMemorySigner::from_secret_key(
+                account_id.clone(),
+                secret_key.clone(),
+            )),
+        }
     }
+}
 
-    pub(crate) async fn new() -> Result<Self> {
-        let mut server = SandboxServer::default();
-        server.start().await?;
+impl std::fmt::Debug for Sandbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("Sandbox")
+            .field("root_id", &self.info.root_id)
+            .field("rpc_url", &self.info.rpc_url)
+            .field("rpc_port", &self.server.rpc_port())
+            .field("net_port", &self.server.net_port())
+            .finish()
+    }
+}
+
+#[async_trait]
+impl FromNetworkBuilder for Sandbox {
+    async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
+        // Check the conditions of the provided rpc_url and validator_key
+        let mut server = match (build.rpc_addr, build.validator_key) {
+            // Connect to a provided sandbox:
+            (Some(rpc_url), Some(validator_key)) => {
+                SandboxServer::connect(rpc_url, validator_key).await?
+            }
+
+            // Spawn a new sandbox since rpc_url and home_dir weren't specified:
+            (None, None) => SandboxServer::run_new().await?,
+
+            // Missing inputted parameters for sandbox:
+            (Some(rpc_url), None) => {
+                return Err(SandboxErrorCode::InitFailure.message(format!(
+                    "Custom rpc_url={rpc_url} requires validator_key set."
+                )));
+            }
+            (None, Some(validator_key)) => {
+                return Err(SandboxErrorCode::InitFailure.message(format!(
+                    "Custom validator_key={validator_key:?} requires rpc_url set."
+                )));
+            }
+        };
+
         let client = Client::new(&server.rpc_addr());
         client.wait_for_rpc().await?;
 
+        // Server locks some ports on startup due to potential port collision, so we need
+        // to unlock the lockfiles after RPC is ready. Not necessarily needed here since
+        // they get unlocked anyways on the server's drop, but it is nice to clean up the
+        // lockfiles as soon as possible.
+        server.unlock_lockfiles()?;
+
         let info = Info {
-            name: "sandbox".to_string(),
+            name: build.name.into(),
             root_id: AccountId::from_str("test.near").unwrap(),
             keystore_path: PathBuf::from(".near-credentials/sandbox/"),
             rpc_url: server.rpc_addr(),
@@ -63,22 +106,6 @@ impl Sandbox {
             client,
             info,
         })
-    }
-
-    /// Port being used by sandbox server for RPC requests.
-    pub(crate) fn rpc_port(&self) -> u16 {
-        self.server.rpc_port
-    }
-}
-
-impl std::fmt::Debug for Sandbox {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_struct("Sandbox")
-            .field("root_id", &self.info.root_id)
-            .field("rpc_url", &self.info.rpc_url)
-            .field("rpc_port", &self.server.rpc_port)
-            .field("net_port", &self.server.net_port)
-            .finish()
     }
 }
 
@@ -98,9 +125,9 @@ impl TopLevelAccountCreator for Sandbox {
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
             .await?;
 
-        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
+        let signer = InMemorySigner::from_secret_key(id, sk);
         Ok(Execution {
-            result: Account::new(id, signer, worker),
+            result: Account::new(signer, worker),
             details: ExecutionFinalResult::from_view(outcome),
         })
     }
@@ -124,9 +151,9 @@ impl TopLevelAccountCreator for Sandbox {
             )
             .await?;
 
-        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
+        let signer = InMemorySigner::from_secret_key(id, sk);
         Ok(Execution {
-            result: Contract::new(id, signer, worker),
+            result: Contract::new(signer, worker),
             details: ExecutionFinalResult::from_view(outcome),
         })
     }
@@ -153,8 +180,8 @@ impl Sandbox {
     ) -> Result<()> {
         let state = StateRecord::Data {
             account_id: contract_id.to_owned(),
-            data_key: key.to_vec(),
-            value: value.to_vec(),
+            data_key: key.to_vec().into(),
+            value: value.to_vec().into(),
         };
         let records = vec![state];
 

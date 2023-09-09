@@ -6,6 +6,7 @@ use url::Url;
 
 use near_primitives::views::ExecutionStatusView;
 
+use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
@@ -13,9 +14,14 @@ use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, SecretKey};
 use crate::{Account, Contract, CryptoHash, Network, Worker};
 
-const RPC_URL: &str = "https://rpc.testnet.near.org";
-const HELPER_URL: &str = "https://helper.testnet.near.org";
-const ARCHIVAL_URL: &str = "https://archival-rpc.testnet.near.org";
+/// URL to the testnet RPC node provided by near.org.
+pub const RPC_URL: &str = "https://rpc.testnet.near.org";
+
+/// URL to the helper contract used to create top-level-accounts (TLA) provided by near.org.
+pub const HELPER_URL: &str = "https://helper.testnet.near.org";
+
+/// URL to the testnet archival RPC node provided by near.org.
+pub const ARCHIVAL_URL: &str = "https://archival-rpc.testnet.near.org";
 
 /// Testnet related configuration for interacting with testnet. Look at
 /// [`workspaces::testnet`] and [`workspaces::testnet_archival`] for how
@@ -29,33 +35,20 @@ pub struct Testnet {
     info: Info,
 }
 
-impl Testnet {
-    pub(crate) async fn new() -> Result<Self> {
-        let client = Client::new(RPC_URL);
+#[async_trait]
+impl FromNetworkBuilder for Testnet {
+    async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
+        let rpc_url = build.rpc_addr.unwrap_or_else(|| RPC_URL.into());
+        let client = Client::new(&rpc_url);
         client.wait_for_rpc().await?;
 
         Ok(Self {
             client,
             info: Info {
-                name: "testnet".into(),
+                name: build.name.into(),
                 root_id: AccountId::from_str("testnet").unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/testnet/"),
-                rpc_url: RPC_URL.into(),
-            },
-        })
-    }
-
-    pub(crate) async fn archival() -> Result<Self> {
-        let client = Client::new(ARCHIVAL_URL);
-        client.wait_for_rpc().await?;
-
-        Ok(Self {
-            client,
-            info: Info {
-                name: "testnet-archival".into(),
-                root_id: AccountId::from_str("testnet").unwrap(),
-                keystore_path: PathBuf::from(".near-credentials/testnet/"),
-                rpc_url: ARCHIVAL_URL.into(),
+                rpc_url,
             },
         })
     }
@@ -83,10 +76,10 @@ impl TopLevelAccountCreator for Testnet {
     ) -> Result<Execution<Account>> {
         let url = Url::parse(HELPER_URL).unwrap();
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
-        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
+        let signer = InMemorySigner::from_secret_key(id, sk);
 
         Ok(Execution {
-            result: Account::new(id, signer, worker),
+            result: Account::new(signer, worker),
             details: ExecutionFinalResult {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.

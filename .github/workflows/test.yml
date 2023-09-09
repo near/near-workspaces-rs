@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest]
-        toolchain: [stable, 1.60.0]
+        toolchain: [stable]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -41,6 +41,7 @@ jobs:
       with:
         profile: minimal
         toolchain: ${{ matrix.toolchain }}
+        default: true
     - uses: Swatinem/rust-cache@v1
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown

@@ -20,6 +20,14 @@ impl ErrorKind {
         Error::message(self, msg)
     }
 
+    pub(crate) fn full<T, E>(self, msg: T, error: E) -> Error
+    where
+        T: Into<Cow<'static, str>>,
+        E: Into<Box<dyn std::error::Error + Send + Sync>>,
+    {
+        Error::full(self, msg, error)
+    }
+
     pub(crate) fn detailed(self, error: ExecutionFailure) -> Error {
         Error::detailed(self, error)
     }
@@ -128,11 +136,26 @@ impl std::error::Error for Error {
 }
 
 impl SandboxErrorCode {
+    pub(crate) fn message<T>(self, msg: T) -> Error
+    where
+        T: Into<Cow<'static, str>>,
+    {
+        Error::message(ErrorKind::Sandbox(self), msg)
+    }
+
     pub(crate) fn custom<E>(self, error: E) -> Error
     where
         E: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
         Error::custom(ErrorKind::Sandbox(self), error)
+    }
+
+    pub(crate) fn full<T, E>(self, msg: T, error: E) -> Error
+    where
+        T: Into<Cow<'static, str>>,
+        E: Into<Box<dyn std::error::Error + Send + Sync>>,
+    {
+        Error::full(ErrorKind::Sandbox(self), msg, error)
     }
 }
 

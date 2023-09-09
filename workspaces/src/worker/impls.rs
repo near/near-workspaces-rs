@@ -1,16 +1,16 @@
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
-use crate::operations::Function;
+use crate::operations::{CallTransaction, Function};
 use crate::result::{ExecutionFinalResult, Result};
-use crate::rpc::client::{Client, DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS};
+use crate::rpc::client::Client;
 use crate::rpc::patch::ImportContractTransaction;
 use crate::rpc::query::{
     GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
     ViewCode, ViewFunction, ViewState,
 };
-use crate::types::{AccountId, Gas, InMemorySigner, PublicKey};
+use crate::types::{AccountId, InMemorySigner, PublicKey};
 use crate::worker::Worker;
-use crate::{Account, Contract, Network};
+use crate::{Account, Network};
 
 use near_primitives::types::Balance;
 
@@ -41,31 +41,9 @@ where
         self.workspace.client()
     }
 
-    /// Call into a contract's change function.
-    pub async fn call(
-        &self,
-        contract: &Contract,
-        function: &str,
-        args: Vec<u8>,
-        gas: Option<Gas>,
-        deposit: Option<Balance>,
-    ) -> Result<ExecutionFinalResult> {
-        let outcome = self
-            .client()
-            .call(
-                contract.signer(),
-                contract.id(),
-                function.into(),
-                args,
-                gas.unwrap_or(DEFAULT_CALL_FN_GAS),
-                deposit.unwrap_or(DEFAULT_CALL_DEPOSIT),
-            )
-            .await?;
-
-        Ok(ExecutionFinalResult::from_view(outcome))
-    }
-
-    /// Call into a contract's view function.
+    /// Call into a contract's view function. Returns a [`Query`] which allows us
+    /// to specify further details like the arguments of the view call, or at what
+    /// point in the chain we want to view.
     pub fn view(&self, contract_id: &AccountId, function: &str) -> Query<'_, ViewFunction> {
         self.view_by_function(contract_id, Function::new(function))
     }
@@ -195,11 +173,34 @@ where
     }
 }
 
+impl<T> Worker<T>
+where
+    T: Network + 'static,
+{
+    /// Call into a contract's change function. Returns a [`CallTransaction`] object
+    /// that we will make use to populate the rest of the call details. The [`signer`]
+    /// will be used to sign the transaction.
+    ///
+    /// [`signer`]: crate::types::InMemorySigner
+    pub fn call(
+        &self,
+        signer: &InMemorySigner,
+        contract_id: &AccountId,
+        function: &str,
+    ) -> CallTransaction {
+        CallTransaction::new(
+            self.clone().coerce(),
+            contract_id.to_owned(),
+            signer.clone(),
+            function,
+        )
+    }
+}
+
 impl Worker<Sandbox> {
     pub fn root_account(&self) -> Result<Account> {
-        let account_id = self.info().root_id.clone();
         let signer = self.workspace.root_signer()?;
-        Ok(Account::new(account_id, signer, self.clone().coerce()))
+        Ok(Account::new(signer, self.clone().coerce()))
     }
 
     /// Import a contract from the the given network, and return us a [`ImportContractTransaction`]
@@ -236,7 +237,12 @@ impl Worker<Sandbox> {
     }
 
     /// The port being used by RPC
-    pub fn rpc_port(&self) -> u16 {
-        self.workspace.rpc_port()
+    pub fn rpc_port(&self) -> Option<u16> {
+        self.workspace.server.rpc_port()
+    }
+
+    /// Get the address the client is using to connect to the RPC of the network.
+    pub fn rpc_addr(&self) -> String {
+        self.workspace.server.rpc_addr()
     }
 }

@@ -4,10 +4,33 @@
 
 ### Added
 
+- [Import a couple functions over from near_crypto for PublicKey](https://github.com/near/workspaces-rs/pull/265)
+  - Impl `Ord`, `PartialOrd`, `Hash`, `BorshSerialize`, `BorshDeserialize`, `Display`, and `FromStr` for `PublicKey`
+    - NOTE: Borsh bytes format is the same as near-sdk, where it is in the form of [bytes_len, key_type, key_data..]
+  - Added `PublicKey::{empty, len, key_data}`
+  - Impl `Display` for `SecretKey`.
+  - more docs were added to both `SecretKey` and `PublicKey`.
+  - Impl `Display`, `FromStr`, `TryFrom<u8>` for `KeyType`.
+- [Added `TryFrom<near_sdk::PublicKey>` for `workspaces::PublicKey`](https://github.com/near/workspaces-rs/pull/267)
+  - Added `KeyType::len` and `PublicKey::try_from_bytes`
+
+### Changed
+
+- [`Transaction::transact_async` no longer has a lifetime parameter to make it easier to use](https://github.com/near/workspaces-rs/pull/249)
+
+### Fixed
+
+- [Run `neard` on `localhost` instead of `0.0.0.0` to prevent firewall popups on MacOS](https://github.com/near/workspaces-rs/issues/276)
+
+## [0.7.0]
+
+### Added
+
 - [`view_*` asynchronous builders have been added which provides being able to query from a specific block hash or block height](https://github.com/near/workspaces-rs/pull/218)
 - [`{CallTransaction, Transaction}::transact_async` for performing transactions without directly having to wait for it complete it on chain](https://github.com/near/workspaces-rs/pull/222)
 - [`view_chunk` added for querying into chunk related info on the network.](https://github.com/near/workspaces-rs/pull/234)
   - Adds `Chunk` and `ChunkHeader` type to reference specific chunk info.
+- [`Error::{simple, message, custom}` are now public and usable for custom errors](https://github.com/near/workspaces-rs/pull/224)
 
 ### Changed
 
@@ -25,6 +48,16 @@
   - Changed `Worker::view_latest_block` to `Worker::view_block` as the default behavior is equivalent.
   - `operations::Function` type no longer takes a lifetime parameter.
   - `operations::CallTransaction` type takes one less lifetime parameter.
+- [`Worker::call` signature changed to be more in line with `view_*` async builders. It will now return a builder like `{Account, Contract}::call`](https://github.com/near/workspaces-rs/pull/245)
+  - This `call` no longer accepts `Contract` since that was not as accessible. Instead a `InMemorySigner` is now required to sign transactions (which can be retrieved from `{Account, Contract}::signer` or `InMemorySigner::{from_secret_key, from_file}`).
+  - `{Account, Contract}::signer` now exposed.
+
+### Fixed
+
+- [Changed the docs to reflect proper size of of rate limits on near.org RPC](https://github.com/near/workspaces-rs/pull/219)
+- [Cached nonces now are per account-id and public-key instead of just public-key](https://github.com/near/workspaces-rs/pull/231)
+  - this didn't matter if only one KeyPair was being used per account, but could be problematic when there were multiple KeyPairs per account utilizing the same nonces.
+- [Error message context wasn't being exposed properly by sandbox, so this fixed it](https://github.com/near/workspaces-rs/pull/236)
 
 ## [0.6.1]
 
@@ -185,7 +218,8 @@
 
 - Fix race condition when installing sandbox and running multiples tests at the same time. https://github.com/near/workspaces-rs/pull/46
 
-[unreleased]: https://github.com/near/workspaces-rs/compare/0.6.1...HEAD
+[unreleased]: https://github.com/near/workspaces-rs/compare/0.7.0...HEAD
+[0.7.0]: https://github.com/near/workspaces-rs/compare/0.6.1...0.7.0
 [0.6.1]: https://github.com/near/workspaces-rs/compare/0.6.0...0.6.1
 [0.6.0]: https://github.com/near/workspaces-rs/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/near/workspaces-rs/compare/0.4.1...0.5.0
