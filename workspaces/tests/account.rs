@@ -43,11 +43,23 @@ async fn test_delete_account() -> anyhow::Result<()> {
         worker.dev_create_account().await?,
     );
 
-    _ = alice.delete_account(bob.id()).await?;
+    _ = alice.clone().delete_account(bob.id()).await?;
 
     // All sandbox accounts start with a balance of `100 * 1_000_000_000_000_000_000_000_000` tokens.
-    // On account deletion, alice's balance is debited to bob as beneficary.
+    // On account deletion, alice's balance is debited to bob as beneficiary.
     assert!(bob.view_account().await?.balance > 100 * 1_900_000_000_000_000_000_000_000,);
+
+    // Alice's account should be deleted.
+    let res = alice.view_account().await;
+
+    assert!(res.is_err());
+
+    assert!(res
+        .unwrap_err()
+        .into_inner()
+        .unwrap()
+        .to_string()
+        .contains(&format!("{} does not exist while viewing", alice.id())),);
 
     Ok(())
 }
