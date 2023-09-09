@@ -255,7 +255,6 @@ impl Client {
         .await
     }
 
-    // TODO: write tests that uses delete_account
     pub(crate) async fn delete_account(
         &self,
         signer: &InMemorySigner,
