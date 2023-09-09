@@ -229,7 +229,21 @@ impl ExecutionFinalResult {
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
     pub fn json<T: serde::de::DeserializeOwned>(self) -> Result<T> {
-        self.into_result()?.json()
+        let val = self.into_result()?;
+        match val.json() {
+            Err(err) => {
+                // This catches the case: `EOF while parsing a value at line 1 column 0`
+                // for a function that doesn't return anything; this is a more descriptive error.
+                if *err.kind() == ErrorKind::DataConversion && val.value.repr.is_empty() {
+                    return Err(ErrorKind::DataConversion.custom(
+                        "the function call returned an empty value, which cannot be parsed as JSON",
+                    ));
+                }
+
+                Err(err)
+            }
+            ok => ok,
+        }
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from the execution
