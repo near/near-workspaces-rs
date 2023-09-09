@@ -23,6 +23,7 @@ use sha2::Digest;
 use crate::error::{Error, ErrorKind};
 use crate::result::Result;
 
+pub use self::account::{AccountDetails, AccountDetailsPatch};
 pub use self::chunk::{Chunk, ChunkHeader};
 
 /// Nonce is a unit used to determine the order of transactions in the pool.

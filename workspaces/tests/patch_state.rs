@@ -181,3 +181,29 @@ async fn test_patch_code_hash() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+// account_from_current
+#[tokio::test]
+async fn test_patch_account_from_current() -> anyhow::Result<()> {
+    let worker = workspaces::sandbox().await?;
+
+    let bob = worker.dev_create_account().await?;
+
+    const NEW_BALANCE: u128 = 10_u128.pow(16);
+
+    let f = |mut acc: workspaces::types::AccountDetails| {
+        acc.balance = NEW_BALANCE;
+        AccountDetailsPatch::from(acc)
+    };
+    worker
+        .patch(bob.id())
+        .account_from_current(f)
+        .transact()
+        .await?;
+
+    let bob_acc = worker.view_account(bob.id()).await?;
+
+    assert_eq!(bob_acc.balance, NEW_BALANCE);
+
+    Ok(())
+}
