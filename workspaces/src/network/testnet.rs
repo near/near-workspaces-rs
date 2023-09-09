@@ -48,7 +48,7 @@ impl FromNetworkBuilder for Testnet {
                 name: build.name.into(),
                 root_id: AccountId::from_str("testnet").unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/testnet/"),
-                rpc_url,
+                rpc_url: Url::parse(&rpc_url).expect("url is hardcoded"),
             },
         })
     }
