@@ -8,8 +8,7 @@ edition = "2018"
 crate-type = ["cdylib"]
 
 [dependencies]
-anyhow = "1.0"
-bs58 = "0.4"
+bs58 = "0.5"
 near-sdk = "4.1"
 
 [profile.release]
