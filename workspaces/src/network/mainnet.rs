@@ -39,7 +39,7 @@ impl FromNetworkBuilder for Mainnet {
                 name: build.name.into(),
                 root_id: "near".parse().unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/mainnet/"),
-                rpc_url,
+                rpc_url: url::Url::parse(&rpc_url).expect("url is hardcodeed"),
             },
         })
     }

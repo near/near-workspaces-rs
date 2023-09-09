@@ -1,3 +1,5 @@
+use url::Url;
+
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::{Info, NetworkClient, NetworkInfo};
 use crate::rpc::client::Client;
@@ -36,7 +38,7 @@ impl FromNetworkBuilder for Betanet {
                 name: build.name.into(),
                 root_id: "near".parse().unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/betanet/"),
-                rpc_url,
+                rpc_url: Url::parse(&rpc_url).expect("url is hardcoded"),
             },
         })
     }

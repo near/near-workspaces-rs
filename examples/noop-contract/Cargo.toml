@@ -1,15 +1,14 @@
 [package]
-name = "test-contract-type-serialization"
-version = "0.0.0"
-authors = ["Near Inc <hello@nearprotocol.com>"]
+name = "simple-contract"
+version = "0.1.0"
+publish = false
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-bs58 = "0.5"
-near-sdk = "4.1"
+near-sdk = "4.1.1"
 
 [profile.release]
 codegen-units = 1
@@ -18,6 +17,5 @@ opt-level = "z"
 lto = true
 debug = false
 panic = "abort"
+# Opt into extra safety checks on arithmetic operations https://stackoverflow.com/a/64136471/249801
 overflow-checks = true
-
-[workspace]
