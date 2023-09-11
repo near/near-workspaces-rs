@@ -39,6 +39,7 @@ near-primitives = "0.17"
 near-jsonrpc-primitives = "0.17"
 near-jsonrpc-client = { version = "0.6", features = ["sandbox"] }
 near-sandbox-utils = "0.6.2"
+near-chain-configs = { version = "0.17.0", optional = true }
 
 [build-dependencies]
 near-sandbox-utils = "0.6.2"
@@ -60,6 +61,7 @@ default = ["install", "interop_sdk"]
 install = []  # Install the sandbox binary during compile time
 interop_sdk = ["near-sdk"]
 unstable = ["cargo_metadata"]
+experimental = ["near-chain-configs"]
 
 [package.metadata.docs.rs]
 features = ["unstable"]

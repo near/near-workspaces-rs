@@ -409,6 +409,9 @@ impl From<CallResult> for ViewResultDetails {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct ExecutionOutcome {
+    /// The hash of the transaction that generated this outcome.
+    pub transaction_hash: CryptoHash,
+    /// The hash of the block that generated this outcome.
     pub block_hash: CryptoHash,
     /// Logs from this transaction or receipt.
     pub logs: Vec<String>,
@@ -521,6 +524,7 @@ impl Value {
 impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {
     fn from(view: ExecutionOutcomeWithIdView) -> Self {
         ExecutionOutcome {
+            transaction_hash: CryptoHash(view.id.0),
             block_hash: CryptoHash(view.block_hash.0),
             logs: view.outcome.logs,
             receipt_ids: view

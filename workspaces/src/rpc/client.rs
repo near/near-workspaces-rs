@@ -26,6 +26,22 @@ use near_primitives::views::{
     AccessKeyView, BlockView, FinalExecutionOutcomeView, QueryRequest, StatusResponse,
 };
 
+#[cfg(feature = "experimental")]
+use {
+    near_chain_configs::{GenesisConfig, ProtocolConfigView},
+    near_jsonrpc_primitives::types::{
+        changes::RpcStateChangesInBlockByTypeResponse, changes::RpcStateChangesInBlockResponse,
+        receipts::ReceiptReference, transactions::TransactionInfo,
+    },
+    near_primitives::{
+        types::MaybeBlockId,
+        views::{
+            validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
+            ReceiptView, StateChangesRequestView,
+        },
+    },
+};
+
 use crate::error::{Error, ErrorKind, RpcErrorCode};
 use crate::operations::TransactionStatus;
 use crate::result::Result;
@@ -327,6 +343,102 @@ impl Client {
                 )
             })?;
         Ok(())
+    }
+}
+
+#[cfg(feature = "experimental")]
+impl Client {
+    pub(crate) async fn changes_in_block(
+        &self,
+        block_reference: BlockReference,
+    ) -> Result<RpcStateChangesInBlockByTypeResponse> {
+        let resp = self
+            .rpc_client
+            .call(
+                methods::EXPERIMENTAL_changes_in_block::RpcStateChangesInBlockRequest {
+                    block_reference,
+                },
+            )
+            .await
+            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+
+        Ok(resp)
+    }
+
+    pub(crate) async fn changes(
+        &self,
+        block_reference: BlockReference,
+        state_changes_request: StateChangesRequestView,
+    ) -> Result<RpcStateChangesInBlockResponse> {
+        let resp = self
+            .rpc_client
+            .call(
+                methods::EXPERIMENTAL_changes::RpcStateChangesInBlockByTypeRequest {
+                    block_reference,
+                    state_changes_request,
+                },
+            )
+            .await
+            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+        Ok(resp)
+    }
+
+    pub(crate) async fn genesis_config(&self) -> Result<GenesisConfig> {
+        let resp = self
+            .rpc_client
+            .call(methods::EXPERIMENTAL_genesis_config::RpcGenesisConfigRequest)
+            .await
+            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+        Ok(resp)
+    }
+
+    pub(crate) async fn protocol_config(
+        &self,
+        block_reference: BlockReference,
+    ) -> Result<ProtocolConfigView> {
+        let resp = self
+            .rpc_client
+            .call(
+                methods::EXPERIMENTAL_protocol_config::RpcProtocolConfigRequest { block_reference },
+            )
+            .await
+            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+        Ok(resp)
+    }
+
+    pub(crate) async fn receipt(&self, receipt_reference: ReceiptReference) -> Result<ReceiptView> {
+        let resp = self
+            .rpc_client
+            .call(methods::EXPERIMENTAL_receipt::RpcReceiptRequest { receipt_reference })
+            .await
+            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+        Ok(resp)
+    }
+
+    pub(crate) async fn tx_status(
+        &self,
+        transaction_info: TransactionInfo,
+    ) -> Result<FinalExecutionOutcomeWithReceiptView> {
+        let resp = self
+            .rpc_client
+            .call(methods::EXPERIMENTAL_tx_status::RpcTransactionStatusRequest { transaction_info })
+            .await
+            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+        Ok(resp)
+    }
+
+    pub(crate) async fn validators_ordered(
+        &self,
+        block_id: MaybeBlockId,
+    ) -> Result<Vec<ValidatorStakeView>> {
+        let resp = self
+            .rpc_client
+            .call(
+                methods::EXPERIMENTAL_validators_ordered::RpcValidatorsOrderedRequest { block_id },
+            )
+            .await
+            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+        Ok(resp)
     }
 }
 

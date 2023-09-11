@@ -88,6 +88,7 @@ impl TopLevelAccountCreator for Testnet {
                 status: near_primitives::views::FinalExecutionStatus::SuccessValue(Vec::new()),
                 details: ExecutionDetails {
                     transaction: ExecutionOutcome {
+                        transaction_hash: CryptoHash::default(),
                         block_hash: CryptoHash::default(),
                         logs: Vec::new(),
                         receipt_ids: Vec::new(),

@@ -8,11 +8,26 @@ use crate::rpc::query::{
     GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
     ViewCode, ViewFunction, ViewState,
 };
-use crate::types::{AccountId, InMemorySigner, PublicKey};
+use crate::types::{AccountId, Balance, InMemorySigner, PublicKey};
 use crate::worker::Worker;
 use crate::{Account, Network};
 
-use near_primitives::types::Balance;
+#[cfg(feature = "experimental")]
+use {
+    near_chain_configs::{GenesisConfig, ProtocolConfigView},
+    near_jsonrpc_primitives::types::{
+        changes::{RpcStateChangesInBlockByTypeResponse, RpcStateChangesInBlockResponse},
+        receipts::ReceiptReference,
+        transactions::TransactionInfo,
+    },
+    near_primitives::{
+        types::{BlockReference, MaybeBlockId},
+        views::{
+            validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
+            ReceiptView, StateChangesRequestView,
+        },
+    },
+};
 
 impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
@@ -170,6 +185,58 @@ where
 
     pub fn gas_price(&self) -> Query<'_, GasPrice> {
         Query::new(self.client(), GasPrice)
+    }
+}
+
+#[cfg(feature = "experimental")]
+impl<T: ?Sized> Worker<T>
+where
+    T: NetworkClient,
+{
+    pub async fn changes_in_block(
+        &self,
+        block_reference: BlockReference,
+    ) -> Result<RpcStateChangesInBlockByTypeResponse> {
+        self.client().changes_in_block(block_reference).await
+    }
+
+    pub async fn changes(
+        &self,
+        block_reference: BlockReference,
+        state_changes_request: StateChangesRequestView,
+    ) -> Result<RpcStateChangesInBlockResponse> {
+        self.client()
+            .changes(block_reference, state_changes_request)
+            .await
+    }
+
+    pub async fn genesis_config(&self) -> Result<GenesisConfig> {
+        self.client().genesis_config().await
+    }
+
+    pub async fn protocol_config(
+        &self,
+        block_reference: BlockReference,
+    ) -> Result<ProtocolConfigView> {
+        self.client().protocol_config(block_reference).await
+    }
+
+    pub async fn receipt(&self, receipt_reference: ReceiptReference) -> Result<ReceiptView> {
+        self.client().receipt(receipt_reference).await
+    }
+
+    pub async fn tx_status(
+        &self,
+        transaction_info: TransactionInfo,
+    ) -> Result<FinalExecutionOutcomeWithReceiptView> {
+        self.client().tx_status(transaction_info).await
+    }
+
+    pub async fn validators_ordered(
+        &self,
+        block_id: MaybeBlockId,
+    ) -> Result<Vec<ValidatorStakeView>> {
+        self.client().validators_ordered(block_id).await
     }
 }
 
