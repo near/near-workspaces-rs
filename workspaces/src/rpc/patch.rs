@@ -1,10 +1,12 @@
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::types::{BlockId, BlockReference};
-use near_primitives::{account::AccessKey, state_record::StateRecord, types::Balance};
+use near_primitives::{state_record::StateRecord, types::Balance};
 
 use crate::error::SandboxErrorCode;
-use crate::network::DEV_ACCOUNT_SEED;
-use crate::types::{BlockHeight, KeyType, SecretKey};
+use crate::network::{Sandbox, DEV_ACCOUNT_SEED};
+use crate::types::account::AccountDetails;
+use crate::types::{BlockHeight, KeyType, PublicKey, SecretKey};
+use crate::{AccessKey, AccountDetailsPatch, Result};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
 
 /// A [`Transaction`]-like object that allows us to specify details about importing
@@ -17,7 +19,7 @@ use crate::{AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
 pub struct ImportContractTransaction<'a> {
     account_id: &'a AccountId,
     from_network: Worker<dyn Network>,
-    into_network: Worker<dyn Network>,
+    into_network: Worker<Sandbox>,
 
     /// Whether to grab data down from the other contract or not
     import_data: bool,
@@ -36,7 +38,7 @@ impl<'a> ImportContractTransaction<'a> {
     pub(crate) fn new(
         account_id: &'a AccountId,
         from_network: Worker<dyn Network>,
-        into_network: Worker<dyn Network>,
+        into_network: Worker<Sandbox>,
     ) -> Self {
         ImportContractTransaction {
             account_id,
@@ -107,55 +109,220 @@ impl<'a> ImportContractTransaction<'a> {
             .from_network
             .view_account(from_account_id)
             .block_reference(block_ref.clone())
-            .await?
-            .into_near_account();
+            .await?;
+
+        let code_hash = account_view.code_hash;
         if let Some(initial_balance) = self.initial_balance {
-            account_view.set_amount(initial_balance);
+            account_view.balance = initial_balance;
         }
 
-        let mut records = vec![
-            StateRecord::Account {
-                account_id: into_account_id.clone(),
-                account: account_view.clone(),
-            },
-            StateRecord::AccessKey {
-                account_id: into_account_id.clone(),
-                public_key: pk.clone().into(),
-                access_key: AccessKey::full_access(),
-            },
-        ];
+        let mut patch = PatchTransaction::new(&self.into_network, into_account_id.clone())
+            .account(account_view.into())
+            .access_key(pk, AccessKey::full_access());
 
-        if account_view.code_hash() != near_primitives::hash::CryptoHash::default() {
+        if code_hash != CryptoHash::default() {
             let code = self
                 .from_network
                 .view_code(from_account_id)
                 .block_reference(block_ref.clone())
                 .await?;
-            records.push(StateRecord::Contract {
-                account_id: into_account_id.clone(),
-                code,
-            });
+            patch = patch.code(&code);
         }
 
         if self.import_data {
-            records.extend(
-                self.from_network
-                    .view_state(from_account_id)
-                    .block_reference(block_ref)
-                    .await?
-                    .into_iter()
-                    .map(|(key, value)| StateRecord::Data {
-                        account_id: into_account_id.clone(),
-                        data_key: key.into(),
-                        value: value.into(),
-                    }),
+            let states = self
+                .from_network
+                .view_state(from_account_id)
+                .block_reference(block_ref)
+                .await?;
+
+            patch = patch.states(
+                states
+                    .iter()
+                    .map(|(key, value)| (key.as_slice(), value.as_slice())),
             );
         }
 
-        // NOTE: Patching twice here since it takes a while for the first patch to be
-        // committed to the network. Where the account wouldn't exist until the block
-        // finality is reached.
-        self.into_network
+        patch.transact().await?;
+        Ok(Contract::new(signer, self.into_network.coerce()))
+    }
+}
+
+/// Internal enum for determining whether to update the account on chain
+/// or to patch an entire account.
+enum AccountUpdate {
+    Update(AccountDetailsPatch),
+    FromCurrent(Box<dyn Fn(AccountDetails) -> AccountDetailsPatch>),
+}
+
+pub struct PatchTransaction {
+    account_id: AccountId,
+    records: Vec<StateRecord>,
+    worker: Worker<Sandbox>,
+    account_updates: Vec<AccountUpdate>,
+    code_hash_update: Option<CryptoHash>,
+}
+
+impl PatchTransaction {
+    pub(crate) fn new(worker: &Worker<Sandbox>, account_id: AccountId) -> Self {
+        PatchTransaction {
+            account_id,
+            records: vec![],
+            worker: worker.clone(),
+            account_updates: vec![],
+            code_hash_update: None,
+        }
+    }
+
+    /// Patch and overwrite the info contained inside an [`Account`] in sandbox.
+    pub fn account(mut self, account: AccountDetailsPatch) -> Self {
+        self.account_updates.push(AccountUpdate::Update(account));
+        self
+    }
+
+    /// Patch and overwrite the info contained inside an [`Account`] in sandbox. This
+    /// will allow us to fetch the current details on the chain and allow us to update
+    /// the account details w.r.t to them.
+    pub fn account_from_current<F: 'static>(mut self, f: F) -> Self
+    where
+        F: Fn(AccountDetails) -> AccountDetailsPatch,
+    {
+        self.account_updates
+            .push(AccountUpdate::FromCurrent(Box::new(f)));
+        self
+    }
+
+    /// Patch the access keys of an account. This will add or overwrite the current access key
+    /// contained in sandbox with the access key we specify.
+    pub fn access_key(mut self, pk: PublicKey, ak: AccessKey) -> Self {
+        self.records.push(StateRecord::AccessKey {
+            account_id: self.account_id.clone(),
+            public_key: pk.into(),
+            access_key: ak.into(),
+        });
+        self
+    }
+
+    /// Patch the access keys of an account. This will add or overwrite the current access keys
+    /// contained in sandbox with a list of access keys we specify.
+    ///
+    /// Similar to [`PatchTransaction::access_key`], but allows us to specify multiple access keys
+    pub fn access_keys<I>(mut self, access_keys: I) -> Self
+    where
+        I: IntoIterator<Item = (PublicKey, AccessKey)>,
+    {
+        // Move account_id out of self struct so we can appease borrow checker.
+        // We'll put it back in after we're done.
+        let account_id = self.account_id;
+
+        self.records.extend(
+            access_keys
+                .into_iter()
+                .map(|(pk, ak)| StateRecord::AccessKey {
+                    account_id: account_id.clone(),
+                    public_key: pk.into(),
+                    access_key: ak.into(),
+                }),
+        );
+
+        self.account_id = account_id;
+        self
+    }
+
+    /// Sets the code for this account. This will overwrite the current code contained in the account.
+    /// Note that if a patch for [`account`] or [`account_from_current`] is specified, the code hash
+    /// in those will be overwritten with the code hash of the code we specify here.
+    pub fn code(mut self, wasm_bytes: &[u8]) -> Self {
+        self.code_hash_update = Some(CryptoHash::hash_bytes(wasm_bytes));
+        self.records.push(StateRecord::Contract {
+            account_id: self.account_id.clone(),
+            code: wasm_bytes.to_vec(),
+        });
+        self
+    }
+
+    /// Patch state into the sandbox network, given a prefix key and value. This will allow us
+    /// to set contract state that we have acquired in some manner, where we are able to test
+    /// random cases that are hard to come up naturally as state evolves.
+    pub fn state(mut self, key: &[u8], value: &[u8]) -> Self {
+        self.records.push(StateRecord::Data {
+            account_id: self.account_id.clone(),
+            data_key: key.to_vec().into(),
+            value: value.to_vec().into(),
+        });
+        self
+    }
+
+    /// Patch a series of states into the sandbox network. Similar to [`PatchTransaction::state`],
+    /// but allows us to specify multiple state patches at once.
+    pub fn states<'b, 'c, I>(mut self, states: I) -> Self
+    where
+        I: IntoIterator<Item = (&'b [u8], &'c [u8])>,
+    {
+        // Move account_id out of self struct so we can appease borrow checker.
+        // We'll put it back in after we're done.
+        let account_id = self.account_id;
+
+        self.records
+            .extend(states.into_iter().map(|(key, value)| StateRecord::Data {
+                account_id: account_id.clone(),
+                data_key: key.to_vec().into(),
+                value: value.to_vec().into(),
+            }));
+
+        self.account_id = account_id;
+        self
+    }
+
+    /// Perform the state patch transaction into the sandbox network.
+    pub async fn transact(mut self) -> Result<()> {
+        // NOTE: updating the account is done here because we need to fetch the current
+        // account details from the chain. This is an async operation so it is deferred
+        // till the transact function.
+        let account_patch = if !self.account_updates.is_empty() {
+            let mut account = AccountDetailsPatch::default();
+            for update in self.account_updates {
+                // reduce the updates into a single account details patch
+                account.reduce(match update {
+                    AccountUpdate::Update(account) => account,
+                    AccountUpdate::FromCurrent(f) => {
+                        let account = self.worker.view_account(&self.account_id).await?;
+                        f(account)
+                    }
+                });
+            }
+
+            // Update the code hash if the user supplied a code patch.
+            if let Some(code_hash) = self.code_hash_update.take() {
+                account.code_hash = Some(code_hash);
+            }
+
+            Some(account)
+        } else if let Some(code_hash) = self.code_hash_update {
+            // No account patch, but we have a code patch. We need to fetch the current account
+            // to reflect the code hash change.
+            let mut account = self.worker.view_account(&self.account_id).await?;
+            account.code_hash = code_hash;
+            Some(account.into())
+        } else {
+            None
+        };
+
+        // Account patch should be the first entry in the records, since the account might not
+        // exist yet and the consequent patches might lookup the account on the chain.
+        let records = if let Some(account) = account_patch {
+            let account: AccountDetails = account.into();
+            let mut records = vec![StateRecord::Account {
+                account_id: self.account_id.clone(),
+                account: account.into_near_account(),
+            }];
+            records.extend(self.records);
+            records
+        } else {
+            self.records
+        };
+
+        self.worker
             .client()
             .query(&RpcSandboxPatchStateRequest {
                 records: records.clone(),
@@ -163,12 +330,11 @@ impl<'a> ImportContractTransaction<'a> {
             .await
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
 
-        self.into_network
+        self.worker
             .client()
             .query(&RpcSandboxPatchStateRequest { records })
             .await
             .map_err(|err| SandboxErrorCode::PatchStateFailure.custom(err))?;
-
-        Ok(Contract::new(signer, self.into_network))
+        Ok(())
     }
 }

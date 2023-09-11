@@ -69,10 +69,6 @@ async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Resu
 
     owner
         .call(wnear.id(), "new")
-        .args_json(json!({
-            "owner_id": owner.id(),
-            "total_supply": parse_near!("1,000,000,000 N"),
-        }))
         .transact()
         .await?
         .into_result()?;
@@ -136,7 +132,7 @@ async fn create_pool_with_liquidity(
         .await?
         .into_result()?;
 
-    deposit_tokens(owner, &ref_finance, tokens).await?;
+    deposit_tokens(owner, ref_finance, tokens).await?;
 
     owner
         .call(ref_finance.id(), "add_liquidity")

@@ -229,7 +229,21 @@ impl ExecutionFinalResult {
     /// the internal state does not meet up with [`serde::de::DeserializeOwned`]'s
     /// requirements.
     pub fn json<T: serde::de::DeserializeOwned>(self) -> Result<T> {
-        self.into_result()?.json()
+        let val = self.into_result()?;
+        match val.json() {
+            Err(err) => {
+                // This catches the case: `EOF while parsing a value at line 1 column 0`
+                // for a function that doesn't return anything; this is a more descriptive error.
+                if *err.kind() == ErrorKind::DataConversion && val.value.repr.is_empty() {
+                    return Err(ErrorKind::DataConversion.custom(
+                        "the function call returned an empty value, which cannot be parsed as JSON",
+                    ));
+                }
+
+                Err(err)
+            }
+            ok => ok,
+        }
     }
 
     /// Deserialize an instance of type `T` from bytes sourced from the execution
@@ -395,6 +409,9 @@ impl From<CallResult> for ViewResultDetails {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct ExecutionOutcome {
+    /// The hash of the transaction that generated this outcome.
+    pub transaction_hash: CryptoHash,
+    /// The hash of the block that generated this outcome.
     pub block_hash: CryptoHash,
     /// Logs from this transaction or receipt.
     pub logs: Vec<String>,
@@ -507,6 +524,7 @@ impl Value {
 impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {
     fn from(view: ExecutionOutcomeWithIdView) -> Self {
         ExecutionOutcome {
+            transaction_hash: CryptoHash(view.id.0),
             block_hash: CryptoHash(view.block_hash.0),
             logs: view.outcome.logs,
             receipt_ids: view
