@@ -19,10 +19,12 @@ use std::str::FromStr;
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 
 use crate::error::{Error, ErrorKind};
 use crate::result::Result;
 
+pub use self::account::{AccountDetails, AccountDetailsPatch};
 pub use self::chunk::{Chunk, ChunkHeader};
 
 pub use self::gas_meter::{GasHook, GasMeter};
@@ -303,6 +305,13 @@ impl InMemorySigner {
 /// CryptoHash is type for storing the hash of a specific block.
 #[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct CryptoHash(pub [u8; 32]);
+
+impl CryptoHash {
+    pub(crate) fn hash_bytes(bytes: &[u8]) -> Self {
+        let hash = sha2::Sha256::digest(bytes).into();
+        Self(hash)
+    }
+}
 
 impl FromStr for CryptoHash {
     type Err = Error;

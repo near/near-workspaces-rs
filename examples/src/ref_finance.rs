@@ -69,10 +69,6 @@ async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Resu
 
     owner
         .call(wnear.id(), "new")
-        .args_json(json!({
-            "owner_id": owner.id(),
-            "total_supply": parse_near!("1,000,000,000 N"),
-        }))
         .transact()
         .await?
         .into_result()?;
