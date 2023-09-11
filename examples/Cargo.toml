@@ -74,10 +74,6 @@ name = "changes"
 path = "src/changes.rs"
 
 [[example]]
-name = "check_tx"
-path = "src/check_tx.rs"
-
-[[example]]
 name = "receipt"
 path = "src/receipt.rs"
 

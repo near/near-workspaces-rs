@@ -13,20 +13,19 @@ use crate::worker::Worker;
 use crate::{Account, Network};
 
 #[cfg(feature = "experimental")]
-use near_chain_configs::{GenesisConfig, ProtocolConfigView};
-#[cfg(feature = "experimental")]
-use near_jsonrpc_primitives::types::{
-    changes::{RpcStateChangesInBlockByTypeResponse, RpcStateChangesInBlockResponse},
-    receipts::ReceiptReference,
-    transactions::{RpcBroadcastTxSyncResponse, TransactionInfo},
-};
-#[cfg(feature = "experimental")]
-use near_primitives::{
-    transaction::SignedTransaction,
-    types::{BlockReference, MaybeBlockId},
-    views::{
-        validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
-        ReceiptView, StateChangesRequestView,
+use {
+    near_chain_configs::{GenesisConfig, ProtocolConfigView},
+    near_jsonrpc_primitives::types::{
+        changes::{RpcStateChangesInBlockByTypeResponse, RpcStateChangesInBlockResponse},
+        receipts::ReceiptReference,
+        transactions::TransactionInfo,
+    },
+    near_primitives::{
+        types::{BlockReference, MaybeBlockId},
+        views::{
+            validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
+            ReceiptView, StateChangesRequestView,
+        },
     },
 };
 
@@ -211,13 +210,6 @@ where
             .await
     }
 
-    pub async fn check_tx(
-        &self,
-        signed_transaction: SignedTransaction,
-    ) -> Result<RpcBroadcastTxSyncResponse> {
-        self.client().check_tx(signed_transaction).await
-    }
-
     pub async fn genesis_config(&self) -> Result<GenesisConfig> {
         self.client().genesis_config().await
     }
@@ -245,18 +237,6 @@ where
         block_id: MaybeBlockId,
     ) -> Result<Vec<ValidatorStakeView>> {
         self.client().validators_ordered(block_id).await
-    }
-
-    pub async fn signed_transaction<U: serde::Serialize>(
-        &self,
-        contract_id: &AccountId,
-        signer: &InMemorySigner,
-        func_name: String,
-        func_args: Option<U>,
-    ) -> Result<SignedTransaction> {
-        self.client()
-            .signed_transaction(contract_id, signer, func_name, func_args)
-            .await
     }
 }
 

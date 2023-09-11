@@ -27,20 +27,18 @@ use near_primitives::views::{
 };
 
 #[cfg(feature = "experimental")]
-use near_chain_configs::{GenesisConfig, ProtocolConfigView};
-#[cfg(feature = "experimental")]
-use near_jsonrpc_primitives::types::{
-    changes::RpcStateChangesInBlockByTypeResponse,
-    changes::RpcStateChangesInBlockResponse,
-    receipts::ReceiptReference,
-    transactions::{RpcBroadcastTxSyncResponse, TransactionInfo},
-};
-#[cfg(feature = "experimental")]
-use near_primitives::{
-    types::MaybeBlockId,
-    views::{
-        validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
-        ReceiptView, StateChangesRequestView,
+use {
+    near_chain_configs::{GenesisConfig, ProtocolConfigView},
+    near_jsonrpc_primitives::types::{
+        changes::RpcStateChangesInBlockByTypeResponse, changes::RpcStateChangesInBlockResponse,
+        receipts::ReceiptReference, transactions::TransactionInfo,
+    },
+    near_primitives::{
+        types::MaybeBlockId,
+        views::{
+            validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
+            ReceiptView, StateChangesRequestView,
+        },
     },
 };
 
@@ -387,18 +385,6 @@ impl Client {
         Ok(resp)
     }
 
-    pub(crate) async fn check_tx(
-        &self,
-        signed_transaction: SignedTransaction,
-    ) -> Result<RpcBroadcastTxSyncResponse> {
-        let resp = self
-            .rpc_client
-            .call(methods::EXPERIMENTAL_check_tx::RpcCheckTxRequest { signed_transaction })
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-        Ok(resp)
-    }
-
     pub(crate) async fn genesis_config(&self) -> Result<GenesisConfig> {
         let resp = self
             .rpc_client
@@ -455,43 +441,6 @@ impl Client {
             .await
             .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
         Ok(resp)
-    }
-
-    pub(crate) async fn signed_transaction<U: serde::Serialize>(
-        &self,
-        contract_id: &AccountId,
-        signer: &InMemorySigner,
-        func_name: String,
-        func_args: Option<U>,
-    ) -> Result<SignedTransaction> {
-        // parse the func_args
-        let args = match func_args {
-            Some(val) => match serde_json::to_vec(&val) {
-                Ok(args) => args,
-                Err(e) => return Err(ErrorKind::DataConversion.custom(e)),
-            },
-            _ => vec![],
-        };
-
-        let actions = vec![FunctionCallAction {
-            args,
-            method_name: func_name,
-            deposit: DEFAULT_CALL_DEPOSIT,
-            gas: DEFAULT_CALL_FN_GAS,
-        }
-        .into()];
-
-        let signer = signer.inner();
-        let cache_key = (signer.account_id.clone(), signer.public_key.clone());
-        let (block_hash, nonce) = fetch_tx_nonce(self, &cache_key).await?;
-        Ok(SignedTransaction::from_actions(
-            nonce,
-            signer.account_id.clone(),
-            contract_id.clone(),
-            &signer as &dyn Signer,
-            actions,
-            block_hash,
-        ))
     }
 }
 
