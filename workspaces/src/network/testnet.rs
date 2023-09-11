@@ -48,7 +48,7 @@ impl FromNetworkBuilder for Testnet {
                 name: build.name.into(),
                 root_id: AccountId::from_str("testnet").unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/testnet/"),
-                rpc_url,
+                rpc_url: Url::parse(&rpc_url).expect("url is hardcoded"),
             },
         })
     }
@@ -88,6 +88,7 @@ impl TopLevelAccountCreator for Testnet {
                 status: near_primitives::views::FinalExecutionStatus::SuccessValue(Vec::new()),
                 details: ExecutionDetails {
                     transaction: ExecutionOutcome {
+                        transaction_hash: CryptoHash::default(),
                         block_hash: CryptoHash::default(),
                         logs: Vec::new(),
                         receipt_ids: Vec::new(),
