@@ -43,28 +43,135 @@ impl Block {
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct BlockHeader {
-    pub height: BlockHeight,
-    pub epoch_id: CryptoHash,
-    pub next_epoch_id: CryptoHash,
-    pub hash: CryptoHash,
-    pub prev_hash: CryptoHash,
-    pub timestamp_nanosec: u64,
-    pub random_value: CryptoHash,
-    pub gas_price: Balance,
-    pub block_ordinal: Option<u64>,
-    pub total_supply: Balance,
-    pub last_final_block: CryptoHash,
-    pub last_ds_final_block: CryptoHash,
-    pub next_bp_hash: CryptoHash,
-    pub latest_protocol_version: u32,
+    height: BlockHeight,
+    epoch_id: CryptoHash,
+    next_epoch_id: CryptoHash,
+    hash: CryptoHash,
+    prev_hash: CryptoHash,
+    timestamp_nanosec: u64,
+    random_value: CryptoHash,
+    gas_price: Balance,
+    block_ordinal: Option<u64>,
+    total_supply: Balance,
+    last_final_block: CryptoHash,
+    last_ds_final_block: CryptoHash,
+    next_bp_hash: CryptoHash,
+    latest_protocol_version: u32,
 
-    pub prev_state_root: CryptoHash,
-    pub chunk_receipts_root: CryptoHash,
-    pub chunk_headers_root: CryptoHash,
-    pub chunk_tx_root: CryptoHash,
-    pub outcome_root: CryptoHash,
-    pub challenges_root: CryptoHash,
-    pub block_merkle_root: CryptoHash,
+    prev_state_root: CryptoHash,
+    chunk_receipts_root: CryptoHash,
+    chunk_headers_root: CryptoHash,
+    chunk_tx_root: CryptoHash,
+    outcome_root: CryptoHash,
+    challenges_root: CryptoHash,
+    block_merkle_root: CryptoHash,
+}
+
+impl BlockHeader {
+    /// Current height of this block.
+    pub fn height(&self) -> BlockHeight {
+        self.height
+    }
+
+    /// The id of an epoch this block belongs to.
+    pub fn epoch_id(&self) -> &CryptoHash {
+        &self.epoch_id
+    }
+
+    /// The next epoch id.
+    pub fn next_epoch_id(&self) -> &CryptoHash {
+        &self.next_epoch_id
+    }
+
+    /// The hash of the block itself.
+    pub fn hash(&self) -> &CryptoHash {
+        &self.hash
+    }
+
+    /// The hash of the previous block.
+    pub fn prev_hash(&self) -> &CryptoHash {
+        &self.prev_hash
+    }
+
+    /// The block timestamp in nanoseconds.
+    pub fn timestamp_nanosec(&self) -> u64 {
+        self.timestamp_nanosec
+    }
+
+    /// The random value of the block.
+    pub fn random_value(&self) -> &CryptoHash {
+        &self.random_value
+    }
+
+    /// The gas price of the block.
+    pub fn gas_price(&self) -> Balance {
+        self.gas_price
+    }
+
+    /// The block ordinal.
+    pub fn block_ordinal(&self) -> Option<u64> {
+        self.block_ordinal
+    }
+
+    /// The total supply balance of the block.
+    pub fn total_supply(&self) -> Balance {
+        self.total_supply
+    }
+
+    /// The last final block hash.
+    pub fn last_final_block(&self) -> &CryptoHash {
+        &self.last_final_block
+    }
+
+    /// The last ds final block hash.
+    pub fn last_ds_final_block(&self) -> &CryptoHash {
+        &self.last_ds_final_block
+    }
+
+    /// The next bp hash.
+    pub fn next_bp_hash(&self) -> &CryptoHash {
+        &self.next_bp_hash
+    }
+
+    /// The latest protocol version.
+    pub fn latest_protocol_version(&self) -> u32 {
+        self.latest_protocol_version
+    }
+
+    /// The previous state root.
+    pub fn prev_state_root(&self) -> &CryptoHash {
+        &self.prev_state_root
+    }
+
+    /// The chunk receipts root.
+    pub fn chunk_receipts_root(&self) -> &CryptoHash {
+        &self.chunk_receipts_root
+    }
+
+    /// The chunk headers root.
+    pub fn chunk_headers_root(&self) -> &CryptoHash {
+        &self.chunk_headers_root
+    }
+
+    /// The chunk tx root.
+    pub fn chunk_tx_root(&self) -> &CryptoHash {
+        &self.chunk_tx_root
+    }
+
+    /// The outcome root.
+    pub fn outcome_root(&self) -> &CryptoHash {
+        &self.outcome_root
+    }
+
+    /// The challenges root.
+    pub fn challenges_root(&self) -> &CryptoHash {
+        &self.challenges_root
+    }
+
+    /// The block merkle root.
+    pub fn block_merkle_root(&self) -> &CryptoHash {
+        &self.block_merkle_root
+    }
 }
 
 impl From<BlockView> for Block {
