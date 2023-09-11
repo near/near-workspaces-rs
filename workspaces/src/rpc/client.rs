@@ -198,7 +198,6 @@ impl Client {
         .await
     }
 
-    // TODO: write tests that uses transfer_near
     pub(crate) async fn transfer_near(
         &self,
         signer: &InMemorySigner,
@@ -272,7 +271,6 @@ impl Client {
         .await
     }
 
-    // TODO: write tests that uses delete_account
     pub(crate) async fn delete_account(
         &self,
         signer: &InMemorySigner,
