@@ -6,14 +6,28 @@ use crate::{BlockHeight, CryptoHash};
 
 /// Struct containing information on block coming from the network
 #[derive(Clone, Debug, Eq, PartialEq)]
-#[non_exhaustive]
 pub struct Block {
-    pub author: AccountId,
-    pub header: BlockHeader,
-    pub chunks: Vec<ChunkHeader>,
+    author: AccountId,
+    header: BlockHeader,
+    chunks: Vec<ChunkHeader>,
 }
 
 impl Block {
+    /// The account id of the block author.
+    pub fn author(&self) -> &AccountId {
+        &self.author
+    }
+
+    /// The block header info.
+    pub fn header(&self) -> &BlockHeader {
+        &self.header
+    }
+
+    /// The list of chunks in this block.
+    pub fn chunks(&self) -> &[ChunkHeader] {
+        &self.chunks
+    }
+
     /// The block timestamp in nanoseconds.
     pub fn timestamp(&self) -> u64 {
         self.header.timestamp_nanosec
@@ -41,7 +55,6 @@ impl Block {
 /// NOTE: For maintainability purposes, some items have been excluded. If required,
 /// please submit an issue to [workspaces](https://github.com/near/workspaces-rs/issues).
 #[derive(Clone, Debug, Eq, PartialEq)]
-#[non_exhaustive]
 pub struct BlockHeader {
     height: BlockHeight,
     epoch_id: CryptoHash,
