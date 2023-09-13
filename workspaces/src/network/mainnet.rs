@@ -1,7 +1,6 @@
 use crate::network::{Info, NetworkClient, NetworkInfo};
 use crate::result::Result;
 use crate::rpc::client::Client;
-use std::path::PathBuf;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 
@@ -38,7 +37,6 @@ impl FromNetworkBuilder for Mainnet {
             info: Info {
                 name: build.name.into(),
                 root_id: "near".parse().unwrap(),
-                keystore_path: PathBuf::from(".near-credentials/mainnet/"),
                 rpc_url: url::Url::parse(&rpc_url).expect("url is hardcodeed"),
             },
         })
