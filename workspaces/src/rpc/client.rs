@@ -28,16 +28,13 @@ use near_primitives::views::{
 
 #[cfg(feature = "experimental")]
 use {
-    near_chain_configs::{GenesisConfig, ProtocolConfigView},
-    near_jsonrpc_primitives::types::{
-        changes::RpcStateChangesInBlockByTypeResponse, changes::RpcStateChangesInBlockResponse,
-        receipts::ReceiptReference, transactions::TransactionInfo,
-    },
+    near_chain_configs::GenesisConfig,
+    near_jsonrpc_primitives::types::{receipts::ReceiptReference, transactions::TransactionInfo},
     near_primitives::{
         types::MaybeBlockId,
         views::{
             validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
-            ReceiptView, StateChangesRequestView,
+            ReceiptView,
         },
     },
 };
@@ -348,59 +345,10 @@ impl Client {
 
 #[cfg(feature = "experimental")]
 impl Client {
-    pub(crate) async fn changes_in_block(
-        &self,
-        block_reference: BlockReference,
-    ) -> Result<RpcStateChangesInBlockByTypeResponse> {
-        let resp = self
-            .rpc_client
-            .call(
-                methods::EXPERIMENTAL_changes_in_block::RpcStateChangesInBlockRequest {
-                    block_reference,
-                },
-            )
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-
-        Ok(resp)
-    }
-
-    pub(crate) async fn changes(
-        &self,
-        block_reference: BlockReference,
-        state_changes_request: StateChangesRequestView,
-    ) -> Result<RpcStateChangesInBlockResponse> {
-        let resp = self
-            .rpc_client
-            .call(
-                methods::EXPERIMENTAL_changes::RpcStateChangesInBlockByTypeRequest {
-                    block_reference,
-                    state_changes_request,
-                },
-            )
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-        Ok(resp)
-    }
-
     pub(crate) async fn genesis_config(&self) -> Result<GenesisConfig> {
         let resp = self
             .rpc_client
             .call(methods::EXPERIMENTAL_genesis_config::RpcGenesisConfigRequest)
-            .await
-            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-        Ok(resp)
-    }
-
-    pub(crate) async fn protocol_config(
-        &self,
-        block_reference: BlockReference,
-    ) -> Result<ProtocolConfigView> {
-        let resp = self
-            .rpc_client
-            .call(
-                methods::EXPERIMENTAL_protocol_config::RpcProtocolConfigRequest { block_reference },
-            )
             .await
             .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
         Ok(resp)

@@ -1,3 +1,4 @@
+use crate::error::{Error, ErrorKind};
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
 use crate::operations::{CallTransaction, Function};
@@ -5,23 +6,19 @@ use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
 use crate::rpc::patch::{ImportContractTransaction, PatchTransaction};
 use crate::rpc::query::{
-    GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
-    ViewCode, ViewFunction, ViewState,
+    GasPrice, ProtocolConfig, Query, QueryChunk, StateChanges, StateChangesInBlock, ViewAccessKey,
+    ViewAccessKeyList, ViewAccount, ViewBlock, ViewCode, ViewFunction, ViewState,
 };
 use crate::types::{AccountId, Balance, InMemorySigner, PublicKey};
 use crate::worker::Worker;
-use crate::{Account, Network};
+use crate::{Account, CryptoHash, Network};
 
 #[cfg(feature = "experimental")]
 use {
-    near_chain_configs::{GenesisConfig, ProtocolConfigView},
-    near_jsonrpc_primitives::types::{
-        changes::{RpcStateChangesInBlockByTypeResponse, RpcStateChangesInBlockResponse},
-        receipts::ReceiptReference,
-        transactions::TransactionInfo,
-    },
+    near_chain_configs::GenesisConfig,
+    near_jsonrpc_primitives::types::{receipts::ReceiptReference, transactions::TransactionInfo},
     near_primitives::{
-        types::{BlockReference, MaybeBlockId},
+        types::MaybeBlockId,
         views::{
             validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
             ReceiptView, StateChangesRequestView,
@@ -193,36 +190,37 @@ impl<T: ?Sized> Worker<T>
 where
     T: NetworkClient,
 {
-    pub async fn changes_in_block(
-        &self,
-        block_reference: BlockReference,
-    ) -> Result<RpcStateChangesInBlockByTypeResponse> {
-        self.client().changes_in_block(block_reference).await
+    pub fn changes(&self, state_changes: StateChangesRequestView) -> Query<'_, StateChanges> {
+        Query::new(self.client(), StateChanges { state_changes })
     }
 
-    pub async fn changes(
-        &self,
-        block_reference: BlockReference,
-        state_changes_request: StateChangesRequestView,
-    ) -> Result<RpcStateChangesInBlockResponse> {
-        self.client()
-            .changes(block_reference, state_changes_request)
-            .await
+    pub fn changes_in_block(&self) -> Query<'_, StateChangesInBlock> {
+        Query::new(self.client(), StateChangesInBlock)
+    }
+
+    pub fn protocol_config(&self) -> Query<'_, ProtocolConfig> {
+        Query::new(self.client(), ProtocolConfig)
     }
 
     pub async fn genesis_config(&self) -> Result<GenesisConfig> {
         self.client().genesis_config().await
     }
 
-    pub async fn protocol_config(
-        &self,
-        block_reference: BlockReference,
-    ) -> Result<ProtocolConfigView> {
-        self.client().protocol_config(block_reference).await
-    }
+    pub async fn receipt(&self, ids: &[CryptoHash]) -> Result<ReceiptView> {
+        if ids.is_empty() {
+            return Err(Error::message(
+                ErrorKind::DataConversion,
+                "no receipt ids found",
+            ));
+        }
 
-    pub async fn receipt(&self, receipt_reference: ReceiptReference) -> Result<ReceiptView> {
-        self.client().receipt(receipt_reference).await
+        self.client()
+            .receipt(ReceiptReference {
+                receipt_id: near_primitives::hash::CryptoHash(
+                    ids.last().expect("at least one id expected").0,
+                ),
+            })
+            .await
     }
 
     pub async fn tx_status(
