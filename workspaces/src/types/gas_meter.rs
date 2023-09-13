@@ -43,10 +43,12 @@ impl GasMeter {
             gas: Arc::clone(&gas_consumed),
         };
 
-        worker.on_transact = Some(Arc::new(Mutex::new(move |gas: Gas| {
-            *gas_consumed.lock()? += gas;
-            Ok(())
-        })));
+        worker
+            .on_transact
+            .push(Arc::new(Mutex::new(move |gas: Gas| {
+                *gas_consumed.lock()? += gas;
+                Ok(())
+            })));
 
         meter
     }

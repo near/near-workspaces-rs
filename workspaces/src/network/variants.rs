@@ -47,8 +47,8 @@ where
             .create_tla(self.clone().coerce(), id, sk)
             .await?;
 
-        if let Some(ref on_transact) = self.on_transact {
-            on_transact.lock()?(res.details.total_gas_burnt)?;
+        for meter in self.on_transact.iter() {
+            meter.lock()?(res.details.total_gas_burnt)?;
         }
 
         Ok(res)
@@ -65,8 +65,8 @@ where
             .create_tla_and_deploy(self.clone().coerce(), id, sk, wasm)
             .await?;
 
-        if let Some(ref on_transact) = self.on_transact {
-            on_transact.lock()?(res.details.total_gas_burnt)?;
+        for meter in self.on_transact.iter() {
+            meter.lock()?(res.details.total_gas_burnt)?;
         }
 
         Ok(res)

@@ -234,7 +234,7 @@ impl Transaction {
     }
 
     async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
-        let on_transact = self.worker.on_transact.clone();
+        // let on_transact = self.worker.on_transact.clone();
         let view = send_batch_tx_and_retry(
             self.worker.client(),
             &self.signer,
@@ -243,7 +243,7 @@ impl Transaction {
         )
         .await?;
 
-        if let Some(on_transact) = &on_transact {
+        if !self.worker.on_transact.is_empty() {
             let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt
                 + view
                     .receipts_outcome
@@ -251,7 +251,9 @@ impl Transaction {
                     .map(|t| t.outcome.gas_burnt)
                     .sum::<u64>();
 
-            on_transact.lock()?(total_gas_burnt)?;
+            for meter in self.worker.on_transact.iter() {
+                meter.lock()?(total_gas_burnt)?;
+            }
         }
 
         Ok(view)
@@ -362,8 +364,8 @@ impl CallTransaction {
             .map(ExecutionFinalResult::from_view)
             .map_err(crate::error::Error::from)?;
 
-        if let Some(on_transact) = self.worker.on_transact {
-            on_transact.lock()?(txn.total_gas_burnt)?;
+        for meter in self.worker.on_transact.iter() {
+            meter.lock()?(txn.total_gas_burnt)?;
         }
 
         Ok(txn)
@@ -467,8 +469,8 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
         let account = Account::new(signer, self.worker.clone());
         let details = ExecutionFinalResult::from_view(outcome);
 
-        if let Some(on_transact) = self.worker.on_transact.clone() {
-            on_transact.lock()?(details.total_gas_burnt)?;
+        for meter in self.worker.on_transact.iter() {
+            meter.lock()?(details.total_gas_burnt)?;
         }
 
         Ok(Execution {

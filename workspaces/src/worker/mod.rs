@@ -14,7 +14,7 @@ use crate::{Network, Result};
 /// deploying a contract, or interacting with transactions.
 pub struct Worker<T: ?Sized> {
     pub(crate) workspace: Arc<T>,
-    pub(crate) on_transact: Option<GasHook>,
+    pub(crate) on_transact: Vec<GasHook>,
 }
 
 impl<T> Worker<T>
@@ -24,7 +24,7 @@ where
     pub(crate) fn new(network: T) -> Self {
         Self {
             workspace: Arc::new(network),
-            on_transact: None,
+            on_transact: vec![],
         }
     }
 }
