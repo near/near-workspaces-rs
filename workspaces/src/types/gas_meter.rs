@@ -65,10 +65,4 @@ impl GasMeter {
         *meter = 0;
         Ok(())
     }
-
-    /// Add gas to the total amount of gas consumed.
-    pub fn add_gas(&self, g: Gas) {
-        let mut locked_gas = self.gas.lock().expect("GasMeter lock poisoned");
-        *locked_gas += g;
-    }
 }
