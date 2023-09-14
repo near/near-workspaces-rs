@@ -98,7 +98,7 @@ impl FromNetworkBuilder for Sandbox {
             name: build.name.into(),
             root_id: AccountId::from_str("test.near").unwrap(),
             keystore_path: PathBuf::from(".near-credentials/sandbox/"),
-            rpc_url: server.rpc_addr(),
+            rpc_url: url::Url::parse(&server.rpc_addr()).expect("url is hardcoded"),
         };
 
         Ok(Self {

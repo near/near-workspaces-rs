@@ -9,13 +9,16 @@ anyhow = "1.0"
 borsh = "0.10"
 maplit = "1.0"
 near-units = "0.2.0"
+near-jsonrpc-primitives = "0.17"
+near-primitives = "0.17"
 serde = "1.0"
 serde_with = "1"
 serde_json = { version = "1.0" }
 tokio = { version = "1.10.0", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
-workspaces = { path = "../workspaces" }
+workspaces = { path = "../workspaces", features = ["experimental"] }
+
 
 [build-dependencies]
 anyhow = "1.0"
@@ -56,3 +59,35 @@ path = "src/various_queries.rs"
 [[example]]
 name = "view_abi"
 path = "src/view_abi.rs"
+
+[[example]]
+name = "genesis_config"
+path = "src/genesis_config.rs"
+
+[[example]]
+name = "validators_ordered"
+path = "src/validators_ordered.rs"
+
+[[example]]
+name = "protocol_config"
+path = "src/protocol_config.rs"
+
+[[example]]
+name = "changes_in_block"
+path = "src/changes_in_block.rs"
+
+[[example]]
+name = "changes"
+path = "src/changes.rs"
+
+[[example]]
+name = "receipt"
+path = "src/receipt.rs"
+
+[[example]]
+name = "tx_status"
+path = "src/tx_status.rs"
+
+[[example]]
+name = "noop"
+path = "src/noop.rs"
