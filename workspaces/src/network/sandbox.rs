@@ -20,7 +20,7 @@ use crate::{Account, Contract, Network, Worker};
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 
-const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
+const DEFAULT_DEPOSIT: Balance = NEAR_BASE * 100;
 
 /// Local sandboxed environment/network, which can be used to test without interacting with
 /// networks that are online such as mainnet and testnet. Look at [`workspaces::sandbox`]

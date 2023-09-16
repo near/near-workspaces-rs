@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 
+use near_gas::NearGas;
 use near_units::{parse_gas, parse_near};
 use serde_json::json;
 use workspaces::network::Sandbox;
@@ -173,7 +174,7 @@ async fn deposit_tokens(
                 "amount": amount.to_string(),
                 "msg": "",
             }))
-            .gas(parse_gas!("200 Tgas") as u64)
+            .gas(NearGas::from_gas(parse_gas!("200 Tgas") as u64))
             .deposit(1)
             .transact()
             .await?
@@ -310,7 +311,7 @@ async fn main() -> anyhow::Result<()> {
             })],
         }))
         .deposit(1)
-        .gas(parse_gas!("100 Tgas") as u64)
+        .gas(NearGas::from_gas(parse_gas!("100 Tgas") as u64))
         .transact()
         .await?;
     let gas_burnt = actual_out.total_gas_burnt;
@@ -320,7 +321,7 @@ async fn main() -> anyhow::Result<()> {
         actual_out
     );
     assert_eq!(actual_out, expected_return);
-    println!("Gas burnt from swapping: {}", gas_burnt);
+    println!("Gas burnt from swapping: {}", gas_burnt.as_gas());
 
     ///////////////////////////////////////////////////////////////////////////
     // Stage 5: See that our swap tokens reflect in our deposits
