@@ -17,7 +17,7 @@ use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
-use near_gas::NearGas;
+
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 

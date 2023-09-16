@@ -1,6 +1,5 @@
 //! Result and execution types from results of RPC calls to the network.
 
-use std::convert::TryInto;
 use std::fmt;
 
 use near_account_id::AccountId;
