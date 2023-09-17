@@ -135,7 +135,7 @@ pub async fn run_scheduled_tasks(
     // here, so the agent should be executing the task.
     agent
         .call(contract.id(), "proxy_call")
-        .gas(NearGas::from_gas(parse_gas!("200 Tgas") as u64))
+        .gas(NearGas::from_tgas(200))
         .transact()
         .await?
         .into_result()?;
@@ -145,7 +145,7 @@ pub async fn run_scheduled_tasks(
     worker.fast_forward(4500).await?;
     agent
         .call(contract.id(), "proxy_call")
-        .gas(NearGas::from_gas(parse_gas!("200 Tgas") as u64))
+        .gas(NearGas::from_gas(200))
         .transact()
         .await?
         .into_result()?;

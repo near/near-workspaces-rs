@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
         .into_result()?;
     println!(
         "Bob burnt {} gas callling into `set_status('Hello')`",
-        outcome.total_gas_burnt.as_gas()
+        outcome.total_gas_burnt
     );
 
     // let's get a reference point to the chain at it's current state, so we can reference it back later
@@ -67,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
         .into_result()?;
     println!(
         "Bob burnt {} gas callling into `set_status('World')`",
-        outcome.total_gas_burnt.as_gas()
+        outcome.total_gas_burnt
     );
 
     // Then view that it indeed has changed:

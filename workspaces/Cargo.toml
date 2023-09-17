@@ -40,7 +40,7 @@ near-jsonrpc-primitives = "0.17"
 near-jsonrpc-client = { version = "0.6", features = ["sandbox"] }
 near-sandbox-utils = "0.6.2"
 near-chain-configs = { version = "0.17.0", optional = true }
-near-gas = { git = "https://github.com/iho/near-gas.git", rev = "1c6574ddc1d1de82f79685441e55831f95936897", features = [
+near-gas = { git = "https://github.com/iho/near-gas.git", rev = "579e541fd03c4f73cf765995137fb7a6843661b2", features = [
     "serde",
     "borsh",
     "schemars",

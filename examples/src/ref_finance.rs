@@ -321,7 +321,7 @@ async fn main() -> anyhow::Result<()> {
         actual_out
     );
     assert_eq!(actual_out, expected_return);
-    println!("Gas burnt from swapping: {}", gas_burnt.as_gas());
+    println!("Gas burnt from swapping: {}", gas_burnt);
 
     ///////////////////////////////////////////////////////////////////////////
     // Stage 5: See that our swap tokens reflect in our deposits

@@ -9,7 +9,7 @@ anyhow = "1.0"
 borsh = "0.10"
 maplit = "1.0"
 near-units = "0.2.0"
-near-gas = { git = "https://github.com/iho/near-gas.git", rev = "1c6574ddc1d1de82f79685441e55831f95936897", features = [
+near-gas = { git = "https://github.com/iho/near-gas.git", rev = "579e541fd03c4f73cf765995137fb7a6843661b2", features = [
     "serde",
     "borsh",
     "schemars",
