@@ -57,7 +57,7 @@ test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
 [features]
-default = ["install", "interop_sdk"]
+default = ["install", "interop_sdk", "unstable"]
 install = []  # Install the sandbox binary during compile time
 interop_sdk = ["near-sdk"]
 unstable = ["cargo_metadata"]

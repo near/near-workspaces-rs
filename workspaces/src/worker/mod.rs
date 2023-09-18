@@ -4,7 +4,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use crate::network::builder::NetworkBuilder;
-use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
+use crate::network::{Betanet, Custom, Mainnet, Sandbox, Testnet};
 use crate::{Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
@@ -76,6 +76,10 @@ pub fn betanet<'a>() -> NetworkBuilder<'a, Betanet> {
     NetworkBuilder::new("betanet")
 }
 
+pub fn custom<'a>(rpc_url: &str) -> NetworkBuilder<'a, Custom> {
+    NetworkBuilder::new("custom").rpc_addr(rpc_url)
+}
+
 /// Run a locally scoped task where a [`sandbox`] instanced [`Worker`] is supplied.
 pub async fn with_sandbox<F, T>(task: F) -> Result<T::Output>
 where
@@ -128,4 +132,12 @@ where
     T: core::future::Future,
 {
     Ok(task(betanet().await?).await)
+}
+
+pub async fn with_custom<F, T>(task: F, rpc_url: &str) -> Result<T::Output>
+where
+    F: Fn(Worker<Custom>) -> T,
+    T: core::future::Future,
+{
+    Ok(task(custom(rpc_url).await?).await)
 }

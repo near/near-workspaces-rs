@@ -29,3 +29,6 @@ pub use worker::{
     betanet, mainnet, mainnet_archival, sandbox, testnet, testnet_archival, with_betanet,
     with_mainnet, with_mainnet_archival, with_sandbox, with_testnet, with_testnet_archival, Worker,
 };
+
+#[cfg(feature = "unstable")]
+pub use worker::{custom, with_custom};
