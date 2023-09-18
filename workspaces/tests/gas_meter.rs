@@ -302,3 +302,14 @@ async fn test_gas_meter_create_account_transaction() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test(tokio::test)]
+async fn test_dropped_gas_meter() -> anyhow::Result<()> {
+    let mut worker = workspaces::sandbox().await?;
+    let gas_meter = GasMeter::now(&mut worker);
+    drop(gas_meter);
+
+    worker.dev_create_account().await?;
+
+    Ok(())
+}

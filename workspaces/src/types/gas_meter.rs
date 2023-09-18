@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    ops::AddAssign,
+    sync::{Arc, Mutex},
+};
 
 use crate::Worker;
 
@@ -37,7 +40,7 @@ pub struct GasMeter {
 impl GasMeter {
     /// Create a new gas meter with 0 gas consumed.
     pub fn now<T: ?Sized>(worker: &mut Worker<T>) -> Self {
-        let gas_consumed = Arc::new(Mutex::new(0));
+        let mut gas_consumed = Arc::new(Mutex::new(0));
 
         let meter = Self {
             gas: Arc::clone(&gas_consumed),
@@ -46,7 +49,12 @@ impl GasMeter {
         worker
             .on_transact
             .push(Arc::new(Mutex::new(move |gas: Gas| {
-                *gas_consumed.lock()? += gas;
+                // check if reference is unique, expect false
+                match Arc::get_mut(&mut gas_consumed) {
+                    Some(_) => tracing::info!("GasMeter dropped, hook invalid."),
+                    None => gas_consumed.lock()?.add_assign(gas),
+                }
+
                 Ok(())
             })));
 
