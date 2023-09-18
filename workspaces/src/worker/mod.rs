@@ -134,6 +134,7 @@ where
     Ok(task(betanet().await?).await)
 }
 
+#[allow(dead_code)]
 pub async fn with_custom<F, T>(task: F, rpc_url: &str) -> Result<T::Output>
 where
     F: Fn(Worker<Custom>) -> T,

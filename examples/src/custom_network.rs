@@ -1,12 +1,12 @@
 /// URL to the Pagoda API to use for testnet.
 pub const PAGODA_TESTNET_RPC_URL: &str = "https://near-testnet.api.pagoda.co/rpc/v1/";
 
-#[tokio::test]
-async fn test_custom_network() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     // `NEAR_RPC_API_KEY="xxxx" cargo test --package workspaces --test custom_network -- test_custom_network --exact --nocapture`
     if std::env::var("NEAR_RPC_API_KEY").is_err() {
         // skip the test
-        println!("NEAR_RPC_API_KEY is not set, skipping the test");
+        println!("NEAR_RPC_API_KEY is not set, skipping the example");
         return Ok(());
     }
 
