@@ -14,13 +14,21 @@
   - Impl `Display`, `FromStr`, `TryFrom<u8>` for `KeyType`.
 - [Added `TryFrom<near_sdk::PublicKey>` for `workspaces::PublicKey`](https://github.com/near/workspaces-rs/pull/267)
   - Added `KeyType::len` and `PublicKey::try_from_bytes`
+- [Added experimental apis from near-sdk-rs](https://github.com/near/near-workspaces-rs/pull/285), available under the **experimental** flag.
+  - Methods added are: EXPERIMENTAL_changes_in_block, EXPERIMENTAL_changes, EXPERIMENTAL_genesis_config, EXPERIMENTAL_protocol_config, EXPERIMENTAL_receipt, EXPERIMENTAL_tx_status, EXPERIMENTAL_validators_ordered
+- [Added Worker::patch to patch account, keys, code, and state in a generic builder](https://github.com/near/near-workspaces-rs/pull/291)
+  - Added `Worker::patch` and `PatchTransaction` that provide builders for patching accounts, keys, code, and state.
+  - Added `AccountDetails` and `AccountDetailsPatch` which hold the state of the patch.
 
 ### Changed
 
 - [`Transaction::transact_async` no longer has a lifetime parameter to make it easier to use](https://github.com/near/workspaces-rs/pull/249)
+- [Improved error message on calling a json on a void function](https://github.com/near/near-workspaces-rs/pull/286)
+- [Removed serde-arbitrary-precision feature in examples](https://github.com/near/near-workspaces-rs/pull/287)
 
 ### Fixed
 
+- [Upgraded to Rust Stable Toolchain](https://github.com/near/near-workspaces-rs/commit/8d93197d06aee2a426b6da99e270ce1658c2cd4f). Deprecates requirement of only using rustc-1.69 and lower.
 - [Run `neard` on `localhost` instead of `0.0.0.0` to prevent firewall popups on MacOS](https://github.com/near/workspaces-rs/issues/276)
 
 ## [0.7.0]
