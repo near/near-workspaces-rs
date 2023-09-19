@@ -17,7 +17,7 @@ serde_json = { version = "1.0" }
 tokio = { version = "1.10.0", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
-workspaces = { path = "../workspaces", features = ["experimental"] }
+workspaces = { path = "../workspaces", features = ["experimental", "unstable"] }
 
 
 [[example]]
@@ -83,3 +83,7 @@ path = "src/tx_status.rs"
 [[example]]
 name = "noop"
 path = "src/noop.rs"
+
+[[example]]
+name = "status"
+path = "src/status.rs"
