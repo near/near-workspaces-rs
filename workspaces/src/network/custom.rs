@@ -17,7 +17,7 @@ impl FromNetworkBuilder for Custom {
         let rpc_url = build
             .rpc_addr
             .expect("rpc address should be provided for custom network");
-        let client = Client::new(&rpc_url)?;
+        let client = Client::new(&rpc_url, build.api_key)?;
         client.wait_for_rpc().await?;
 
         Ok(Self {

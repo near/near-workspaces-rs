@@ -76,6 +76,9 @@ pub fn betanet<'a>() -> NetworkBuilder<'a, Betanet> {
     NetworkBuilder::new("betanet")
 }
 
+/// Connect to a custom network, and grab a [`Worker`] that can interact with it.
+///
+/// Note: the burden of ensuring the methods that are able to be called are left up to the user.
 pub fn custom<'a>(rpc_url: &str) -> NetworkBuilder<'a, Custom> {
     NetworkBuilder::new("custom").rpc_addr(rpc_url)
 }
