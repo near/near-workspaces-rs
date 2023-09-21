@@ -9,7 +9,7 @@ use rand::Rng;
 use url::Url;
 
 use near_crypto::SecretKey;
-use near_primitives::views::StateItem;
+use near_primitives::views::{FinalExecutionOutcomeView, StateItem};
 
 use crate::error::{ErrorKind, RpcErrorCode};
 use crate::result::Result;
@@ -39,11 +39,11 @@ pub(crate) async fn url_create_account(
     helper_url: Url,
     account_id: AccountId,
     pk: PublicKey,
-) -> Result<()> {
+) -> Result<FinalExecutionOutcomeView> {
     let helper_url = helper_url.join("account").unwrap();
 
     // TODO(maybe): need this in near-jsonrpc-client as well:
-    let _resp = reqwest::Client::new()
+    reqwest::Client::new()
         .post(helper_url)
         .header("Content-Type", "application/json")
         .body(
@@ -55,9 +55,10 @@ pub(crate) async fn url_create_account(
         )
         .send()
         .await
-        .map_err(|e| RpcErrorCode::HelperAccountCreationFailure.custom(e))?;
-
-    Ok(())
+        .map_err(|e| RpcErrorCode::HelperAccountCreationFailure.custom(e))?
+        .json::<FinalExecutionOutcomeView>()
+        .await
+        .map_err(|e| RpcErrorCode::HelperAccountCreationFailure.custom(e))
 }
 
 pub(crate) fn write_cred_to_file(path: &Path, id: &AccountId, sk: &SecretKey) -> Result<()> {
