@@ -40,11 +40,8 @@ pub(crate) async fn url_create_account(
     account_id: AccountId,
     pk: PublicKey,
 ) -> Result<FinalExecutionOutcomeView> {
-    let helper_url = helper_url.join("account").unwrap();
-
-    // TODO(maybe): need this in near-jsonrpc-client as well:
     reqwest::Client::new()
-        .post(helper_url)
+        .post(helper_url.join("account").expect("helper url is valid"))
         .header("Content-Type", "application/json")
         .body(
             serde_json::to_vec(&serde_json::json!({
@@ -58,7 +55,7 @@ pub(crate) async fn url_create_account(
         .map_err(|e| RpcErrorCode::HelperAccountCreationFailure.custom(e))?
         .json::<FinalExecutionOutcomeView>()
         .await
-        .map_err(|e| RpcErrorCode::HelperAccountCreationFailure.custom(e))
+        .map_err(|e| ErrorKind::DataConversion.custom(e))
 }
 
 pub(crate) fn write_cred_to_file(path: &Path, id: &AccountId, sk: &SecretKey) -> Result<()> {
