@@ -311,7 +311,7 @@ async fn main() -> anyhow::Result<()> {
             })],
         }))
         .deposit(1)
-        .gas(NearGas::from_tgas(100)
+        .gas(NearGas::from_tgas(100))
         .transact()
         .await?;
     let gas_burnt = actual_out.total_gas_burnt;

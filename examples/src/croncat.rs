@@ -6,7 +6,7 @@
 // at a set amount of time we supply.
 
 use near_gas::NearGas;
-use near_units::{parse_gas, parse_near};
+use near_units::parse_near;
 use serde::Deserialize;
 use serde_json::json;
 
