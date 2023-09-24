@@ -215,7 +215,6 @@ impl Transaction {
     /// An action which stakes the signer's tokens and setups a validator public key.
     pub fn stake(mut self, stake: Balance, pk: PublicKey) -> Self {
         if let Ok(actions) = &mut self.actions {
-            let stake = stake;
             actions.push(
                 StakeAction {
                     stake,
