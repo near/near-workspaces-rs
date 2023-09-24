@@ -3,6 +3,7 @@
 use std::fmt;
 
 use near_account_id::AccountId;
+use near_gas::NearGas;
 use near_primitives::errors::TxExecutionError;
 use near_primitives::views::{
     CallResult, ExecutionOutcomeWithIdView, ExecutionStatusView, FinalExecutionOutcomeView,
@@ -186,6 +187,7 @@ impl ExecutionFinalResult {
             .map(ExecutionOutcome::from)
             .collect();
 
+        let total_gas_burnt = NearGas::from_gas(total_gas_burnt);
         Self {
             total_gas_burnt,
             status: view.status,
@@ -533,7 +535,7 @@ impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {
                 .into_iter()
                 .map(|c| CryptoHash(c.0))
                 .collect(),
-            gas_burnt: view.outcome.gas_burnt,
+            gas_burnt: NearGas::from_gas(view.outcome.gas_burnt),
             tokens_burnt: view.outcome.tokens_burnt,
             executor_id: view.outcome.executor_id,
             status: view.outcome.status,

@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use async_trait::async_trait;
+use near_gas::NearGas;
 use url::Url;
 
 use near_primitives::views::ExecutionStatusView;
@@ -83,7 +84,7 @@ impl TopLevelAccountCreator for Testnet {
             details: ExecutionFinalResult {
                 // We technically have not burnt any gas ourselves since someone else paid to
                 // create the account for us in testnet when we used the Helper contract.
-                total_gas_burnt: 0,
+                total_gas_burnt: NearGas::from_gas(0),
 
                 status: near_primitives::views::FinalExecutionStatus::SuccessValue(Vec::new()),
                 details: ExecutionDetails {
@@ -92,7 +93,7 @@ impl TopLevelAccountCreator for Testnet {
                         block_hash: CryptoHash::default(),
                         logs: Vec::new(),
                         receipt_ids: Vec::new(),
-                        gas_burnt: 0,
+                        gas_burnt: NearGas::from_gas(0),
                         tokens_burnt: 0,
                         executor_id: "testnet".parse().unwrap(),
                         status: ExecutionStatusView::SuccessValue(Vec::new()),
