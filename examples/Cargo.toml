@@ -9,11 +9,7 @@ anyhow = "1.0"
 borsh = "0.10"
 maplit = "1.0"
 near-units = "0.2.0"
-near-gas = { git = "https://github.com/Mr0melian/near-gas.git", rev = "e6cb97e25064231f5e34c96ea4887f75169fe4cb", features = [
-    "serde",
-    "borsh",
-    "schemars",
-] }
+near-gas = { version = "0.2.3", features = ["serde", "borsh", "schemars"] }
 near-jsonrpc-primitives = "0.17"
 near-primitives = "0.17"
 serde = "1.0"

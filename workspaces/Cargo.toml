@@ -32,6 +32,7 @@ tokio-retry = "0.3"
 tracing = "0.1"
 url = { version = "2.2.2", features = ["serde"] }
 
+near-gas = { version = "0.2.3", features = ["serde", "borsh", "schemars"] }
 near-sdk = { version = "4.1", optional = true }
 near-account-id = "0.17"
 near-crypto = "0.17"
@@ -40,11 +41,6 @@ near-jsonrpc-primitives = "0.17"
 near-jsonrpc-client = { version = "0.6", features = ["sandbox"] }
 near-sandbox-utils = "0.6.2"
 near-chain-configs = { version = "0.17.0", optional = true }
-near-gas = { git = "https://github.com/Mr0melian/near-gas.git", rev = "e6cb97e25064231f5e34c96ea4887f75169fe4cb", features = [
-    "serde",
-    "borsh",
-    "schemars",
-] }
 [build-dependencies]
 near-sandbox-utils = "0.6.2"
 
