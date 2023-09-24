@@ -28,7 +28,7 @@ use std::future::IntoFuture;
 use std::pin::Pin;
 use std::task::Poll;
 
-const MAX_GAS: NearGas = NearGas::from_gas(300_000_000_000_000);
+const MAX_GAS: NearGas = NearGas::from_tgas(300);
 
 /// A set of arguments we can provide to a transaction, containing
 /// the function name, arguments, the amount of gas to use and deposit.

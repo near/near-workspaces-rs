@@ -49,7 +49,7 @@ use crate::result::Result;
 use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 use crate::{Network, Worker};
 
-pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_gas(10_000_000_000_000);
+pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such

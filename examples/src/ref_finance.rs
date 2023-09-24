@@ -174,7 +174,7 @@ async fn deposit_tokens(
                 "amount": amount.to_string(),
                 "msg": "",
             }))
-            .gas(NearGas::from_gas(parse_gas!("200 Tgas") as u64))
+            .gas(NearGas::from_tgas(200))
             .deposit(1)
             .transact()
             .await?
@@ -311,7 +311,7 @@ async fn main() -> anyhow::Result<()> {
             })],
         }))
         .deposit(1)
-        .gas(NearGas::from_gas(parse_gas!("100 Tgas") as u64))
+        .gas(NearGas::from_tgas(100)
         .transact()
         .await?;
     let gas_burnt = actual_out.total_gas_burnt;
