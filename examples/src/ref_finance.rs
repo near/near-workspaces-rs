@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 
 use near_gas::NearGas;
-use near_units::{parse_gas, parse_near};
+use near_units::parse_near;
 use serde_json::json;
 use workspaces::network::Sandbox;
 use workspaces::{Account, AccountId, Contract, Worker};
