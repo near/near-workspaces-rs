@@ -1,4 +1,5 @@
 #![recursion_limit = "256"]
+use near_gas::NearGas;
 use near_units::parse_near;
 use test_log::test;
 use workspaces::{Contract, DevNetwork, Worker};
@@ -37,7 +38,7 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
     if let Some(exeuction_err) = res.err() {
         assert!(format!("{}", exeuction_err).contains("Failed to deserialize input from JSON"));
         assert!(
-            exeuction_err.total_gas_burnt > 0,
+            exeuction_err.total_gas_burnt > NearGas::from_gas(0),
             "Gas is still burnt for transaction although inputs are incorrect"
         );
     } else {
