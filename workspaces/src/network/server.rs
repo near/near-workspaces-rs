@@ -56,7 +56,7 @@ async fn acquire_unused_port() -> Result<(u16, File)> {
 
 async fn init_home_dir() -> Result<TempDir> {
     let home_dir = tempfile::tempdir().map_err(|e| ErrorKind::Io.custom(e))?;
-    let output = sandbox::init(&home_dir)
+    let output = sandbox::init_with_version(&home_dir, crate::version::NEAR_SANDBOX_VERSION)
         .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
         .output()
         .await

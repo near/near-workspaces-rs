@@ -65,10 +65,21 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
     home_dir.push(format!("test-sandbox-{}", rpc_port));
 
     // intialize chain data with supplied home dir
-    let output = near_sandbox_utils::init(&home_dir)?.output().await?;
+    let output = near_sandbox_utils::init_with_version(
+        &home_dir,
+        workspaces::version::NEAR_SANDBOX_VERSION,
+    )?
+    .output()
+    .await?;
+    // let output = near_sandbox_utils::init(&home_dir)?.output().await?;
     tracing::info!(target: "workspaces-test", "sandbox-init: {:?}", output);
 
-    let mut child = near_sandbox_utils::run(&home_dir, rpc_port, net_port)?;
+    let mut child = near_sandbox_utils::run_with_version(
+        &home_dir,
+        rpc_port,
+        net_port,
+        workspaces::version::NEAR_SANDBOX_VERSION,
+    )?;
 
     // connect to local sandbox node
     let worker = workspaces::sandbox()
