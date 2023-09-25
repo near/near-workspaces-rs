@@ -5,6 +5,7 @@
 pub(crate) mod account;
 pub(crate) mod block;
 pub(crate) mod chunk;
+pub mod keyloader;
 
 #[cfg(feature = "interop_sdk")]
 mod sdk;
@@ -189,6 +190,12 @@ impl FromStr for PublicKey {
     }
 }
 
+impl From<near_crypto::PublicKey> for PublicKey {
+    fn from(pk: near_crypto::PublicKey) -> Self {
+        Self(pk)
+    }
+}
+
 impl BorshSerialize for PublicKey {
     fn serialize<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         // NOTE: sdk::PublicKey requires that we serialize the length of the key first, then the key itself.
@@ -264,6 +271,12 @@ impl FromStr for SecretKey {
             .map_err(|e| ErrorKind::DataConversion.custom(e))?;
 
         Ok(Self(sk))
+    }
+}
+
+impl From<near_crypto::SecretKey> for SecretKey {
+    fn from(sk: near_crypto::SecretKey) -> Self {
+        Self(sk)
     }
 }
 
