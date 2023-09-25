@@ -71,7 +71,7 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
     )?
     .output()
     .await?;
-    // let output = near_sandbox_utils::init(&home_dir)?.output().await?;
+
     tracing::info!(target: "workspaces-test", "sandbox-init: {:?}", output);
 
     let mut child = near_sandbox_utils::run_with_version(
