@@ -64,8 +64,8 @@ impl KeyLoader {
             });
 
         if let Some(cred) = credentials {
-            return Ok(serde_json::from_str::<AccountKeyPair>(&cred)
-                .map_err(|e| Error::custom(ErrorKind::DataConversion, e))?);
+            return serde_json::from_str::<AccountKeyPair>(&cred)
+                .map_err(|e| Error::custom(ErrorKind::DataConversion, e));
         }
 
         Err(Error::custom(
@@ -81,7 +81,7 @@ impl KeyLoader {
 
         keyring::Entry::new(
             &service_name,
-            &format!("{}:{}", account_id, self.public_key.to_string()),
+            &format!("{}:{}", account_id, self.public_key),
         )
         .map_err(|e| {
             Error::custom(
