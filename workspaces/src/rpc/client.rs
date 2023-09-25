@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use near_gas::NearGas;
 use tokio::sync::RwLock;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
@@ -45,7 +46,7 @@ use crate::result::Result;
 use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 use crate::{Network, Worker};
 
-pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
+pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such

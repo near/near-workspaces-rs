@@ -14,6 +14,7 @@ use crate::worker::Worker;
 use crate::{Account, CryptoHash, Network};
 
 use near_account_id::ParseAccountError;
+use near_gas::NearGas;
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::tx::RpcTransactionError;
 use near_primitives::transaction::{
@@ -27,7 +28,7 @@ use std::future::IntoFuture;
 use std::pin::Pin;
 use std::task::Poll;
 
-const MAX_GAS: Gas = 300_000_000_000_000;
+const MAX_GAS: NearGas = NearGas::from_tgas(300);
 
 /// A set of arguments we can provide to a transaction, containing
 /// the function name, arguments, the amount of gas to use and deposit.
@@ -165,7 +166,7 @@ impl Transaction {
                 method_name: function.name.to_string(),
                 args,
                 deposit: function.deposit,
-                gas: function.gas,
+                gas: function.gas.as_gas(),
             }));
         }
 
@@ -228,6 +229,7 @@ impl Transaction {
     /// Transfer `deposit` amount from `signer`'s account into `receiver_id`'s account.
     pub fn transfer(mut self, deposit: Balance) -> Self {
         if let Ok(actions) = &mut self.actions {
+            let deposit = deposit;
             actions.push(TransferAction { deposit }.into());
         }
         self
@@ -313,13 +315,13 @@ impl CallTransaction {
 
     /// Specify the amount of tokens to be deposited where `deposit` is the amount of
     /// tokens in yocto near.
-    pub fn deposit(mut self, deposit: u128) -> Self {
+    pub fn deposit(mut self, deposit: Balance) -> Self {
         self.function = self.function.deposit(deposit);
         self
     }
 
     /// Specify the amount of gas to be used where `gas` is the amount of gas in yocto near.
-    pub fn gas(mut self, gas: u64) -> Self {
+    pub fn gas(mut self, gas: NearGas) -> Self {
         self.function = self.function.gas(gas);
         self
     }
@@ -340,7 +342,7 @@ impl CallTransaction {
                 &self.contract_id,
                 self.function.name.to_string(),
                 self.function.args?,
-                self.function.gas,
+                self.function.gas.as_gas(),
                 self.function.deposit,
             )
             .await
@@ -363,7 +365,7 @@ impl CallTransaction {
             vec![FunctionCallAction {
                 args: self.function.args?,
                 method_name: self.function.name,
-                gas: self.function.gas,
+                gas: self.function.gas.as_gas(),
                 deposit: self.function.deposit,
             }
             .into()],
