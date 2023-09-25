@@ -36,8 +36,8 @@ impl KeyLoader {
     /// `near-cli-rs` using the "save-to-keychain" option.
     ///
     /// Note: Other tools may use different paths/formats.
-    pub async fn from_keychain<T: NetworkClient>(
-        worker: &Worker<T>,
+    pub async fn from_keychain(
+        worker: &Worker<impl NetworkClient>,
         network: &str,
         account_id: AccountId,
     ) -> Result<AccountKeyPair, Error> {
@@ -63,15 +63,15 @@ impl KeyLoader {
                 keyring.get_password().ok()
             });
 
-        if let Some(cred) = credentials {
-            return serde_json::from_str::<AccountKeyPair>(&cred)
-                .map_err(|e| Error::custom(ErrorKind::DataConversion, e));
-        }
+        match credentials {
+            Some(cred) => serde_json::from_str::<AccountKeyPair>(&cred)
+                .map_err(|e| Error::custom(ErrorKind::DataConversion, e)),
 
-        Err(Error::custom(
-            ErrorKind::Other,
-            "No access keys found in keychain",
-        ))
+            None => Err(Error::custom(
+                ErrorKind::Other,
+                "No access keys found in keychain",
+            )),
+        }
     }
 
     /// This saves the account information to the keychain. This is interoperable with credentials saved using
