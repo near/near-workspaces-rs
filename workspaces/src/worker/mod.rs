@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use crate::network::builder::NetworkBuilder;
 use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
-use crate::{Network, Result};
+use crate::{version, Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
 /// as mainnet and testnet. This controls where the environment the worker is
@@ -45,6 +45,13 @@ impl<T: fmt::Debug> fmt::Debug for Worker<T> {
 /// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
 pub fn sandbox<'a>() -> NetworkBuilder<'a, Sandbox> {
     NetworkBuilder::new("sandbox")
+}
+
+/// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
+pub async fn sandbox_with_version<'a>(version: &str) -> Result<Worker<Sandbox>> {
+    let network_builder = NetworkBuilder::new("sandbox");
+    let network = Sandbox::from_builder_with_version(network_builder, version).await?;
+    Ok(Worker::new(network))
 }
 
 /// Connect to the [testnet](https://explorer.testnet.near.org/) network, and grab

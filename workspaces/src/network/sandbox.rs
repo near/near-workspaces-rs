@@ -31,6 +31,7 @@ pub struct Sandbox {
     pub(crate) server: SandboxServer,
     client: Client,
     info: Info,
+    version: Option<String>,
 }
 
 impl Sandbox {
@@ -46,22 +47,10 @@ impl Sandbox {
             )),
         }
     }
-}
-
-impl std::fmt::Debug for Sandbox {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_struct("Sandbox")
-            .field("root_id", &self.info.root_id)
-            .field("rpc_url", &self.info.rpc_url)
-            .field("rpc_port", &self.server.rpc_port())
-            .field("net_port", &self.server.net_port())
-            .finish()
-    }
-}
-
-#[async_trait]
-impl FromNetworkBuilder for Sandbox {
-    async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
+    pub(crate) async fn from_builder_with_version<'a>(
+        build: NetworkBuilder<'a, Self>,
+        version: &str,
+    ) -> Result<Self> {
         // Check the conditions of the provided rpc_url and validator_key
         let mut server = match (build.rpc_addr, build.validator_key) {
             // Connect to a provided sandbox:
@@ -70,7 +59,7 @@ impl FromNetworkBuilder for Sandbox {
             }
 
             // Spawn a new sandbox since rpc_url and home_dir weren't specified:
-            (None, None) => SandboxServer::run_new().await?,
+            (None, None) => SandboxServer::run_new_with_version(version).await?,
 
             // Missing inputted parameters for sandbox:
             (Some(rpc_url), None) => {
@@ -105,7 +94,27 @@ impl FromNetworkBuilder for Sandbox {
             server,
             client,
             info,
+            version: Some(version.to_string()),
         })
+    }
+}
+
+impl std::fmt::Debug for Sandbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("Sandbox")
+            .field("root_id", &self.info.root_id)
+            .field("rpc_url", &self.info.rpc_url)
+            .field("rpc_port", &self.server.rpc_port())
+            .field("net_port", &self.server.net_port())
+            .field("version", &self.version)
+            .finish()
+    }
+}
+
+#[async_trait]
+impl FromNetworkBuilder for Sandbox {
+    async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
+        Self::from_builder_with_version(build, crate::version::NEAR_SANDBOX_VERSION).await
     }
 }
 
