@@ -1,4 +1,5 @@
 use near_account_id::AccountId;
+use near_gas::NearGas;
 use near_primitives::views::ChunkView;
 
 use crate::types::{Balance, Gas, ShardId};
@@ -48,8 +49,8 @@ impl From<ChunkView> for Chunk {
                 height_created: view.header.height_created,
                 height_included: view.header.height_included,
                 shard_id: view.header.shard_id,
-                gas_used: view.header.gas_used,
-                gas_limit: view.header.gas_limit,
+                gas_used: NearGas::from_gas(view.header.gas_used),
+                gas_limit: NearGas::from_gas(view.header.gas_limit),
                 balance_burnt: view.header.balance_burnt,
 
                 tx_root: view.header.tx_root.into(),
