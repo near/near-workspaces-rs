@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
+use near_sandbox_utils as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
@@ -114,7 +115,7 @@ impl std::fmt::Debug for Sandbox {
 #[async_trait]
 impl FromNetworkBuilder for Sandbox {
     async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
-        Self::from_builder_with_version(build, crate::version::NEAR_SANDBOX_VERSION).await
+        Self::from_builder_with_version(build, sandbox::DEFAULT_SANDBOX_COMMIT_HASH).await
     }
 }
 

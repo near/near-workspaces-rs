@@ -17,7 +17,6 @@ pub mod prelude;
 pub mod result;
 pub mod rpc;
 pub mod types;
-pub mod version;
 
 pub use network::pick_unused_port;
 pub use network::variants::{DevNetwork, Network};

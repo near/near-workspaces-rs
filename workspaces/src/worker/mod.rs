@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use crate::network::builder::NetworkBuilder;
 use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
-use crate::{version, Network, Result};
+use crate::{Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
 /// as mainnet and testnet. This controls where the environment the worker is
