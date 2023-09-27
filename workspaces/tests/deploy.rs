@@ -2,7 +2,6 @@
 use serde::{Deserialize, Serialize};
 use test_log::test;
 
-use near_sandbox_utils as sandbox;
 use workspaces::network::{Sandbox, ValidatorKey};
 use workspaces::{pick_unused_port, Worker};
 
@@ -66,19 +65,11 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
     home_dir.push(format!("test-sandbox-{}", rpc_port));
 
     // intialize chain data with supplied home dir
-    let output =
-        near_sandbox_utils::init_with_version(&home_dir, sandbox::DEFAULT_SANDBOX_COMMIT_HASH)?
-            .output()
-            .await?;
+    let output = near_sandbox_utils::init(&home_dir)?.output().await?;
 
     tracing::info!(target: "workspaces-test", "sandbox-init: {:?}", output);
 
-    let mut child = near_sandbox_utils::run_with_version(
-        &home_dir,
-        rpc_port,
-        net_port,
-        sandbox::DEFAULT_SANDBOX_COMMIT_HASH,
-    )?;
+    let mut child = near_sandbox_utils::run(&home_dir, rpc_port, net_port)?;
 
     // connect to local sandbox node
     let worker = workspaces::sandbox()
