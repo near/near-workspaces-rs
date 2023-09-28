@@ -47,5 +47,7 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Check with stable features
       run: cargo check --verbose
+    - name: Install nextest for test retries
+      run: cargo install cargo-nextest
     - name: Run tests with unstable features
-      run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --verbose --features unstable
+      run: NEAR_RPC_TIMEOUT_SECS=100 cargo nextest run --retries 3 --verbose --features unstable

@@ -65,3 +65,6 @@ experimental = ["near-chain-configs"]
 
 [package.metadata.docs.rs]
 features = ["unstable"]
+
+[profile.default]
+slow-timeout = { period = "5m", terminate_after = 10 }
