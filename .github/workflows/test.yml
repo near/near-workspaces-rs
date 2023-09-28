@@ -47,7 +47,16 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Check with stable features
       run: cargo check --verbose
-    - name: Install nextest for test retries
+
+      # FIXME: this is a workaround to ensure tests pass on Linux
+      # See: https://github.com/near/near-workspaces-rs/issues/312
+    - name: Install nextest for test retries(linux)
+      if: matrix.platform == 'ubuntu-latest'
       run: cargo install cargo-nextest
-    - name: Run tests with unstable features
-      run: NEAR_RPC_TIMEOUT_SECS=100 cargo nextest run --retries 3 --verbose --features unstable
+    - name: Run tests with unstable features(linux)
+      if: matrix.platform == 'ubuntu-latest'
+      run: NEAR_RPC_TIMEOUT_SECS=100 cargo nextest run --verbose --features unstable
+
+    - name: Run tests with unstable features(macOS)
+      if: matrix.platform == 'macos-latest'
+      run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --verbose --features unstable
