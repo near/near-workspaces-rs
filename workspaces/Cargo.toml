@@ -11,7 +11,7 @@ Library for automating workflows and testing NEAR smart contracts.
 
 [dependencies]
 async-trait = "0.1"
-# The version is pinned to <=1.7.0 because of the following issue: https://github.com/near/near-workspaces-rs/issues/312
+# The version is pinned to <=1.7.0 because of the following issue: https://github.com/smol-rs/async-process/issues/55
 async-process = "<=1.7.0"
 base64 = "0.21"
 borsh = "0.10"
