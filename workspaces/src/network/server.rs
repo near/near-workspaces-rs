@@ -6,11 +6,11 @@ use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::result::Result;
 use crate::types::SecretKey;
 
-use async_process::Child;
 use fs2::FileExt;
 use near_account_id::AccountId;
 use reqwest::Url;
 use tempfile::TempDir;
+use tokio::process::Child;
 use tracing::info;
 
 use near_sandbox_utils as sandbox;
@@ -56,11 +56,18 @@ async fn acquire_unused_port() -> Result<(u16, File)> {
 
 async fn init_home_dir() -> Result<TempDir> {
     let home_dir = tempfile::tempdir().map_err(|e| ErrorKind::Io.custom(e))?;
+    // let output = sandbox::init(&home_dir)
+    //     .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
+    //     .output()
+    //     .await
+    //     .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?;
+
     let output = sandbox::init(&home_dir)
         .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
-        .output()
+        .wait_with_output()
         .await
         .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?;
+
     info!(target: "workspaces", "sandbox init: {:?}", output);
 
     Ok(home_dir)
@@ -75,7 +82,6 @@ pub enum ValidatorKey {
 
 pub struct SandboxServer {
     pub(crate) validator_key: ValidatorKey,
-
     rpc_addr: Url,
     net_port: Option<u16>,
     rpc_port_lock: Option<File>,
@@ -202,15 +208,15 @@ impl Drop for SandboxServer {
 
         info!(
             target: "workspaces",
-            "Cleaning up sandbox: port={:?}, pid={}",
+            "Cleaning up sandbox: port={:?}, pid={:?}",
             rpc_port,
             child.id()
         );
 
-        child
-            .kill()
-            .map_err(|e| format!("Could not cleanup sandbox due to: {:?}", e))
-            .unwrap();
+        // child
+        //     .kill()
+        //     .map_err(|e| format!("Could not cleanup sandbox due to: {:?}", e))
+        //     .unwrap();
     }
 }
 
