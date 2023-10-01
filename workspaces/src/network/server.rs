@@ -1,16 +1,19 @@
 use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
+use std::process::Command;
 
 use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::result::Result;
 use crate::types::SecretKey;
 
 use fs2::FileExt;
+
 use near_account_id::AccountId;
 use reqwest::Url;
 use tempfile::TempDir;
 use tokio::process::Child;
+
 use tracing::info;
 
 use near_sandbox_utils as sandbox;
@@ -56,11 +59,6 @@ async fn acquire_unused_port() -> Result<(u16, File)> {
 
 async fn init_home_dir() -> Result<TempDir> {
     let home_dir = tempfile::tempdir().map_err(|e| ErrorKind::Io.custom(e))?;
-    // let output = sandbox::init(&home_dir)
-    //     .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
-    //     .output()
-    //     .await
-    //     .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?;
 
     let output = sandbox::init(&home_dir)
         .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
@@ -199,24 +197,16 @@ impl SandboxServer {
 
 impl Drop for SandboxServer {
     fn drop(&mut self) {
-        if self.process.is_none() {
-            return;
+        if let Some(mut child) = self.process.take() {
+            info!(
+                target: "workspaces",
+                "Cleaning up sandbox: pid={:?}",
+                child.id()
+            );
+
+            child.start_kill().expect("failed to kill sandbox");
+            let _ = child.try_wait();
         }
-
-        let rpc_port = self.rpc_port();
-        let child = self.process.as_mut().unwrap();
-
-        info!(
-            target: "workspaces",
-            "Cleaning up sandbox: port={:?}, pid={:?}",
-            rpc_port,
-            child.id()
-        );
-
-        // child
-        //     .kill()
-        //     .map_err(|e| format!("Could not cleanup sandbox due to: {:?}", e))
-        //     .unwrap();
     }
 }
 
