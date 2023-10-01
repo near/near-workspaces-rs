@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
-use std::process::Command;
 
 use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::result::Result;
