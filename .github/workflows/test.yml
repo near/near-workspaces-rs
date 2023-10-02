@@ -45,11 +45,13 @@ jobs:
     - uses: Swatinem/rust-cache@v1
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
+    - name: Linux required dependencies
+      run: |
+        sudo apt update -y
+        sudo apt install -y build-essential gnome-keyring
+      if: matrix.platform == 'ubuntu-latest'
     - name: Check with stable features
       run: cargo check --verbose
-    - name: Install required dependencies (linux)
-      run: sudo apt install gnome-keyring
-      if: matrix.platform == 'ubuntu-latest'
     - name: Run tests with unstable features
       run: |
         sudo apt install gnome-ring
