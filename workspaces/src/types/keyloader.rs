@@ -1,3 +1,5 @@
+#![cfg(feature = "unstable")]
+
 use near_account_id::AccountId;
 
 use crate::{
