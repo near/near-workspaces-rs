@@ -40,7 +40,7 @@ pub(crate) async fn url_create_account(
     account_id: AccountId,
     pk: PublicKey,
 ) -> Result<FinalExecutionOutcomeView> {
-    reqwest::Client::new()
+    let response = reqwest::Client::new()
         .post(helper_url.join("account").expect("helper url is valid"))
         .header("Content-Type", "application/json")
         .body(
@@ -52,7 +52,16 @@ pub(crate) async fn url_create_account(
         )
         .send()
         .await
-        .map_err(|e| RpcErrorCode::HelperAccountCreationFailure.custom(e))?
+        .map_err(|e| RpcErrorCode::HelperAccountCreationFailure.custom(e))?;
+
+    if response.status() >= reqwest::StatusCode::BAD_REQUEST {
+        RpcErrorCode::HelperAccountCreationFailure.custom(format!(
+            "The faucet (helper service) server failed with status code <{}>",
+            response.status()
+        ));
+    }
+
+    response
         .json::<FinalExecutionOutcomeView>()
         .await
         .map_err(|e| ErrorKind::DataConversion.custom(e))

@@ -92,15 +92,3 @@ async fn test_delete_account() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-// FIXME?: Can be dropped after review if it will litter the testnet with accounts.
-#[test(tokio::test)]
-async fn test_create_tla_testnet() -> anyhow::Result<()> {
-    let worker = workspaces::testnet().await?;
-    let (id, sk) = worker.dev_generate().await;
-
-    let res = worker.create_tla(id, sk).await?;
-
-    assert!(res.is_success());
-    Ok(())
-}
