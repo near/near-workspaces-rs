@@ -334,6 +334,35 @@ async fn test_contract() -> anyhow::Result<()> {
 
 For a full example, take a look at [workspaces/tests/deploy_project.rs](https://github.com/near/workspaces-rs/blob/main/workspaces/tests/deploy_project.rs).
 
+### Accessing Account Credentials from System Keychain
+
+Note, this feature is under the unstable flag as `near-cli` has not hit v1.0 yet. To enable it, add the `unstable` feature flag to `workspaces` dependency in `Cargo.toml`:
+
+```toml
+[dependencies]
+workspaces = { version = "...", features = ["unstable"] }
+```
+
+This is interopable with the `near-cli` tool. If we have a `near-cli` account already setup, we can use the same account credentials to interact with our sandbox/testnet environment.
+
+We can also just use it to set and get account credentials from our system keychain.
+
+```rust
+async fn access_account_credentials(account_id: AccountId) -> anyhow::Result<()> {
+    let worker = workspaces::testnet().await?;
+
+    // retrieve from keychain, view account
+    let account = KeyLoader::from_keychain(&worker, "testnet", &account_id)).await?;
+    let res = Account::from_secret_key(account_id, account.private_key.into(), &worker)
+        .view_account()
+        .await?;
+
+    assert!(res.balance > 0);
+
+    Ok(())
+}
+```
+
 ### Other Features
 
 Other features can be directly found in the `examples/` folder, with some documentation outlining how they can be used.

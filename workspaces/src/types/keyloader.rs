@@ -39,7 +39,7 @@ impl KeyLoader {
     pub async fn from_keychain(
         worker: &Worker<impl NetworkClient>,
         network: &str,
-        account_id: AccountId,
+        account_id: &AccountId,
     ) -> Result<AccountKeyPair, Error> {
         let service_name: std::borrow::Cow<'_, str> =
             std::borrow::Cow::Owned(format!("near-{}-{}", network, account_id.as_str()));

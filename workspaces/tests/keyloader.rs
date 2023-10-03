@@ -14,7 +14,7 @@ async fn test_keyloader() -> anyhow::Result<()> {
     credentials.to_keychain(NODE_NET, &id).await?;
 
     // retrieve from keychain, view account
-    let account = KeyLoader::from_keychain(&worker, NODE_NET, id.clone()).await?;
+    let account = KeyLoader::from_keychain(&worker, NODE_NET, &id).await?;
     let res = Account::from_secret_key(id, account.private_key.into(), &worker)
         .view_account()
         .await?;

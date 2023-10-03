@@ -7,6 +7,8 @@
 mod cargo;
 #[cfg(feature = "unstable")]
 pub use cargo::compile_project;
+#[cfg(feature = "unstable")]
+pub use types::keyloader::KeyLoader;
 
 mod worker;
 
@@ -24,7 +26,6 @@ pub use result::Result;
 pub use types::account::{Account, AccountDetailsPatch, Contract};
 pub use types::block::Block;
 pub use types::chunk::Chunk;
-pub use types::keyloader::KeyLoader;
 pub use types::{AccessKey, AccountId, BlockHeight, CryptoHash, InMemorySigner};
 pub use worker::{
     betanet, mainnet, mainnet_archival, sandbox, testnet, testnet_archival, with_betanet,
