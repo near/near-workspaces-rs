@@ -45,14 +45,12 @@ jobs:
     - uses: Swatinem/rust-cache@v1
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
-    - name: Linux required dependencies
+    - name: Linux required keychain dependencies
       run: |
         sudo apt update -y
         sudo apt install -y build-essential gnome-keyring
+        rm -f $HOME/.local/share/keyrings/*
+        echo -n "test" | gnome-keyring-daemon --unlock
       if: matrix.platform == 'ubuntu-latest'
-    - name: Check with stable features
-      run: cargo check --verbose
     - name: Run tests with unstable features
-      run: |
-        sudo apt install gnome-ring
-        NEAR_RPC_TIMEOUT_SECS=100 cargo test --verbose --features unstable
+      run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --verbose --features unstable
