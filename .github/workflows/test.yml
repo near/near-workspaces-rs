@@ -45,6 +45,8 @@ jobs:
     - uses: Swatinem/rust-cache@v1
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
+    - name: Check with stable features
+      run: cargo check --verbose
     - name: Linux required keychain dependencies
       run: |
         sudo apt update -y
