@@ -1,3 +1,4 @@
+#![cfg(feature = "unstable")]
 use workspaces::{types::keyloader::KeyLoader, Account};
 
 const NODE_NET: &str = "sandbox";
