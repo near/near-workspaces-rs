@@ -289,7 +289,8 @@ Following that we will have to init the contract again with our own metadata. Th
 
 ### Time Traveling
 
-`workspaces` testing offers support for forwarding the state of the blockchain to the future. This means contracts which require time sensitive data do not need to sit and wait the same amount of time for blocks on the sandbox to be produced. We can simply just call `worker.fast_forward` to get us further in time:
+`workspaces` testing offers support for forwarding the state of the blockchain to the future. This means contracts which require time sensitive data do not need to sit and wait the same amount of time for blocks on the sandbox to be produced. We can simply just call `worker.fast_forward` to get us further in time.
+Note: This is not to be confused with speeding up the current in-flight transactions; the state being forwarded in this case refers to time-related state (the block height, timestamp and epoch).
 
 ```rust
 #[tokio::test]
