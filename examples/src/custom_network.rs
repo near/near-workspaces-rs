@@ -6,7 +6,7 @@ async fn main() -> anyhow::Result<()> {
     // `NEAR_RPC_API_KEY="xxx" cargo run --package examples --example custom_network`
     if let Ok(val) = std::env::var("NEAR_RPC_API_KEY") {
         // Reference to what can be called by this network: https://docs.pagoda.co/endpoints
-        let worker = workspaces::custom(PAGODA_TESTNET_RPC_URL)
+        let worker = near_workspaces::custom(PAGODA_TESTNET_RPC_URL)
             .api_key(&val)
             .await?;
         let res = worker.view_block().await?;

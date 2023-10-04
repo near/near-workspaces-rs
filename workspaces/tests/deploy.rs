@@ -2,8 +2,8 @@
 use serde::{Deserialize, Serialize};
 use test_log::test;
 
-use workspaces::network::{Sandbox, ValidatorKey};
-use workspaces::{pick_unused_port, Worker};
+use near_workspaces::network::{Sandbox, ValidatorKey};
+use near_workspaces::{pick_unused_port, Worker};
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{
@@ -52,7 +52,7 @@ async fn deploy_and_assert(worker: Worker<Sandbox>) -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_dev_deploy() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     deploy_and_assert(worker).await?;
     Ok(())
 }
@@ -74,7 +74,7 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
     let mut child = near_sandbox_utils::run(&home_dir, rpc_port, net_port)?;
 
     // connect to local sandbox node
-    let worker = workspaces::sandbox()
+    let worker = near_workspaces::sandbox()
         .rpc_addr(&format!("http://localhost:{}", rpc_port))
         .validator_key(ValidatorKey::HomeDir(home_dir))
         .await?;
