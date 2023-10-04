@@ -346,3 +346,4 @@ These environment variables will be useful if there was ever a snag hit:
 - `NEAR_SANDBOX_BIN_PATH`: Set this to our own prebuilt `neard-sandbox` bin path if we want to use a non-default version of the sandbox or configure nearcore with our own custom features that we want to test in workspaces.
 - `NEAR_SANDBOX_MAX_PAYLOAD_SIZE`: Sets the max payload size for sending transaction commits to sandbox. The default is 1gb and is necessary for patching large states.
 - `NEAR_SANDBOX_MAX_FILES`: Set the max amount of files that can be opened at a time in the sandbox. If none is specified, the default size of 4096 will be used. The actual near chain will use over 10,000 in practice, but for testing this should be much lower since we do not have a constantly running blockchain unless our tests take up that much time.
+- `NEAR_ENABLE_SANDBOX_LOG`: Set this to `1` to enable sandbox logging. This is useful for debugging issues with the `neard-sandbox` binary.
