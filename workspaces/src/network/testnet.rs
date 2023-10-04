@@ -40,7 +40,7 @@ pub struct Testnet {
 impl FromNetworkBuilder for Testnet {
     async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
         let rpc_url = build.rpc_addr.unwrap_or_else(|| RPC_URL.into());
-        let client = Client::new(&rpc_url);
+        let client = Client::new(&rpc_url, build.api_key)?;
         client.wait_for_rpc().await?;
 
         Ok(Self {
