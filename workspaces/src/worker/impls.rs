@@ -189,7 +189,10 @@ where
         Query::new(self.client(), GasPrice)
     }
 
-    // TODO: Remove feature flag once this is stable: https://github.com/near/nearcore/blob/27901ccce9c2300f9fe934f152493a95e05af316/core/primitives/src/views.rs#L678
+    /// Returns the status of the network.
+    ///
+    /// TODO: Remove `unstable` feature flag once [`StatusResponse`] is stable.
+    /// See here: https://github.com/near/nearcore/blob/27901ccce9c2300f9fe934f152493a95e05af316/core/primitives/src/views.rs#L678
     #[cfg(feature = "unstable")]
     pub async fn status(&self) -> Result<StatusResponse> {
         self.client().status().await
