@@ -47,6 +47,13 @@ pub fn sandbox<'a>() -> NetworkBuilder<'a, Sandbox> {
     NetworkBuilder::new("sandbox")
 }
 
+/// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
+pub async fn sandbox_with_version<'a>(version: &str) -> Result<Worker<Sandbox>> {
+    let network_builder = NetworkBuilder::new("sandbox");
+    let network = Sandbox::from_builder_with_version(network_builder, version).await?;
+    Ok(Worker::new(network))
+}
+
 /// Connect to the [testnet](https://explorer.testnet.near.org/) network, and grab
 /// a [`Worker`] that can interact with it.
 pub fn testnet<'a>() -> NetworkBuilder<'a, Testnet> {

@@ -56,10 +56,15 @@ async fn acquire_unused_port() -> Result<(u16, File)> {
     }
 }
 
+#[allow(dead_code)]
 async fn init_home_dir() -> Result<TempDir> {
+    init_home_dir_with_version(sandbox::DEFAULT_NEAR_SANDBOX_VERSION).await
+}
+
+async fn init_home_dir_with_version(version: &str) -> Result<TempDir> {
     let home_dir = tempfile::tempdir().map_err(|e| ErrorKind::Io.custom(e))?;
 
-    let output = sandbox::init(&home_dir)
+    let output = sandbox::init_with_version(&home_dir, version)
         .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
         .wait_with_output()
         .await
@@ -104,11 +109,16 @@ impl SandboxServer {
     }
 
     /// Run a new SandboxServer, spawning the sandbox node in the process.
+    #[allow(dead_code)]
     pub(crate) async fn run_new() -> Result<Self> {
+        Self::run_new_with_version(sandbox::DEFAULT_NEAR_SANDBOX_VERSION).await
+    }
+
+    pub(crate) async fn run_new_with_version(version: &str) -> Result<Self> {
         // Suppress logs for the sandbox binary by default:
         suppress_sandbox_logs_if_required();
 
-        let home_dir = init_home_dir().await?.into_path();
+        let home_dir = init_home_dir_with_version(version).await?.into_path();
         // Configure `$home_dir/config.json` to our liking. Sandbox requires extra settings
         // for the best user experience, and being able to offer patching large state payloads.
         crate::network::config::set_sandbox_configs(&home_dir)?;
@@ -136,7 +146,7 @@ impl SandboxServer {
             &net_addr,
         ];
 
-        let child = sandbox::run_with_options(options)
+        let child = sandbox::run_with_options_with_version(options, version)
             .map_err(|e| SandboxErrorCode::RunFailure.custom(e))?;
 
         info!(target: "workspaces", "Started up sandbox at localhost:{} with pid={:?}", rpc_port, child.id());
