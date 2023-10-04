@@ -65,7 +65,10 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
     home_dir.push(format!("test-sandbox-{}", rpc_port));
 
     // intialize chain data with supplied home dir
-    let output = near_sandbox_utils::init(&home_dir)?.output().await?;
+    let output = near_sandbox_utils::init(&home_dir)?
+        .wait_with_output()
+        .await
+        .unwrap();
     tracing::info!(target: "workspaces-test", "sandbox-init: {:?}", output);
 
     let mut child = near_sandbox_utils::run(&home_dir, rpc_port, net_port)?;
@@ -77,6 +80,6 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
         .await?;
     deploy_and_assert(worker).await?;
 
-    child.kill()?;
+    child.kill().await?;
     Ok(())
 }
