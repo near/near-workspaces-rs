@@ -1,10 +1,10 @@
 [package]
-name = "workspaces"
+name = "near-workspaces"
 version = "0.7.0"
 edition = "2018"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/near/workspaces-rs"
+repository = "https://github.com/near/near-workspaces-rs"
 description = """
 Library for automating workflows and testing NEAR smart contracts.
 """
