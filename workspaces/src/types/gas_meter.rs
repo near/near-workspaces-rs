@@ -11,7 +11,7 @@ use crate::result::Result;
 /// A hook that is called on every transaction that is sent to the network.
 /// This is useful for debugging purposes, or for tracking the amount of gas
 /// that is being used.
-pub type GasHook = Arc<Mutex<dyn FnMut(Gas) -> Result<()> + Send>>;
+pub type GasHook = Arc<dyn Fn(Gas) -> Result<()> + Send + Sync>;
 
 /// Allows you to meter the amount of gas consumed by transaction(s).
 /// Note: This only works with parallel transactions that resolve to [`crate::Result::ExecutionFinalResult`]
@@ -40,23 +40,19 @@ pub struct GasMeter {
 impl GasMeter {
     /// Create a new gas meter with 0 gas consumed.
     pub fn now<T: ?Sized>(worker: &mut Worker<T>) -> Self {
-        let mut gas_consumed = Arc::new(Mutex::new(0));
-
         let meter = Self {
-            gas: Arc::clone(&gas_consumed),
+            gas: Arc::new(Mutex::new(0)),
         };
 
-        worker
-            .on_transact
-            .push(Arc::new(Mutex::new(move |gas: Gas| {
-                // check if reference is unique, expect false
-                match Arc::get_mut(&mut gas_consumed) {
-                    Some(_) => tracing::info!("GasMeter dropped, hook invalid."),
-                    None => gas_consumed.lock()?.add_assign(gas),
-                }
+        let gas_consumed = Arc::downgrade(&Arc::clone(&meter.gas));
+        worker.tx_callbacks.push(Arc::new(move |gas: Gas| {
+            // upgrades if meter is still alive, else noop.
+            _ = gas_consumed.upgrade().map(|consumed| {
+                consumed.lock().expect("meter is valid").add_assign(gas);
+            });
 
-                Ok(())
-            })));
+            Ok(())
+        }));
 
         meter
     }

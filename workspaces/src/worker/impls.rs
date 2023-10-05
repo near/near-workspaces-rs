@@ -33,7 +33,7 @@ impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
         Self {
             workspace: self.workspace.clone(),
-            on_transact: self.on_transact.clone(),
+            tx_callbacks: self.tx_callbacks.clone(),
         }
     }
 }

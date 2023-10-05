@@ -14,7 +14,7 @@ use crate::{Network, Result};
 /// deploying a contract, or interacting with transactions.
 pub struct Worker<T: ?Sized> {
     pub(crate) workspace: Arc<T>,
-    pub(crate) on_transact: Vec<GasHook>,
+    pub(crate) tx_callbacks: Vec<GasHook>,
 }
 
 impl<T> Worker<T>
@@ -24,7 +24,7 @@ where
     pub(crate) fn new(network: T) -> Self {
         Self {
             workspace: Arc::new(network),
-            on_transact: vec![],
+            tx_callbacks: vec![],
         }
     }
 }
@@ -33,7 +33,7 @@ impl<T: Network + 'static> Worker<T> {
     pub(crate) fn coerce(self) -> Worker<dyn Network> {
         Worker {
             workspace: self.workspace,
-            on_transact: self.on_transact,
+            tx_callbacks: self.tx_callbacks,
         }
     }
 }
