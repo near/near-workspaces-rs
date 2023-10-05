@@ -43,10 +43,10 @@ impl GasMeter {
         let gas_consumed = Arc::downgrade(&Arc::clone(&meter.gas));
         worker.tx_callbacks.push(Arc::new(move |gas: Gas| {
             // upgrades if meter is still alive, else noop.
-            _ = gas_consumed.upgrade().map(|consumed| {
-                let mut consumed = consumed.lock().expect("GasMeter lock poisoned");
+            if let Some(consumed) = gas_consumed.upgrade() {
+                let mut consumed = consumed.lock()?;
                 *consumed = Gas::from_gas(consumed.as_gas() + gas.as_gas());
-            });
+            }
 
             Ok(())
         }));

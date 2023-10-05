@@ -252,9 +252,9 @@ impl Transaction {
                     .map(|t| t.outcome.gas_burnt)
                     .sum::<u64>();
 
-            self.worker.tx_callbacks.iter().for_each(|meter| {
-                meter(Gas::from_gas(total_gas_burnt)).unwrap();
-            });
+            for callback in self.worker.tx_callbacks {
+                callback(Gas::from_gas(total_gas_burnt))?;
+            }
         }
 
         Ok(view)
@@ -365,10 +365,9 @@ impl CallTransaction {
             .map(ExecutionFinalResult::from_view)
             .map_err(crate::error::Error::from)?;
 
-        self.worker.tx_callbacks.iter().for_each(|meter| {
-            meter(txn.total_gas_burnt).unwrap();
-        });
-
+        for callback in self.worker.tx_callbacks.iter() {
+            callback(txn.total_gas_burnt)?;
+        }
         Ok(txn)
     }
 
@@ -470,9 +469,9 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
         let account = Account::new(signer, self.worker.clone());
         let details = ExecutionFinalResult::from_view(outcome);
 
-        self.worker.tx_callbacks.iter().for_each(|meter| {
-            meter(details.total_gas_burnt).unwrap();
-        });
+        for callback in self.worker.tx_callbacks.iter() {
+            callback(details.total_gas_burnt)?;
+        }
 
         Ok(Execution {
             result: account,

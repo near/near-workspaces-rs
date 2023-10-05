@@ -17,5 +17,5 @@ async fn main() -> anyhow::Result<()> {
 
     // skip the test
     println!("NEAR_RPC_API_KEY is not set, skipping the example");
-    return Ok(());
+    Ok(())
 }
