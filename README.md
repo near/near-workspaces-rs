@@ -7,9 +7,9 @@
   </p>
 
   <p>
-    <a href="https://crates.io/crates/workspaces"><img src="https://img.shields.io/crates/v/workspaces.svg?style=flat-square" alt="Crates.io version" /></a>
-    <a href="https://crates.io/crates/workspaces"><img src="https://img.shields.io/crates/d/workspaces.svg?style=flat-square" alt="Download" /></a>
-    <a href="https://docs.rs/workspaces"><img src="https://docs.rs/workspaces/badge.svg" alt="Reference Documentation" /></a>
+    <a href="https://crates.io/crates/near-workspaces"><img src="https://img.shields.io/crates/v/near-workspaces.svg?style=flat-square" alt="Crates.io version" /></a>
+    <a href="https://crates.io/crates/near-workspaces"><img src="https://img.shields.io/crates/d/near-workspaces.svg?style=flat-square" alt="Download" /></a>
+    <a href="https://docs.rs/near-workspaces"><img src="https://docs.rs/near-workspaces/badge.svg" alt="Reference Documentation" /></a>
   </p>
 </div>
 
@@ -24,11 +24,11 @@
 
 ### WASM compilation not supported
 
-`workspaces-rs`, the library itself, does not currently compile to WASM. Best to put this dependency in `[dev-dependencies]` section of `Cargo.toml` if we were trying to run this library alongside something that already does compile to WASM, such as `near-sdk-rs`.
+`near-workspaces-rs`, the library itself, does not currently compile to WASM. Best to put this dependency in `[dev-dependencies]` section of `Cargo.toml` if we were trying to run this library alongside something that already does compile to WASM, such as `near-sdk-rs`.
 
 ## Simple Testing Case
 
-A simple test to get us going and familiar with `workspaces` framework. Here, we will be going through the NFT contract and how we can test it with `workspaces-rs`.
+A simple test to get us going and familiar with `near-workspaces` framework. Here, we will be going through the NFT contract and how we can test it with `near-workspaces-rs`.
 
 ### Setup -- Imports
 
@@ -60,7 +60,7 @@ This includes launching our sandbox, loading our wasm file and deploying that wa
 
 #[tokio::test]
 async fn test_nft_contract() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 ```
@@ -129,7 +129,7 @@ Then later on, we can view our minted NFT's metadata via our `view` call into `n
 
 ### Updating Contract Afterwards
 
-Note that if our contract code changes, `workspaces-rs` does nothing about it since we are utilizing `deploy`/`dev_deploy` to merely send the contract bytes to the network. So if it does change, we will have to recompile the contract as usual, and point `deploy`/`dev_deploy` again to the right WASM files. However, there is a workspaces feature that will recompile contract changes for us: refer to the experimental/unstable [`compile_project`](#compiling-contracts-during-test-time) function for telling workspaces to compile a _Rust_ project for us.
+Note that if our contract code changes, `near-workspaces-rs` does nothing about it since we are utilizing `deploy`/`dev_deploy` to merely send the contract bytes to the network. So if it does change, we will have to recompile the contract as usual, and point `deploy`/`dev_deploy` again to the right WASM files. However, there is a feature that will recompile contract changes for us: refer to the experimental/unstable [`compile_project`](#compiling-contracts-during-test-time) function for telling near-workspaces to compile a _Rust_ project for us.
 
 ## Examples
 
@@ -150,9 +150,9 @@ cargo run --example nft
 async fn main() -> anyhow::Result<()> {
     // Create a sandboxed environment.
     // NOTE: Each call will create a new sandboxed environment
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     // or for testnet:
-    let worker = workspaces::testnet().await?;
+    let worker = near_workspaces::testnet().await?;
 }
 ```
 
@@ -161,7 +161,7 @@ async fn main() -> anyhow::Result<()> {
 Need to make a helper functions utilizing contracts? Just import it and pass it around:
 
 ```rust
-use workspaces::Contract;
+use near_workspaces::Contract;
 
 // Helper function that calls into a contract we give it
 async fn call_my_func(contract: &Contract) -> anyhow::Result<()> {
@@ -179,7 +179,7 @@ async fn call_my_func(contract: &Contract) -> anyhow::Result<()> {
 Or to pass around workers regardless of networks:
 
 ```rust
-use workspaces::{DevNetwork, Worker};
+use near_workspaces::{DevNetwork, Worker};
 
 const CONTRACT_BYTES: &[u8] = include_bytes!("./relative/path/to/file.wasm");
 
@@ -198,7 +198,7 @@ We can check the balance of our accounts like so:
 #[test(tokio::test)]
 async fn test_contract_transfer() -> anyhow::Result<()> {
     let transfer_amount = near_units::parse_near!("0.1");
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
 
     let contract = worker
         .dev_deploy(include_bytes!("../target/res/your_project_name.wasm"))
@@ -227,7 +227,7 @@ async fn test_contract_transfer() -> anyhow::Result<()> {
 }
 ```
 
-For viewing other chain related details, look at the docs for [Worker](https://docs.rs/workspaces/0.4.1/workspaces/struct.Worker.html), [Account](https://docs.rs/workspaces/0.4.1/workspaces/struct.Account.html) and [Contract](https://docs.rs/workspaces/0.4.1/workspaces/struct.Contract.html)
+For viewing other chain related details, look at the docs for [Worker](https://docs.rs/near-workspaces/latest/near_workspaces/struct.Worker.html), [Account](https://docs.rs/near-workspaces/latest/near_workspaces/struct.Account.html) and [Contract](https://docs.rs/near-workspaces/latest/near_workspaces/struct.Contract.html)
 
 ### Spooning - Pulling Existing State and Contracts from Mainnet/Testnet
 
@@ -237,8 +237,8 @@ We will first start with the usual imports:
 
 ```rust
 use near_units::{parse_gas, parse_near};
-use workspaces::network::Sandbox;
-use workspaces::{Account, AccountId, BlockHeight, Contract, Worker};
+use near_workspaces::network::Sandbox;
+use near_workspaces::{Account, AccountId, BlockHeight, Contract, Worker};
 ```
 
 Then specify the contract name from testnet we want to be pulling:
@@ -257,7 +257,7 @@ Create a function called `pull_contract` which will pull the contract's `.wasm` 
 
 ```rust
 async fn pull_contract(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
-    let testnet = workspaces::testnet_archival().await?;
+    let testnet = near_workspaces::testnet_archival().await?;
     let contract_id: AccountId = CONTRACT_ACCOUNT.parse()?;
 ```
 
@@ -295,7 +295,7 @@ Note: This is not to be confused with speeding up the current in-flight transact
 ```rust
 #[tokio::test]
 async fn test_contract() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let contract = worker.dev_deploy(WASM_BYTES).await?;
 
     let blocks_to_advance = 10000;
@@ -308,7 +308,7 @@ async fn test_contract() -> anyhow::Result<()> {
 }
 ```
 
-For a full example, take a look at [examples/src/fast_forward.rs](https://github.com/near/workspaces-rs/blob/main/examples/src/fast_forward.rs).
+For a full example, take a look at [examples/src/fast_forward.rs](https://github.com/near/near-workspaces-rs/blob/main/examples/src/fast_forward.rs).
 
 ### Compiling Contracts During Test Time
 
@@ -316,7 +316,7 @@ Note, this is an unstable feature and will very likely change. To enable it, add
 
 ```toml
 [dependencies]
-workspaces = { version = "...", features = ["unstable"] }
+near-workspaces = { version = "...", features = ["unstable"] }
 ```
 
 Then, in our tests right before we call into `deploy` or `dev_deploy`, we can compile our projects:
@@ -324,7 +324,7 @@ Then, in our tests right before we call into `deploy` or `dev_deploy`, we can co
 ```rust
 #[tokio::test]
 async fn test_contract() -> anyhow::Result<()> {
-    let wasm = workspaces::compile_project("path/to/contract-rs-project").await?;
+    let wasm = near_workspaces::compile_project("path/to/contract-rs-project").await?;
 
     let worker = workspaces::sandbox().await?;
     let contract = worker.dev_deploy(&wasm).await?;
@@ -332,7 +332,7 @@ async fn test_contract() -> anyhow::Result<()> {
 }
 ```
 
-For a full example, take a look at [workspaces/tests/deploy_project.rs](https://github.com/near/workspaces-rs/blob/main/workspaces/tests/deploy_project.rs).
+For a full example, take a look at [workspaces/tests/deploy_project.rs](https://github.com/near/near-workspaces-rs/blob/main/workspaces/tests/deploy_project.rs).
 
 ### Other Features
 
@@ -343,6 +343,8 @@ Other features can be directly found in the `examples/` folder, with some docume
 These environment variables will be useful if there was ever a snag hit:
 
 - `NEAR_RPC_TIMEOUT_SECS`: The default is 10 seconds, but this is the amount of time before timing out waiting for a RPC service when talking to the sandbox or any other network such as testnet.
-- `NEAR_SANDBOX_BIN_PATH`: Set this to our own prebuilt `neard-sandbox` bin path if we want to use a non-default version of the sandbox or configure nearcore with our own custom features that we want to test in workspaces.
+- `NEAR_SANDBOX_BIN_PATH`: Set this to our own prebuilt `neard-sandbox` bin path if we want to use a non-default version of the sandbox or configure nearcore with our own custom features that we want to test in near-workspaces.
 - `NEAR_SANDBOX_MAX_PAYLOAD_SIZE`: Sets the max payload size for sending transaction commits to sandbox. The default is 1gb and is necessary for patching large states.
 - `NEAR_SANDBOX_MAX_FILES`: Set the max amount of files that can be opened at a time in the sandbox. If none is specified, the default size of 4096 will be used. The actual near chain will use over 10,000 in practice, but for testing this should be much lower since we do not have a constantly running blockchain unless our tests take up that much time.
+- `NEAR_RPC_API_KEY`: This is the API key necessary for communicating with RPC nodes. This is useful when interacting with services such as Pagoda Console or a service that can access RPC metrics. This is not a **hard** requirement, but it is recommended to running the Pagoda example in the examples folder.
+- `NEAR_ENABLE_SANDBOX_LOG`: Set this to `1` to enable sandbox logging. This is useful for debugging issues with the `neard-sandbox` binary.

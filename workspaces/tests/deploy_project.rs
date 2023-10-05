@@ -4,8 +4,8 @@ use test_log::test;
 
 #[test(tokio::test)]
 async fn test_dev_deploy_project() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
-    let wasm = workspaces::compile_project("./tests/test-contracts/status-message").await?;
+    let worker = near_workspaces::sandbox().await?;
+    let wasm = near_workspaces::compile_project("./tests/test-contracts/status-message").await?;
     let contract = worker.dev_deploy(&wasm).await?;
 
     contract

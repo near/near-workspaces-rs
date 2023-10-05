@@ -6,8 +6,8 @@
 //!
 //! For example, to query into downloading contract state:
 //! ```
-//! use workspaces::{AccountId, Network, Worker};
-//! use workspaces::rpc::query::{Query, ViewState};
+//! use near_workspaces::{AccountId, Network, Worker};
+//! use near_workspaces::rpc::query::{Query, ViewState};
 //!
 //! async fn my_func(worker: &Worker<impl Network>) -> anyhow::Result<()> {
 //!     let contract_id: AccountId = "some-contract.near".parse()?;

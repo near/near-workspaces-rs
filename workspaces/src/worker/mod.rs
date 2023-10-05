@@ -4,7 +4,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use crate::network::builder::NetworkBuilder;
-use crate::network::{Betanet, Mainnet, Sandbox, Testnet};
+use crate::network::{Betanet, Custom, Mainnet, Sandbox, Testnet};
 use crate::{Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
@@ -47,6 +47,13 @@ pub fn sandbox<'a>() -> NetworkBuilder<'a, Sandbox> {
     NetworkBuilder::new("sandbox")
 }
 
+/// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
+pub async fn sandbox_with_version<'a>(version: &str) -> Result<Worker<Sandbox>> {
+    let network_builder = NetworkBuilder::new("sandbox");
+    let network = Sandbox::from_builder_with_version(network_builder, version).await?;
+    Ok(Worker::new(network))
+}
+
 /// Connect to the [testnet](https://explorer.testnet.near.org/) network, and grab
 /// a [`Worker`] that can interact with it.
 pub fn testnet<'a>() -> NetworkBuilder<'a, Testnet> {
@@ -74,6 +81,13 @@ pub fn mainnet_archival<'a>() -> NetworkBuilder<'a, Mainnet> {
 /// Connect to the betanet network, and grab a [`Worker`] that can interact with it.
 pub fn betanet<'a>() -> NetworkBuilder<'a, Betanet> {
     NetworkBuilder::new("betanet")
+}
+
+/// Connect to a custom network, and grab a [`Worker`] that can interact with it.
+///
+/// Note: the burden of ensuring the methods that are able to be called are left up to the user.
+pub fn custom<'a>(rpc_url: &str) -> NetworkBuilder<'a, Custom> {
+    NetworkBuilder::new("custom").rpc_addr(rpc_url)
 }
 
 /// Run a locally scoped task where a [`sandbox`] instanced [`Worker`] is supplied.
@@ -128,4 +142,13 @@ where
     T: core::future::Future,
 {
     Ok(task(betanet().await?).await)
+}
+
+#[allow(dead_code)]
+pub async fn with_custom<F, T>(task: F, rpc_url: &str) -> Result<T::Output>
+where
+    F: Fn(Worker<Custom>) -> T,
+    T: core::future::Future,
+{
+    Ok(task(custom(rpc_url).await?).await)
 }
