@@ -42,9 +42,16 @@ where
     T: DevNetwork + TopLevelAccountCreator + 'static,
 {
     pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<Execution<Account>> {
-        self.workspace
+        let res = self
+            .workspace
             .create_tla(self.clone().coerce(), id, sk)
-            .await
+            .await?;
+
+        self.tx_callbacks.iter().for_each(|meter| {
+            meter(res.details.total_gas_burnt).unwrap();
+        });
+
+        Ok(res)
     }
 
     pub async fn create_tla_and_deploy(
@@ -53,9 +60,16 @@ where
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-        self.workspace
+        let res = self
+            .workspace
             .create_tla_and_deploy(self.clone().coerce(), id, sk, wasm)
-            .await
+            .await?;
+
+        self.tx_callbacks.iter().for_each(|meter| {
+            meter(res.details.total_gas_burnt).unwrap();
+        });
+
+        Ok(res)
     }
 
     pub async fn dev_generate(&self) -> (AccountId, SecretKey) {

@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use crate::network::builder::NetworkBuilder;
 use crate::network::{Betanet, Custom, Mainnet, Sandbox, Testnet};
+use crate::types::GasHook;
 use crate::{Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
@@ -13,6 +14,7 @@ use crate::{Network, Result};
 /// deploying a contract, or interacting with transactions.
 pub struct Worker<T: ?Sized> {
     pub(crate) workspace: Arc<T>,
+    pub(crate) tx_callbacks: Vec<GasHook>,
 }
 
 impl<T> Worker<T>
@@ -22,6 +24,7 @@ where
     pub(crate) fn new(network: T) -> Self {
         Self {
             workspace: Arc::new(network),
+            tx_callbacks: vec![],
         }
     }
 }
@@ -30,6 +33,7 @@ impl<T: Network + 'static> Worker<T> {
     pub(crate) fn coerce(self) -> Worker<dyn Network> {
         Worker {
             workspace: self.workspace,
+            tx_callbacks: self.tx_callbacks,
         }
     }
 }

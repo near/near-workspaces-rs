@@ -5,6 +5,7 @@
 pub(crate) mod account;
 pub(crate) mod block;
 pub(crate) mod chunk;
+pub(crate) mod gas_meter;
 
 #[cfg(feature = "interop_sdk")]
 mod sdk;
@@ -26,6 +27,8 @@ use crate::result::Result;
 
 pub use self::account::{AccountDetails, AccountDetailsPatch};
 pub use self::chunk::{Chunk, ChunkHeader};
+
+pub use self::gas_meter::{GasHook, GasMeter};
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;

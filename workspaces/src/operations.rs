@@ -236,13 +236,28 @@ impl Transaction {
     }
 
     async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(
+        let view = send_batch_tx_and_retry(
             self.worker.client(),
             &self.signer,
             &self.receiver_id,
             self.actions?,
         )
-        .await
+        .await?;
+
+        if !self.worker.tx_callbacks.is_empty() {
+            let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt
+                + view
+                    .receipts_outcome
+                    .iter()
+                    .map(|t| t.outcome.gas_burnt)
+                    .sum::<u64>();
+
+            for callback in self.worker.tx_callbacks {
+                callback(Gas::from_gas(total_gas_burnt))?;
+            }
+        }
+
+        Ok(view)
     }
 
     /// Process the transaction, and return the result of the execution.
@@ -335,7 +350,8 @@ impl CallTransaction {
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
     pub async fn transact(self) -> Result<ExecutionFinalResult> {
-        self.worker
+        let txn = self
+            .worker
             .client()
             .call(
                 &self.signer,
@@ -347,7 +363,12 @@ impl CallTransaction {
             )
             .await
             .map(ExecutionFinalResult::from_view)
-            .map_err(crate::error::Error::from)
+            .map_err(crate::error::Error::from)?;
+
+        for callback in self.worker.tx_callbacks.iter() {
+            callback(txn.total_gas_burnt)?;
+        }
+        Ok(txn)
     }
 
     /// Send the transaction to the network to be processed. This will be done asynchronously
@@ -446,10 +467,15 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
 
         let signer = InMemorySigner::from_secret_key(id, sk);
         let account = Account::new(signer, self.worker.clone());
+        let details = ExecutionFinalResult::from_view(outcome);
+
+        for callback in self.worker.tx_callbacks.iter() {
+            callback(details.total_gas_burnt)?;
+        }
 
         Ok(Execution {
             result: account,
-            details: ExecutionFinalResult::from_view(outcome),
+            details,
         })
     }
 }

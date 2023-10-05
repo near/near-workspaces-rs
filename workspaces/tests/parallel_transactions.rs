@@ -15,6 +15,7 @@ async fn test_parallel() -> anyhow::Result<()> {
         .map(|msg| {
             let id = contract.id().clone();
             let account = account.clone();
+
             tokio::spawn(async move {
                 account
                     .call(&id, "set_status")

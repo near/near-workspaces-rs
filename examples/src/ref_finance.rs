@@ -203,7 +203,6 @@ async fn create_custom_ft(
         .transact()
         .await?
         .into_result()?;
-    ();
 
     Ok(ft)
 }
