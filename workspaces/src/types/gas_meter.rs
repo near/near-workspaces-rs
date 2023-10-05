@@ -1,12 +1,8 @@
-use std::{
-    ops::AddAssign,
-    sync::{Arc, Mutex},
-};
-
-use crate::Worker;
+use std::sync::{Arc, Mutex};
 
 use super::Gas;
 use crate::result::Result;
+use crate::Worker;
 
 /// A hook that is called on every transaction that is sent to the network.
 /// This is useful for debugging purposes, or for tracking the amount of gas
@@ -41,14 +37,15 @@ impl GasMeter {
     /// Create a new gas meter with 0 gas consumed.
     pub fn now<T: ?Sized>(worker: &mut Worker<T>) -> Self {
         let meter = Self {
-            gas: Arc::new(Mutex::new(0)),
+            gas: Arc::new(Mutex::new(Gas::from_gas(0))),
         };
 
         let gas_consumed = Arc::downgrade(&Arc::clone(&meter.gas));
         worker.tx_callbacks.push(Arc::new(move |gas: Gas| {
             // upgrades if meter is still alive, else noop.
             _ = gas_consumed.upgrade().map(|consumed| {
-                consumed.lock().expect("meter is valid").add_assign(gas);
+                let mut consumed = consumed.lock().expect("meter is valid");
+                *consumed = Gas::from_gas(consumed.as_gas() + gas.as_gas());
             });
 
             Ok(())
@@ -66,7 +63,7 @@ impl GasMeter {
     /// Reset the gas consumed to 0.
     pub fn reset(&self) -> Result<()> {
         let mut meter = self.gas.lock()?;
-        *meter = 0;
+        *meter = Gas::from_gas(0);
         Ok(())
     }
 }

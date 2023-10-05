@@ -253,7 +253,7 @@ impl Transaction {
                     .sum::<u64>();
 
             self.worker.tx_callbacks.iter().for_each(|meter| {
-                meter(total_gas_burnt).unwrap();
+                meter(Gas::from_gas(total_gas_burnt)).unwrap();
             });
         }
 
