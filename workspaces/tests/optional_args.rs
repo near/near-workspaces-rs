@@ -1,7 +1,8 @@
 #![recursion_limit = "256"]
+use near_gas::NearGas;
 use near_units::parse_near;
+use near_workspaces::{Contract, DevNetwork, Worker};
 use test_log::test;
-use workspaces::{Contract, DevNetwork, Worker};
 
 async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
     let contract = worker
@@ -23,7 +24,7 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
 
 #[test(tokio::test)]
 async fn test_empty_args_error() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let contract = init(&worker).await?;
 
     let res = contract
@@ -37,7 +38,7 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
     if let Some(exeuction_err) = res.err() {
         assert!(format!("{}", exeuction_err).contains("Failed to deserialize input from JSON"));
         assert!(
-            exeuction_err.total_gas_burnt > 0,
+            exeuction_err.total_gas_burnt > NearGas::from_gas(0),
             "Gas is still burnt for transaction although inputs are incorrect"
         );
     } else {
@@ -49,7 +50,7 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_optional_args_present() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let contract = init(&worker).await?;
 
     let res = contract

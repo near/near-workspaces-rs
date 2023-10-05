@@ -18,6 +18,7 @@ use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
+
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
@@ -34,8 +35,7 @@ pub type Nonce = u64;
 
 /// Gas units used in the execution of transactions. For a more in depth description of
 /// how and where it can be used, visit [Gas](https://docs.near.org/docs/concepts/gas).
-pub type Gas = u64;
-
+pub use near_gas::NearGas as Gas;
 /// Balance is type for storing amounts of tokens. Usually represents the amount of tokens
 /// in yoctoNear (1e-24).
 pub type Balance = u128;
