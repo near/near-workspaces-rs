@@ -10,10 +10,10 @@ use crate::Worker;
 pub type GasHook = Arc<dyn Fn(Gas) -> Result<()> + Send + Sync>;
 
 /// Allows you to meter the amount of gas consumed by transaction(s).
-/// Note: This only works with parallel transactions that resolve to [`crate::Result::ExecutionFinalResult`]
+/// Note: This only works with transactions that resolve to [`crate::result::ExecutionFinalResult`]
 /// Example
 /// ```rust, ignore, no_run
-/// let mut worker = workspaces::sandbox().await?;
+/// let mut worker = near_workspaces::sandbox().await?;
 /// let meter = GasMeter::now(&mut worker);
 ///
 /// let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
@@ -44,7 +44,7 @@ impl GasMeter {
         worker.tx_callbacks.push(Arc::new(move |gas: Gas| {
             // upgrades if meter is still alive, else noop.
             _ = gas_consumed.upgrade().map(|consumed| {
-                let mut consumed = consumed.lock().expect("meter is valid");
+                let mut consumed = consumed.lock().expect("GasMeter lock poisoned");
                 *consumed = Gas::from_gas(consumed.as_gas() + gas.as_gas());
             });
 
