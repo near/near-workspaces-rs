@@ -4,228 +4,11 @@
 
 ## [0.8.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.7.0...near-workspaces-v0.8.0) - 2023-10-04
 
-### Added
-- Allow to select a specific version of near-sandbox ([#311](https://github.com/near/near-workspaces-rs/pull/311))
-- Enable support for RPCs that require API keys and support for custom networks ([#306](https://github.com/near/near-workspaces-rs/pull/306))
-- expose more `Block` and `Chunk` fields ([#243](https://github.com/near/near-workspaces-rs/pull/243))
-- Expose experimental apis (under a feature-flag) ([#285](https://github.com/near/near-workspaces-rs/pull/285))
-- New patch state, key, account API ([#291](https://github.com/near/near-workspaces-rs/pull/291))
-- support manually supplied validator key ([#274](https://github.com/near/near-workspaces-rs/pull/274))
-- workspaces::sandbox() can connect to user provided sandbox node ([#220](https://github.com/near/near-workspaces-rs/pull/220))
-- Expose `transact async` for asynchronous transactions ([#222](https://github.com/near/near-workspaces-rs/pull/222))
-- Add async builders for `view_*` functions ([#218](https://github.com/near/near-workspaces-rs/pull/218))
-- add view calls to an `Account` ([#202](https://github.com/near/near-workspaces-rs/pull/202))
-- must use CallExecution* type ([#150](https://github.com/near/near-workspaces-rs/pull/150))
-- `worker` no longer required to be passed into arguments when transacting transactions ([#181](https://github.com/near/near-workspaces-rs/pull/181))
-- error handling ([#149](https://github.com/near/near-workspaces-rs/pull/149))
-- allow Worker<Betanet> creation ([#116](https://github.com/near/near-workspaces-rs/pull/116))
-- add fast-forwarding ([#73](https://github.com/near/near-workspaces-rs/pull/73))
-- Moved credentials storage to user side ([#98](https://github.com/near/near-workspaces-rs/pull/98))
-- add a way to automatically compile and deploy a contract ([#77](https://github.com/near/near-workspaces-rs/pull/77))
-- batch transactions ([#72](https://github.com/near/near-workspaces-rs/pull/72))
-- add rpc logging ([#75](https://github.com/near/near-workspaces-rs/pull/75))
-- Switch prints to `tracing` ([#55](https://github.com/near/near-workspaces-rs/pull/55))
-
-### Fixed
-- improve error msg on calling `json` on void function ([#286](https://github.com/near/near-workspaces-rs/pull/286))
-- fix typos ([#280](https://github.com/near/near-workspaces-rs/pull/280))
-- Run `neard` on `localhost` instead of `0.0.0.0` to prevent firewall popups on MacOS ([#277](https://github.com/near/near-workspaces-rs/pull/277))
-- storing credentials ([#258](https://github.com/near/near-workspaces-rs/pull/258))
-- ulimit error ([#241](https://github.com/near/near-workspaces-rs/pull/241))
-- Make call consistent with worker::view ([#245](https://github.com/near/near-workspaces-rs/pull/245))
-- improve err message ([#236](https://github.com/near/near-workspaces-rs/pull/236))
-- remove unused import of metadata ([#238](https://github.com/near/near-workspaces-rs/pull/238))
-- Use public keys for cached nonces ([#231](https://github.com/near/near-workspaces-rs/pull/231))
-- Parallel tests should not wait on each other ([#173](https://github.com/near/near-workspaces-rs/pull/173))
-- Rewording docs to be more intuitive ([#186](https://github.com/near/near-workspaces-rs/pull/186))
-- avoid creating new client for every request & hyper issues ([#154](https://github.com/near/near-workspaces-rs/pull/154))
-- rpc connect timeout ([#143](https://github.com/near/near-workspaces-rs/pull/143))
-- error if sandbox process has already started ([#135](https://github.com/near/near-workspaces-rs/pull/135))
-- [**breaking**] Key type of state map and remove exposed primitives type ([#109](https://github.com/near/near-workspaces-rs/pull/109))
-- make users wait for sandbox to completely startup ([#99](https://github.com/near/near-workspaces-rs/pull/99))
-- move TLA creator trait to dev network ([#101](https://github.com/near/near-workspaces-rs/pull/101))
-- make empty array the default function argument ([#84](https://github.com/near/near-workspaces-rs/pull/84))
-- Make `access_key` do an optimistic RPC query ([#60](https://github.com/near/near-workspaces-rs/pull/60))
-
-### Other
 - [**breaking**] renamed crate to near-workspaces to avoid confusion with Cargo workspaces; imports should now use `near_workspaces` instead of just `workspaces` ([#318](https://github.com/near/near-workspaces-rs/pull/318))
-- drop async-process in favor of tokio ([#316](https://github.com/near/near-workspaces-rs/pull/316))
-- switch to `near-gas` crate for Gas where possible ([#305](https://github.com/near/near-workspaces-rs/pull/305))
-- Improved fast_forward docs ([#299](https://github.com/near/near-workspaces-rs/pull/299))
-- Added test for delete_account ([#289](https://github.com/near/near-workspaces-rs/pull/289))
-- Added a test for transfer_near ([#290](https://github.com/near/near-workspaces-rs/pull/290))
-- using url return type ([#297](https://github.com/near/near-workspaces-rs/pull/297))
-- dependencies and removed unused deps ([#292](https://github.com/near/near-workspaces-rs/pull/292))
-- upgrade to stable toolchain ([#293](https://github.com/near/near-workspaces-rs/pull/293))
-- Updated near deps to 0.17 ([#283](https://github.com/near/near-workspaces-rs/pull/283))
-- add `sdk::PublicKey` to `workspaces::PublicKey` conversion ([#267](https://github.com/near/near-workspaces-rs/pull/267))
-- Use cargo-near to build project ([#275](https://github.com/near/near-workspaces-rs/pull/275))
-- Added network builder for mainnet, testnet, betanet ([#221](https://github.com/near/near-workspaces-rs/pull/221))
-- bump borsh version and other deps ([#271](https://github.com/near/near-workspaces-rs/pull/271))
-- bump sandbox to 0.6.2 ([#270](https://github.com/near/near-workspaces-rs/pull/270))
-- Import some functions over from near_crypto for PublicKey ([#265](https://github.com/near/near-workspaces-rs/pull/265))
-- Added destination account-id for `import_contract` call ([#260](https://github.com/near/near-workspaces-rs/pull/260))
-- Fix port collision ([#257](https://github.com/near/near-workspaces-rs/pull/257))
-- Removed the lifetime in transact_async ([#249](https://github.com/near/near-workspaces-rs/pull/249))
-- configure sandbox ([#251](https://github.com/near/near-workspaces-rs/pull/251))
-- 0.7.0 ([#244](https://github.com/near/near-workspaces-rs/pull/244))
-- expose `view_chunk` ([#234](https://github.com/near/near-workspaces-rs/pull/234))
-- Expose error creation methods ([#224](https://github.com/near/near-workspaces-rs/pull/224))
-- Bump to version 0.6.1 ([#240](https://github.com/near/near-workspaces-rs/pull/240))
-- Fix query variant error + add test ([#239](https://github.com/near/near-workspaces-rs/pull/239))
-- Fix docs containing 50mb instead of 50kb ([#219](https://github.com/near/near-workspaces-rs/pull/219))
-- 0.6.0 ([#213](https://github.com/near/near-workspaces-rs/pull/213))
-- Made ValueOrReceiptId::Value object consistent ([#208](https://github.com/near/near-workspaces-rs/pull/208))
-- Bump sandbox to latest ([#211](https://github.com/near/near-workspaces-rs/pull/211))
-- Upgrade to version 0.4.0 of near-jsonrpc-client, and version 0.15.0 for nearcore libraries ([#210](https://github.com/near/near-workspaces-rs/pull/210))
-- Fix child sandbox process becoming orphaned on early termination ([#205](https://github.com/near/near-workspaces-rs/pull/205))
-- Make compile_project use latest error API ([#204](https://github.com/near/near-workspaces-rs/pull/204))
-- add unstable feature to docs build ([#198](https://github.com/near/near-workspaces-rs/pull/198))
-- Up version to 0.5.0
-- 0.5.0 ([#188](https://github.com/near/near-workspaces-rs/pull/188))
-- Added convenience functions `Account::{from_secret_key, set_secret_key}` ([#185](https://github.com/near/near-workspaces-rs/pull/185))
-- 0.4.1 ([#180](https://github.com/near/near-workspaces-rs/pull/180))
-- Fix macos non-deterministic overflow error ([#179](https://github.com/near/near-workspaces-rs/pull/179))
-- Fix tests erroring out on newest rust v1.63.0 ([#177](https://github.com/near/near-workspaces-rs/pull/177))
-- 0.4.0 ([#170](https://github.com/near/near-workspaces-rs/pull/170))
-- Expose tokens_burnt ([#168](https://github.com/near/near-workspaces-rs/pull/168))
-- Update Deps Along w/ M1 Support ([#169](https://github.com/near/near-workspaces-rs/pull/169))
-- Added Debug + Clone to Account and Contract ([#167](https://github.com/near/near-workspaces-rs/pull/167))
-- Expose account keys ([#144](https://github.com/near/near-workspaces-rs/pull/144))
-- Bump vworkspaces to 0.3.1 ([#152](https://github.com/near/near-workspaces-rs/pull/152))
-- add secret key creation methods and added new KeyType type ([#139](https://github.com/near/near-workspaces-rs/pull/139))
-- expose raw_bytes API ([#133](https://github.com/near/near-workspaces-rs/pull/133))
-- bump workspaces patch version and update changelog ([#136](https://github.com/near/near-workspaces-rs/pull/136))
-- bump sandbox version default for SDK change ([#134](https://github.com/near/near-workspaces-rs/pull/134))
-- Added cross contract tests ([#123](https://github.com/near/near-workspaces-rs/pull/123))
-- 0.2.1 ([#117](https://github.com/near/near-workspaces-rs/pull/117))
-- doc builds on docs.rs ([#115](https://github.com/near/near-workspaces-rs/pull/115))
-- 0.2 ([#104](https://github.com/near/near-workspaces-rs/pull/104))
-- [**breaking**] Reorganize exports and modules exposed ([#102](https://github.com/near/near-workspaces-rs/pull/102))
-- cleanup before release 0.2 ([#94](https://github.com/near/near-workspaces-rs/pull/94))
-- Reduce retries time ([#92](https://github.com/near/near-workspaces-rs/pull/92))
-- fix doc builds and adds README ([#90](https://github.com/near/near-workspaces-rs/pull/90))
-- suppress sandbox bin logs ([#85](https://github.com/near/near-workspaces-rs/pull/85))
-- `CallResultDetails` now expose logs, transaction and receipt outcomes ([#70](https://github.com/near/near-workspaces-rs/pull/70))
-- Add view_account, view_code, view_block ([#82](https://github.com/near/near-workspaces-rs/pull/82))
-- Improve error handling: error out on failed final status ([#83](https://github.com/near/near-workspaces-rs/pull/83))
-- change patch state parameters to be slices ([#80](https://github.com/near/near-workspaces-rs/pull/80))
-- make patch_state accept Vec<u8> ([#79](https://github.com/near/near-workspaces-rs/pull/79))
-- Added `is_success` / `is_failure` for CallExecution results ([#58](https://github.com/near/near-workspaces-rs/pull/58))
-- 0.1.1 ([#59](https://github.com/near/near-workspaces-rs/pull/59))
-- Adds mainnet archival rpc and fixes ref-finance example ([#57](https://github.com/near/near-workspaces-rs/pull/57))
-- (dev_)deploy is now consistent across the board ([#56](https://github.com/near/near-workspaces-rs/pull/56))
-- [**breaking**] don't require owned AccountId for RPC abstractions ([#52](https://github.com/near/near-workspaces-rs/pull/52))
-- Fixup race condition when installing near-sandbox
-- Merge branch 'main' into release/0.1
-- Update deploy to not consume self
-- Update README w/ sandbox-utils version from crates.io
-- Added licenses
-- worker.create_tla for Mainnet unsupported for now
-- Update docs
-- Merge branch 'feat/call-builder' of github.com:near/workspaces-rs into example/ref-finance
-- Rename amount_yocto to amount & correct docs
-- Added docs
-- Add convenient deploy function
-- Format
-- Update examples with newer accounts API
-- Move client.call defaults out
-- Rename dev_create{,_account}
-- Add DeserializedOwned & result sig for json/borsh
-- Add #[non_exhaustive] to detail objects
-- Drop with_ prefix for builders
-- Add additional lifetimes
-- Rename try_* to .borsh and .json
-- Add serde::Serialize to with_args_json
-- Fixup examples/tests
-- Add serde/borsh deser from view calls
-- Added create_account for sub account creation
-- Format
-- Merge branch 'main' of github.com:near/workspaces-rs into feat/call-builder
-- Added helper functions for transfer_near, delete_account, view
-- Change function sig of view to return Json String
-- Add call builder
-- fmt
-- Fix macos build
-- Depend on libc for unix only
-- Guard unix code
-- Do not expose internal borsh
-- Merge branch 'feat/rearrange' of github.com:near/workspaces-rs into feat/no-pub-nearcore-types
-- Update example to use json! & make proj version agnostic for now
-- Consistent fn sig between call & view
-- Make dev_generate async
-- One more fmt
-- Merge branch 'main' of github.com:near/workspaces-rs into feat/rearrange
-- Added into_result for CallExecution
-- Do not expose internal client functions
-- fmt
-- Clean up impls and prelude
-- Update patch_state to take in Vec<u8>
-- deploy code now only accepts bytes instead of filepath
-- Made NetworkInfo return a Info struct
-- Removed send/sync for account.rs and misc small fixes
-- Bump workspaces version up to 0.2
-- Update tests to use Result
-- Removed unused cargo deps
-- Removed Network Actions
-- Deleted tokio::main export
-- Moved SandboxServer code into network/
-- Removed old style API code
-- CallExecution{Result => Details} and add transfer_near/delete_account
-- Added CallExecution* to network/result.rs
-- Remove unused imports and fix clippy warnings
-- Update create_tla sig to take signer
-- Format
-- Update spooning example w/ new API
-- Update status_msg/patch_state ex/test
-- Add worker.view_state
-- Minor fix for warnings
-- Added patching state to sandbox network
-- client.{call => query, _call => call}
-- Added Worker<Testnet>
-- Some clean up
-- fmt deploy test
-- Cargo fmt
-- tests/deploy.rs now conform to new API
-- Change TLA deploy to take in signer
-- Added account.rs
-- Add Worker::sandbox()
-- Added client.deploy fn
-- Lessen visibility of default construction for Sandbox network
-- Add Arc<T> for Worker<T>
-- Added forgotten generic code for Worker
-- Moved account/contract code into account.rs
-- Added some docs on NetworkInfo
-- Update deploy example
-- Formatting
-- Added dev_deploy test for new style
-- Make sandbox server components accessible within project
-- Cleaning up Server trait
-- Move dev_generate into trait & added client dep
-- Blanket impl for anything that impls the parts of a Network
-- Added dev_deploy impl
-- Change return sig of dev_deploy to contract instead
-- Expose helper fn for sandbox server
-- Added sandbox Network impl
-- Added forgotten type parameters
-- Added network/worker modules
-- Client now takes in rpc_addr
-- Moved delete_account/view_state into client.rs
-- Moved create_account into client.rs
-- Moved view/transfer_near into client.rs
-- Move call into client.rs
-- Merge branch 'main' of https://github.com/near/workspaces-rs into feat/exponential-backoff
-- Merge pull request [#16](https://github.com/near/near-workspaces-rs/pull/16) from near/feat/spooning
-- Stop exposing `FinalExecutionOutcomeView` as the return type of many call-like functions
-- Merge branch 'main' of https://github.com/near/sandbox-api into austin/tokio_gen
-- Merge branch 'main' of https://github.com/near/sandbox-api into feat/testnet-impl
-- Cargo fmt
-- Merge branch 'main' of https://github.com/near/sandbox-api into chore/rename-workspaces
-- Renamed runner => workspaces
+- [Upgraded to Rust Stable Toolchain](https://github.com/near/near-workspaces-rs/commit/8d93197d06aee2a426b6da99e270ce1658c2cd4f). Deprecates requirement of only using rustc-1.69 and lower.
 
 ### Added
 
-- RPC API Keys used to interact with services such as Pagoda Console.
 - [Import a couple functions over from near_crypto for PublicKey](https://github.com/near/workspaces-rs/pull/265)
   - Impl `Ord`, `PartialOrd`, `Hash`, `BorshSerialize`, `BorshDeserialize`, `Display`, and `FromStr` for `PublicKey`
     - NOTE: Borsh bytes format is the same as near-sdk, where it is in the form of [bytes_len, key_type, key_data..]
@@ -240,6 +23,10 @@
 - [Added Worker::patch to patch account, keys, code, and state in a generic builder](https://github.com/near/near-workspaces-rs/pull/291)
   - Added `Worker::patch` and `PatchTransaction` that provide builders for patching accounts, keys, code, and state.
   - Added `AccountDetails` and `AccountDetailsPatch` which hold the state of the patch.
+- Allow to select a specific version of near-sandbox ([#311](https://github.com/near/near-workspaces-rs/pull/311))
+- Enable support for RPCs that require API keys and support for custom networks ([#306](https://github.com/near/near-workspaces-rs/pull/306))
+- expose more `Block` and `Chunk` fields ([#243](https://github.com/near/near-workspaces-rs/pull/243))
+- support manually supplied validator key ([#274](https://github.com/near/near-workspaces-rs/pull/274))
 
 ### Changed
 
@@ -249,8 +36,32 @@
 
 ### Fixed
 
-- [Upgraded to Rust Stable Toolchain](https://github.com/near/near-workspaces-rs/commit/8d93197d06aee2a426b6da99e270ce1658c2cd4f). Deprecates requirement of only using rustc-1.69 and lower.
-- [Run `neard` on `localhost` instead of `0.0.0.0` to prevent firewall popups on MacOS](https://github.com/near/workspaces-rs/issues/276)
+- improve error msg on calling `json` on void function ([#286](https://github.com/near/near-workspaces-rs/pull/286))
+- fix typos ([#280](https://github.com/near/near-workspaces-rs/pull/280))
+- Run `neard` on `localhost` instead of `0.0.0.0` to prevent firewall popups on MacOS ([#277](https://github.com/near/near-workspaces-rs/pull/277))
+- storing credentials ([#258](https://github.com/near/near-workspaces-rs/pull/258))
+- Make call consistent with worker::view ([#245](https://github.com/near/near-workspaces-rs/pull/245))
+
+### Other
+
+- drop async-process in favor of tokio ([#316](https://github.com/near/near-workspaces-rs/pull/316))
+- switch to `near-gas` crate for Gas where possible ([#305](https://github.com/near/near-workspaces-rs/pull/305))
+- Improved fast_forward docs ([#299](https://github.com/near/near-workspaces-rs/pull/299))
+- Added test for delete_account ([#289](https://github.com/near/near-workspaces-rs/pull/289))
+- Added a test for transfer_near ([#290](https://github.com/near/near-workspaces-rs/pull/290))
+- using url return type ([#297](https://github.com/near/near-workspaces-rs/pull/297))
+- dependencies and removed unused deps ([#292](https://github.com/near/near-workspaces-rs/pull/292))
+- upgrade to stable toolchain ([#293](https://github.com/near/near-workspaces-rs/pull/293))
+- Updated near deps to 0.17 ([#283](https://github.com/near/near-workspaces-rs/pull/283))
+- Use cargo-near to build project ([#275](https://github.com/near/near-workspaces-rs/pull/275))
+- Added network builder for mainnet, testnet, betanet ([#221](https://github.com/near/near-workspaces-rs/pull/221))
+- bump borsh version and other deps ([#271](https://github.com/near/near-workspaces-rs/pull/271))
+- bump sandbox to 0.6.2 ([#270](https://github.com/near/near-workspaces-rs/pull/270))
+- Import some functions over from near_crypto for PublicKey ([#265](https://github.com/near/near-workspaces-rs/pull/265))
+- Added destination account-id for `import_contract` call ([#260](https://github.com/near/near-workspaces-rs/pull/260))
+- Fix port collision ([#257](https://github.com/near/near-workspaces-rs/pull/257))
+- Removed the lifetime in transact_async ([#249](https://github.com/near/near-workspaces-rs/pull/249))
+- configure sandbox ([#251](https://github.com/near/near-workspaces-rs/pull/251))
 
 ## [0.7.0]
 
