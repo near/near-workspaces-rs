@@ -1,3 +1,5 @@
+use std::panic::{RefUnwindSafe, UnwindSafe};
+
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
 use crate::operations::{CallTransaction, Function};
@@ -28,6 +30,11 @@ use {
         },
     },
 };
+
+// Allows to satisfy the `UnwindSafe` trait for the `Worker` type semver check.
+impl<T: ?Sized> UnwindSafe for Worker<T> {}
+// Allows to satisfy the `RefUnwindSafe` trait for the `Worker` type semver check.
+impl<T: ?Sized> RefUnwindSafe for Worker<T> {}
 
 impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
