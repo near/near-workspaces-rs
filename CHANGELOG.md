@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.9.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.8.0...near-workspaces-v0.9.0) - 2023-10-06
+
+### Added
+- Added API for measuring gas ([#284](https://github.com/near/near-workspaces-rs/pull/284))
+
+### Other
+- remove unwraps ([#321](https://github.com/near/near-workspaces-rs/pull/321))
+
 ## [0.8.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.7.0...near-workspaces-v0.8.0) - 2023-10-04
 
 - [**breaking**] renamed crate to near-workspaces to avoid confusion with Cargo workspaces; imports should now use `near_workspaces` instead of just `workspaces` ([#318](https://github.com/near/near-workspaces-rs/pull/318))
