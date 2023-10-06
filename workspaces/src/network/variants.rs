@@ -47,9 +47,9 @@ where
             .create_tla(self.clone().coerce(), id, sk)
             .await?;
 
-        self.tx_callbacks.iter().for_each(|meter| {
-            meter(res.details.total_gas_burnt).unwrap();
-        });
+        for callback in self.tx_callbacks.iter() {
+            callback(res.details.total_gas_burnt)?;
+        }
 
         Ok(res)
     }
@@ -65,9 +65,9 @@ where
             .create_tla_and_deploy(self.clone().coerce(), id, sk, wasm)
             .await?;
 
-        self.tx_callbacks.iter().for_each(|meter| {
-            meter(res.details.total_gas_burnt).unwrap();
-        });
+        for callback in self.tx_callbacks.iter() {
+            callback(res.details.total_gas_burnt)?;
+        }
 
         Ok(res)
     }
