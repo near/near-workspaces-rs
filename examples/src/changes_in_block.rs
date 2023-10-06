@@ -1,4 +1,3 @@
-use near_primitives::account;
 use serde_json::json;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";

@@ -40,7 +40,10 @@ use near_jsonrpc_client::methods::{self, RpcMethod};
 use near_jsonrpc_primitives::types::chunks::ChunkReference;
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::types::{BlockId, BlockReference, StoreKey};
-use near_primitives::views::{BlockView, QueryRequest, StateChangesRequestView};
+use near_primitives::views::{BlockView, QueryRequest};
+
+#[cfg(feature = "experimental")]
+use near_primitives::views::StateChangesRequestView;
 
 use crate::error::RpcErrorCode;
 use crate::operations::Function;

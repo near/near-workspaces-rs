@@ -1,4 +1,3 @@
-use crate::error::{Error, ErrorKind};
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
 use crate::operations::{CallTransaction, Function};
@@ -6,15 +5,18 @@ use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
 use crate::rpc::patch::{ImportContractTransaction, PatchTransaction};
 use crate::rpc::query::{
-    GasPrice, ProtocolConfig, Query, QueryChunk, StateChanges, StateChangesInBlock, ViewAccessKey,
-    ViewAccessKeyList, ViewAccount, ViewBlock, ViewCode, ViewFunction, ViewState,
+    GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
+    ViewCode, ViewFunction, ViewState,
 };
 use crate::types::{AccountId, Balance, InMemorySigner, PublicKey};
 use crate::worker::Worker;
-use crate::{Account, CryptoHash, Network};
+use crate::{Account, Network};
 
 #[cfg(feature = "experimental")]
 use {
+    crate::error::{Error, ErrorKind},
+    crate::rpc::query::{ProtocolConfig, StateChanges, StateChangesInBlock},
+    crate::CryptoHash,
     near_chain_configs::GenesisConfig,
     near_jsonrpc_primitives::types::{receipts::ReceiptReference, transactions::TransactionInfo},
     near_primitives::{
