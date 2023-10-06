@@ -1,6 +1,6 @@
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
 
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
     let genesis_config = worker.genesis_config().await?;

@@ -5,12 +5,12 @@
 // This is perfect to showcase cron.cat which will schedule calling into contract functions
 // at a set amount of time we supply.
 
-use near_units::{parse_gas, parse_near};
+use near_gas::NearGas;
+use near_units::parse_near;
+use near_workspaces::network::Sandbox;
+use near_workspaces::{Account, AccountId, Contract, Worker};
 use serde::Deserialize;
 use serde_json::json;
-
-use workspaces::network::Sandbox;
-use workspaces::{Account, AccountId, Contract, Worker};
 
 const MANAGER_CONTRACT: &[u8] = include_bytes!("../res/manager.wasm");
 const COUNTER_CONTRACT: &[u8] = include_bytes!("../res/counter.wasm");
@@ -46,7 +46,7 @@ pub struct Agent {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Spawn sandbox as normal and get us a local blockchain for us to interact and toy with:
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
 
     // Initialize counter contract, which will be pointed to in the manager contract to schedule
     // a task later to increment the counter, inside counter contract.
@@ -134,7 +134,7 @@ pub async fn run_scheduled_tasks(
     // here, so the agent should be executing the task.
     agent
         .call(contract.id(), "proxy_call")
-        .gas(parse_gas!("200 Tgas") as u64)
+        .gas(NearGas::from_tgas(200))
         .transact()
         .await?
         .into_result()?;
@@ -144,7 +144,7 @@ pub async fn run_scheduled_tasks(
     worker.fast_forward(4500).await?;
     agent
         .call(contract.id(), "proxy_call")
-        .gas(parse_gas!("200 Tgas") as u64)
+        .gas(NearGas::from_gas(200))
         .transact()
         .await?
         .into_result()?;

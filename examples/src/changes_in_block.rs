@@ -5,7 +5,7 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 

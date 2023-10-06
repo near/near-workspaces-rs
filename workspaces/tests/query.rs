@@ -1,7 +1,7 @@
-use workspaces::{network::Sandbox, Contract, Worker};
+use near_workspaces::{network::Sandbox, Contract, Worker};
 
 async fn init() -> anyhow::Result<(Worker<Sandbox>, Contract)> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let status_msg = worker
         .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
         .await?;

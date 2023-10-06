@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
+use near_sandbox_utils as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
@@ -20,7 +21,7 @@ use crate::{Account, Contract, Network, Worker};
 // Constant taken from nearcore crate to avoid dependency
 pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
 
-const DEFAULT_DEPOSIT: Balance = 100 * NEAR_BASE;
+const DEFAULT_DEPOSIT: Balance = NEAR_BASE * 100;
 
 /// Local sandboxed environment/network, which can be used to test without interacting with
 /// networks that are online such as mainnet and testnet. Look at [`workspaces::sandbox`]
@@ -31,6 +32,7 @@ pub struct Sandbox {
     pub(crate) server: SandboxServer,
     client: Client,
     info: Info,
+    version: Option<String>,
 }
 
 impl Sandbox {
@@ -46,22 +48,10 @@ impl Sandbox {
             )),
         }
     }
-}
-
-impl std::fmt::Debug for Sandbox {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_struct("Sandbox")
-            .field("root_id", &self.info.root_id)
-            .field("rpc_url", &self.info.rpc_url)
-            .field("rpc_port", &self.server.rpc_port())
-            .field("net_port", &self.server.net_port())
-            .finish()
-    }
-}
-
-#[async_trait]
-impl FromNetworkBuilder for Sandbox {
-    async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
+    pub(crate) async fn from_builder_with_version<'a>(
+        build: NetworkBuilder<'a, Self>,
+        version: &str,
+    ) -> Result<Self> {
         // Check the conditions of the provided rpc_url and validator_key
         let mut server = match (build.rpc_addr, build.validator_key) {
             // Connect to a provided sandbox:
@@ -70,7 +60,7 @@ impl FromNetworkBuilder for Sandbox {
             }
 
             // Spawn a new sandbox since rpc_url and home_dir weren't specified:
-            (None, None) => SandboxServer::run_new().await?,
+            (None, None) => SandboxServer::run_new_with_version(version).await?,
 
             // Missing inputted parameters for sandbox:
             (Some(rpc_url), None) => {
@@ -85,7 +75,7 @@ impl FromNetworkBuilder for Sandbox {
             }
         };
 
-        let client = Client::new(&server.rpc_addr());
+        let client = Client::new(&server.rpc_addr(), build.api_key)?;
         client.wait_for_rpc().await?;
 
         // Server locks some ports on startup due to potential port collision, so we need
@@ -105,7 +95,27 @@ impl FromNetworkBuilder for Sandbox {
             server,
             client,
             info,
+            version: Some(version.to_string()),
         })
+    }
+}
+
+impl std::fmt::Debug for Sandbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("Sandbox")
+            .field("root_id", &self.info.root_id)
+            .field("rpc_url", &self.info.rpc_url)
+            .field("rpc_port", &self.server.rpc_port())
+            .field("net_port", &self.server.net_port())
+            .field("version", &self.version)
+            .finish()
+    }
+}
+
+#[async_trait]
+impl FromNetworkBuilder for Sandbox {
+    async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
+        Self::from_builder_with_version(build, sandbox::DEFAULT_NEAR_SANDBOX_VERSION).await
     }
 }
 

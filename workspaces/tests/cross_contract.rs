@@ -1,7 +1,7 @@
 use near_sdk::json_types::U128;
 use near_units::parse_near;
-use workspaces::result::ExecutionFinalResult;
-use workspaces::{AccountId, Contract};
+use near_workspaces::result::ExecutionFinalResult;
+use near_workspaces::{AccountId, Contract};
 
 /// The factory contract used in these tests can be found in
 /// [near-sdk/examples/factory-contract](https://github.com/near/near-sdk-rs/tree/master/examples/factory-contract/high-level).
@@ -26,7 +26,7 @@ async fn cross_contract_create_contract(
 
 #[tokio::test]
 async fn test_cross_contract_create_contract() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let contract = worker.dev_deploy(FACTORY_CONTRACT).await?;
     let status_amt = U128::from(parse_near!("35 N"));
 
@@ -57,7 +57,7 @@ async fn test_cross_contract_create_contract() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_cross_contract_calls() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let contract = worker.dev_deploy(FACTORY_CONTRACT).await?;
     let status_amt = U128::from(parse_near!("35 N"));
 
