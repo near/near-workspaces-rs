@@ -11,7 +11,7 @@ use crate::Worker;
 ///
 /// The auto-traits [`Send`], [`Sync`], [`UnwindSafe`] and [`RefUnwindSafe`] are added explicitly because they
 /// do not fall under the rules the compiler uses to automatically add them.
-/// See here: https://doc.rust-lang.org/reference/special-types-and-traits.html#auto-traits
+/// See here: <https://doc.rust-lang.org/reference/special-types-and-traits.html#auto-traits>
 pub type GasHook = Arc<dyn Fn(Gas) -> Result<()> + Send + Sync + UnwindSafe + RefUnwindSafe>;
 
 /// Allows you to meter the amount of gas consumed by transaction(s).
