@@ -127,41 +127,90 @@ impl TopLevelAccountCreator for Sandbox {
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
-        sk: SecretKey,
+        _sk: SecretKey,
     ) -> Result<Execution<Account>> {
-        let root_signer = self.root_signer()?;
-        let outcome = self
-            .client()
-            .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
-            .await?;
+        // original
+        // {
+        //     let root_signer = self.root_signer()?;
 
-        let signer = InMemorySigner::from_secret_key(id, sk);
-        Ok(Execution {
-            result: Account::new(signer, worker),
-            details: ExecutionFinalResult::from_view(outcome),
-        })
+        //     let signer = InMemorySigner::from_secret_key(id, sk);
+        //     Ok(Execution {
+        //         result: Account::new(signer, worker),
+        //         details: ExecutionFinalResult::from_view(outcome),
+        //     })
+        // }
+
+        let root_signer = self.root_signer()?;
+
+        let root_account = Account::new(
+            InMemorySigner {
+                account_id: root_signer.account_id,
+                secret_key: root_signer.secret_key,
+            },
+            worker,
+        );
+
+        root_account
+            .create_subaccount(&id)
+            .initial_balance(100_000_000_000_000_000_000_000_000)
+            .transact()
+            .await
     }
 
     async fn create_tla_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
-        sk: SecretKey,
+        _sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
+        // // original
+        // {
+        //     let root_signer = self.root_signer()?;
+        //     let outcome = self
+        //         .client()
+        //         .create_account_and_deploy(
+        //             &root_signer,
+        //             &id,
+        //             sk.public_key(),
+        //             DEFAULT_DEPOSIT,
+        //             wasm.into(),
+        //         )
+        //         .await?;
+
+        //     let signer = InMemorySigner::from_secret_key(id, sk);
+        //     Ok(Execution {
+        //         result: Contract::new(signer, worker),
+        //         details: ExecutionFinalResult::from_view(outcome),
+        //     })
+        // }
+
         let root_signer = self.root_signer()?;
+
+        let root_account = Account::new(
+            InMemorySigner {
+                account_id: root_signer.clone().account_id,
+                secret_key: root_signer.clone().secret_key,
+            },
+            worker.clone(),
+        );
+
+        let sub_account = root_account
+            .create_subaccount(&id)
+            .initial_balance(100_000_000_000_000_000_000_000_000)
+            .transact()
+            .await?
+            .result;
+
         let outcome = self
             .client()
-            .create_account_and_deploy(
-                &root_signer,
-                &id,
-                sk.public_key(),
-                DEFAULT_DEPOSIT,
-                wasm.into(),
-            )
+            .deploy(&root_signer, &root_signer.account_id, wasm.into())
             .await?;
 
-        let signer = InMemorySigner::from_secret_key(id, sk);
+        let signer = InMemorySigner::from_secret_key(
+            sub_account.id().to_owned(),
+            sub_account.secret_key().to_owned(),
+        );
         Ok(Execution {
             result: Contract::new(signer, worker),
             details: ExecutionFinalResult::from_view(outcome),
