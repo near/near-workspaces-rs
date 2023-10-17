@@ -564,7 +564,7 @@ pub(crate) async fn send_batch_tx_and_retry(
         send_tx(
             client,
             &cache_key,
-            signed_transaction(&signer, actions.clone(), nonce, block_hash, receiver_id),
+            signed_transaction(signer, actions.clone(), nonce, block_hash, receiver_id),
         )
         .await
     })
@@ -584,7 +584,7 @@ pub(crate) async fn send_batch_tx_async_and_retry(
             .client()
             .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
                 signed_transaction: signed_transaction(
-                    &signer,
+                    signer,
                     actions.clone(),
                     nonce,
                     block_hash,
