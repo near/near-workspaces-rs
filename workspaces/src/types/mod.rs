@@ -537,7 +537,7 @@ pub(crate) fn signed_transaction(
         nonce,
         receiver_id: receiver_id.clone(),
         block_hash: near_primitives::hash::CryptoHash(block_hash.0),
-        actions: actions.to_vec(),
+        actions,
     };
 
     SignedTransaction::new(
