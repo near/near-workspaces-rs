@@ -194,6 +194,7 @@ impl<T: ?Sized> Worker<T>
 where
     T: NetworkClient,
 {
+    /// Provides a list of changes in block associated with the given block reference.
     pub async fn changes_in_block(
         &self,
         block_reference: BlockReference,
@@ -201,6 +202,7 @@ where
         self.client().changes_in_block(block_reference).await
     }
 
+    /// Provides a list of changes in block associated with the given block reference and state changes request.
     pub async fn changes(
         &self,
         block_reference: BlockReference,
@@ -211,10 +213,12 @@ where
             .await
     }
 
+    /// Provides a genesis config associated with the network being used.
     pub async fn genesis_config(&self) -> Result<GenesisConfig> {
         self.client().genesis_config().await
     }
 
+    /// Provides a protocol config associated with the given block reference.
     pub async fn protocol_config(
         &self,
         block_reference: BlockReference,
@@ -222,10 +226,12 @@ where
         self.client().protocol_config(block_reference).await
     }
 
+    /// Provides a receipt associated with the given receipt reference.
     pub async fn receipt(&self, receipt_reference: ReceiptReference) -> Result<ReceiptView> {
         self.client().receipt(receipt_reference).await
     }
 
+    /// Returns the transaction status for a given transaction hash or signed transaction.
     pub async fn tx_status(
         &self,
         transaction_info: TransactionInfo,
@@ -233,6 +239,7 @@ where
         self.client().tx_status(transaction_info).await
     }
 
+    /// Provides a list of validators ordered with respect to their stake.
     pub async fn validators_ordered(
         &self,
         block_id: MaybeBlockId,
