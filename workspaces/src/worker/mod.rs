@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use crate::network::builder::NetworkBuilder;
 use crate::network::{Betanet, Custom, Mainnet, Sandbox, Testnet};
-use crate::types::GasHook;
+use crate::types::gas_meter::GasHook;
 use crate::{Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
