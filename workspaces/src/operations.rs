@@ -229,7 +229,6 @@ impl Transaction {
     /// Transfer `deposit` amount from `signer`'s account into `receiver_id`'s account.
     pub fn transfer(mut self, deposit: Balance) -> Self {
         if let Ok(actions) = &mut self.actions {
-            let deposit = deposit;
             actions.push(TransferAction { deposit }.into());
         }
         self

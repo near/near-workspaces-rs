@@ -287,7 +287,7 @@ where
         for entry in entries {
             let account = Account::from_file(&entry, self)?;
             // If we can't view the account from the network, then remove it from the keystore.
-            if let Err(_) = self.view_account(account.id()).await {
+            if self.view_account(account.id()).await.is_err() {
                 std::fs::remove_file(entry).map_err(|e| ErrorKind::Io.custom(e))?;
                 continue;
             }
