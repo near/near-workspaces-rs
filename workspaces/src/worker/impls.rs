@@ -1,3 +1,4 @@
+use crate::error::ErrorKind;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
 use crate::operations::{CallTransaction, Function};
@@ -241,6 +242,12 @@ where
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct KeyFile {
+    public_key: String,
+    private_key: String,
+}
+
 impl<T> Worker<T>
 where
     T: Network + 'static,
@@ -262,6 +269,33 @@ where
             signer.clone(),
             function,
         )
+    }
+
+    /// Get a list of accounts that are available for the network specified.
+    /// The accounts are read from the keystore directory, returning a list of [`Account`]s if successful.
+    /// If the account is not present in the newtork, it will be removed from the keystore.
+    pub async fn accounts(&self) -> Result<Vec<Account>> {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join(self.info().keystore_path.clone());
+        let entries = std::fs::read_dir(&path)
+            .map_err(|e| ErrorKind::Io.custom(e))?
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, std::io::Error>>()
+            .map_err(|e| ErrorKind::Io.custom(e))?;
+
+        let mut accounts = vec![];
+        for entry in entries {
+            let account = Account::from_file(&entry, self)?;
+            // If we can't view the account from the network, then remove it from the keystore.
+            if let Err(_) = self.view_account(account.id()).await {
+                std::fs::remove_file(entry).map_err(|e| ErrorKind::Io.custom(e))?;
+                continue;
+            }
+
+            accounts.push(account);
+        }
+
+        Ok(accounts)
     }
 }
 

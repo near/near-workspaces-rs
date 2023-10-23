@@ -135,7 +135,9 @@ impl TopLevelAccountCreator for Sandbox {
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
             .await?;
 
-        let signer = InMemorySigner::from_secret_key(id, sk);
+        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
+        signer.write_to_file(&id, &self.info.keystore_path)?;
+
         Ok(Execution {
             result: Account::new(signer, worker),
             details: ExecutionFinalResult::from_view(outcome),
@@ -161,7 +163,8 @@ impl TopLevelAccountCreator for Sandbox {
             )
             .await?;
 
-        let signer = InMemorySigner::from_secret_key(id, sk);
+        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
+        signer.write_to_file(&id, &self.info.keystore_path)?;
         Ok(Execution {
             result: Contract::new(signer, worker),
             details: ExecutionFinalResult::from_view(outcome),

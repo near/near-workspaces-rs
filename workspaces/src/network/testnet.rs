@@ -77,7 +77,8 @@ impl TopLevelAccountCreator for Testnet {
     ) -> Result<Execution<Account>> {
         let url = Url::parse(HELPER_URL).unwrap();
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
-        let signer = InMemorySigner::from_secret_key(id, sk);
+        let signer = InMemorySigner::from_secret_key(id.clone(), sk);
+        signer.write_to_file(&id, &self.info.keystore_path)?;
 
         Ok(Execution {
             result: Account::new(signer, worker),
@@ -112,6 +113,8 @@ impl TopLevelAccountCreator for Testnet {
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
+        signer.write_to_file(&id, &self.info.keystore_path)?;
+
         let account = self.create_tla(worker, id.clone(), sk).await?;
 
         let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;

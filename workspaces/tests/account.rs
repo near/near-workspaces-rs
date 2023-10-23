@@ -92,3 +92,18 @@ async fn test_delete_account() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_read_account() -> anyhow::Result<()> {
+    let worker = near_workspaces::sandbox().await?;
+    let (id, sk) = worker.dev_generate().await;
+    let account_created = worker.create_tla(id, sk).await?.result;
+    let account_retrieved = worker
+        .accounts()
+        .await?
+        .pop()
+        .expect("there should be at least one account");
+
+    assert!(account_retrieved.id() == account_created.id());
+    Ok(())
+}
