@@ -4,6 +4,8 @@ use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::{Info, NetworkClient, NetworkInfo};
 use crate::rpc::client::Client;
 
+use std::path::PathBuf;
+
 /// URL to the betanet RPC node provided by near.org.
 pub const RPC_URL: &str = "https://rpc.betanet.near.org";
 
@@ -35,6 +37,7 @@ impl FromNetworkBuilder for Betanet {
             info: Info {
                 name: build.name.into(),
                 root_id: "near".parse().unwrap(),
+                keystore_path: PathBuf::from(".near-credentials/betanet/"),
                 rpc_url: Url::parse(&rpc_url).expect("url is hardcoded"),
             },
         })

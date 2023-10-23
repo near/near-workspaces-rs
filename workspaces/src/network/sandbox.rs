@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use async_trait::async_trait;
@@ -96,6 +97,7 @@ impl FromNetworkBuilder for Sandbox {
         let info = Info {
             name: build.name.into(),
             root_id: AccountId::from_str("test.near").unwrap(),
+            keystore_path: PathBuf::from(".near-credentials/sandbox/"),
             rpc_url: url::Url::parse(&server.rpc_addr()).expect("url is hardcoded"),
         };
 
