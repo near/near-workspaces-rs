@@ -1,10 +1,10 @@
+use near_workspaces::operations::Function;
 use serde_json::json;
 use test_log::test;
-use workspaces::operations::Function;
 
 #[test(tokio::test)]
 async fn test_batch_tx() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let contract = worker
         .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
         .await?;

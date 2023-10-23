@@ -174,13 +174,13 @@ impl PatchTransaction {
         }
     }
 
-    /// Patch and overwrite the info contained inside an [`Account`] in sandbox.
+    /// Patch and overwrite the info contained inside an [`crate::Account`] in sandbox.
     pub fn account(mut self, account: AccountDetailsPatch) -> Self {
         self.account_updates.push(AccountUpdate::Update(account));
         self
     }
 
-    /// Patch and overwrite the info contained inside an [`Account`] in sandbox. This
+    /// Patch and overwrite the info contained inside an [`crate::Account`] in sandbox. This
     /// will allow us to fetch the current details on the chain and allow us to update
     /// the account details w.r.t to them.
     pub fn account_from_current<F: 'static>(mut self, f: F) -> Self
@@ -230,7 +230,7 @@ impl PatchTransaction {
     }
 
     /// Sets the code for this account. This will overwrite the current code contained in the account.
-    /// Note that if a patch for [`account`] or [`account_from_current`] is specified, the code hash
+    /// Note that if a patch for [`Self::account`] or [`Self::account_from_current`] is specified, the code hash
     /// in those will be overwritten with the code hash of the code we specify here.
     pub fn code(mut self, wasm_bytes: &[u8]) -> Self {
         self.code_hash_update = Some(CryptoHash::hash_bytes(wasm_bytes));

@@ -14,6 +14,7 @@ use crate::worker::Worker;
 use crate::{Account, CryptoHash, Network};
 
 use near_account_id::ParseAccountError;
+use near_gas::NearGas;
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::tx::RpcTransactionError;
 use near_primitives::transaction::{
@@ -27,7 +28,7 @@ use std::future::IntoFuture;
 use std::pin::Pin;
 use std::task::Poll;
 
-const MAX_GAS: Gas = 300_000_000_000_000;
+const MAX_GAS: NearGas = NearGas::from_tgas(300);
 
 /// A set of arguments we can provide to a transaction, containing
 /// the function name, arguments, the amount of gas to use and deposit.
@@ -165,7 +166,7 @@ impl Transaction {
                 method_name: function.name.to_string(),
                 args,
                 deposit: function.deposit,
-                gas: function.gas,
+                gas: function.gas.as_gas(),
             }));
         }
 
@@ -228,19 +229,35 @@ impl Transaction {
     /// Transfer `deposit` amount from `signer`'s account into `receiver_id`'s account.
     pub fn transfer(mut self, deposit: Balance) -> Self {
         if let Ok(actions) = &mut self.actions {
+            let deposit = deposit;
             actions.push(TransferAction { deposit }.into());
         }
         self
     }
 
     async fn transact_raw(self) -> Result<FinalExecutionOutcomeView> {
-        send_batch_tx_and_retry(
+        let view = send_batch_tx_and_retry(
             self.worker.client(),
             &self.signer,
             &self.receiver_id,
             self.actions?,
         )
-        .await
+        .await?;
+
+        if !self.worker.tx_callbacks.is_empty() {
+            let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt
+                + view
+                    .receipts_outcome
+                    .iter()
+                    .map(|t| t.outcome.gas_burnt)
+                    .sum::<u64>();
+
+            for callback in self.worker.tx_callbacks {
+                callback(Gas::from_gas(total_gas_burnt))?;
+            }
+        }
+
+        Ok(view)
     }
 
     /// Process the transaction, and return the result of the execution.
@@ -313,13 +330,13 @@ impl CallTransaction {
 
     /// Specify the amount of tokens to be deposited where `deposit` is the amount of
     /// tokens in yocto near.
-    pub fn deposit(mut self, deposit: u128) -> Self {
+    pub fn deposit(mut self, deposit: Balance) -> Self {
         self.function = self.function.deposit(deposit);
         self
     }
 
     /// Specify the amount of gas to be used where `gas` is the amount of gas in yocto near.
-    pub fn gas(mut self, gas: u64) -> Self {
+    pub fn gas(mut self, gas: NearGas) -> Self {
         self.function = self.function.gas(gas);
         self
     }
@@ -333,19 +350,25 @@ impl CallTransaction {
     /// object and return us the execution details, along with any errors if the transaction
     /// failed in any process along the way.
     pub async fn transact(self) -> Result<ExecutionFinalResult> {
-        self.worker
+        let txn = self
+            .worker
             .client()
             .call(
                 &self.signer,
                 &self.contract_id,
                 self.function.name.to_string(),
                 self.function.args?,
-                self.function.gas,
+                self.function.gas.as_gas(),
                 self.function.deposit,
             )
             .await
             .map(ExecutionFinalResult::from_view)
-            .map_err(crate::error::Error::from)
+            .map_err(crate::error::Error::from)?;
+
+        for callback in self.worker.tx_callbacks.iter() {
+            callback(txn.total_gas_burnt)?;
+        }
+        Ok(txn)
     }
 
     /// Send the transaction to the network to be processed. This will be done asynchronously
@@ -363,7 +386,7 @@ impl CallTransaction {
             vec![FunctionCallAction {
                 args: self.function.args?,
                 method_name: self.function.name,
-                gas: self.function.gas,
+                gas: self.function.gas.as_gas(),
                 deposit: self.function.deposit,
             }
             .into()],
@@ -444,10 +467,15 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
 
         let signer = InMemorySigner::from_secret_key(id, sk);
         let account = Account::new(signer, self.worker.clone());
+        let details = ExecutionFinalResult::from_view(outcome);
+
+        for callback in self.worker.tx_callbacks.iter() {
+            callback(details.total_gas_burnt)?;
+        }
 
         Ok(Execution {
             result: account,
-            details: ExecutionFinalResult::from_view(outcome),
+            details,
         })
     }
 }

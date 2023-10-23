@@ -5,6 +5,7 @@
 pub(crate) mod account;
 pub(crate) mod block;
 pub(crate) mod chunk;
+pub(crate) mod gas_meter;
 
 #[cfg(feature = "interop_sdk")]
 mod sdk;
@@ -17,6 +18,7 @@ use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
+
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
@@ -26,13 +28,14 @@ use crate::result::Result;
 pub use self::account::{AccountDetails, AccountDetailsPatch};
 pub use self::chunk::{Chunk, ChunkHeader};
 
+pub use self::gas_meter::{GasHook, GasMeter};
+
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
 
 /// Gas units used in the execution of transactions. For a more in depth description of
 /// how and where it can be used, visit [Gas](https://docs.near.org/docs/concepts/gas).
-pub type Gas = u64;
-
+pub use near_gas::NearGas as Gas;
 /// Balance is type for storing amounts of tokens. Usually represents the amount of tokens
 /// in yoctoNear (1e-24).
 pub type Balance = u128;

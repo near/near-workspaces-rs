@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use near_gas::NearGas;
 use tokio::sync::RwLock;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
@@ -48,7 +49,7 @@ use crate::result::Result;
 use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 use crate::{Network, Worker};
 
-pub(crate) const DEFAULT_CALL_FN_GAS: Gas = 10_000_000_000_000;
+pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
 pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
@@ -61,15 +62,20 @@ pub struct Client {
 }
 
 impl Client {
-    pub(crate) fn new(rpc_addr: &str) -> Self {
+    pub(crate) fn new(rpc_addr: &str, api_key: Option<String>) -> Result<Self> {
         let connector = JsonRpcClient::new_client();
-        let rpc_client = connector.connect(rpc_addr);
+        let mut rpc_client = connector.connect(rpc_addr);
+        if let Some(api_key) = api_key {
+            let api_key = near_jsonrpc_client::auth::ApiKey::new(api_key)
+                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+            rpc_client = rpc_client.header(api_key);
+        }
 
-        Self {
+        Ok(Self {
             rpc_client,
             rpc_addr: rpc_addr.into(),
             access_key_nonces: RwLock::new(HashMap::new()),
-        }
+        })
     }
 
     pub(crate) async fn query_broadcast_tx(
