@@ -242,12 +242,6 @@ where
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct KeyFile {
-    public_key: String,
-    private_key: String,
-}
-
 impl<T> Worker<T>
 where
     T: Network + 'static,
