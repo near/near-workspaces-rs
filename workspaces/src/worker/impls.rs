@@ -272,26 +272,26 @@ where
     }
 
     /// Get a list of accounts that are available for the network specified.
-    /// The accounts are read from the keystore directory, returning a list of [`Account`]s if successful.
-    /// If the account is not present in the newtork, it will be removed from the keystore.
+    /// The accounts are referenced from the keystore directory.
+    /// Returning a list of [`Account`]s if they are also present in the network.
     pub async fn accounts(&self) -> Result<Vec<Account>> {
-        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join(self.info().keystore_path.clone());
-        let entries = std::fs::read_dir(&path)
+        let mut accounts = vec![];
+        if !self.info().keystore_path.exists() {
+            return Ok(accounts);
+        }
+
+        let entries = std::fs::read_dir(&self.info().keystore_path)
             .map_err(|e| ErrorKind::Io.custom(e))?
             .map(|res| res.map(|e| e.path()))
             .collect::<Result<Vec<_>, std::io::Error>>()
             .map_err(|e| ErrorKind::Io.custom(e))?;
 
-        let mut accounts = vec![];
         for entry in entries {
             let account = Account::from_file(&entry, self)?;
-            // If we can't view the account from the network, then remove it from the keystore.
+            // If we can't view the account from the network, don't return it.
             if self.view_account(account.id()).await.is_err() {
-                std::fs::remove_file(entry).map_err(|e| ErrorKind::Io.custom(e))?;
                 continue;
             }
-
             accounts.push(account);
         }
 

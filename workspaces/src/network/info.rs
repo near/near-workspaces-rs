@@ -9,7 +9,6 @@ pub struct Info {
     pub root_id: AccountId,
     /// Path to the keystore directory
     pub keystore_path: PathBuf,
-
     /// Rpc endpoint to point our client to
     pub rpc_url: url::Url,
 }

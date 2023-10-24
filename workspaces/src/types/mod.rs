@@ -18,7 +18,7 @@ use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
-
+#[cfg(feature = "unstable")]
 use near_crypto::KeyFile;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
@@ -301,10 +301,10 @@ impl InMemorySigner {
         )
     }
 
+    #[cfg(feature = "unstable")]
     pub(crate) fn write_to_file(&self, id: &AccountId, path: &Path) -> Result<()> {
-        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(path);
-        if !dir.exists() {
-            std::fs::create_dir_all(dir).map_err(|e| ErrorKind::Io.custom(e))?;
+        if !path.exists() {
+            std::fs::create_dir_all(path).map_err(|e| ErrorKind::Io.custom(e))?;
         }
 
         let keyfile = KeyFile {

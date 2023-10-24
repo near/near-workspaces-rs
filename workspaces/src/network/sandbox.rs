@@ -136,6 +136,8 @@ impl TopLevelAccountCreator for Sandbox {
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
+
+        #[cfg(feature = "unstable")]
         signer.write_to_file(&id, &self.info.keystore_path)?;
 
         Ok(Execution {
@@ -164,7 +166,10 @@ impl TopLevelAccountCreator for Sandbox {
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id.clone(), sk);
+
+        #[cfg(feature = "unstable")]
         signer.write_to_file(&id, &self.info.keystore_path)?;
+
         Ok(Execution {
             result: Contract::new(signer, worker),
             details: ExecutionFinalResult::from_view(outcome),

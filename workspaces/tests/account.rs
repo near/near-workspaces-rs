@@ -93,6 +93,7 @@ async fn test_delete_account() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "unstable")]
 #[tokio::test]
 async fn test_read_account() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
@@ -102,7 +103,7 @@ async fn test_read_account() -> anyhow::Result<()> {
         .accounts()
         .await?
         .pop()
-        .expect("there should be at least one account");
+        .expect("the account created must be present");
 
     assert!(account_retrieved.id() == account_created.id());
     Ok(())
