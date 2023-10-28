@@ -1,6 +1,6 @@
 #![recursion_limit = "256"]
 use near_gas::NearGas;
-use near_units::parse_near;
+use near_token::NearToken;
 use near_workspaces::{Contract, DevNetwork, Worker};
 use test_log::test;
 
@@ -13,7 +13,7 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
         .call("new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": contract.id(),
-            "total_supply": parse_near!("1,000,000,000 N").to_string(),
+            "total_supply": NearToken::from_near(1_000_000_000).as_yoctonear().to_string(),
         }))
         .transact()
         .await?

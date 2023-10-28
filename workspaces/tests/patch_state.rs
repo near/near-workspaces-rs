@@ -2,6 +2,7 @@
 #![recursion_limit = "256"]
 
 use borsh::{self, BorshDeserialize, BorshSerialize};
+use near_token::NearToken;
 use serde_json::json;
 use test_log::test;
 
@@ -132,7 +133,7 @@ async fn test_patch_full() -> anyhow::Result<()> {
         .patch(&bob_id)
         .account(
             AccountDetailsPatch::default()
-                .balance(near_units::parse_near!("100 N"))
+                .balance(NearToken::from_near(100).as_yoctonear())
                 .locked(status_msg_acc.locked)
                 .code_hash(status_msg_acc.code_hash)
                 .storage_usage(status_msg_acc.storage_usage),

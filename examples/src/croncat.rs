@@ -6,8 +6,8 @@
 // at a set amount of time we supply.
 
 use near_gas::NearGas;
-use near_units::parse_near;
 use near_workspaces::network::Sandbox;
+use near_workspaces::types::NearToken;
 use near_workspaces::{Account, AccountId, Contract, Worker};
 use serde::Deserialize;
 use serde_json::json;
@@ -74,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
             "recurring": true,
         }))
         .max_gas()
-        .deposit(parse_near!("1 N"))
+        .deposit(NearToken::from_near(1).as_yoctonear())
         .transact()
         .await?;
     println!("-- outcome: {:#?}\n", outcome);
@@ -83,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
     // for executing it:
     let agent_1 = croncat
         .create_subaccount("agent_1")
-        .initial_balance(parse_near!("10 N"))
+        .initial_balance(NearToken::from_near(10).as_yoctonear())
         .transact()
         .await?
         .into_result()?;
@@ -105,7 +105,7 @@ pub async fn run_scheduled_tasks(
     let outcome = agent
         .call(contract.id(), "register_agent")
         .args_json(json!({}))
-        .deposit(parse_near!("0.00226 N"))
+        .deposit(NearToken::from_yoctonear(2260000000000000000000u128).as_yoctonear())
         .transact()
         .await?;
     println!("Registering agent outcome: {:#?}\n", outcome);
@@ -159,7 +159,10 @@ pub async fn run_scheduled_tasks(
         .json::<Option<Agent>>()?
         .unwrap();
     println!("Agent details after completing task: {:#?}", agent_details);
-    assert_eq!(agent_details.balance, parse_near!("0.00386 N"));
+    assert_eq!(
+        agent_details.balance,
+        NearToken::from_yoctonear(3860000000000000000000u128).as_yoctonear()
+    );
     let before_withdraw = agent_details.balance;
 
     // Withdraw the reward from completing the task to our agent's account
@@ -179,7 +182,10 @@ pub async fn run_scheduled_tasks(
         .json::<Option<Agent>>()?
         .unwrap();
     println!("Agent details after withdrawing task: {:#?}", agent_details);
-    assert_eq!(agent_details.balance, parse_near!("0.00226 N"));
+    assert_eq!(
+        agent_details.balance,
+        NearToken::from_yoctonear(2260000000000000000000u128).as_yoctonear()
+    );
 
     // This shows how much the agent has profitted from executing the task:
     println!(
@@ -190,7 +196,7 @@ pub async fn run_scheduled_tasks(
     // Not that everything is done, let's cleanup and unregister the agent from doing anything.
     agent
         .call(contract.id(), "unregister_agent")
-        .deposit(parse_near!("1y"))
+        .deposit(NearToken::from_yoctonear(1).as_yoctonear())
         .transact()
         .await?
         .into_result()?;

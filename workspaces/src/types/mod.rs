@@ -10,6 +10,9 @@ pub(crate) mod gas_meter;
 #[cfg(feature = "interop_sdk")]
 mod sdk;
 
+mod token;
+pub use token::NearToken;
+
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display};
 use std::io;
