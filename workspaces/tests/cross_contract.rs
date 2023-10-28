@@ -1,4 +1,3 @@
-use near_sdk::json_types::U128;
 use near_token::NearToken;
 use near_workspaces::result::ExecutionFinalResult;
 use near_workspaces::{AccountId, Contract};
