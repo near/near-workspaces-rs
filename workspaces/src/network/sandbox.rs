@@ -15,8 +15,7 @@ use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{Execution, ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
-use crate::types::NearToken;
-use crate::types::{AccountId, InMemorySigner, SecretKey};
+use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
 use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency

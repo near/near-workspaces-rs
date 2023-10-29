@@ -264,7 +264,7 @@ Following that we will have to init the contract again with our own metadata. Th
 
 ```rust
 
-    use near_token::NearToken;
+    use near_workspaces::types::NearToken;
     let contract = worker
         .import_contract(&contract_id, &testnet)
         .initial_balance(NearToken::from_near(1000))
