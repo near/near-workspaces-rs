@@ -203,7 +203,7 @@ pub async fn run_scheduled_tasks(
     // Check to see if the agent has been successfully unregistered
     let removed_agent: Option<Agent> = contract
         .call("get_agent")
-        .args_json(json!({"account_id": agent.id() }))
+        .args_json(json!({ "account_id": agent.id() }))
         .view()
         .await?
         .json()?;

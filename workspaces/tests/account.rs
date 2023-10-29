@@ -37,8 +37,8 @@ async fn test_subaccount_creation() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_transfer_near() -> anyhow::Result<()> {
-    const INITIAL_BALANCE: NearToken =
-        NearToken::from_yoctonear(100 * 1_000_000_000_000_000_000_000_000u128);
+    const INITIAL_BALANCE: NearToken = NearToken::from_near(100);
+
     let worker = near_workspaces::sandbox().await?;
     let (alice, bob) = (
         worker.dev_create_account().await?,
@@ -56,16 +56,11 @@ async fn test_transfer_near() -> anyhow::Result<()> {
     // Assert the the tokens have been transferred.
     assert_eq!(
         bob.view_account().await?.balance,
-        NearToken::from_yoctonear(INITIAL_BALANCE.as_yoctonear() + SENT_AMOUNT.as_yoctonear()),
+        INITIAL_BALANCE.saturating_add(SENT_AMOUNT),
     );
 
     // We can only assert that the balance is less than the initial balance - sent amount because of the gas fees.
-    assert!(
-        alice.view_account().await?.balance
-            <= NearToken::from_yoctonear(
-                INITIAL_BALANCE.as_yoctonear() - SENT_AMOUNT.as_yoctonear()
-            )
-    );
+    assert!(alice.view_account().await?.balance <= INITIAL_BALANCE.saturating_sub(SENT_AMOUNT));
 
     Ok(())
 }
@@ -81,12 +76,9 @@ async fn test_delete_account() -> anyhow::Result<()> {
 
     _ = alice.clone().delete_account(bob.id()).await?;
 
-    // All sandbox accounts start with a balance of `100 * 1_000_000_000_000_000_000_000_000` tokens.
+    // All sandbox accounts start with a balance of 100 NEAR tokens.
     // On account deletion, alice's balance is debited to bob as beneficiary.
-    assert!(
-        bob.view_account().await?.balance
-            > NearToken::from_yoctonear(100 * 1_900_000_000_000_000_000_000_000u128),
-    );
+    assert!(bob.view_account().await?.balance > NearToken::from_near(100));
 
     // Alice's account should be deleted.
     let res = alice.view_account().await;
