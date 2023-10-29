@@ -50,7 +50,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
     owner
         .call(ref_finance.id(), "storage_deposit")
         .args_json(json!({}))
-        .deposit(NearToken::from_millinear(30).as_yoctonear())
+        .deposit(NearToken::from_millinear(30))
         .transact()
         .await?
         .into_result()?;
@@ -77,14 +77,14 @@ async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Resu
     owner
         .call(wnear.id(), "storage_deposit")
         .args_json(json!({}))
-        .deposit(NearToken::from_millinear(8).as_yoctonear())
+        .deposit(NearToken::from_millinear(8))
         .transact()
         .await?
         .into_result()?;
 
     owner
         .call(wnear.id(), "near_deposit")
-        .deposit(NearToken::from_near(200).as_yoctonear())
+        .deposit(NearToken::from_near(200))
         .transact()
         .await?
         .into_result()?;
@@ -118,7 +118,7 @@ async fn create_pool_with_liquidity(
             "tokens": token_ids,
             "fee": 25
         }))
-        .deposit(NearToken::from_millinear(3).as_yoctonear())
+        .deposit(NearToken::from_millinear(3))
         .transact()
         .await?
         .json()?;
@@ -128,7 +128,7 @@ async fn create_pool_with_liquidity(
         .args_json(json!({
             "token_ids": token_ids,
         }))
-        .deposit(1)
+        .deposit(NearToken::from_yoctonear(1))
         .transact()
         .await?
         .into_result()?;
@@ -141,7 +141,7 @@ async fn create_pool_with_liquidity(
             "pool_id": pool_id,
             "amounts": token_amounts,
         }))
-        .deposit(NearToken::from_near(1).as_yoctonear())
+        .deposit(NearToken::from_near(1))
         .transact()
         .await?
         .into_result()?;
@@ -162,7 +162,7 @@ async fn deposit_tokens(
             .args_json(json!({
                 "registration_only": true,
             }))
-            .deposit(NearToken::from_near(1).as_yoctonear())
+            .deposit(NearToken::from_near(1))
             .transact()
             .await?
             .into_result()?;
@@ -175,7 +175,7 @@ async fn deposit_tokens(
                 "msg": "",
             }))
             .gas(NearGas::from_tgas(200))
-            .deposit(1)
+            .deposit(NearToken::from_yoctonear(1))
             .transact()
             .await?
             .into_result()?;
@@ -315,7 +315,7 @@ async fn main() -> anyhow::Result<()> {
                 "min_amount_out": "1",
             })],
         }))
-        .deposit(1)
+        .deposit(NearToken::from_yoctonear(1))
         .gas(NearGas::from_tgas(100))
         .transact()
         .await?;

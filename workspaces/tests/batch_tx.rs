@@ -1,4 +1,5 @@
 use near_workspaces::operations::Function;
+use near_workspaces::types::NearToken;
 use serde_json::json;
 use test_log::test;
 
@@ -18,7 +19,7 @@ async fn test_batch_tx() -> anyhow::Result<()> {
                 .args_json(json!({
                     "message": "hello_world",
                 }))
-                .deposit(0),
+                .deposit(NearToken::from_yoctonear(0)),
         )
         .call(Function::new("set_status").args_json(json!({
             "message": "world_hello",

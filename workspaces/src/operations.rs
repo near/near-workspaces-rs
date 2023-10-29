@@ -7,6 +7,7 @@ use crate::rpc::client::{
     DEFAULT_CALL_FN_GAS,
 };
 use crate::rpc::query::{Query, ViewFunction};
+use crate::types::NearToken;
 use crate::types::{
     AccessKey, AccountId, Balance, Gas, InMemorySigner, KeyType, PublicKey, SecretKey,
 };
@@ -36,7 +37,7 @@ const MAX_GAS: NearGas = NearGas::from_tgas(300);
 pub struct Function {
     pub(crate) name: String,
     pub(crate) args: Result<Vec<u8>>,
-    pub(crate) deposit: Balance,
+    pub(crate) deposit: NearToken,
     pub(crate) gas: Gas,
 }
 
@@ -86,7 +87,7 @@ impl Function {
 
     /// Specify the amount of tokens to be deposited where `deposit` is the amount of
     /// tokens in yocto near.
-    pub fn deposit(mut self, deposit: Balance) -> Self {
+    pub fn deposit(mut self, deposit: NearToken) -> Self {
         self.deposit = deposit;
         self
     }
@@ -165,7 +166,7 @@ impl Transaction {
             actions.push(Action::FunctionCall(FunctionCallAction {
                 method_name: function.name.to_string(),
                 args,
-                deposit: function.deposit,
+                deposit: function.deposit.as_yoctonear(),
                 gas: function.gas.as_gas(),
             }));
         }
@@ -329,7 +330,7 @@ impl CallTransaction {
 
     /// Specify the amount of tokens to be deposited where `deposit` is the amount of
     /// tokens in yocto near.
-    pub fn deposit(mut self, deposit: Balance) -> Self {
+    pub fn deposit(mut self, deposit: NearToken) -> Self {
         self.function = self.function.deposit(deposit);
         self
     }
@@ -386,7 +387,7 @@ impl CallTransaction {
                 args: self.function.args?,
                 method_name: self.function.name,
                 gas: self.function.gas.as_gas(),
-                deposit: self.function.deposit,
+                deposit: self.function.deposit.as_yoctonear(),
             }
             .into()],
         )
@@ -414,7 +415,7 @@ pub struct CreateAccountTransaction<'a, 'b> {
     parent_id: AccountId,
     new_account_id: &'b str,
 
-    initial_balance: Balance,
+    initial_balance: NearToken,
     secret_key: Option<SecretKey>,
 }
 
@@ -430,14 +431,14 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
             signer,
             parent_id,
             new_account_id,
-            initial_balance: 100000000000000000000000,
+            initial_balance: NearToken::from_yoctonear(100000000000000000000000u128),
             secret_key: None,
         }
     }
 
     /// Specifies the initial balance of the new account. Amount directly taken out
     /// from the caller/signer of this transaction.
-    pub fn initial_balance(mut self, initial_balance: Balance) -> Self {
+    pub fn initial_balance(mut self, initial_balance: NearToken) -> Self {
         self.initial_balance = initial_balance;
         self
     }

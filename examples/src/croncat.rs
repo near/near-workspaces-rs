@@ -74,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
             "recurring": true,
         }))
         .max_gas()
-        .deposit(NearToken::from_near(1).as_yoctonear())
+        .deposit(NearToken::from_near(1))
         .transact()
         .await?;
     println!("-- outcome: {:#?}\n", outcome);
@@ -83,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
     // for executing it:
     let agent_1 = croncat
         .create_subaccount("agent_1")
-        .initial_balance(NearToken::from_near(10).as_yoctonear())
+        .initial_balance(NearToken::from_near(10))
         .transact()
         .await?
         .into_result()?;
@@ -105,7 +105,7 @@ pub async fn run_scheduled_tasks(
     let outcome = agent
         .call(contract.id(), "register_agent")
         .args_json(json!({}))
-        .deposit(NearToken::from_yoctonear(2260000000000000000000u128).as_yoctonear())
+        .deposit(NearToken::from_yoctonear(2260000000000000000000u128))
         .transact()
         .await?;
     println!("Registering agent outcome: {:#?}\n", outcome);
@@ -196,7 +196,7 @@ pub async fn run_scheduled_tasks(
     // Not that everything is done, let's cleanup and unregister the agent from doing anything.
     agent
         .call(contract.id(), "unregister_agent")
-        .deposit(NearToken::from_yoctonear(1).as_yoctonear())
+        .deposit(NearToken::from_yoctonear(1))
         .transact()
         .await?
         .into_result()?;

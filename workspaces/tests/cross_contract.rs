@@ -1,5 +1,5 @@
-use near_token::NearToken;
 use near_workspaces::result::ExecutionFinalResult;
+use near_workspaces::types::NearToken;
 use near_workspaces::{AccountId, Contract};
 
 /// The factory contract used in these tests can be found in
@@ -16,7 +16,7 @@ async fn cross_contract_create_contract(
     contract
         .call("deploy_status_message")
         .args_json((status_id.clone(), status_amt.as_yoctonear().to_string()))
-        .deposit(NearToken::from_near(50).as_yoctonear())
+        .deposit(NearToken::from_near(50))
         .max_gas()
         .transact()
         .await

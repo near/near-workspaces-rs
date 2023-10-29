@@ -1,6 +1,6 @@
 #![recursion_limit = "256"]
 use near_gas::NearGas;
-use near_token::NearToken;
+use near_workspaces::types::NearToken;
 use near_workspaces::{Contract, DevNetwork, Worker};
 use test_log::test;
 
@@ -30,7 +30,7 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
     let res = contract
         .call("storage_unregister")
         .max_gas()
-        .deposit(1)
+        .deposit(NearToken::from_yoctonear(1))
         .transact()
         .await?
         .into_result();
@@ -59,7 +59,7 @@ async fn test_optional_args_present() -> anyhow::Result<()> {
             "force": true
         }))
         .max_gas()
-        .deposit(1)
+        .deposit(NearToken::from_yoctonear(1))
         .transact()
         .await?;
     assert!(res.json::<bool>()?);
