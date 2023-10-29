@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use crate::types::NearToken;
 use near_gas::NearGas;
 use tokio::sync::RwLock;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
@@ -22,7 +23,7 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{Balance, BlockReference, Finality, Gas};
+use near_primitives::types::{BlockReference, Finality, Gas};
 use near_primitives::views::{
     AccessKeyView, BlockView, FinalExecutionOutcomeView, QueryRequest, StatusResponse,
 };
@@ -50,7 +51,7 @@ use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 use crate::{Network, Worker};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
-pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
+pub(crate) const DEFAULT_CALL_DEPOSIT: NearToken = NearToken::from_near(0);
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
@@ -164,7 +165,7 @@ impl Client {
         method_name: String,
         args: Vec<u8>,
         gas: Gas,
-        deposit: Balance,
+        deposit: NearToken,
     ) -> Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
@@ -173,7 +174,7 @@ impl Client {
                 args,
                 method_name,
                 gas,
-                deposit,
+                deposit: deposit.as_yoctonear(),
             }
             .into(),
         )
@@ -208,13 +209,13 @@ impl Client {
         &self,
         signer: &InMemorySigner,
         receiver_id: &AccountId,
-        amount_yocto: Balance,
+        amount_yocto: NearToken,
     ) -> Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             receiver_id,
             TransferAction {
-                deposit: amount_yocto,
+                deposit: amount_yocto.as_yoctonear(),
             }
             .into(),
         )
@@ -226,7 +227,7 @@ impl Client {
         signer: &InMemorySigner,
         new_account_id: &AccountId,
         new_account_pk: PublicKey,
-        amount: Balance,
+        amount: NearToken,
     ) -> Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(
             self,
@@ -242,7 +243,10 @@ impl Client {
                     },
                 }
                 .into(),
-                TransferAction { deposit: amount }.into(),
+                TransferAction {
+                    deposit: amount.as_yoctonear(),
+                }
+                .into(),
             ],
         )
         .await
@@ -253,7 +257,7 @@ impl Client {
         signer: &InMemorySigner,
         new_account_id: &AccountId,
         new_account_pk: PublicKey,
-        amount: Balance,
+        amount: NearToken,
         code: Vec<u8>,
     ) -> Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(
@@ -270,7 +274,10 @@ impl Client {
                     },
                 }
                 .into(),
-                TransferAction { deposit: amount }.into(),
+                TransferAction {
+                    deposit: amount.as_yoctonear(),
+                }
+                .into(),
                 DeployContractAction { code }.into(),
             ],
         )

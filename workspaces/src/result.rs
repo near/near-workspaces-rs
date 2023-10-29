@@ -11,7 +11,7 @@ use near_primitives::views::{
 };
 
 use crate::error::ErrorKind;
-use crate::types::{Balance, CryptoHash, Gas};
+use crate::types::{CryptoHash, Gas, NearToken};
 
 use base64::{engine::general_purpose, Engine as _};
 
@@ -424,7 +424,7 @@ pub struct ExecutionOutcome {
     /// The amount of tokens burnt corresponding to the burnt gas amount.
     /// This value doesn't always equal to the `gas_burnt` multiplied by the gas price, because
     /// the prepaid gas price might be lower than the actual gas price and it creates a deficit.
-    pub tokens_burnt: Balance,
+    pub tokens_burnt: NearToken,
     /// The id of the account on which the execution happens. For transaction this is signer_id,
     /// for receipt this is receiver_id.
     pub executor_id: AccountId,
@@ -536,7 +536,7 @@ impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {
                 .map(|c| CryptoHash(c.0))
                 .collect(),
             gas_burnt: NearGas::from_gas(view.outcome.gas_burnt),
-            tokens_burnt: view.outcome.tokens_burnt,
+            tokens_burnt: NearToken::from_yoctonear(view.outcome.tokens_burnt),
             executor_id: view.outcome.executor_id,
             status: view.outcome.status,
         }

@@ -7,7 +7,7 @@ use crate::error::ErrorKind;
 use crate::rpc::query::{
     Query, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewCode, ViewFunction, ViewState,
 };
-use crate::types::{AccountId, Balance, InMemorySigner, PublicKey, SecretKey};
+use crate::types::{AccountId, InMemorySigner, NearToken, PublicKey, SecretKey};
 use crate::{BlockHeight, CryptoHash, Network, Worker};
 
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
@@ -91,7 +91,7 @@ impl Account {
     pub async fn transfer_near(
         &self,
         receiver_id: &AccountId,
-        amount: Balance,
+        amount: NearToken,
     ) -> Result<ExecutionFinalResult> {
         self.worker
             .transfer_near(self.signer(), receiver_id, amount)
@@ -326,8 +326,8 @@ impl Contract {
 #[derive(Debug, Default, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct AccountDetailsPatch {
-    pub balance: Option<Balance>,
-    pub locked: Option<Balance>,
+    pub balance: Option<NearToken>,
+    pub locked: Option<NearToken>,
     pub code_hash: Option<CryptoHash>,
     pub storage_usage: Option<u64>,
     pub(crate) storage_paid_at: Option<BlockHeight>,
@@ -352,12 +352,12 @@ impl AccountDetailsPatch {
         }
     }
 
-    pub fn balance(mut self, balance: Balance) -> Self {
+    pub fn balance(mut self, balance: NearToken) -> Self {
         self.balance = Some(balance);
         self
     }
 
-    pub fn locked(mut self, locked: Balance) -> Self {
+    pub fn locked(mut self, locked: NearToken) -> Self {
         self.locked = Some(locked);
         self
     }
@@ -390,8 +390,8 @@ impl From<AccountDetails> for AccountDetailsPatch {
 #[derive(Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct AccountDetails {
-    pub balance: Balance,
-    pub locked: Balance,
+    pub balance: NearToken,
+    pub locked: NearToken,
     pub code_hash: CryptoHash,
     pub storage_usage: u64,
     // Deprecated value. Mainly used to be able to convert back into an AccountView
@@ -401,8 +401,8 @@ pub struct AccountDetails {
 impl AccountDetails {
     pub fn new() -> Self {
         Self {
-            balance: 0,
-            locked: 0,
+            balance: NearToken::from_near(0),
+            locked: NearToken::from_near(0),
             code_hash: CryptoHash::default(),
             storage_usage: 0,
             storage_paid_at: 0,
@@ -411,8 +411,8 @@ impl AccountDetails {
 
     pub(crate) fn into_near_account(self) -> near_primitives::account::Account {
         near_primitives::account::Account::new(
-            self.balance,
-            self.locked,
+            self.balance.as_yoctonear(),
+            self.locked.as_yoctonear(),
             near_primitives::hash::CryptoHash(self.code_hash.0),
             self.storage_usage,
         )
@@ -428,8 +428,8 @@ impl Default for AccountDetails {
 impl From<AccountView> for AccountDetails {
     fn from(account: AccountView) -> Self {
         Self {
-            balance: account.amount,
-            locked: account.locked,
+            balance: NearToken::from_yoctonear(account.amount),
+            locked: NearToken::from_yoctonear(account.locked),
             code_hash: CryptoHash(account.code_hash.0),
             storage_usage: account.storage_usage,
             storage_paid_at: account.storage_paid_at,
