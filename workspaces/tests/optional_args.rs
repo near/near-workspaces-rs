@@ -13,7 +13,7 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
         .call("new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": contract.id(),
-            "total_supply": NearToken::from_near(1_000_000_000).as_yoctonear().to_string(),
+            "total_supply": NearToken::from_near(1_000_000_000),
         }))
         .transact()
         .await?

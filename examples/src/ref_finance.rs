@@ -27,7 +27,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
     // to be overriding the initial balance with 1000N instead of what's on mainnet.
     let ref_finance = worker
         .import_contract(&ref_finance_id, &mainnet)
-        .initial_balance(NearToken::from_near(1000).as_yoctonear())
+        .initial_balance(NearToken::from_near(1000))
         .block_height(BLOCK_HEIGHT)
         .transact()
         .await?;
@@ -198,7 +198,7 @@ async fn create_custom_ft(
     ft.call("new_default_meta")
         .args_json(json!({
             "owner_id": owner.id(),
-            "total_supply": NearToken::from_near(1_000_000_000).as_yoctonear().to_string(),
+            "total_supply": NearToken::from_near(1_000_000_000),
         }))
         .transact()
         .await?
@@ -254,7 +254,7 @@ async fn main() -> anyhow::Result<()> {
     // Stage 3: View our deposited/transferred tokens in ref-finance
     ///////////////////////////////////////////////////////////////////////////
 
-    let ft_deposit: String = worker
+    let ft_deposit: NearToken = worker
         .view(ref_finance.id(), "get_deposit")
         .args_json(json!({
             "account_id": owner.id(),
@@ -263,12 +263,9 @@ async fn main() -> anyhow::Result<()> {
         .await?
         .json()?;
     println!("Current FT deposit: {}", ft_deposit);
-    assert_eq!(
-        ft_deposit,
-        NearToken::from_near(100).as_yoctonear().to_string()
-    );
+    assert_eq!(ft_deposit, NearToken::from_near(100));
 
-    let wnear_deposit: String = worker
+    let wnear_deposit: NearToken = worker
         .view(ref_finance.id(), "get_deposit")
         .args_json(json!({
             "account_id": owner.id(),
@@ -278,10 +275,7 @@ async fn main() -> anyhow::Result<()> {
         .json()?;
 
     println!("Current WNear deposit: {}", wnear_deposit);
-    assert_eq!(
-        wnear_deposit,
-        NearToken::from_near(100).as_yoctonear().to_string()
-    );
+    assert_eq!(wnear_deposit, NearToken::from_near(100));
 
     ///////////////////////////////////////////////////////////////////////////
     // Stage 4: Check how much our expected rate is for swapping and then swap
@@ -293,7 +287,7 @@ async fn main() -> anyhow::Result<()> {
             "pool_id": pool_id,
             "token_in": ft.id(),
             "token_out": wnear.id(),
-            "amount_in": NearToken::from_near(1).as_yoctonear().to_string(),
+            "amount_in": NearToken::from_near(1),
         }))
         .await?
         .json()?;
@@ -311,7 +305,7 @@ async fn main() -> anyhow::Result<()> {
                 "pool_id": pool_id,
                 "token_in": ft.id(),
                 "token_out": wnear.id(),
-                "amount_in": NearToken::from_near(1).as_yoctonear().to_string(),
+                "amount_in": NearToken::from_near(1),
                 "min_amount_out": "1",
             })],
         }))
@@ -332,7 +326,7 @@ async fn main() -> anyhow::Result<()> {
     // Stage 5: See that our swap tokens reflect in our deposits
     ///////////////////////////////////////////////////////////////////////////
 
-    let ft_deposit: String = worker
+    let ft_deposit: NearToken = worker
         .view(ref_finance.id(), "get_deposit")
         .args_json(json!({
             "account_id": owner.id(),
@@ -341,10 +335,7 @@ async fn main() -> anyhow::Result<()> {
         .await?
         .json()?;
     println!("New FT deposit after swap: {}", ft_deposit);
-    assert_eq!(
-        ft_deposit,
-        NearToken::from_near(99).as_yoctonear().to_string()
-    );
+    assert_eq!(ft_deposit, NearToken::from_near(99));
 
     let wnear_deposit: String = ref_finance
         .view("get_deposit")

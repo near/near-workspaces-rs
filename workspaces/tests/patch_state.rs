@@ -133,7 +133,7 @@ async fn test_patch_full() -> anyhow::Result<()> {
         .patch(&bob_id)
         .account(
             AccountDetailsPatch::default()
-                .balance(NearToken::from_near(100).as_yoctonear())
+                .balance(NearToken::from_near(100))
                 .locked(status_msg_acc.locked)
                 .code_hash(status_msg_acc.code_hash)
                 .storage_usage(status_msg_acc.storage_usage),
@@ -190,7 +190,7 @@ async fn test_patch_account_from_current() -> anyhow::Result<()> {
 
     let bob = worker.dev_create_account().await?;
 
-    const NEW_BALANCE: u128 = 10_u128.pow(16);
+    const NEW_BALANCE: NearToken = NearToken::from_yoctonear(10_u128.pow(16));
 
     let f = |mut acc: near_workspaces::types::AccountDetails| {
         acc.balance = NEW_BALANCE;

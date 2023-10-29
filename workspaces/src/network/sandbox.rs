@@ -16,14 +16,11 @@ use crate::network::Info;
 use crate::result::{Execution, ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
 use crate::types::NearToken;
-use crate::types::{AccountId, Balance, InMemorySigner, SecretKey};
+use crate::types::{AccountId, InMemorySigner, SecretKey};
 use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency
-pub(crate) const NEAR_BASE: Balance = 1_000_000_000_000_000_000_000_000;
-
-const DEFAULT_DEPOSIT: NearToken = NearToken::from_yoctonear(NEAR_BASE * 100);
-
+const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
 /// Local sandboxed environment/network, which can be used to test without interacting with
 /// networks that are online such as mainnet and testnet. Look at [`workspaces::sandbox`]
 /// for how to spin up a sandboxed network and interact with it.

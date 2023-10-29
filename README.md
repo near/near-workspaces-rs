@@ -267,7 +267,7 @@ Following that we will have to init the contract again with our own metadata. Th
     use near_token::NearToken;
     let contract = worker
         .import_contract(&contract_id, &testnet)
-        .initial_balance(NearToken::from_near(1000).as_yoctonear())
+        .initial_balance(NearToken::from_near(1000))
         .block_height(BLOCK_HEIGHT)
         .transact()
         .await?;

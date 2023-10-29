@@ -1,6 +1,7 @@
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
+use near_primitives::state_record::StateRecord;
 use near_primitives::types::{BlockId, BlockReference};
-use near_primitives::{state_record::StateRecord, types::Balance};
+use near_token::NearToken;
 
 use crate::error::SandboxErrorCode;
 use crate::network::{Sandbox, DEV_ACCOUNT_SEED};
@@ -26,7 +27,7 @@ pub struct ImportContractTransaction<'a> {
 
     /// Initial balance of the account. If None, uses what is specified
     /// from the other account instead.
-    initial_balance: Option<Balance>,
+    initial_balance: Option<NearToken>,
 
     block_ref: Option<BlockReference>,
 
@@ -82,7 +83,7 @@ impl<'a> ImportContractTransaction<'a> {
 
     /// Specifies the balance of the contract. This will override the balance currently
     /// on the network this transaction is importing from.
-    pub fn initial_balance(mut self, initial_balance: Balance) -> Self {
+    pub fn initial_balance(mut self, initial_balance: NearToken) -> Self {
         self.initial_balance = Some(initial_balance);
         self
     }

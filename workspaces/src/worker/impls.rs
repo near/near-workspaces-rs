@@ -8,7 +8,7 @@ use crate::rpc::query::{
     GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
     ViewCode, ViewFunction, ViewState,
 };
-use crate::types::{AccountId, Balance, InMemorySigner, PublicKey};
+use crate::types::{AccountId, InMemorySigner, NearToken, PublicKey};
 use crate::worker::Worker;
 use crate::{Account, Network};
 
@@ -150,7 +150,7 @@ where
         &self,
         signer: &InMemorySigner,
         receiver_id: &AccountId,
-        amount_yocto: Balance,
+        amount_yocto: NearToken,
     ) -> Result<ExecutionFinalResult> {
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)

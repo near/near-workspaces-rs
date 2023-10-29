@@ -7,9 +7,8 @@ use crate::rpc::client::{
     DEFAULT_CALL_FN_GAS,
 };
 use crate::rpc::query::{Query, ViewFunction};
-use crate::types::NearToken;
 use crate::types::{
-    AccessKey, AccountId, Balance, Gas, InMemorySigner, KeyType, PublicKey, SecretKey,
+    AccessKey, AccountId, Gas, InMemorySigner, KeyType, NearToken, PublicKey, SecretKey,
 };
 use crate::worker::Worker;
 use crate::{Account, CryptoHash, Network};
@@ -214,11 +213,11 @@ impl Transaction {
     }
 
     /// An action which stakes the signer's tokens and setups a validator public key.
-    pub fn stake(mut self, stake: Balance, pk: PublicKey) -> Self {
+    pub fn stake(mut self, stake: NearToken, pk: PublicKey) -> Self {
         if let Ok(actions) = &mut self.actions {
             actions.push(
                 StakeAction {
-                    stake,
+                    stake: stake.as_yoctonear(),
                     public_key: pk.0,
                 }
                 .into(),
@@ -228,9 +227,14 @@ impl Transaction {
     }
 
     /// Transfer `deposit` amount from `signer`'s account into `receiver_id`'s account.
-    pub fn transfer(mut self, deposit: Balance) -> Self {
+    pub fn transfer(mut self, deposit: NearToken) -> Self {
         if let Ok(actions) = &mut self.actions {
-            actions.push(TransferAction { deposit }.into());
+            actions.push(
+                TransferAction {
+                    deposit: deposit.as_yoctonear(),
+                }
+                .into(),
+            );
         }
         self
     }

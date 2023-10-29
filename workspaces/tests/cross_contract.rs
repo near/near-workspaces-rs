@@ -15,7 +15,7 @@ async fn cross_contract_create_contract(
 ) -> anyhow::Result<ExecutionFinalResult> {
     contract
         .call("deploy_status_message")
-        .args_json((status_id.clone(), status_amt.as_yoctonear().to_string()))
+        .args_json((status_id.clone(), status_amt))
         .deposit(NearToken::from_near(50))
         .max_gas()
         .transact()

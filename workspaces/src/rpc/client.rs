@@ -23,7 +23,7 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{Balance, BlockReference, Finality, Gas};
+use near_primitives::types::{BlockReference, Finality, Gas};
 use near_primitives::views::{
     AccessKeyView, BlockView, FinalExecutionOutcomeView, QueryRequest, StatusResponse,
 };
@@ -51,7 +51,7 @@ use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 use crate::{Network, Worker};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
-pub(crate) const DEFAULT_CALL_DEPOSIT: NearToken = NearToken::from_yoctonear(0);
+pub(crate) const DEFAULT_CALL_DEPOSIT: NearToken = NearToken::from_near(0);
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
@@ -209,13 +209,13 @@ impl Client {
         &self,
         signer: &InMemorySigner,
         receiver_id: &AccountId,
-        amount_yocto: Balance,
+        amount_yocto: NearToken,
     ) -> Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             receiver_id,
             TransferAction {
-                deposit: amount_yocto,
+                deposit: amount_yocto.as_yoctonear(),
             }
             .into(),
         )
