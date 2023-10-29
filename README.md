@@ -88,7 +88,10 @@ Then we'll go directly into making a call into the contract, and initialize the 
 Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra arguments we can supply, such as deposit and gas:
 
 ```rust
-    let deposit = 10000000000000000000000;
+    use near_gas::NearGas;
+    use near_workspaces::types::NearToken;
+
+    let deposit = NearToken::from_near(100);
     let outcome = contract
         .call("nft_mint")
         .args_json(json!({
@@ -102,7 +105,7 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
         }))
         .deposit(deposit)
         // nft_mint might consume more than default gas, so supply our own gas value:
-        .gas(near_units::parse_gas("300 T"))
+        .gas(NearGas::from_tgas(300))
         .transact()
         .await?;
 
@@ -233,7 +236,6 @@ This example will showcase spooning state from a testnet contract into our local
 We will first start with the usual imports:
 
 ```rust
-use near_units::parse_gas;
 use near_workspaces::network::Sandbox;
 use near_workspaces::{Account, AccountId, BlockHeight, Contract, Worker};
 ```
