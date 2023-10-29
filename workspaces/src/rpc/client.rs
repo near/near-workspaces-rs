@@ -1,4 +1,3 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -483,15 +482,6 @@ pub(crate) async fn access_key(
     }
 }
 
-async fn cached_nonce(nonce: &AtomicU64, client: &Client) -> Result<(CryptoHash, Nonce)> {
-    let nonce = nonce.fetch_add(1, Ordering::SeqCst);
-
-    // Fetch latest block_hash since the previous one is now invalid for new transactions:
-    let block = client.view_block(Some(Finality::Final.into())).await?;
-    let block_hash = block.header.hash;
-    Ok((block_hash, nonce + 1))
-}
-
 /// Fetches the transaction nonce and block hash associated to the access key. Internally
 /// caches the nonce as to not need to query for it every time, and ending up having to run
 /// into contention with others.
@@ -501,24 +491,32 @@ async fn fetch_tx_nonce(
 ) -> Result<(CryptoHash, Nonce)> {
     let nonces = client.access_key_nonces.read().await;
     if let Some(nonce) = nonces.get(cache_key) {
-        cached_nonce(nonce, client).await
+        let nonce = nonce.fetch_add(1, Ordering::SeqCst);
+        drop(nonces);
+
+        // Fetch latest block_hash since the previous one is now invalid for new transactions:
+        let block = client.view_block(Some(Finality::Final.into())).await?;
+        let block_hash = block.header.hash;
+        Ok((block_hash, nonce + 1))
     } else {
         drop(nonces);
-        let mut nonces = client.access_key_nonces.write().await;
-        match nonces.entry(cache_key.clone()) {
-            // case where multiple writers end up at the same lock acquisition point and tries
-            // to overwrite the cached value that a previous writer already wrote.
-            Entry::Occupied(entry) => cached_nonce(entry.get(), client).await,
 
-            // Write the cached value. This value will get invalidated when an InvalidNonce error is returned.
-            Entry::Vacant(entry) => {
-                let (account_id, public_key) = entry.key();
-                let (access_key, block_hash) =
-                    access_key(client, account_id.clone(), public_key.clone()).await?;
-                entry.insert(AtomicU64::new(access_key.nonce + 1));
-                Ok((block_hash, access_key.nonce + 1))
-            }
-        }
+        let (account_id, public_key) = cache_key;
+        let (access_key, block_hash) =
+            access_key(client, account_id.clone(), public_key.clone()).await?;
+
+        // case where multiple writers end up at the same lock acquisition point and tries
+        // to overwrite the cached value that a previous writer already wrote.
+        let nonce = client
+            .access_key_nonces
+            .write()
+            .await
+            .entry(cache_key.clone())
+            .or_insert_with(|| AtomicU64::new(access_key.nonce + 1))
+            .fetch_max(access_key.nonce + 1, Ordering::SeqCst)
+            .max(access_key.nonce + 1);
+
+        Ok((block_hash, nonce))
     }
 }
 
