@@ -490,7 +490,7 @@ impl From<near_primitives::views::AccessKeyView> for AccessKey {
                     receiver_id,
                     method_names,
                 } => AccessKeyPermission::FunctionCall(FunctionCallPermission {
-                    allowance: allowance.map(|a| NearToken::from_yoctonear(a)),
+                    allowance: allowance.map(NearToken::from_yoctonear),
                     receiver_id,
                     method_names,
                 }),
