@@ -36,8 +36,7 @@ pub struct Agent {
     pub payable_account_id: AccountId,
     // NOTE: display_fromstr is used to deserialize from a U128 type returned from the contract
     // which is represented as a string there, and then converted into a rust u128 here.
-    #[serde(with = "serde_with::rust::display_fromstr")]
-    pub balance: u128,
+    pub balance: NearToken,
     #[serde(with = "serde_with::rust::display_fromstr")]
     pub total_tasks_executed: u128,
     pub last_missed_slot: u128,
@@ -161,7 +160,7 @@ pub async fn run_scheduled_tasks(
     println!("Agent details after completing task: {:#?}", agent_details);
     assert_eq!(
         agent_details.balance,
-        NearToken::from_yoctonear(3860000000000000000000u128).as_yoctonear()
+        NearToken::from_yoctonear(3860000000000000000000u128)
     );
     let before_withdraw = agent_details.balance;
 
@@ -184,13 +183,13 @@ pub async fn run_scheduled_tasks(
     println!("Agent details after withdrawing task: {:#?}", agent_details);
     assert_eq!(
         agent_details.balance,
-        NearToken::from_yoctonear(2260000000000000000000u128).as_yoctonear()
+        NearToken::from_yoctonear(2260000000000000000000u128)
     );
 
     // This shows how much the agent has profitted from executing the task:
     println!(
         "Agent profitted {} yN and has been transferred to the agent's account",
-        before_withdraw - agent_details.balance
+        before_withdraw.as_yoctonear() - agent_details.balance.as_yoctonear()
     );
 
     // Not that everything is done, let's cleanup and unregister the agent from doing anything.
