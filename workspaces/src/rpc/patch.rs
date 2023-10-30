@@ -97,7 +97,7 @@ impl<'a> ImportContractTransaction<'a> {
     }
 
     /// Process the transaction, and return the result of the execution.
-    pub async fn transact(self) -> crate::result::Result<Contract> {
+    pub async fn transact(self) -> Result<Contract> {
         let from_account_id = self.account_id;
         let into_account_id = self.into_account_id.as_ref().unwrap_or(from_account_id);
 
@@ -153,7 +153,7 @@ impl<'a> ImportContractTransaction<'a> {
 /// or to patch an entire account.
 enum AccountUpdate {
     Update(AccountDetailsPatch),
-    FromCurrent(Box<dyn Fn(AccountDetails) -> AccountDetailsPatch>),
+    FromCurrent(Box<dyn Fn(AccountDetails) -> AccountDetailsPatch + Send>),
 }
 
 pub struct PatchTransaction {
@@ -166,7 +166,7 @@ pub struct PatchTransaction {
 
 impl PatchTransaction {
     pub(crate) fn new(worker: &Worker<Sandbox>, account_id: AccountId) -> Self {
-        PatchTransaction {
+        Self {
             account_id,
             records: vec![],
             worker: worker.clone(),
@@ -184,9 +184,9 @@ impl PatchTransaction {
     /// Patch and overwrite the info contained inside an [`crate::Account`] in sandbox. This
     /// will allow us to fetch the current details on the chain and allow us to update
     /// the account details w.r.t to them.
-    pub fn account_from_current<F: 'static>(mut self, f: F) -> Self
+    pub fn account_from_current<F>(mut self, f: F) -> Self
     where
-        F: Fn(AccountDetails) -> AccountDetailsPatch,
+        F: Fn(AccountDetails) -> AccountDetailsPatch + Send + 'static,
     {
         self.account_updates
             .push(AccountUpdate::FromCurrent(Box::new(f)));

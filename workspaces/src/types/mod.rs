@@ -103,8 +103,8 @@ impl TryFrom<u8> for KeyType {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(KeyType::ED25519),
-            1 => Ok(KeyType::SECP256K1),
+            0 => Ok(Self::ED25519),
+            1 => Ok(Self::SECP256K1),
             unknown_key_type => Err(ErrorKind::DataConversion
                 .custom(format!("Unknown key type provided: {unknown_key_type}"))),
         }
@@ -336,7 +336,7 @@ impl TryFrom<&[u8]> for CryptoHash {
         }
         let mut buf = [0; 32];
         buf.copy_from_slice(bytes);
-        Ok(CryptoHash(buf))
+        Ok(Self(buf))
     }
 }
 

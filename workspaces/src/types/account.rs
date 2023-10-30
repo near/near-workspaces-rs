@@ -33,7 +33,7 @@ impl fmt::Debug for Account {
 impl Account {
     /// Create a new account with the given path to the credentials JSON file
     pub fn from_file(
-        path: impl AsRef<std::path::Path>,
+        path: impl AsRef<Path>,
         worker: &Worker<impl Network + 'static>,
     ) -> Result<Self> {
         let signer = InMemorySigner::from_file(path.as_ref())?;
@@ -179,7 +179,7 @@ impl Account {
     }
 
     /// Store the credentials of this account locally in the directory provided.
-    pub async fn store_credentials(&self, save_dir: impl AsRef<Path>) -> Result<()> {
+    pub async fn store_credentials(&self, save_dir: impl AsRef<Path> + Send) -> Result<()> {
         let savepath = save_dir.as_ref();
         std::fs::create_dir_all(&save_dir).map_err(|e| ErrorKind::Io.custom(e))?;
         let savepath = savepath.join(format!("{}.json", self.id()));
@@ -334,7 +334,7 @@ pub struct AccountDetailsPatch {
 }
 
 impl AccountDetailsPatch {
-    pub fn reduce(&mut self, acc: AccountDetailsPatch) {
+    pub fn reduce(&mut self, acc: Self) {
         if let Some(balance) = acc.balance {
             self.balance = Some(balance);
         }

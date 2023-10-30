@@ -49,9 +49,9 @@ where
     }
 }
 
-impl<T: ?Sized> Worker<T>
+impl<T> Worker<T>
 where
-    T: NetworkClient,
+    T: NetworkClient + ?Sized,
 {
     pub(crate) fn client(&self) -> &Client {
         self.workspace.client()
@@ -144,8 +144,27 @@ where
         )
     }
 
+    /// View account details of a specific account on the network.
+    pub fn view_account(&self, account_id: &AccountId) -> Query<'_, ViewAccount> {
+        Query::new(
+            self.client(),
+            ViewAccount {
+                account_id: account_id.clone(),
+            },
+        )
+    }
+
+    pub fn gas_price(&self) -> Query<'_, GasPrice> {
+        Query::new(self.client(), GasPrice)
+    }
+}
+
+impl<T> Worker<T>
+where
+    T: NetworkClient + Send + Sync + ?Sized,
+{
     /// Transfer tokens from one account to another. The signer is the account
-    /// that will be used to to send from.
+    /// that will be used to send from.
     pub async fn transfer_near(
         &self,
         signer: &InMemorySigner,
@@ -173,26 +192,12 @@ where
             .map(ExecutionFinalResult::from_view)
             .map_err(crate::error::Error::from)
     }
-
-    /// View account details of a specific account on the network.
-    pub fn view_account(&self, account_id: &AccountId) -> Query<'_, ViewAccount> {
-        Query::new(
-            self.client(),
-            ViewAccount {
-                account_id: account_id.clone(),
-            },
-        )
-    }
-
-    pub fn gas_price(&self) -> Query<'_, GasPrice> {
-        Query::new(self.client(), GasPrice)
-    }
 }
 
 #[cfg(feature = "experimental")]
-impl<T: ?Sized> Worker<T>
+impl<T> Worker<T>
 where
-    T: NetworkClient,
+    T: NetworkClient + Send + Sync + ?Sized,
 {
     pub async fn changes_in_block(
         &self,

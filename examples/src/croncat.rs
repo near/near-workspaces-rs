@@ -18,7 +18,7 @@ const COUNTER_CONTRACT: &[u8] = include_bytes!("../res/counter.wasm");
 /// `AgentStatus` struct taken from [croncat repo](github.com/CronCats/contracts/) to
 /// deserialize into after we get the result of a transaction and converting over to
 /// this particular type.
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub enum AgentStatus {
     Active,
     Pending,

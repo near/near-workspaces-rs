@@ -50,7 +50,7 @@ impl From<ChunkView> for Chunk {
 
 impl From<ChunkHeaderView> for ChunkHeader {
     fn from(view: ChunkHeaderView) -> Self {
-        ChunkHeader {
+        Self {
             chunk_hash: view.chunk_hash.into(),
             prev_block_hash: view.prev_block_hash.into(),
             height_created: view.height_created,
