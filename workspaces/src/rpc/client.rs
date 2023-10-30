@@ -81,10 +81,7 @@ impl Client {
     pub(crate) async fn query_broadcast_tx(
         &self,
         method: &methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest,
-    ) -> MethodCallResult<
-        FinalExecutionOutcomeView,
-        near_jsonrpc_primitives::types::transactions::RpcTransactionError,
-    > {
+    ) -> MethodCallResult<FinalExecutionOutcomeView, RpcTransactionError> {
         retry(|| async {
             let result = self.rpc_client.call(method).await;
             match &result {
@@ -124,16 +121,16 @@ impl Client {
 
     pub(crate) async fn query_nolog<M>(&self, method: M) -> MethodCallResult<M::Response, M::Error>
     where
-        M: methods::RpcMethod,
+        M: methods::RpcMethod + Send + Sync,
     {
         retry(|| async { self.rpc_client.call(&method).await }).await
     }
 
     pub(crate) async fn query<M>(&self, method: M) -> MethodCallResult<M::Response, M::Error>
     where
-        M: methods::RpcMethod + Debug,
-        M::Response: Debug,
-        M::Error: Debug,
+        M: methods::RpcMethod + Debug + Send + Sync,
+        M::Response: Debug + Send,
+        M::Error: Debug + Send,
     {
         retry(|| async {
             let result = self.rpc_client.call(&method).await;
@@ -456,7 +453,7 @@ impl Client {
 
 pub(crate) async fn access_key(
     client: &Client,
-    account_id: near_primitives::account::id::AccountId,
+    account_id: AccountId,
     public_key: near_crypto::PublicKey,
 ) -> Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
@@ -522,8 +519,8 @@ async fn fetch_tx_nonce(
 
 pub(crate) async fn retry<R, E, T, F>(task: F) -> T::Output
 where
-    F: FnMut() -> T,
-    T: core::future::Future<Output = core::result::Result<R, E>>,
+    F: FnMut() -> T + Send,
+    T: core::future::Future<Output = core::result::Result<R, E>> + Send,
 {
     // Exponential backoff starting w/ 5ms for maximum retry of 4 times with the following delays:
     //   5, 25, 125, 625 ms

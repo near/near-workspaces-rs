@@ -399,7 +399,7 @@ impl ViewResultDetails {
 
 impl From<CallResult> for ViewResultDetails {
     fn from(result: CallResult) -> Self {
-        ViewResultDetails {
+        Self {
             result: result.result,
             logs: result.logs,
         }
@@ -525,7 +525,7 @@ impl Value {
 
 impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {
     fn from(view: ExecutionOutcomeWithIdView) -> Self {
-        ExecutionOutcome {
+        Self {
             transaction_hash: CryptoHash(view.id.0),
             block_hash: CryptoHash(view.block_hash.0),
             logs: view.outcome.logs,
