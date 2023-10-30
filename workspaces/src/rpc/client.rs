@@ -482,7 +482,6 @@ pub(crate) async fn access_key(
 /// Fetches the transaction nonce and block hash associated to the access key. Internally
 /// caches the nonce as to not need to query for it every time, and ending up having to run
 /// into contention with others.
-#[allow(clippy::significant_drop_in_scrutinee)]
 async fn fetch_tx_nonce(
     client: &Client,
     cache_key: &(AccountId, near_crypto::PublicKey),
