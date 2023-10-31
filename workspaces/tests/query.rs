@@ -1,3 +1,4 @@
+use near_workspaces::types::NearToken;
 use near_workspaces::{network::Sandbox, Contract, Worker};
 
 async fn init() -> anyhow::Result<(Worker<Sandbox>, Contract)> {
@@ -34,7 +35,7 @@ async fn test_invalid_query() -> anyhow::Result<()> {
     let result = contract
         .call("set_status")
         .args_json(("some message",))
-        .deposit(1)
+        .deposit(NearToken::from_yoctonear(1))
         .transact()
         .await?
         .into_result();

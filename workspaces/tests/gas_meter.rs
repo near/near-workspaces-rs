@@ -1,3 +1,4 @@
+use near_workspaces::types::NearToken;
 use serde_json::json;
 use test_log::test;
 
@@ -250,7 +251,7 @@ async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
                 .args_json(json!({
                     "message": "hello_world",
                 }))
-                .deposit(0),
+                .deposit(NearToken::from_near(0)),
         )
         .call(Function::new("set_status").args_json(json!({
             "message": "world_hello",
@@ -266,7 +267,7 @@ async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
                 .args_json(json!({
                     "message": "hello_world",
                 }))
-                .deposit(0),
+                .deposit(NearToken::from_near(0)),
         )
         .call(Function::new("set_status").args_json(json!({
             "message": "world_hello",

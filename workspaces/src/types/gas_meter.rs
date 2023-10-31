@@ -67,8 +67,7 @@ impl GasMeter {
 
     /// Reset the gas consumed to 0.
     pub fn reset(&self) -> Result<()> {
-        let mut meter = self.gas.lock()?;
-        *meter = Gas::from_gas(0);
+        *self.gas.lock()? = Gas::from_gas(0);
         Ok(())
     }
 }

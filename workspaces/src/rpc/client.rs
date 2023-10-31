@@ -1,9 +1,9 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use crate::types::NearToken;
 use near_gas::NearGas;
 use tokio::sync::RwLock;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
@@ -21,7 +21,7 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeployContractAction,
     FunctionCallAction, SignedTransaction, TransferAction,
 };
-use near_primitives::types::{Balance, BlockReference, Finality, Gas};
+use near_primitives::types::{BlockReference, Finality, Gas};
 use near_primitives::views::{
     AccessKeyView, BlockView, FinalExecutionOutcomeView, QueryRequest, StatusResponse,
 };
@@ -49,7 +49,7 @@ use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 use crate::{Network, Worker};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
-pub(crate) const DEFAULT_CALL_DEPOSIT: Balance = 0;
+pub(crate) const DEFAULT_CALL_DEPOSIT: NearToken = NearToken::from_near(0);
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
@@ -80,10 +80,7 @@ impl Client {
     pub(crate) async fn query_broadcast_tx(
         &self,
         method: &methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest,
-    ) -> MethodCallResult<
-        FinalExecutionOutcomeView,
-        near_jsonrpc_primitives::types::transactions::RpcTransactionError,
-    > {
+    ) -> MethodCallResult<FinalExecutionOutcomeView, RpcTransactionError> {
         retry(|| async {
             let result = self.rpc_client.call(method).await;
             match &result {
@@ -123,16 +120,16 @@ impl Client {
 
     pub(crate) async fn query_nolog<M>(&self, method: M) -> MethodCallResult<M::Response, M::Error>
     where
-        M: methods::RpcMethod,
+        M: methods::RpcMethod + Send + Sync,
     {
         retry(|| async { self.rpc_client.call(&method).await }).await
     }
 
     pub(crate) async fn query<M>(&self, method: M) -> MethodCallResult<M::Response, M::Error>
     where
-        M: methods::RpcMethod + Debug,
-        M::Response: Debug,
-        M::Error: Debug,
+        M: methods::RpcMethod + Debug + Send + Sync,
+        M::Response: Debug + Send,
+        M::Error: Debug + Send,
     {
         retry(|| async {
             let result = self.rpc_client.call(&method).await;
@@ -163,7 +160,7 @@ impl Client {
         method_name: String,
         args: Vec<u8>,
         gas: Gas,
-        deposit: Balance,
+        deposit: NearToken,
     ) -> Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
@@ -172,7 +169,7 @@ impl Client {
                 args,
                 method_name,
                 gas,
-                deposit,
+                deposit: deposit.as_yoctonear(),
             }
             .into(),
         )
@@ -207,13 +204,13 @@ impl Client {
         &self,
         signer: &InMemorySigner,
         receiver_id: &AccountId,
-        amount_yocto: Balance,
+        amount_yocto: NearToken,
     ) -> Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             receiver_id,
             TransferAction {
-                deposit: amount_yocto,
+                deposit: amount_yocto.as_yoctonear(),
             }
             .into(),
         )
@@ -225,7 +222,7 @@ impl Client {
         signer: &InMemorySigner,
         new_account_id: &AccountId,
         new_account_pk: PublicKey,
-        amount: Balance,
+        amount: NearToken,
     ) -> Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(
             self,
@@ -241,7 +238,10 @@ impl Client {
                     },
                 }
                 .into(),
-                TransferAction { deposit: amount }.into(),
+                TransferAction {
+                    deposit: amount.as_yoctonear(),
+                }
+                .into(),
             ],
         )
         .await
@@ -252,7 +252,7 @@ impl Client {
         signer: &InMemorySigner,
         new_account_id: &AccountId,
         new_account_pk: PublicKey,
-        amount: Balance,
+        amount: NearToken,
         code: Vec<u8>,
     ) -> Result<FinalExecutionOutcomeView> {
         send_batch_tx_and_retry(
@@ -269,7 +269,10 @@ impl Client {
                     },
                 }
                 .into(),
-                TransferAction { deposit: amount }.into(),
+                TransferAction {
+                    deposit: amount.as_yoctonear(),
+                }
+                .into(),
                 DeployContractAction { code }.into(),
             ],
         )
@@ -449,7 +452,7 @@ impl Client {
 
 pub(crate) async fn access_key(
     client: &Client,
-    account_id: near_primitives::account::id::AccountId,
+    account_id: AccountId,
     public_key: near_crypto::PublicKey,
 ) -> Result<(AccessKeyView, CryptoHash)> {
     let query_resp = client
@@ -475,15 +478,6 @@ pub(crate) async fn access_key(
     }
 }
 
-async fn cached_nonce(nonce: &AtomicU64, client: &Client) -> Result<(CryptoHash, Nonce)> {
-    let nonce = nonce.fetch_add(1, Ordering::SeqCst);
-
-    // Fetch latest block_hash since the previous one is now invalid for new transactions:
-    let block = client.view_block(Some(Finality::Final.into())).await?;
-    let block_hash = block.header.hash;
-    Ok((block_hash, nonce + 1))
-}
-
 /// Fetches the transaction nonce and block hash associated to the access key. Internally
 /// caches the nonce as to not need to query for it every time, and ending up having to run
 /// into contention with others.
@@ -493,31 +487,39 @@ async fn fetch_tx_nonce(
 ) -> Result<(CryptoHash, Nonce)> {
     let nonces = client.access_key_nonces.read().await;
     if let Some(nonce) = nonces.get(cache_key) {
-        cached_nonce(nonce, client).await
+        let nonce = nonce.fetch_add(1, Ordering::SeqCst);
+        drop(nonces);
+
+        // Fetch latest block_hash since the previous one is now invalid for new transactions:
+        let block = client.view_block(Some(Finality::Final.into())).await?;
+        let block_hash = block.header.hash;
+        Ok((block_hash, nonce + 1))
     } else {
         drop(nonces);
-        let mut nonces = client.access_key_nonces.write().await;
-        match nonces.entry(cache_key.clone()) {
-            // case where multiple writers end up at the same lock acquisition point and tries
-            // to overwrite the cached value that a previous writer already wrote.
-            Entry::Occupied(entry) => cached_nonce(entry.get(), client).await,
 
-            // Write the cached value. This value will get invalidated when an InvalidNonce error is returned.
-            Entry::Vacant(entry) => {
-                let (account_id, public_key) = entry.key();
-                let (access_key, block_hash) =
-                    access_key(client, account_id.clone(), public_key.clone()).await?;
-                entry.insert(AtomicU64::new(access_key.nonce + 1));
-                Ok((block_hash, access_key.nonce + 1))
-            }
-        }
+        let (account_id, public_key) = cache_key;
+        let (access_key, block_hash) =
+            access_key(client, account_id.clone(), public_key.clone()).await?;
+
+        // case where multiple writers end up at the same lock acquisition point and tries
+        // to overwrite the cached value that a previous writer already wrote.
+        let nonce = client
+            .access_key_nonces
+            .write()
+            .await
+            .entry(cache_key.clone())
+            .or_insert_with(|| AtomicU64::new(access_key.nonce + 1))
+            .fetch_max(access_key.nonce + 1, Ordering::SeqCst)
+            .max(access_key.nonce + 1);
+
+        Ok((block_hash, nonce))
     }
 }
 
 pub(crate) async fn retry<R, E, T, F>(task: F) -> T::Output
 where
-    F: FnMut() -> T,
-    T: core::future::Future<Output = core::result::Result<R, E>>,
+    F: FnMut() -> T + Send,
+    T: core::future::Future<Output = core::result::Result<R, E>> + Send,
 {
     // Exponential backoff starting w/ 5ms for maximum retry of 4 times with the following delays:
     //   5, 25, 125, 625 ms

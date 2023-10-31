@@ -99,11 +99,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Patch our testnet STATE into our local sandbox:
     worker
-        .patch_state(
-            sandbox_contract.id(),
-            "STATE".as_bytes(),
-            &status_msg.try_to_vec()?,
-        )
+        .patch_state(sandbox_contract.id(), b"STATE", &status_msg.try_to_vec()?)
         .await?;
 
     // Now grab the state to see that it has indeed been patched:

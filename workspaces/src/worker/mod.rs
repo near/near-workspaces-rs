@@ -10,7 +10,7 @@ use crate::{Network, Result};
 
 /// The `Worker` type allows us to interact with any NEAR related networks, such
 /// as mainnet and testnet. This controls where the environment the worker is
-/// running on top of is. Refer to this for all network related actions such as
+/// running on top of it. Refer to this for all network related actions such as
 /// deploying a contract, or interacting with transactions.
 pub struct Worker<T: ?Sized> {
     pub(crate) workspace: Arc<T>,
@@ -97,8 +97,8 @@ pub fn custom<'a>(rpc_url: &str) -> NetworkBuilder<'a, Custom> {
 /// Run a locally scoped task where a [`sandbox`] instanced [`Worker`] is supplied.
 pub async fn with_sandbox<F, T>(task: F) -> Result<T::Output>
 where
-    F: Fn(Worker<Sandbox>) -> T,
-    T: core::future::Future,
+    F: Fn(Worker<Sandbox>) -> T + Send + Sync,
+    T: core::future::Future + Send,
 {
     Ok(task(sandbox().await?).await)
 }
@@ -106,8 +106,8 @@ where
 /// Run a locally scoped task where a [`testnet`] instanced [`Worker`] is supplied.
 pub async fn with_testnet<F, T>(task: F) -> Result<T::Output>
 where
-    F: Fn(Worker<Testnet>) -> T,
-    T: core::future::Future,
+    F: Fn(Worker<Testnet>) -> T + Send + Sync,
+    T: core::future::Future + Send,
 {
     Ok(task(testnet().await?).await)
 }
@@ -115,8 +115,8 @@ where
 /// Run a locally scoped task where a [`testnet_archival`] instanced [`Worker`] is supplied.
 pub async fn with_testnet_archival<F, T>(task: F) -> Result<T::Output>
 where
-    F: Fn(Worker<Testnet>) -> T,
-    T: core::future::Future,
+    F: Fn(Worker<Testnet>) -> T + Send + Sync,
+    T: core::future::Future + Send,
 {
     Ok(task(testnet_archival().await?).await)
 }
@@ -124,8 +124,8 @@ where
 /// Run a locally scoped task where a [`mainnet`] instanced [`Worker`] is supplied.
 pub async fn with_mainnet<F, T>(task: F) -> Result<T::Output>
 where
-    F: Fn(Worker<Mainnet>) -> T,
-    T: core::future::Future,
+    F: Fn(Worker<Mainnet>) -> T + Send + Sync,
+    T: core::future::Future + Send,
 {
     Ok(task(mainnet().await?).await)
 }
@@ -133,8 +133,8 @@ where
 /// Run a locally scoped task where a [`mainnet_archival`] instanced [`Worker`] is supplied.
 pub async fn with_mainnet_archival<F, T>(task: F) -> Result<T::Output>
 where
-    F: Fn(Worker<Mainnet>) -> T,
-    T: core::future::Future,
+    F: Fn(Worker<Mainnet>) -> T + Send + Sync,
+    T: core::future::Future + Send,
 {
     Ok(task(mainnet_archival().await?).await)
 }
@@ -142,8 +142,8 @@ where
 /// Run a locally scoped task where a [`betanet`] instanced [`Worker`] is supplied.
 pub async fn with_betanet<F, T>(task: F) -> Result<T::Output>
 where
-    F: Fn(Worker<Betanet>) -> T,
-    T: core::future::Future,
+    F: Fn(Worker<Betanet>) -> T + Send + Sync,
+    T: core::future::Future + Send,
 {
     Ok(task(betanet().await?).await)
 }
@@ -151,8 +151,8 @@ where
 #[allow(dead_code)]
 pub async fn with_custom<F, T>(task: F, rpc_url: &str) -> Result<T::Output>
 where
-    F: Fn(Worker<Custom>) -> T,
-    T: core::future::Future,
+    F: Fn(Worker<Custom>) -> T + Send + Sync,
+    T: core::future::Future + Send,
 {
     Ok(task(custom(rpc_url).await?).await)
 }
