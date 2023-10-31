@@ -45,7 +45,7 @@ use {
 use crate::error::{Error, ErrorKind, RpcErrorCode};
 use crate::operations::TransactionStatus;
 use crate::result::Result;
-use crate::types::{signed_transaction, AccountId, InMemorySigner, Nonce, PublicKey};
+use crate::types::{AccountId, InMemorySigner, Nonce, PublicKey};
 use crate::{Network, Worker};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
@@ -558,13 +558,21 @@ pub(crate) async fn send_batch_tx_and_retry(
     receiver_id: &AccountId,
     actions: Vec<Action>,
 ) -> Result<FinalExecutionOutcomeView> {
-    let cache_key = (signer.account_id.clone(), signer.secret_key.public_key().0);
+    let signer = signer.inner();
+    let cache_key = (signer.account_id.clone(), signer.secret_key.public_key());
     retry(|| async {
         let (block_hash, nonce) = fetch_tx_nonce(client, &cache_key).await?;
         send_tx(
             client,
             &cache_key,
-            signed_transaction(signer, actions.clone(), nonce, block_hash, receiver_id),
+            SignedTransaction::from_actions(
+                nonce,
+                signer.account_id.clone(),
+                receiver_id.clone(),
+                &signer as &dyn near_crypto::Signer,
+                actions.clone(),
+                block_hash,
+            ),
         )
         .await
     })
@@ -577,18 +585,20 @@ pub(crate) async fn send_batch_tx_async_and_retry(
     receiver_id: &AccountId,
     actions: Vec<Action>,
 ) -> Result<TransactionStatus> {
-    let cache_key = (signer.account_id.clone(), signer.secret_key.public_key().0);
+    let signer = &signer.inner();
+    let cache_key = (signer.account_id.clone(), signer.secret_key.public_key());
     retry(|| async {
         let (block_hash, nonce) = fetch_tx_nonce(worker.client(), &cache_key).await?;
         let hash = worker
             .client()
             .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
-                signed_transaction: signed_transaction(
-                    signer,
-                    actions.clone(),
+                signed_transaction: SignedTransaction::from_actions(
                     nonce,
+                    signer.account_id.clone(),
+                    receiver_id.clone(),
+                    signer as &dyn near_crypto::Signer,
+                    actions.clone(),
                     block_hash,
-                    receiver_id,
                 ),
             })
             .await

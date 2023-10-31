@@ -18,7 +18,6 @@ use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
-use near_primitives::transaction::{Action, SignedTransaction, Transaction};
 
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
@@ -292,6 +291,13 @@ impl InMemorySigner {
             SecretKey(signer.secret_key),
         ))
     }
+
+    pub(crate) fn inner(&self) -> near_crypto::InMemorySigner {
+        near_crypto::InMemorySigner::from_secret_key(
+            self.account_id.clone(),
+            self.secret_key.0.clone(),
+        )
+    }
 }
 
 // type taken from near_primitives::hash::CryptoHash.
@@ -520,27 +526,4 @@ impl From<Finality> for near_primitives::types::BlockReference {
         };
         value.into()
     }
-}
-
-/// A helper function to create a signed transaction with the given actions.
-pub(crate) fn signed_transaction(
-    signer: &InMemorySigner,
-    actions: Vec<Action>,
-    nonce: near_primitives::types::Nonce,
-    block_hash: near_primitives::hash::CryptoHash,
-    receiver_id: &AccountId,
-) -> SignedTransaction {
-    let tx = Transaction {
-        signer_id: signer.account_id.clone(),
-        public_key: signer.secret_key.public_key().0,
-        nonce,
-        receiver_id: receiver_id.clone(),
-        block_hash: near_primitives::hash::CryptoHash(block_hash.0),
-        actions,
-    };
-
-    SignedTransaction::new(
-        signer.secret_key.0.sign(tx.get_hash_and_size().0.as_ref()),
-        tx,
-    )
 }
