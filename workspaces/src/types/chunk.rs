@@ -2,7 +2,7 @@ use near_account_id::AccountId;
 use near_gas::NearGas;
 use near_primitives::views::{ChunkHeaderView, ChunkView};
 
-use crate::types::{Balance, Gas, ShardId};
+use crate::types::{Gas, NearToken, ShardId};
 use crate::{BlockHeight, CryptoHash};
 
 // Chunk object associated to a chunk on chain. This provides info about what
@@ -29,7 +29,7 @@ pub struct ChunkHeader {
     pub shard_id: ShardId,
     pub gas_used: Gas,
     pub gas_limit: Gas,
-    pub balance_burnt: Balance,
+    pub balance_burnt: NearToken,
 
     pub tx_root: CryptoHash,
     pub outcome_root: CryptoHash,
@@ -50,7 +50,7 @@ impl From<ChunkView> for Chunk {
 
 impl From<ChunkHeaderView> for ChunkHeader {
     fn from(view: ChunkHeaderView) -> Self {
-        ChunkHeader {
+        Self {
             chunk_hash: view.chunk_hash.into(),
             prev_block_hash: view.prev_block_hash.into(),
             height_created: view.height_created,
@@ -58,7 +58,7 @@ impl From<ChunkHeaderView> for ChunkHeader {
             shard_id: view.shard_id,
             gas_used: NearGas::from_gas(view.gas_used),
             gas_limit: NearGas::from_gas(view.gas_limit),
-            balance_burnt: view.balance_burnt,
+            balance_burnt: NearToken::from_yoctonear(view.balance_burnt),
             tx_root: view.tx_root.into(),
             outcome_root: view.outcome_root.into(),
             prev_state_root: view.prev_state_root.into(),

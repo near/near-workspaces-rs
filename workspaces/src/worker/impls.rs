@@ -8,7 +8,7 @@ use crate::rpc::query::{
     GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
     ViewCode, ViewFunction, ViewState,
 };
-use crate::types::{AccountId, Balance, InMemorySigner, PublicKey};
+use crate::types::{AccountId, InMemorySigner, NearToken, PublicKey};
 use crate::worker::Worker;
 use crate::{Account, Network};
 
@@ -48,9 +48,9 @@ where
     }
 }
 
-impl<T: ?Sized> Worker<T>
+impl<T> Worker<T>
 where
-    T: NetworkClient,
+    T: NetworkClient + ?Sized,
 {
     pub(crate) fn client(&self) -> &Client {
         self.workspace.client()
@@ -143,13 +143,32 @@ where
         )
     }
 
+    /// View account details of a specific account on the network.
+    pub fn view_account(&self, account_id: &AccountId) -> Query<'_, ViewAccount> {
+        Query::new(
+            self.client(),
+            ViewAccount {
+                account_id: account_id.clone(),
+            },
+        )
+    }
+
+    pub fn gas_price(&self) -> Query<'_, GasPrice> {
+        Query::new(self.client(), GasPrice)
+    }
+}
+
+impl<T> Worker<T>
+where
+    T: NetworkClient + Send + Sync + ?Sized,
+{
     /// Transfer tokens from one account to another. The signer is the account
-    /// that will be used to to send from.
+    /// that will be used to send from.
     pub async fn transfer_near(
         &self,
         signer: &InMemorySigner,
         receiver_id: &AccountId,
-        amount_yocto: Balance,
+        amount_yocto: NearToken,
     ) -> Result<ExecutionFinalResult> {
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
@@ -172,26 +191,12 @@ where
             .map(ExecutionFinalResult::from_view)
             .map_err(crate::error::Error::from)
     }
-
-    /// View account details of a specific account on the network.
-    pub fn view_account(&self, account_id: &AccountId) -> Query<'_, ViewAccount> {
-        Query::new(
-            self.client(),
-            ViewAccount {
-                account_id: account_id.clone(),
-            },
-        )
-    }
-
-    pub fn gas_price(&self) -> Query<'_, GasPrice> {
-        Query::new(self.client(), GasPrice)
-    }
 }
 
 #[cfg(feature = "experimental")]
-impl<T: ?Sized> Worker<T>
+impl<T> Worker<T>
 where
-    T: NetworkClient,
+    T: NetworkClient + Send + Sync + ?Sized,
 {
     pub fn changes(&self, state_changes: StateChangesRequestView) -> Query<'_, StateChanges> {
         Query::new(self.client(), StateChanges { state_changes })

@@ -41,6 +41,7 @@ use near_jsonrpc_primitives::types::chunks::ChunkReference;
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::types::{BlockId, BlockReference, StoreKey};
 use near_primitives::views::{BlockView, QueryRequest};
+use near_token::NearToken;
 
 #[cfg(feature = "experimental")]
 use near_primitives::views::StateChangesRequestView;
@@ -51,7 +52,7 @@ use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
 use crate::rpc::{tool, BoxFuture};
 use crate::types::account::AccountDetails;
-use crate::types::{AccessKey, AccessKeyInfo, Balance, BlockHeight, Finality, PublicKey, ShardId};
+use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, Finality, PublicKey, ShardId};
 use crate::{Block, Chunk, CryptoHash, Result};
 
 /// `Query` object allows creating queries into the network of our choice. This object is
@@ -390,7 +391,7 @@ impl ProcessQuery for ViewAccessKeyList {
 
 impl ProcessQuery for GasPrice {
     type Method = methods::gas_price::RpcGasPriceRequest;
-    type Output = Balance;
+    type Output = NearToken;
 
     fn into_request(self, block_ref: BlockReference) -> Result<Self::Method> {
         let block_id = match block_ref {
@@ -410,7 +411,7 @@ impl ProcessQuery for GasPrice {
     }
 
     fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
-        Ok(resp.gas_price)
+        Ok(NearToken::from_yoctonear(resp.gas_price))
     }
 }
 

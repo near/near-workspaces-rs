@@ -3,6 +3,9 @@
 //! A library for automating workflows and writing tests for NEAR smart contracts.
 //! This software is not final, and will likely change.
 
+// We want to enable all clippy lints, but some of them generate false positives.
+#![allow(clippy::missing_const_for_fn, clippy::redundant_pub_crate)]
+
 #[cfg(feature = "unstable")]
 mod cargo;
 #[cfg(feature = "unstable")]
