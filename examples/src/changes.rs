@@ -1,4 +1,3 @@
-use near_primitives::views::StateChangesRequestView;
 use serde_json::json;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
@@ -15,14 +14,11 @@ async fn main() -> anyhow::Result<()> {
             "message": "hello_world",
         }))
         .transact()
-        .await?;
-
-    let state_changes = StateChangesRequestView::ContractCodeChanges {
-        account_ids: vec![contract.id().clone()],
-    };
+        .await?
+        .into_result()?;
 
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
-    let res = worker.changes(state_changes).await?;
+    let res = worker.changes(vec![contract.id().clone()]).await?;
 
     // Example output:
     //

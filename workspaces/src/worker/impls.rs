@@ -14,7 +14,6 @@ use crate::{Account, Network};
 
 #[cfg(feature = "experimental")]
 use {
-    crate::error::{Error, ErrorKind},
     crate::rpc::query::{ProtocolConfig, StateChanges, StateChangesInBlock},
     crate::CryptoHash,
     near_chain_configs::GenesisConfig,
@@ -193,8 +192,13 @@ impl<T: ?Sized> Worker<T>
 where
     T: NetworkClient,
 {
-    pub fn changes(&self, state_changes: StateChangesRequestView) -> Query<'_, StateChanges> {
-        Query::new(self.client(), StateChanges { state_changes })
+    pub fn changes(&self, account_ids: Vec<AccountId>) -> Query<'_, StateChanges> {
+        Query::new(
+            self.client(),
+            StateChanges {
+                state_changes: StateChangesRequestView::AccountChanges { account_ids },
+            },
+        )
     }
 
     pub fn changes_in_block(&self) -> Query<'_, StateChangesInBlock> {
@@ -209,28 +213,25 @@ where
         self.client().genesis_config().await
     }
 
-    pub async fn receipt(&self, ids: &[CryptoHash]) -> Result<ReceiptView> {
-        if ids.is_empty() {
-            return Err(Error::message(
-                ErrorKind::DataConversion,
-                "no receipt ids found",
-            ));
-        }
-
+    pub async fn receipt(&self, id: &CryptoHash) -> Result<ReceiptView> {
         self.client()
             .receipt(ReceiptReference {
-                receipt_id: near_primitives::hash::CryptoHash(
-                    ids.last().expect("at least one id expected").0,
-                ),
+                receipt_id: near_primitives::hash::CryptoHash(id.0),
             })
             .await
     }
 
     pub async fn tx_status(
         &self,
-        transaction_info: TransactionInfo,
+        hash: CryptoHash,
+        account_id: AccountId,
     ) -> Result<FinalExecutionOutcomeWithReceiptView> {
-        self.client().tx_status(transaction_info).await
+        self.client()
+            .tx_status(TransactionInfo::TransactionId {
+                hash: near_primitives::hash::CryptoHash(hash.0),
+                account_id,
+            })
+            .await
     }
 
     pub async fn validators_ordered(

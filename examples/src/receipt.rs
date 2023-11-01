@@ -19,7 +19,9 @@ async fn main() -> anyhow::Result<()> {
     println!("receipts found: {ids:?}");
 
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
-    let resp = worker.receipt(ids).await?;
+    let resp = worker
+        .receipt(ids.last().expect("a receipt id is expected"))
+        .await?;
 
     println!("ReceiptView: {resp:?}");
     Ok(())

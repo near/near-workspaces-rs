@@ -14,7 +14,8 @@ async fn main() -> anyhow::Result<()> {
             "message": "hello_world",
         }))
         .transact()
-        .await?;
+        .await?
+        .into_result()?;
 
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
     let res = worker.changes_in_block().await?;
