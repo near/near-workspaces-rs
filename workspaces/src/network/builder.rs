@@ -8,7 +8,7 @@ use super::server::ValidatorKey;
 
 pub(crate) type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
-/// This trait provides a way to construct Networks out of a single builder. Currently
+/// This trait provides a way to construct Networks out of a single builder. Currently,
 /// not planned to offer this trait outside, since the custom networks can just construct
 /// themselves however they want utilizing `Worker::new` like so:
 /// ```ignore

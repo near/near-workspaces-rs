@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.9.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.8.0...near-workspaces-v0.9.0) - 2023-10-30
+
+### Added
+- Require Send + Sync for T in Worker<T> to allow near-workspaces usage in multithreading async runtimes  ([#328](https://github.com/near/near-workspaces-rs/pull/328))
+- Added API for measuring gas ([#284](https://github.com/near/near-workspaces-rs/pull/284))
+
+### Fixed
+- Fixed await during acquired lock in rpc::client::fetch_tx_nonce ([#334](https://github.com/near/near-workspaces-rs/pull/334))
+
+### Other
+- [**breaking**] Migrate to use NearToken instead of raw u128 for balance variables to ensure strict typing ([#333](https://github.com/near/near-workspaces-rs/pull/333))
+- Restrict GasHook type to require RefUnwindSafe and UnwindSafe to avoid breaking release ([#323](https://github.com/near/near-workspaces-rs/pull/323)) ([#326](https://github.com/near/near-workspaces-rs/pull/326))
+- remove unwraps ([#321](https://github.com/near/near-workspaces-rs/pull/321))
+
 ## [0.8.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.7.0...near-workspaces-v0.8.0) - 2023-10-04
 
 - [**breaking**] renamed crate to near-workspaces to avoid confusion with Cargo workspaces; imports should now use `near_workspaces` instead of just `workspaces` ([#318](https://github.com/near/near-workspaces-rs/pull/318))

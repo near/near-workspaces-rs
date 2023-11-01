@@ -137,7 +137,7 @@ impl std::error::Error for Error {
 
 impl<T> From<PoisonError<T>> for Error {
     fn from(value: PoisonError<T>) -> Self {
-        Error::custom(ErrorKind::Other, value.to_string())
+        Self::custom(ErrorKind::Other, value.to_string())
     }
 }
 
@@ -167,7 +167,7 @@ impl SandboxErrorCode {
 
 impl From<SandboxErrorCode> for Error {
     fn from(code: SandboxErrorCode) -> Self {
-        Error::simple(ErrorKind::Sandbox(code))
+        Self::simple(ErrorKind::Sandbox(code))
     }
 }
 
@@ -189,6 +189,6 @@ impl RpcErrorCode {
 
 impl From<RpcErrorCode> for Error {
     fn from(code: RpcErrorCode) -> Self {
-        Error::simple(ErrorKind::Rpc(code))
+        Self::simple(ErrorKind::Rpc(code))
     }
 }

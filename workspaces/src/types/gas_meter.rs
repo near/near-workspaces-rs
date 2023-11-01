@@ -1,3 +1,4 @@
+use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::{Arc, Mutex};
 
 use super::Gas;
@@ -7,7 +8,11 @@ use crate::Worker;
 /// A hook that is called on every transaction that is sent to the network.
 /// This is useful for debugging purposes, or for tracking the amount of gas
 /// that is being used.
-pub type GasHook = Arc<dyn Fn(Gas) -> Result<()> + Send + Sync>;
+///
+/// The auto-traits [`Send`], [`Sync`], [`UnwindSafe`] and [`RefUnwindSafe`] are added explicitly because they
+/// do not fall under the rules the compiler uses to automatically add them.
+/// See here: <https://doc.rust-lang.org/reference/special-types-and-traits.html#auto-traits>
+pub type GasHook = Arc<dyn Fn(Gas) -> Result<()> + Send + Sync + UnwindSafe + RefUnwindSafe>;
 
 /// Allows you to meter the amount of gas consumed by transaction(s).
 /// Note: This only works with transactions that resolve to [`crate::result::ExecutionFinalResult`]
@@ -62,8 +67,7 @@ impl GasMeter {
 
     /// Reset the gas consumed to 0.
     pub fn reset(&self) -> Result<()> {
-        let mut meter = self.gas.lock()?;
-        *meter = Gas::from_gas(0);
+        *self.gas.lock()? = Gas::from_gas(0);
         Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use near_workspaces::types::NearToken;
 use serde_json::json;
 
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
@@ -18,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
 
     println!("new_default_meta outcome: {:#?}", outcome);
 
-    let deposit = 10000000000000000000000;
+    let deposit = NearToken::from_yoctonear(10000000000000000000000);
     let outcome = contract
         .call("nft_mint")
         .args_json(json!({
