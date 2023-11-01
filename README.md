@@ -35,9 +35,6 @@ A simple test to get us going and familiar with `near-workspaces` framework. Her
 First, we need to declare some imports for convenience.
 
 ```rust
-// macro allowing us to convert human readable units to workspace units.
-use near_units::parse_near;
-
 // macro allowing us to convert args into JSON bytes to be read by the contract.
 use serde_json::json;
 ```
@@ -91,7 +88,10 @@ Then we'll go directly into making a call into the contract, and initialize the 
 Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra arguments we can supply, such as deposit and gas:
 
 ```rust
-    let deposit = 10000000000000000000000;
+    use near_gas::NearGas;
+    use near_workspaces::types::NearToken;
+
+    let deposit = NearToken::from_near(100);
     let outcome = contract
         .call("nft_mint")
         .args_json(json!({
@@ -105,7 +105,7 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
         }))
         .deposit(deposit)
         // nft_mint might consume more than default gas, so supply our own gas value:
-        .gas(near_units::parse_gas("300 T"))
+        .gas(NearGas::from_tgas(300))
         .transact()
         .await?;
 
@@ -197,7 +197,7 @@ We can check the balance of our accounts like so:
 ```rs
 #[test(tokio::test)]
 async fn test_contract_transfer() -> anyhow::Result<()> {
-    let transfer_amount = near_units::parse_near!("0.1");
+    let transfer_amount = NearToken::from_millinear(100);
     let worker = near_workspaces::sandbox().await?;
 
     let contract = worker
@@ -236,7 +236,6 @@ This example will showcase spooning state from a testnet contract into our local
 We will first start with the usual imports:
 
 ```rust
-use near_units::{parse_gas, parse_near};
 use near_workspaces::network::Sandbox;
 use near_workspaces::{Account, AccountId, BlockHeight, Contract, Worker};
 ```
@@ -267,9 +266,10 @@ Following that we will have to init the contract again with our own metadata. Th
 
 ```rust
 
+    use near_workspaces::types::NearToken;
     let contract = worker
         .import_contract(&contract_id, &testnet)
-        .initial_balance(parse_near!("1000 N"))
+        .initial_balance(NearToken::from_near(1000))
         .block_height(BLOCK_HEIGHT)
         .transact()
         .await?;

@@ -1,7 +1,7 @@
 use near_account_id::AccountId;
 use near_primitives::views::{BlockHeaderView, BlockView};
 
-use crate::types::{Balance, ChunkHeader};
+use crate::types::{ChunkHeader, NearToken};
 use crate::{BlockHeight, CryptoHash};
 
 /// Struct containing information on block coming from the network
@@ -63,9 +63,9 @@ pub struct BlockHeader {
     prev_hash: CryptoHash,
     timestamp_nanosec: u64,
     random_value: CryptoHash,
-    gas_price: Balance,
+    gas_price: NearToken,
     block_ordinal: Option<u64>,
-    total_supply: Balance,
+    total_supply: NearToken,
     last_final_block: CryptoHash,
     last_ds_final_block: CryptoHash,
     next_bp_hash: CryptoHash,
@@ -117,7 +117,7 @@ impl BlockHeader {
     }
 
     /// The gas price of the block.
-    pub fn gas_price(&self) -> Balance {
+    pub fn gas_price(&self) -> NearToken {
         self.gas_price
     }
 
@@ -127,7 +127,7 @@ impl BlockHeader {
     }
 
     /// The total supply balance of the block.
-    pub fn total_supply(&self) -> Balance {
+    pub fn total_supply(&self) -> NearToken {
         self.total_supply
     }
 
@@ -207,9 +207,9 @@ impl From<BlockHeaderView> for BlockHeader {
             prev_hash: header_view.prev_hash.into(),
             timestamp_nanosec: header_view.timestamp_nanosec,
             random_value: header_view.random_value.into(),
-            gas_price: header_view.gas_price,
+            gas_price: NearToken::from_yoctonear(header_view.gas_price),
             block_ordinal: header_view.block_ordinal,
-            total_supply: header_view.total_supply,
+            total_supply: NearToken::from_yoctonear(header_view.total_supply),
             last_final_block: header_view.last_final_block.into(),
             last_ds_final_block: header_view.last_ds_final_block.into(),
             next_bp_hash: header_view.next_bp_hash.into(),
