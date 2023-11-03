@@ -1,6 +1,6 @@
 pub type Pair = Vec<i64>;
 pub struct AbiClient {
-    pub contract: workspaces::Contract,
+    pub contract: near_workspaces::Contract,
 }
 impl AbiClient {
     pub async fn add(&self, a: Pair, b: Pair) -> anyhow::Result<Pair> {

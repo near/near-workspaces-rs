@@ -4,7 +4,7 @@ const ADDER_WASM_FILEPATH: &str = "./examples/res/adder.wasm";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let wasm = std::fs::read(ADDER_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 
@@ -16,10 +16,10 @@ async fn main() -> anyhow::Result<()> {
 
 /// This part of the example uses the Macro API to get a client and use it.
 mod macro_adder {
-    workspaces::near_abi_client::generate!(Client for "../examples/res/adder.json");
+    near_workspaces::near_abi_client::generate!(Client for "../examples/res/adder.json");
 }
 
-pub async fn macro_run(contract: workspaces::Contract) -> anyhow::Result<()> {
+pub async fn macro_run(contract: near_workspaces::Contract) -> anyhow::Result<()> {
     let contract = macro_adder::Client { contract };
     let res = contract.add(vec![1, 2], vec![3, 4]).await?;
 
@@ -33,7 +33,7 @@ pub async fn macro_run(contract: workspaces::Contract) -> anyhow::Result<()> {
 #[path = "gen/adder.rs"]
 mod generation_adder;
 
-pub async fn generation_run(contract: workspaces::Contract) -> anyhow::Result<()> {
+pub async fn generation_run(contract: near_workspaces::Contract) -> anyhow::Result<()> {
     let contract = generation_adder::AbiClient { contract };
     let res = contract.add(vec![1, 2], vec![3, 4]).await?;
 

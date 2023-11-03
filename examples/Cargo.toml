@@ -22,7 +22,7 @@ near-workspaces = { path = "../workspaces", features = ["experimental", "unstabl
 
 [build-dependencies]
 anyhow = "1.0"
-workspaces = { path = "../workspaces" }
+near-workspaces = { path = "../workspaces" }
 
 [[example]]
 name = "async_transaction"
