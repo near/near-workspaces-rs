@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 
-use workspaces::types::{KeyType, PublicKey, SecretKey};
-use workspaces::AccountId;
+use near_workspaces::types::{KeyType, PublicKey, SecretKey};
+use near_workspaces::AccountId;
 
 fn default_workspaces_pubkey() -> anyhow::Result<PublicKey> {
     let data = bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?;
@@ -62,7 +62,7 @@ fn test_pubkey_serialization() -> anyhow::Result<()> {
 async fn test_pubkey_from_sdk_ser() -> anyhow::Result<()> {
     const TYPE_SER_BYTES: &[u8] =
         include_bytes!("test-contracts/type-serialize/res/test_contract_type_serialization.wasm");
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let contract = worker.dev_deploy(TYPE_SER_BYTES).await?;
 
     // Test out serde serialization and deserialization for PublicKey

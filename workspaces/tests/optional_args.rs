@@ -1,8 +1,8 @@
 #![recursion_limit = "256"]
 use near_gas::NearGas;
-use near_units::parse_near;
+use near_workspaces::types::NearToken;
+use near_workspaces::{Contract, DevNetwork, Worker};
 use test_log::test;
-use workspaces::{Contract, DevNetwork, Worker};
 
 async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
     let contract = worker
@@ -13,7 +13,7 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
         .call("new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": contract.id(),
-            "total_supply": parse_near!("1,000,000,000 N").to_string(),
+            "total_supply": NearToken::from_near(1_000_000_000),
         }))
         .transact()
         .await?
@@ -24,13 +24,13 @@ async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
 
 #[test(tokio::test)]
 async fn test_empty_args_error() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let contract = init(&worker).await?;
 
     let res = contract
         .call("storage_unregister")
         .max_gas()
-        .deposit(1)
+        .deposit(NearToken::from_yoctonear(1))
         .transact()
         .await?
         .into_result();
@@ -50,7 +50,7 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_optional_args_present() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let contract = init(&worker).await?;
 
     let res = contract
@@ -59,7 +59,7 @@ async fn test_optional_args_present() -> anyhow::Result<()> {
             "force": true
         }))
         .max_gas()
-        .deposit(1)
+        .deposit(NearToken::from_yoctonear(1))
         .transact()
         .await?;
     assert!(res.json::<bool>()?);

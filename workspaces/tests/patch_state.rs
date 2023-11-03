@@ -2,11 +2,12 @@
 #![recursion_limit = "256"]
 
 use borsh::{self, BorshDeserialize, BorshSerialize};
+use near_token::NearToken;
 use serde_json::json;
 use test_log::test;
 
-use workspaces::types::{KeyType, SecretKey};
-use workspaces::{AccessKey, AccountDetailsPatch, AccountId, Contract, DevNetwork, Worker};
+use near_workspaces::types::{KeyType, SecretKey};
+use near_workspaces::{AccessKey, AccountDetailsPatch, AccountId, Contract, DevNetwork, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
 
@@ -47,7 +48,7 @@ async fn view_status_state(
 
 #[test(tokio::test)]
 async fn test_view_state() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let (contract_id, status_msg) = view_status_state(&worker).await?;
 
     assert_eq!(
@@ -65,7 +66,7 @@ async fn test_view_state() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_patch_state() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let (contract_id, mut status_msg) = view_status_state(&worker).await?;
     status_msg.records.push(Record {
         k: "alice.near".to_string(),
@@ -91,7 +92,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_patch() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let (contract_id, mut status_msg) = view_status_state(&worker).await?;
     status_msg.records.push(Record {
         k: "alice.near".to_string(),
@@ -119,7 +120,7 @@ async fn test_patch() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_patch_full() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let (contract_id, status_msg) = view_status_state(&worker).await?;
     let status_msg_acc = worker.view_account(&contract_id).await?;
     let status_msg_code = worker.view_code(&contract_id).await?;
@@ -132,7 +133,7 @@ async fn test_patch_full() -> anyhow::Result<()> {
         .patch(&bob_id)
         .account(
             AccountDetailsPatch::default()
-                .balance(near_units::parse_near!("100 N"))
+                .balance(NearToken::from_near(100))
                 .locked(status_msg_acc.locked)
                 .code_hash(status_msg_acc.code_hash)
                 .storage_usage(status_msg_acc.storage_usage),
@@ -161,7 +162,7 @@ async fn test_patch_full() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_patch_code_hash() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let (contract_id, _) = view_status_state(&worker).await?;
     let status_msg_acc = worker.view_account(&contract_id).await?;
     let status_msg_code = worker.view_code(&contract_id).await?;
@@ -185,13 +186,13 @@ async fn test_patch_code_hash() -> anyhow::Result<()> {
 // account_from_current
 #[tokio::test]
 async fn test_patch_account_from_current() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
 
     let bob = worker.dev_create_account().await?;
 
-    const NEW_BALANCE: u128 = 10_u128.pow(16);
+    const NEW_BALANCE: NearToken = NearToken::from_yoctonear(10_u128.pow(16));
 
-    let f = |mut acc: workspaces::types::AccountDetails| {
+    let f = |mut acc: near_workspaces::types::AccountDetails| {
         acc.balance = NEW_BALANCE;
         AccountDetailsPatch::from(acc)
     };

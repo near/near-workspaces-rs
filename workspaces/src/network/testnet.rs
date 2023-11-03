@@ -12,7 +12,7 @@ use crate::network::Info;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
-use crate::types::{AccountId, InMemorySigner, SecretKey};
+use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
 use crate::{Account, Contract, CryptoHash, Network, Worker};
 
 /// URL to the testnet RPC node provided by near.org.
@@ -40,7 +40,7 @@ pub struct Testnet {
 impl FromNetworkBuilder for Testnet {
     async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
         let rpc_url = build.rpc_addr.unwrap_or_else(|| RPC_URL.into());
-        let client = Client::new(&rpc_url);
+        let client = Client::new(&rpc_url, build.api_key)?;
         client.wait_for_rpc().await?;
 
         Ok(Self {
@@ -94,7 +94,7 @@ impl TopLevelAccountCreator for Testnet {
                         logs: Vec::new(),
                         receipt_ids: Vec::new(),
                         gas_burnt: NearGas::from_gas(0),
-                        tokens_burnt: 0,
+                        tokens_burnt: NearToken::from_near(0),
                         executor_id: "testnet".parse().unwrap(),
                         status: ExecutionStatusView::SuccessValue(Vec::new()),
                     },

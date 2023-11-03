@@ -4,7 +4,7 @@ use serde_json::json;
 /// to what was on the chain prior to modifying state.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
 
     // Fetch the latest block produced from the network.
     let block = worker.view_block().await?;
