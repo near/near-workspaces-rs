@@ -11,8 +11,10 @@ const SIMPLE_WASM_FILEPATH: &str = "./examples/res/simple_contract.wasm";
 async fn main() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     let contract = worker
-        .dev_deploy(&std::fs::read(SIMPLE_WASM_FILEPATH)?)
-        .await?;
+        .root_account()?
+        .deploy(&std::fs::read(SIMPLE_WASM_FILEPATH)?)
+        .await?
+        .into_result()?;
 
     let (timestamp, epoch_height): (u64, u64) =
         contract.call("current_env_data").view().await?.json()?;

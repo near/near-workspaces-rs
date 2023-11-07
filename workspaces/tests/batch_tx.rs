@@ -7,8 +7,10 @@ use test_log::test;
 async fn test_batch_tx() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     let contract = worker
-        .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
-        .await?;
+        .root_account()?
+        .deploy(include_bytes!("../../examples/res/status_message.wasm"))
+        .await?
+        .into_result()?;
 
     // Batch transaction with two `call`s into `set_status`. The second one
     // should override the first one.

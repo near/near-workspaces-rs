@@ -6,8 +6,9 @@ use near_token::NearToken;
 use serde_json::json;
 use test_log::test;
 
+use near_workspaces::network::Sandbox;
 use near_workspaces::types::{KeyType, SecretKey};
-use near_workspaces::{AccessKey, AccountDetailsPatch, AccountId, Contract, DevNetwork, Worker};
+use near_workspaces::{AccessKey, AccountDetailsPatch, AccountId, Contract, Worker};
 
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
 
@@ -22,11 +23,14 @@ struct StatusMessage {
     records: Vec<Record>,
 }
 
-async fn view_status_state(
-    worker: &Worker<impl DevNetwork>,
-) -> anyhow::Result<(AccountId, StatusMessage)> {
+async fn view_status_state(worker: &Worker<Sandbox>) -> anyhow::Result<(AccountId, StatusMessage)> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
-    let contract = worker.dev_deploy(&wasm).await.unwrap();
+    let contract = worker
+        .root_account()?
+        .deploy(&wasm)
+        .await
+        .unwrap()
+        .into_result()?;
 
     contract
         .call("set_status")
@@ -167,7 +171,12 @@ async fn test_patch_code_hash() -> anyhow::Result<()> {
     let status_msg_acc = worker.view_account(&contract_id).await?;
     let status_msg_code = worker.view_code(&contract_id).await?;
 
-    let bob = worker.dev_create_account().await?;
+    let bob = worker
+        .root_account()?
+        .create_subaccount("bob")
+        .transact()
+        .await?
+        .into_result()?;
 
     // Patching code bytes should also set the code hash, otherwise the node will crash
     // when we try to do anything with the contract.
@@ -187,8 +196,12 @@ async fn test_patch_code_hash() -> anyhow::Result<()> {
 #[tokio::test]
 async fn test_patch_account_from_current() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
-
-    let bob = worker.dev_create_account().await?;
+    let bob = worker
+        .root_account()?
+        .create_subaccount("bob")
+        .transact()
+        .await?
+        .into_result()?;
 
     const NEW_BALANCE: NearToken = NearToken::from_yoctonear(10_u128.pow(16));
 

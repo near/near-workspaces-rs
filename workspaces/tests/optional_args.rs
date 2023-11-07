@@ -1,13 +1,16 @@
 #![recursion_limit = "256"]
 use near_gas::NearGas;
+use near_workspaces::network::Sandbox;
 use near_workspaces::types::NearToken;
-use near_workspaces::{Contract, DevNetwork, Worker};
+use near_workspaces::{Contract, Worker};
 use test_log::test;
 
-async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
+async fn init(worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
     let contract = worker
-        .dev_deploy(include_bytes!("../../examples/res/fungible_token.wasm"))
-        .await?;
+        .root_account()?
+        .deploy(include_bytes!("../../examples/res/fungible_token.wasm"))
+        .await?
+        .into_result()?;
 
     contract
         .call("new_default_meta")

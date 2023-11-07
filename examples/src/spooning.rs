@@ -1,7 +1,8 @@
 use std::env;
 
 use borsh::{self, BorshDeserialize, BorshSerialize};
-use near_workspaces::{AccountId, Contract, DevNetwork, Worker};
+use near_workspaces::network::Sandbox;
+use near_workspaces::{AccountId, Contract, Worker};
 use serde_json::json;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
@@ -43,12 +44,9 @@ struct StatusMessage {
 ///
 /// For example, our predeployed testnet contract has already done this:
 ///    set_status(TESTNET_PREDEPLOYED_CONTRACT_ID) = "hello from testnet"
-async fn deploy_status_contract(
-    worker: &Worker<impl DevNetwork>,
-    msg: &str,
-) -> anyhow::Result<Contract> {
+async fn deploy_status_contract(worker: &Worker<Sandbox>, msg: &str) -> anyhow::Result<Contract> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
-    let contract = worker.dev_deploy(&wasm).await?;
+    let contract = worker.root_account()?.deploy(&wasm).await?.into_result()?;
 
     // This will `call` into `set_status` with the message we want to set.
     contract

@@ -10,10 +10,11 @@ async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
     let gas_meter = GasMeter::now(&mut worker);
     let mut total_gas = NearToken::from_yoctonear(0);
 
+    let root_account = worker.root_account()?;
+
     // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
     let status_msg = {
-        let account = worker
-            .root_account()?
+        let account = root_account
             .create_subaccount("alice")
             .initial_balance(NearToken::from_near(100))
             .transact()
@@ -47,8 +48,7 @@ async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_create_account().await?;
     let account = {
-        let account = worker
-            .root_account()?
+        let account = root_account
             .create_subaccount("bob")
             .initial_balance(NearToken::from_near(100))
             .transact()
@@ -91,10 +91,11 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
     let gas_meter = GasMeter::now(&mut worker);
     let mut total_gas = NearToken::from_yoctonear(0);
 
+    let root_account = worker.root_account()?;
+
     // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
     let status_msg = {
-        let account = worker
-            .root_account()?
+        let account = root_account
             .create_subaccount("alice")
             .initial_balance(NearToken::from_near(100))
             .transact()
@@ -128,8 +129,7 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_create_account().await?;
     let account = {
-        let account = worker
-            .root_account()?
+        let account = root_account
             .create_subaccount("bob")
             .initial_balance(NearToken::from_near(100))
             .transact()
@@ -183,10 +183,11 @@ async fn test_gas_meter_with_parallel_transactions() -> anyhow::Result<()> {
     let gas_meter = GasMeter::now(&mut worker);
     let mut total_gas = NearToken::from_yoctonear(0);
 
+    let root_account = worker.root_account()?;
+
     // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
     let status_msg = {
-        let account = worker
-            .root_account()?
+        let account = root_account
             .create_subaccount("alice")
             .initial_balance(NearToken::from_near(100))
             .transact()
@@ -220,8 +221,7 @@ async fn test_gas_meter_with_parallel_transactions() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_create_account().await?;
     let account = {
-        let account = worker
-            .root_account()?
+        let account = root_account
             .create_subaccount("bob")
             .initial_balance(NearToken::from_near(100))
             .transact()
@@ -278,10 +278,11 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
     let gas_meter = GasMeter::now(&mut worker);
     let mut total_gas = NearToken::from_yoctonear(0);
 
+    let root_account = worker.root_account()?;
+
     // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
     let status_msg = {
-        let account = worker
-            .root_account()?
+        let account = root_account
             .create_subaccount("alice")
             .initial_balance(NearToken::from_near(100))
             .transact()
@@ -300,7 +301,7 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
             .unwrap();
 
         let contract = account
-            .result
+            .into_result()?
             .deploy(include_bytes!("../../examples/res/status_message.wasm"))
             .await?;
 
@@ -313,8 +314,7 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
 
     // analogous to: worker.dev_create_account().await?;
     let account = {
-        let account = worker
-            .root_account()?
+        let account = root_account
             .create_subaccount("bob")
             .initial_balance(NearToken::from_near(100))
             .transact()
@@ -500,7 +500,12 @@ async fn test_dropped_gas_meter() -> anyhow::Result<()> {
     let gas_meter = GasMeter::now(&mut worker);
     drop(gas_meter);
 
-    worker.dev_create_account().await?;
+    _ = worker
+        .root_account()?
+        .create_subaccount("alice")
+        .transact()
+        .await?
+        .into_result()?;
 
     Ok(())
 }

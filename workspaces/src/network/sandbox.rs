@@ -34,6 +34,19 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
+    pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
+        match &self.server.validator_key {
+            ValidatorKey::HomeDir(home_dir) => {
+                let path = home_dir.join("validator_key.json");
+                InMemorySigner::from_file(&path)
+            }
+            ValidatorKey::Known(account_id, secret_key) => Ok(InMemorySigner::from_secret_key(
+                account_id.clone(),
+                secret_key.clone(),
+            )),
+        }
+    }
+
     pub(crate) async fn from_builder_with_version<'a>(
         build: NetworkBuilder<'a, Self>,
         version: &str,
@@ -165,19 +178,6 @@ impl NetworkClient for Sandbox {
 impl NetworkInfo for Sandbox {
     fn info(&self) -> &Info {
         &self.info
-    }
-
-    fn root_signer(&self) -> Result<InMemorySigner> {
-        match &self.server.validator_key {
-            ValidatorKey::HomeDir(home_dir) => {
-                let path = home_dir.join("validator_key.json");
-                InMemorySigner::from_file(&path)
-            }
-            ValidatorKey::Known(account_id, secret_key) => Ok(InMemorySigner::from_secret_key(
-                account_id.clone(),
-                secret_key.clone(),
-            )),
-        }
     }
 }
 

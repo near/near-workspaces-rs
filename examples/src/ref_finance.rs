@@ -4,8 +4,8 @@ use std::convert::TryInto;
 use near_gas::NearGas;
 use near_workspaces::network::Sandbox;
 use near_workspaces::types::NearToken;
+use near_workspaces::BlockHeight;
 use near_workspaces::{Account, AccountId, Contract, Worker};
-use near_workspaces::{BlockHeight, DevNetwork};
 use serde_json::json;
 
 const FT_CONTRACT_FILEPATH: &str = "./examples/res/fungible_token.wasm";
@@ -185,13 +185,12 @@ async fn deposit_tokens(
 }
 
 /// Create our own custom Fungible Token contract and setup the initial state.
-async fn create_custom_ft(
-    owner: &Account,
-    worker: &Worker<impl DevNetwork>,
-) -> anyhow::Result<Contract> {
+async fn create_custom_ft(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
     let ft: Contract = worker
-        .dev_deploy(&std::fs::read(FT_CONTRACT_FILEPATH)?)
-        .await?;
+        .root_account()?
+        .deploy(&std::fs::read(FT_CONTRACT_FILEPATH)?)
+        .await?
+        .into_result()?;
 
     // Initialize our FT contract with owner metadata and total supply available
     // to be traded and transferred into other contracts such as Ref-Finance
