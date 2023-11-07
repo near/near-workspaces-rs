@@ -150,6 +150,20 @@ impl Account {
         )
     }
 
+    pub async fn create_subaccount_and_deploy<'a, 'b>(
+        &'a self,
+        new_account_id: &'b str,
+        wasm: &'b [u8],
+    ) -> Result<Execution<Contract>> {
+        self.create_subaccount(new_account_id)
+            .initial_balance(super::DEFAULT_DEPOSIT)
+            .transact()
+            .await?
+            .result
+            .deploy(wasm)
+            .await
+    }
+
     /// Deploy contract code or WASM bytes to the account, and return us a new
     /// [`Contract`] object that we can use to interact with the contract.
     pub async fn deploy(&self, wasm: &[u8]) -> Result<Execution<Contract>> {
@@ -159,9 +173,14 @@ impl Account {
             .deploy(&self.signer, self.id(), wasm.as_ref().into())
             .await?;
 
+        let details = ExecutionFinalResult::from_view(outcome);
+        for callback in &self.worker.tx_callbacks {
+            callback(details.total_gas_burnt)?;
+        }
+
         Ok(Execution {
             result: Contract::new(self.signer().clone(), self.worker.clone()),
-            details: ExecutionFinalResult::from_view(outcome),
+            details,
         })
     }
 

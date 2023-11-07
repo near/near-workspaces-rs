@@ -23,6 +23,7 @@ async fn cross_contract_create_contract(
         .map_err(Into::into)
 }
 
+#[ignore = "FIXME: tla account creation reserved for `registrar`"]
 #[tokio::test]
 async fn test_cross_contract_create_contract() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
@@ -54,6 +55,7 @@ async fn test_cross_contract_create_contract() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore = "FIXME: tla account creation reserved for `registrar`"]
 #[tokio::test]
 async fn test_cross_contract_calls() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
