@@ -33,15 +33,21 @@ async fn test_cross_contract_create_contract() -> anyhow::Result<()> {
         .into_result()?;
     let status_amt = NearToken::from_near(35);
 
-    // Expect the creation of a top level account to fail.
-    let status_id: AccountId = "status-top-level-account-long-name".parse().unwrap();
-    let outcome = cross_contract_create_contract(&status_id, &status_amt, &contract).await?;
-    let failures = outcome.failures();
-    assert!(
-        failures.len() == 1,
-        "Expected one receipt failure for creating a top level account, but got {} failures",
-        failures.len()
-    );
+    #[cfg(feature = "experimental")]
+    if let Ok(conf) = worker.genesis_config().await {
+        if conf.protocol_version >= 64 {
+            // Expect the creation of a top level account to fail.
+            let status_id: AccountId = "status-top-level-account-long-name".parse().unwrap();
+            let outcome =
+                cross_contract_create_contract(&status_id, &status_amt, &contract).await?;
+            let failures = outcome.failures();
+            assert!(
+                    failures.len() == 1,
+                    "Expected one receipt failure for creating a top level account, but got {} failures",
+                    failures.len()
+                );
+        }
+    }
 
     // Expect the creation of a subaccount like "status.{contract_id}" to pass.
     let status_id: AccountId = format!("status.{}", contract.id()).parse().unwrap();
