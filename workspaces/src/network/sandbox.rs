@@ -7,20 +7,19 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::state_record::StateRecord;
 use near_sandbox_utils as sandbox;
 
-#[allow(deprecated)]
-use super::TopLevelAccountCreator;
-
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
+use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{Execution, ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, SecretKey, DEFAULT_DEPOSIT};
+use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
 use crate::{Account, Contract, Network, Worker};
 
+// Constant taken from nearcore crate to avoid dependency
+const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
 /// Local sandboxed environment/network, which can be used to test without interacting with
 /// networks that are online such as mainnet and testnet. Look at [`workspaces::sandbox`]
 /// for how to spin up a sandboxed network and interact with it.
@@ -34,6 +33,18 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
+    pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
+        match &self.server.validator_key {
+            ValidatorKey::HomeDir(home_dir) => {
+                let path = home_dir.join("validator_key.json");
+                InMemorySigner::from_file(&path)
+            }
+            ValidatorKey::Known(account_id, secret_key) => Ok(InMemorySigner::from_secret_key(
+                account_id.clone(),
+                secret_key.clone(),
+            )),
+        }
+    }
     pub(crate) async fn from_builder_with_version<'a>(
         build: NetworkBuilder<'a, Self>,
         version: &str,
@@ -108,7 +119,6 @@ impl FromNetworkBuilder for Sandbox {
 impl AllowDevAccountCreation for Sandbox {}
 
 #[async_trait]
-#[allow(deprecated)]
 impl TopLevelAccountCreator for Sandbox {
     async fn create_tla(
         &self,
@@ -165,19 +175,6 @@ impl NetworkClient for Sandbox {
 impl NetworkInfo for Sandbox {
     fn info(&self) -> &Info {
         &self.info
-    }
-
-    fn root_signer(&self) -> Result<InMemorySigner> {
-        match &self.server.validator_key {
-            ValidatorKey::HomeDir(home_dir) => {
-                let path = home_dir.join("validator_key.json");
-                InMemorySigner::from_file(&path)
-            }
-            ValidatorKey::Known(account_id, secret_key) => Ok(InMemorySigner::from_secret_key(
-                account_id.clone(),
-                secret_key.clone(),
-            )),
-        }
     }
 }
 

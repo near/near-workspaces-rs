@@ -17,9 +17,6 @@ pub mod testnet;
 
 pub(crate) use variants::DEV_ACCOUNT_SEED;
 
-#[allow(deprecated)]
-pub use self::variants::TopLevelAccountCreator;
-
 pub use self::betanet::Betanet;
 pub use self::custom::Custom;
 pub use self::info::Info;
@@ -27,4 +24,6 @@ pub use self::mainnet::Mainnet;
 pub use self::sandbox::Sandbox;
 pub use self::server::{pick_unused_port, ValidatorKey};
 pub use self::testnet::Testnet;
-pub use self::variants::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
+pub use self::variants::{
+    AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator,
+};
