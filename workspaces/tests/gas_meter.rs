@@ -510,6 +510,6 @@ async fn test_dropped_gas_meter() -> anyhow::Result<()> {
     Ok(())
 }
 
-const fn as_near(gas: Gas) -> NearToken {
+fn as_near(gas: Gas) -> NearToken {
     NearToken::from_yoctonear(gas.as_gas() as u128)
 }
