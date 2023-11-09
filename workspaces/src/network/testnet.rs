@@ -7,9 +7,12 @@ use url::Url;
 
 use near_primitives::views::ExecutionStatusView;
 
+#[allow(deprecated)]
+use crate::network::TopLevelAccountCreator;
+
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
-use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
@@ -66,6 +69,7 @@ impl std::fmt::Debug for Testnet {
 
 impl AllowDevAccountCreation for Testnet {}
 
+#[allow(deprecated)]
 #[async_trait]
 impl TopLevelAccountCreator for Testnet {
     async fn create_tla(

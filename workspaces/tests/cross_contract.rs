@@ -29,25 +29,29 @@ async fn test_cross_contract_create_contract() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(FACTORY_CONTRACT).await?;
     let status_amt = NearToken::from_near(35);
 
-    // Expect to fail for trying to create a new contract account with too short of a
-    // top level account name, such as purely just "status"
-    let status_id: AccountId = "status".parse().unwrap();
-    let outcome = cross_contract_create_contract(&status_id, &status_amt, &contract).await?;
-    let failures = outcome.failures();
-    assert!(
-        failures.len() == 1,
-        "Expected one receipt failure for creating too short of a TLA, but got {} failures",
-        failures.len()
-    );
+    #[cfg(feature = "experimental")]
+    if let Ok(conf) = worker.genesis_config().await {
+        if conf.protocol_version >= 64 {
+            // Expect the creation of a top level account to fail.
+            let status_id: AccountId = "status-top-level-account-long-name".parse().unwrap();
+            let outcome =
+                cross_contract_create_contract(&status_id, &status_amt, &contract).await?;
+            let failures = outcome.failures();
+            assert!(
+                    failures.len() == 1,
+                    "Expected one receipt failure for creating a top level account, but got {} failures",
+                    failures.len()
+                );
+        }
+    }
 
-    // Expect to succeed after calling into the contract with expected length for a
-    // top level account.
-    let status_id: AccountId = "status-top-level-account-long-name".parse().unwrap();
+    // Expect the creation of a subaccount like "status.{contract_id}" to pass.
+    let status_id: AccountId = format!("status.{}", contract.id()).parse().unwrap();
     let outcome = cross_contract_create_contract(&status_id, &status_amt, &contract).await?;
     let failures = outcome.failures();
     assert!(
         failures.is_empty(),
-        "Expected no failures for creating a TLA, but got {} failures",
+        "Expected no failures for creating a subaccount, but got {} failures",
         failures.len(),
     );
 
@@ -60,7 +64,8 @@ async fn test_cross_contract_calls() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(FACTORY_CONTRACT).await?;
     let status_amt = NearToken::from_near(35);
 
-    let status_id: AccountId = "status-top-level-account-long-name".parse().unwrap();
+    // "status.{contract_id}" is the account that will be created by the factory contract.
+    let status_id: AccountId = format!("status.{}", contract.id()).parse().unwrap();
     cross_contract_create_contract(&status_id, &status_amt, &contract)
         .await?
         .into_result()?;

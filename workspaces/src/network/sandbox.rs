@@ -7,19 +7,20 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::state_record::StateRecord;
 use near_sandbox_utils as sandbox;
 
+#[allow(deprecated)]
+use super::TopLevelAccountCreator;
+
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{Execution, ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
+use crate::types::{AccountId, InMemorySigner, SecretKey, DEFAULT_DEPOSIT};
 use crate::{Account, Contract, Network, Worker};
 
-// Constant taken from nearcore crate to avoid dependency
-const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
 /// Local sandboxed environment/network, which can be used to test without interacting with
 /// networks that are online such as mainnet and testnet. Look at [`workspaces::sandbox`]
 /// for how to spin up a sandboxed network and interact with it.
@@ -118,6 +119,7 @@ impl FromNetworkBuilder for Sandbox {
 
 impl AllowDevAccountCreation for Sandbox {}
 
+#[allow(deprecated)]
 #[async_trait]
 impl TopLevelAccountCreator for Sandbox {
     async fn create_tla(

@@ -15,6 +15,7 @@ pub trait NetworkInfo {
     fn info(&self) -> &Info;
 }
 
+#[deprecated = "only the registrar can create top level accounts as of Protocol >=64"]
 #[async_trait]
 pub trait TopLevelAccountCreator {
     async fn create_tla(
@@ -37,9 +38,10 @@ pub trait TopLevelAccountCreator {
 // This trait acts as segmented boundary for only specific networks such as sandbox and testnet.
 pub trait AllowDevAccountCreation {}
 
+#[allow(deprecated)]
 impl<T> Worker<T>
 where
-    T: DevNetwork + TopLevelAccountCreator + 'static,
+    T: DevNetwork + TopLevelAccountCreator + 'static + NetworkInfo,
 {
     pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<Execution<Account>> {
         let res = self
@@ -73,7 +75,7 @@ where
     }
 
     pub async fn dev_generate(&self) -> (AccountId, SecretKey) {
-        let id = crate::rpc::tool::random_account_id();
+        let id = crate::rpc::tool::random_account_id(self.info().root_id.clone());
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         (id, sk)
     }
@@ -98,8 +100,10 @@ pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
+#[allow(deprecated)]
 pub trait DevNetwork: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static {}
 
+#[allow(deprecated)]
 impl<T> DevNetwork for T where
     T: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static
 {
