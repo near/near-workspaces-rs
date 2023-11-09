@@ -46,26 +46,21 @@ pub struct Agent {
 async fn main() -> anyhow::Result<()> {
     // Spawn sandbox as normal and get us a local blockchain for us to interact and toy with:
     let worker = near_workspaces::sandbox().await?;
-    let account = worker.root_account()?;
 
     // Initialize counter contract, which will be pointed to in the manager contract to schedule
     // a task later to increment the counter, inside counter contract.
-    let counter_contract = account.deploy(COUNTER_CONTRACT).await?.into_result()?;
+    let counter_contract = worker.dev_deploy(COUNTER_CONTRACT).await?;
 
     // deploy the manager contract so we can schedule tasks via our agents.
-    let manager_contract = account.deploy(MANAGER_CONTRACT).await?.into_result()?;
+    let manager_contract = worker.dev_deploy(MANAGER_CONTRACT).await?;
     manager_contract
         .call("new")
         .transact()
         .await?
         .into_result()?;
 
-    // Create a croncat account with agent subaccounts to schedule tasks.
-    let croncat = account
-        .create_subaccount("croncat")
-        .transact()
-        .await?
-        .into_result()?;
+    // Create a root croncat account with agent subaccounts to schedule tasks.
+    let croncat = worker.dev_create_account().await?;
 
     // This will setup a task to call into the counter contract, with a cadence of 1 hour.
     println!("Creating task for `counter.increment`");

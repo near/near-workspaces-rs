@@ -5,7 +5,7 @@ const NOOP_CONTRACT_WASM_FILEPATH: &str = "./examples/res/noop_contract.wasm";
 async fn main() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     let wasm = std::fs::read(NOOP_CONTRACT_WASM_FILEPATH)?;
-    let contract = worker.root_account()?.deploy(&wasm).await?.into_result()?;
+    let contract = worker.dev_deploy(&wasm).await?;
 
     let res = contract.call("noop").transact().await?.json::<()>();
 

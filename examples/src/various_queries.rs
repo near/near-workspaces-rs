@@ -27,12 +27,7 @@ async fn main() -> anyhow::Result<()> {
         .await?;
     println!("Latest Chunk: {chunk:#?}");
 
-    let bob = worker
-        .root_account()?
-        .create_subaccount("bob")
-        .transact()
-        .await?
-        .into_result()?;
+    let bob = worker.dev_create_account().await?;
     println!("\nCreated bob's account with id {:?}", bob.id());
 
     // Show all the access keys relating to bob:
@@ -40,10 +35,8 @@ async fn main() -> anyhow::Result<()> {
     println!("bob's access keys: {access_keys:?}");
 
     let status_msg = worker
-        .root_account()?
-        .deploy(include_bytes!("../res/status_message.wasm"))
-        .await?
-        .into_result()?;
+        .dev_deploy(include_bytes!("../res/status_message.wasm"))
+        .await?;
 
     // Let's have bob set the "Hello" message into the contract.
     let outcome = bob

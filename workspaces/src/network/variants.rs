@@ -1,8 +1,8 @@
 use crate::network::Info;
 use crate::result::{Execution, Result};
 use crate::rpc::client::Client;
-use crate::types::{AccountId, KeyType, SecretKey};
-use crate::{Account, Contract, Worker};
+use crate::types::{AccountId, KeyType, SecretKey, DEFAULT_DEPOSIT};
+use crate::{Account, Contract, InMemorySigner, Worker};
 use async_trait::async_trait;
 
 pub(crate) const DEV_ACCOUNT_SEED: &str = "testificate";
@@ -13,6 +13,12 @@ pub trait NetworkClient {
 
 pub trait NetworkInfo {
     fn info(&self) -> &Info;
+
+    /// Using the keystore path, if the credentials exists, we can load the signer from the
+    /// file.
+    fn root_signer(&self) -> Result<InMemorySigner> {
+        InMemorySigner::from_file(&self.info().keystore_path)
+    }
 }
 
 #[deprecated = "top level account creation is not possible in Protocol >=64"]
@@ -43,7 +49,7 @@ impl<T> Worker<T>
 where
     T: DevNetwork + TopLevelAccountCreator + 'static,
 {
-    #[deprecated = "use Account::create_subaccount() instead, tla account creation is not possible in Protocol >=64"]
+    #[deprecated = "use dev_create_account() instead, tla account creation is not possible in Protocol >=64"]
     pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<Execution<Account>> {
         let res = self
             .workspace
@@ -57,7 +63,7 @@ where
         Ok(res)
     }
 
-    #[deprecated = "use Account::deploy() instead, tla account creation is not possible in Protocol >=64"]
+    #[deprecated = "use create_account_and_deploy() instead, tla account creation is not possible in Protocol >=64"]
     pub async fn create_tla_and_deploy(
         &self,
         id: AccountId,
@@ -82,18 +88,26 @@ where
         (id, sk)
     }
 
-    #[deprecated = "use Account::create_subaccount() instead, tla account creation is not possible in Protocol >=64"]
     pub async fn dev_create_account(&self) -> Result<Account> {
-        let (id, sk) = self.dev_generate().await;
-        let account = self.create_tla(id.clone(), sk).await?;
+        let id = crate::rpc::tool::random_account_id();
+        let root_account = self.workspace.root_signer()?;
+
+        let account = Account::new(root_account, self.clone().coerce())
+            .create_subaccount(&id)
+            .initial_balance(DEFAULT_DEPOSIT)
+            .transact()
+            .await?;
+
         Ok(account.into_result()?)
     }
 
-    #[deprecated = "use Account::deploy() instead, tla account creation is not possible in Protocol >=64"]
     pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
-        let (id, sk) = self.dev_generate().await;
-        let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
-        Ok(contract.into_result()?)
+        Ok(self
+            .dev_create_account()
+            .await?
+            .deploy(wasm)
+            .await?
+            .into_result()?)
     }
 }
 

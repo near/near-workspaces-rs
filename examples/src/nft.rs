@@ -7,7 +7,7 @@ const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 async fn main() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
-    let contract = worker.root_account()?.deploy(&wasm).await?.into_result()?;
+    let contract = worker.dev_deploy(&wasm).await?;
 
     let outcome = contract
         .call("new_default_meta")

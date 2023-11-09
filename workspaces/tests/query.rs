@@ -3,12 +3,9 @@ use near_workspaces::{network::Sandbox, Contract, Worker};
 
 async fn init() -> anyhow::Result<(Worker<Sandbox>, Contract)> {
     let worker = near_workspaces::sandbox().await?;
-
     let status_msg = worker
-        .root_account()?
-        .deploy(include_bytes!("../../examples/res/status_message.wasm"))
-        .await?
-        .into_result()?;
+        .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
+        .await?;
 
     Ok((worker, status_msg))
 }

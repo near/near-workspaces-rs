@@ -9,7 +9,8 @@ use std::path::Path;
 #[test(tokio::test)]
 async fn test_subaccount_creation() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
-    let account = worker.root_account()?;
+    let account = worker.dev_create_account().await?;
+
     let sub = account
         .create_subaccount("subaccount")
         .transact()
@@ -39,20 +40,9 @@ async fn test_transfer_near() -> anyhow::Result<()> {
     const INITIAL_BALANCE: NearToken = NearToken::from_near(100);
 
     let worker = near_workspaces::sandbox().await?;
-    let account = worker.root_account()?;
     let (alice, bob) = (
-        account
-            .create_subaccount("alice")
-            .initial_balance(INITIAL_BALANCE)
-            .transact()
-            .await?
-            .into_result()?,
-        account
-            .create_subaccount("bob")
-            .initial_balance(INITIAL_BALANCE)
-            .transact()
-            .await?
-            .into_result()?,
+        worker.dev_create_account().await?,
+        worker.dev_create_account().await?,
     );
 
     assert_eq!(alice.view_account().await?.balance, INITIAL_BALANCE);
@@ -61,7 +51,7 @@ async fn test_transfer_near() -> anyhow::Result<()> {
     const SENT_AMOUNT: NearToken = NearToken::from_yoctonear(500_000_000);
 
     // transfer 500_000_000 token from alice to bob
-    _ = alice.transfer_near(bob.id(), SENT_AMOUNT).await?;
+    let _ = alice.transfer_near(bob.id(), SENT_AMOUNT).await?;
 
     // Assert the the tokens have been transferred.
     assert_eq!(
@@ -78,20 +68,10 @@ async fn test_transfer_near() -> anyhow::Result<()> {
 #[test(tokio::test)]
 async fn test_delete_account() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
-    let account = worker.root_account()?;
+
     let (alice, bob) = (
-        account
-            .create_subaccount("alice")
-            .initial_balance(NearToken::from_near(100))
-            .transact()
-            .await?
-            .into_result()?,
-        account
-            .create_subaccount("bob")
-            .initial_balance(NearToken::from_near(100))
-            .transact()
-            .await?
-            .into_result()?,
+        worker.dev_create_account().await?,
+        worker.dev_create_account().await?,
     );
 
     _ = alice.clone().delete_account(bob.id()).await?;

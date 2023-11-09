@@ -7,13 +7,8 @@ const STATUS_MSG_CONTRACT: &[u8] = include_bytes!("../../examples/res/status_mes
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_parallel() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
-    let account = worker.root_account()?;
-    let contract = account.deploy(STATUS_MSG_CONTRACT).await?.into_result()?;
-    let account = account
-        .create_subaccount("alice")
-        .transact()
-        .await?
-        .into_result()?;
+    let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
+    let account = worker.dev_create_account().await?;
 
     let parallel_tasks = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
         .iter()
@@ -50,13 +45,8 @@ async fn test_parallel() -> anyhow::Result<()> {
 #[tokio::test]
 async fn test_parallel_async() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
-    let account = worker.root_account()?;
-    let contract = account.deploy(STATUS_MSG_CONTRACT).await?.into_result()?;
-    let account = account
-        .create_subaccount("alice")
-        .transact()
-        .await?
-        .into_result()?;
+    let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
+    let account = worker.dev_create_account().await?;
 
     // nonce of access key before any transactions occured.
     let nonce_start = worker

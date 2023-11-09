@@ -6,7 +6,7 @@ use test_log::test;
 async fn test_dev_deploy_project() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     let wasm = near_workspaces::compile_project("./tests/test-contracts/status-message").await?;
-    let contract = worker.root_account()?.deploy(&wasm).await?.into_result()?;
+    let contract = worker.dev_deploy(&wasm).await?;
 
     contract
         .call("set_status")
