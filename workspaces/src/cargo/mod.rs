@@ -24,7 +24,11 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
         release: true,
         embed_abi: true,
         doc: false,
-        color: None,
+        color: Some(
+            "auto"
+                .parse()
+                .expect("should resolve to ColorPreference::Always"),
+        ),
         no_abi: true,
         out_dir: None,
         manifest_path: Some(Utf8PathBufInner(
