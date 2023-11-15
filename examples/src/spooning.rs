@@ -81,15 +81,16 @@ async fn main() -> anyhow::Result<()> {
             .parse()
             .map_err(anyhow::Error::msg)?;
 
-        let mut state_items = worker.view_state(&contract_id).await?;
+        let state = worker
+            .view_state(&contract_id)
+            .await?
+            .remove(b"STATE".as_slice())
+            .unwrap();
 
-        let state = state_items.remove(b"STATE".as_slice()).unwrap();
-        let status_msg = StatusMessage::try_from_slice(&state)?;
-
-        (contract_id, status_msg)
+        (contract_id, state)
     };
 
-    info!(target: "spooning", "Testnet: {:?}", status_msg);
+    info!(target: "spooning", "Testnet: {:?}", StatusMessage::try_from_slice(&status_msg)?);
 
     // Create our sandboxed environment and grab a worker to do stuff in it:
     let worker = near_workspaces::sandbox().await?;
@@ -99,7 +100,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Patch our testnet STATE into our local sandbox:
     worker
-        .patch_state(sandbox_contract.id(), b"STATE", &status_msg.try_to_vec()?)
+        .patch_state(sandbox_contract.id(), b"STATE", &status_msg)
         .await?;
 
     // Now grab the state to see that it has indeed been patched:
