@@ -7,6 +7,9 @@ pub(crate) mod block;
 pub(crate) mod chunk;
 pub(crate) mod gas_meter;
 
+#[cfg(feature = "interop_sdk")]
+mod sdk;
+
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display};
 use std::io;
