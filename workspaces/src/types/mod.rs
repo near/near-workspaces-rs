@@ -7,9 +7,6 @@ pub(crate) mod block;
 pub(crate) mod chunk;
 pub(crate) mod gas_meter;
 
-#[cfg(feature = "interop_sdk")]
-mod sdk;
-
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display};
 use std::io;
@@ -144,7 +141,7 @@ impl PublicKey {
             },
         )?))
     }
-
+    #[allow(dead_code)]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
         let key_type = KeyType::try_from(bytes[0])?;
         Ok(Self(
