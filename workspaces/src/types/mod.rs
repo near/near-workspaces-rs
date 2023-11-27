@@ -145,6 +145,7 @@ impl PublicKey {
         )?))
     }
 
+    #[cfg(feature = "interop_sdk")]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
         let key_type = KeyType::try_from(bytes[0])?;
         Ok(Self(
