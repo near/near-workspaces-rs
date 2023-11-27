@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
             "token_owner_id": contract.id(),
             "token_metadata": {
                 "title": "Olympus Mons",
-                "dscription": "Tallest mountain in charted solar system",
+                "description": "Tallest mountain in charted solar system",
                 "copies": 1,
             },
         }))

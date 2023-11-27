@@ -32,7 +32,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
         .transact()
         .await?;
 
-    // NOTE: We are not pulling down the contract's data here, so we'll need to initalize
+    // NOTE: We are not pulling down the contract's data here, so we'll need to initialize
     // our own set of metadata. This is because the contract's data is too big for the rpc
     // service to pull down (i.e. greater than 50kb).
 
@@ -58,7 +58,7 @@ async fn create_ref(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result
     Ok(ref_finance)
 }
 
-/// Pull down the WNear contract from mainnet and initilize it with our own metadata.
+/// Pull down the WNear contract from mainnet and initialize it with our own metadata.
 async fn create_wnear(owner: &Account, worker: &Worker<Sandbox>) -> anyhow::Result<Contract> {
     let mainnet = near_workspaces::mainnet_archival().await?;
     let wnear_id: AccountId = "wrap.near".to_string().try_into()?;

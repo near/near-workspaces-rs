@@ -1,6 +1,6 @@
 # Utilizing custom sandbox node
 
-This example will show us how to spin up a sandbox node of our own choosing. Follow the guide in https://github.com/near/sandbox to download it. This is mainly needed if a user wants to manage their own node and/or not require each test to spin up a new node each time.
+This example will show us how to spin up a sandbox node of our own choosing. Follow the guide in <https://github.com/near/sandbox> to download it. This is mainly needed if a user wants to manage their own node and/or not require each test to spin up a new node each time.
 
 Then initialize the chain via `init` and run it:
 
