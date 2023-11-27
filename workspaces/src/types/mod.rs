@@ -27,8 +27,7 @@ use crate::result::Result;
 
 pub use self::account::{AccountDetails, AccountDetailsPatch};
 pub use self::chunk::{Chunk, ChunkHeader};
-
-pub use self::gas_meter::{GasHook, GasMeter};
+pub use self::gas_meter::GasMeter;
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
