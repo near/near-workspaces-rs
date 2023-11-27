@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
         .block_height(0)
         // can instead use .block_hash(CryptoHash) as well
         .await?;
-    println!("Sandbox Geneis Block: {genesis_block:#?}");
+    println!("Sandbox Genesis Block: {genesis_block:#?}");
 
     // Reference the chunk via the block hash we queried for earlier:
     let shard_id = 0;
@@ -48,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
         .await?
         .into_result()?;
     println!(
-        "Bob burnt {} gas callling into `set_status('Hello')`",
+        "Bob burnt {} gas calling into `set_status('Hello')`",
         outcome.total_gas_burnt
     );
 
@@ -66,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
         .await?
         .into_result()?;
     println!(
-        "Bob burnt {} gas callling into `set_status('World')`",
+        "Bob burnt {} gas calling into `set_status('World')`",
         outcome.total_gas_burnt
     );
 
