@@ -90,3 +90,7 @@ path = "src/noop.rs"
 [[example]]
 name = "custom_network"
 path = "src/custom_network.rs"
+
+[[example]]
+name = "status"
+path = "src/status.rs"
