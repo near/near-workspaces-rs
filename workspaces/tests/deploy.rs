@@ -64,7 +64,7 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
     let mut home_dir = std::env::temp_dir();
     home_dir.push(format!("test-sandbox-{}", rpc_port));
 
-    // intialize chain data with supplied home dir
+    // initialize chain data with supplied home dir
     let output = near_sandbox_utils::init(&home_dir)?
         .wait_with_output()
         .await
