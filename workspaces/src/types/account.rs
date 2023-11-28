@@ -156,7 +156,7 @@ impl Account {
         let outcome = self
             .worker
             .client()
-            .deploy(&self.signer, self.id(), wasm.as_ref().into())
+            .deploy(&self.signer, self.id(), wasm.into())
             .await?;
 
         Ok(Execution {

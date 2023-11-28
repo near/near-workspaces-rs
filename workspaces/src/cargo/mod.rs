@@ -14,6 +14,7 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
         )),
         _ => ErrorKind::Io.custom(e),
     })?;
+
     let cargo_near_build_command = cargo_near::BuildCommand {
         release: true,
         embed_abi: true,
@@ -28,6 +29,7 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
                 .map_err(|e| ErrorKind::Io.custom(e))?,
         ),
     };
+
     let compile_artifact =
         cargo_near::build::run(cargo_near_build_command).map_err(|e| ErrorKind::Io.custom(e))?;
 
