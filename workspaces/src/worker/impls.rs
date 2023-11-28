@@ -1,3 +1,4 @@
+use crate::error::ErrorKind;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
 use crate::operations::{CallTransaction, Function};
@@ -274,6 +275,33 @@ where
             signer.clone(),
             function,
         )
+    }
+
+    /// Get a list of accounts that are available for the network specified.
+    /// The accounts are referenced from the keystore directory.
+    /// Returning a list of [`Account`]s if they are also present in the network.
+    pub async fn accounts(&self) -> Result<Vec<Account>> {
+        let mut accounts = vec![];
+        if !self.info().keystore_path.exists() {
+            return Ok(accounts);
+        }
+
+        let entries = std::fs::read_dir(&self.info().keystore_path)
+            .map_err(|e| ErrorKind::Io.custom(e))?
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, std::io::Error>>()
+            .map_err(|e| ErrorKind::Io.custom(e))?;
+
+        for entry in entries {
+            let account = Account::from_file(&entry, self)?;
+            // If we can't view the account from the network, don't return it.
+            if self.view_account(account.id()).await.is_err() {
+                continue;
+            }
+            accounts.push(account);
+        }
+
+        Ok(accounts)
     }
 }
 

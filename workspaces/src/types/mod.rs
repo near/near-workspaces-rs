@@ -18,7 +18,8 @@ use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
-
+#[cfg(feature = "unstable")]
+use near_crypto::KeyFile;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
@@ -297,6 +298,23 @@ impl InMemorySigner {
             self.account_id.clone(),
             self.secret_key.0.clone(),
         )
+    }
+
+    #[cfg(feature = "unstable")]
+    pub(crate) fn write_to_file(&self, id: &AccountId, path: &Path) -> Result<()> {
+        if !path.exists() {
+            std::fs::create_dir_all(path).map_err(|e| ErrorKind::Io.custom(e))?;
+        }
+
+        let keyfile = KeyFile {
+            account_id: self.account_id.clone(),
+            public_key: self.secret_key.public_key().into(),
+            secret_key: self.secret_key.clone().0,
+        };
+
+        keyfile
+            .write_to_file(&path.join(format!("{}.json", id)))
+            .map_err(|e| ErrorKind::Io.custom(e))
     }
 }
 

@@ -334,6 +334,17 @@ async fn test_contract() -> anyhow::Result<()> {
 
 For a full example, take a look at [workspaces/tests/deploy_project.rs](https://github.com/near/near-workspaces-rs/blob/main/workspaces/tests/deploy_project.rs).
 
+### Account Credentials Persistence
+
+Note, this is an unstable feature and will very likely change. To enable it, add the `unstable` feature flag to `workspaces` dependency in `Cargo.toml`.
+
+TLA-Accounts created are persisted and can be reused across tests for a specific network like testnet or a persistent sandbox node.
+A directory is created in the working directory of the test. For testnet you get `.near-credentials/testnet` and for sandbox you get `.near-credentials/sandbox` with the accounts created in the respective directories.
+
+Garbage collection for the account files is left to the user, this is to allow for more flexibility in how the accounts are managed and used.
+
+It is recommended to have the `.near-credentials` directory in your `.gitignore` file.
+
 ### Other Features
 
 Other features can be directly found in the `examples/` folder, with some documentation outlining how they can be used.
