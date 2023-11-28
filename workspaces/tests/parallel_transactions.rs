@@ -48,7 +48,7 @@ async fn test_parallel_async() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
     let account = worker.dev_create_account().await?;
 
-    // nonce of access key before any transactions occured.
+    // nonce of access key before any transactions occurred.
     let nonce_start = worker
         .view_access_key(account.id(), &account.secret_key().public_key())
         .await?
