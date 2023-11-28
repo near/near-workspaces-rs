@@ -186,9 +186,9 @@ pub async fn run_scheduled_tasks(
         NearToken::from_yoctonear(2260000000000000000000u128)
     );
 
-    // This shows how much the agent has profitted from executing the task:
+    // This shows how much the agent has profited from executing the task:
     println!(
-        "Agent profitted {} yN and has been transferred to the agent's account",
+        "Agent profited {} yN and has been transferred to the agent's account",
         before_withdraw.as_yoctonear() - agent_details.balance.as_yoctonear()
     );
 

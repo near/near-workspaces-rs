@@ -13,9 +13,9 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 /// overload testnet and have to go through a couple more cycles than we have to, to showcase spooning.
 ///
 /// If you'd like a different account to deploy it to, run the following:
-/// ```norun
+/// ```rust, norun
 /// async fn deploy_testnet() -> anyhow::Result<()> {
-///     let worker = worspaces::testnet().await?;
+///     let worker = near_workspaces::testnet().await?;
 ///
 ///     let contract = deploy_status_contract(worker, "hello from testnet").await?;
 ///     println!("{}", contract.id());
@@ -114,7 +114,7 @@ async fn main() -> anyhow::Result<()> {
     info!(target: "spooning", "New status patched: {:?}", status);
     assert_eq!(&status, "hello from testnet");
 
-    // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
+    // See that sandbox state was overridden. Grabbing get_status(sandbox_contract_id) should yield Null
     let result: Option<String> = sandbox_contract
         .view("get_status")
         .args_json(json!({

@@ -99,7 +99,7 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
             "token_owner_id": contract.id(),
             "token_metadata": {
                 "title": "Olympus Mons",
-                "dscription": "Tallest mountain in charted solar system",
+                "description": "Tallest mountain in charted solar system",
                 "copies": 1,
             },
         }))
@@ -137,7 +137,7 @@ More standalone examples can be found in `examples/src/*.rs`.
 
 To run the above NFT example, execute:
 
-```
+```sh
 cargo run --example nft
 ```
 
