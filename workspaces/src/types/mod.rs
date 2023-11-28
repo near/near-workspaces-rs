@@ -5,6 +5,7 @@
 pub(crate) mod account;
 pub(crate) mod block;
 pub(crate) mod chunk;
+pub(crate) mod gas_meter;
 
 #[cfg(feature = "interop_sdk")]
 mod sdk;
@@ -26,6 +27,7 @@ use crate::result::Result;
 
 pub use self::account::{AccountDetails, AccountDetailsPatch};
 pub use self::chunk::{Chunk, ChunkHeader};
+pub use self::gas_meter::GasMeter;
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
@@ -33,9 +35,8 @@ pub type Nonce = u64;
 /// Gas units used in the execution of transactions. For a more in depth description of
 /// how and where it can be used, visit [Gas](https://docs.near.org/docs/concepts/gas).
 pub use near_gas::NearGas as Gas;
-/// Balance is type for storing amounts of tokens. Usually represents the amount of tokens
-/// in yoctoNear (1e-24).
-pub type Balance = u128;
+
+pub use near_token::NearToken;
 
 /// Height of a specific block
 pub type BlockHeight = u64;
@@ -101,8 +102,8 @@ impl TryFrom<u8> for KeyType {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(KeyType::ED25519),
-            1 => Ok(KeyType::SECP256K1),
+            0 => Ok(Self::ED25519),
+            1 => Ok(Self::SECP256K1),
             unknown_key_type => Err(ErrorKind::DataConversion
                 .custom(format!("Unknown key type provided: {unknown_key_type}"))),
         }
@@ -143,6 +144,7 @@ impl PublicKey {
         )?))
     }
 
+    #[cfg(feature = "interop_sdk")]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
         let key_type = KeyType::try_from(bytes[0])?;
         Ok(Self(
@@ -334,7 +336,7 @@ impl TryFrom<&[u8]> for CryptoHash {
         }
         let mut buf = [0; 32];
         buf.copy_from_slice(bytes);
-        Ok(CryptoHash(buf))
+        Ok(Self(buf))
     }
 }
 
@@ -391,7 +393,7 @@ impl AccessKey {
     pub fn function_call_access(
         receiver_id: &AccountId,
         method_names: &[&str],
-        allowance: Option<Balance>,
+        allowance: Option<NearToken>,
     ) -> Self {
         Self {
             nonce: 0,
@@ -442,7 +444,7 @@ pub struct FunctionCallPermission {
     /// `None` means unlimited allowance.
     /// NOTE: To change or increase the allowance, the old access key needs to be deleted and a new
     /// access key should be created.
-    pub allowance: Option<Balance>,
+    pub allowance: Option<NearToken>,
 
     // This isn't an AccountId because already existing records in testnet genesis have invalid
     // values for this field (see: https://github.com/near/nearcore/pull/4621#issuecomment-892099860)
@@ -464,7 +466,7 @@ impl From<AccessKey> for near_primitives::account::AccessKey {
                 AccessKeyPermission::FunctionCall(function_call_permission) => {
                     near_primitives::account::AccessKeyPermission::FunctionCall(
                         near_primitives::account::FunctionCallPermission {
-                            allowance: function_call_permission.allowance,
+                            allowance: function_call_permission.allowance.map(|a| a.as_yoctonear()),
                             receiver_id: function_call_permission.receiver_id,
                             method_names: function_call_permission.method_names,
                         },
@@ -488,7 +490,7 @@ impl From<near_primitives::views::AccessKeyView> for AccessKey {
                     receiver_id,
                     method_names,
                 } => AccessKeyPermission::FunctionCall(FunctionCallPermission {
-                    allowance,
+                    allowance: allowance.map(NearToken::from_yoctonear),
                     receiver_id,
                     method_names,
                 }),

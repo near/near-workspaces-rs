@@ -1,4 +1,5 @@
 #![recursion_limit = "256"]
+use near_token::NearToken;
 use serde_json::{Map, Value};
 use test_log::test;
 
@@ -7,7 +8,7 @@ use std::path::Path;
 
 #[test(tokio::test)]
 async fn test_subaccount_creation() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let account = worker.dev_create_account().await?;
 
     let sub = account
@@ -36,8 +37,9 @@ async fn test_subaccount_creation() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_transfer_near() -> anyhow::Result<()> {
-    const INITIAL_BALANCE: u128 = 100 * 1_000_000_000_000_000_000_000_000;
-    let worker = workspaces::sandbox().await?;
+    const INITIAL_BALANCE: NearToken = NearToken::from_near(100);
+
+    let worker = near_workspaces::sandbox().await?;
     let (alice, bob) = (
         worker.dev_create_account().await?,
         worker.dev_create_account().await?,
@@ -46,7 +48,7 @@ async fn test_transfer_near() -> anyhow::Result<()> {
     assert_eq!(alice.view_account().await?.balance, INITIAL_BALANCE);
     assert_eq!(bob.view_account().await?.balance, INITIAL_BALANCE);
 
-    const SENT_AMOUNT: u128 = 500_000_000;
+    const SENT_AMOUNT: NearToken = NearToken::from_yoctonear(500_000_000);
 
     // transfer 500_000_000 token from alice to bob
     let _ = alice.transfer_near(bob.id(), SENT_AMOUNT).await?;
@@ -54,18 +56,18 @@ async fn test_transfer_near() -> anyhow::Result<()> {
     // Assert the the tokens have been transferred.
     assert_eq!(
         bob.view_account().await?.balance,
-        INITIAL_BALANCE + SENT_AMOUNT,
+        INITIAL_BALANCE.saturating_add(SENT_AMOUNT),
     );
 
     // We can only assert that the balance is less than the initial balance - sent amount because of the gas fees.
-    assert!(alice.view_account().await?.balance <= INITIAL_BALANCE - SENT_AMOUNT);
+    assert!(alice.view_account().await?.balance <= INITIAL_BALANCE.saturating_sub(SENT_AMOUNT));
 
     Ok(())
 }
 
 #[test(tokio::test)]
 async fn test_delete_account() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
 
     let (alice, bob) = (
         worker.dev_create_account().await?,
@@ -74,9 +76,9 @@ async fn test_delete_account() -> anyhow::Result<()> {
 
     _ = alice.clone().delete_account(bob.id()).await?;
 
-    // All sandbox accounts start with a balance of `100 * 1_000_000_000_000_000_000_000_000` tokens.
+    // All sandbox accounts start with a balance of 100 NEAR tokens.
     // On account deletion, alice's balance is debited to bob as beneficiary.
-    assert!(bob.view_account().await?.balance > 100 * 1_900_000_000_000_000_000_000_000,);
+    assert!(bob.view_account().await?.balance > NearToken::from_near(100));
 
     // Alice's account should be deleted.
     let res = alice.view_account().await;

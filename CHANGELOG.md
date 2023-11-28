@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.9.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.8.0...near-workspaces-v0.9.0) - 2023-10-30
+
+### Added
+- Require Send + Sync for T in Worker<T> to allow near-workspaces usage in multithreading async runtimes  ([#328](https://github.com/near/near-workspaces-rs/pull/328))
+- Added API for measuring gas ([#284](https://github.com/near/near-workspaces-rs/pull/284))
+
+### Fixed
+- Fixed await during acquired lock in rpc::client::fetch_tx_nonce ([#334](https://github.com/near/near-workspaces-rs/pull/334))
+
+### Other
+- [**breaking**] Migrate to use NearToken instead of raw u128 for balance variables to ensure strict typing ([#333](https://github.com/near/near-workspaces-rs/pull/333))
+- Restrict GasHook type to require RefUnwindSafe and UnwindSafe to avoid breaking release ([#323](https://github.com/near/near-workspaces-rs/pull/323)) ([#326](https://github.com/near/near-workspaces-rs/pull/326))
+- remove unwraps ([#321](https://github.com/near/near-workspaces-rs/pull/321))
+
+## [0.8.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.7.0...near-workspaces-v0.8.0) - 2023-10-04
+
+- [**breaking**] renamed crate to near-workspaces to avoid confusion with Cargo workspaces; imports should now use `near_workspaces` instead of just `workspaces` ([#318](https://github.com/near/near-workspaces-rs/pull/318))
+- [Upgraded to Rust Stable Toolchain](https://github.com/near/near-workspaces-rs/commit/8d93197d06aee2a426b6da99e270ce1658c2cd4f). Deprecates requirement of only using rustc-1.69 and lower.
+
 ### Added
 
 - [Import a couple functions over from near_crypto for PublicKey](https://github.com/near/workspaces-rs/pull/265)
@@ -18,6 +37,10 @@
 - [Added Worker::patch to patch account, keys, code, and state in a generic builder](https://github.com/near/near-workspaces-rs/pull/291)
   - Added `Worker::patch` and `PatchTransaction` that provide builders for patching accounts, keys, code, and state.
   - Added `AccountDetails` and `AccountDetailsPatch` which hold the state of the patch.
+- Allow to select a specific version of near-sandbox ([#311](https://github.com/near/near-workspaces-rs/pull/311))
+- Enable support for RPCs that require API keys and support for custom networks ([#306](https://github.com/near/near-workspaces-rs/pull/306))
+- expose more `Block` and `Chunk` fields ([#243](https://github.com/near/near-workspaces-rs/pull/243))
+- support manually supplied validator key ([#274](https://github.com/near/near-workspaces-rs/pull/274))
 
 ### Changed
 
@@ -27,8 +50,32 @@
 
 ### Fixed
 
-- [Upgraded to Rust Stable Toolchain](https://github.com/near/near-workspaces-rs/commit/8d93197d06aee2a426b6da99e270ce1658c2cd4f). Deprecates requirement of only using rustc-1.69 and lower.
-- [Run `neard` on `localhost` instead of `0.0.0.0` to prevent firewall popups on MacOS](https://github.com/near/workspaces-rs/issues/276)
+- improve error msg on calling `json` on void function ([#286](https://github.com/near/near-workspaces-rs/pull/286))
+- fix typos ([#280](https://github.com/near/near-workspaces-rs/pull/280))
+- Run `neard` on `localhost` instead of `0.0.0.0` to prevent firewall popups on MacOS ([#277](https://github.com/near/near-workspaces-rs/pull/277))
+- storing credentials ([#258](https://github.com/near/near-workspaces-rs/pull/258))
+- Make call consistent with worker::view ([#245](https://github.com/near/near-workspaces-rs/pull/245))
+
+### Other
+
+- drop async-process in favor of tokio ([#316](https://github.com/near/near-workspaces-rs/pull/316))
+- switch to `near-gas` crate for Gas where possible ([#305](https://github.com/near/near-workspaces-rs/pull/305))
+- Improved fast_forward docs ([#299](https://github.com/near/near-workspaces-rs/pull/299))
+- Added test for delete_account ([#289](https://github.com/near/near-workspaces-rs/pull/289))
+- Added a test for transfer_near ([#290](https://github.com/near/near-workspaces-rs/pull/290))
+- using url return type ([#297](https://github.com/near/near-workspaces-rs/pull/297))
+- dependencies and removed unused deps ([#292](https://github.com/near/near-workspaces-rs/pull/292))
+- upgrade to stable toolchain ([#293](https://github.com/near/near-workspaces-rs/pull/293))
+- Updated near deps to 0.17 ([#283](https://github.com/near/near-workspaces-rs/pull/283))
+- Use cargo-near to build project ([#275](https://github.com/near/near-workspaces-rs/pull/275))
+- Added network builder for mainnet, testnet, betanet ([#221](https://github.com/near/near-workspaces-rs/pull/221))
+- bump borsh version and other deps ([#271](https://github.com/near/near-workspaces-rs/pull/271))
+- bump sandbox to 0.6.2 ([#270](https://github.com/near/near-workspaces-rs/pull/270))
+- Import some functions over from near_crypto for PublicKey ([#265](https://github.com/near/near-workspaces-rs/pull/265))
+- Added destination account-id for `import_contract` call ([#260](https://github.com/near/near-workspaces-rs/pull/260))
+- Fix port collision ([#257](https://github.com/near/near-workspaces-rs/pull/257))
+- Removed the lifetime in transact_async ([#249](https://github.com/near/near-workspaces-rs/pull/249))
+- configure sandbox ([#251](https://github.com/near/near-workspaces-rs/pull/251))
 
 ## [0.7.0]
 

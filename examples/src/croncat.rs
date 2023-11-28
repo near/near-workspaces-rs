@@ -6,12 +6,12 @@
 // at a set amount of time we supply.
 
 use near_gas::NearGas;
-use near_units::parse_near;
+use near_workspaces::network::Sandbox;
+use near_workspaces::types::NearToken;
+use near_workspaces::{Account, AccountId, Contract, Worker};
 use serde::Deserialize;
 use serde_json::json;
-
-use workspaces::network::Sandbox;
-use workspaces::{Account, AccountId, Contract, Worker};
+use serde_with::{serde_as, DisplayFromStr};
 
 const MANAGER_CONTRACT: &[u8] = include_bytes!("../res/manager.wasm");
 const COUNTER_CONTRACT: &[u8] = include_bytes!("../res/counter.wasm");
@@ -19,7 +19,7 @@ const COUNTER_CONTRACT: &[u8] = include_bytes!("../res/counter.wasm");
 /// `AgentStatus` struct taken from [croncat repo](github.com/CronCats/contracts/) to
 /// deserialize into after we get the result of a transaction and converting over to
 /// this particular type.
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub enum AgentStatus {
     Active,
     Pending,
@@ -31,15 +31,15 @@ pub enum AgentStatus {
 /// look at what an `Agent` is all about, refer to the [croncat docs](https://docs.cron.cat/docs/)
 /// to understand further, but for this example all we care about is that an Agent is something
 /// that can run scheduled tasks once it is time and collect rewards thereafter.
+#[serde_as]
 #[derive(Debug, Deserialize)]
 pub struct Agent {
     pub status: AgentStatus,
     pub payable_account_id: AccountId,
-    // NOTE: display_fromstr is used to deserialize from a U128 type returned from the contract
+    // NOTE: DisplayFromStr is used to deserialize from a U128 type returned from the contract
     // which is represented as a string there, and then converted into a rust u128 here.
-    #[serde(with = "serde_with::rust::display_fromstr")]
-    pub balance: u128,
-    #[serde(with = "serde_with::rust::display_fromstr")]
+    pub balance: NearToken,
+    #[serde_as(as = "DisplayFromStr")]
     pub total_tasks_executed: u128,
     pub last_missed_slot: u128,
 }
@@ -47,7 +47,7 @@ pub struct Agent {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Spawn sandbox as normal and get us a local blockchain for us to interact and toy with:
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
 
     // Initialize counter contract, which will be pointed to in the manager contract to schedule
     // a task later to increment the counter, inside counter contract.
@@ -75,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
             "recurring": true,
         }))
         .max_gas()
-        .deposit(parse_near!("1 N"))
+        .deposit(NearToken::from_near(1))
         .transact()
         .await?;
     println!("-- outcome: {:#?}\n", outcome);
@@ -84,7 +84,7 @@ async fn main() -> anyhow::Result<()> {
     // for executing it:
     let agent_1 = croncat
         .create_subaccount("agent_1")
-        .initial_balance(parse_near!("10 N"))
+        .initial_balance(NearToken::from_near(10))
         .transact()
         .await?
         .into_result()?;
@@ -106,7 +106,7 @@ pub async fn run_scheduled_tasks(
     let outcome = agent
         .call(contract.id(), "register_agent")
         .args_json(json!({}))
-        .deposit(parse_near!("0.00226 N"))
+        .deposit(NearToken::from_yoctonear(2260000000000000000000u128))
         .transact()
         .await?;
     println!("Registering agent outcome: {:#?}\n", outcome);
@@ -160,7 +160,10 @@ pub async fn run_scheduled_tasks(
         .json::<Option<Agent>>()?
         .unwrap();
     println!("Agent details after completing task: {:#?}", agent_details);
-    assert_eq!(agent_details.balance, parse_near!("0.00386 N"));
+    assert_eq!(
+        agent_details.balance,
+        NearToken::from_yoctonear(3860000000000000000000u128)
+    );
     let before_withdraw = agent_details.balance;
 
     // Withdraw the reward from completing the task to our agent's account
@@ -180,18 +183,21 @@ pub async fn run_scheduled_tasks(
         .json::<Option<Agent>>()?
         .unwrap();
     println!("Agent details after withdrawing task: {:#?}", agent_details);
-    assert_eq!(agent_details.balance, parse_near!("0.00226 N"));
+    assert_eq!(
+        agent_details.balance,
+        NearToken::from_yoctonear(2260000000000000000000u128)
+    );
 
-    // This shows how much the agent has profitted from executing the task:
+    // This shows how much the agent has profited from executing the task:
     println!(
-        "Agent profitted {} yN and has been transferred to the agent's account",
-        before_withdraw - agent_details.balance
+        "Agent profited {} yN and has been transferred to the agent's account",
+        before_withdraw.as_yoctonear() - agent_details.balance.as_yoctonear()
     );
 
     // Not that everything is done, let's cleanup and unregister the agent from doing anything.
     agent
         .call(contract.id(), "unregister_agent")
-        .deposit(parse_near!("1y"))
+        .deposit(NearToken::from_yoctonear(1))
         .transact()
         .await?
         .into_result()?;
@@ -199,7 +205,7 @@ pub async fn run_scheduled_tasks(
     // Check to see if the agent has been successfully unregistered
     let removed_agent: Option<Agent> = contract
         .call("get_agent")
-        .args_json(json!({"account_id": agent.id() }))
+        .args_json(json!({ "account_id": agent.id() }))
         .view()
         .await?
         .json()?;

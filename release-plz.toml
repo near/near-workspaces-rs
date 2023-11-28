@@ -1,0 +1,8 @@
+[workspace]
+# Use `workspaces` crate CHANGELOG as top-level one
+changelog_update = false
+
+[[package]]
+name = "near-workspaces"
+changelog_update = true
+changelog_path = "./CHANGELOG.md"

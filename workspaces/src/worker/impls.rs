@@ -10,7 +10,7 @@ use crate::rpc::query::{
     GasPrice, Query, QueryChunk, ViewAccessKey, ViewAccessKeyList, ViewAccount, ViewBlock,
     ViewCode, ViewFunction, ViewState,
 };
-use crate::types::{AccountId, Balance, InMemorySigner, PublicKey};
+use crate::types::{AccountId, InMemorySigner, NearToken, PublicKey};
 use crate::worker::Worker;
 use crate::{Account, Network};
 
@@ -35,6 +35,7 @@ impl<T: ?Sized> Clone for Worker<T> {
     fn clone(&self) -> Self {
         Self {
             workspace: self.workspace.clone(),
+            tx_callbacks: self.tx_callbacks.clone(),
         }
     }
 }
@@ -50,9 +51,9 @@ where
     }
 }
 
-impl<T: ?Sized> Worker<T>
+impl<T> Worker<T>
 where
-    T: NetworkClient,
+    T: NetworkClient + ?Sized,
 {
     pub(crate) fn client(&self) -> &Client {
         self.workspace.client()
@@ -145,13 +146,32 @@ where
         )
     }
 
+    /// View account details of a specific account on the network.
+    pub fn view_account(&self, account_id: &AccountId) -> Query<'_, ViewAccount> {
+        Query::new(
+            self.client(),
+            ViewAccount {
+                account_id: account_id.clone(),
+            },
+        )
+    }
+
+    pub fn gas_price(&self) -> Query<'_, GasPrice> {
+        Query::new(self.client(), GasPrice)
+    }
+}
+
+impl<T> Worker<T>
+where
+    T: NetworkClient + Send + Sync + ?Sized,
+{
     /// Transfer tokens from one account to another. The signer is the account
-    /// that will be used to to send from.
+    /// that will be used to send from.
     pub async fn transfer_near(
         &self,
         signer: &InMemorySigner,
         receiver_id: &AccountId,
-        amount_yocto: Balance,
+        amount_yocto: NearToken,
     ) -> Result<ExecutionFinalResult> {
         self.client()
             .transfer_near(signer, receiver_id, amount_yocto)
@@ -174,21 +194,7 @@ where
             .map(ExecutionFinalResult::from_view)
             .map_err(crate::error::Error::from)
     }
-
-    /// View account details of a specific account on the network.
-    pub fn view_account(&self, account_id: &AccountId) -> Query<'_, ViewAccount> {
-        Query::new(
-            self.client(),
-            ViewAccount {
-                account_id: account_id.clone(),
-            },
-        )
-    }
-
-    pub fn gas_price(&self) -> Query<'_, GasPrice> {
-        Query::new(self.client(), GasPrice)
-    }
-
+    
     /// Returns the status of the network.
     ///
     /// TODO: Remove `unstable` feature flag once [`StatusResponse`] is stable.
@@ -200,10 +206,11 @@ where
 }
 
 #[cfg(feature = "experimental")]
-impl<T: ?Sized> Worker<T>
+impl<T> Worker<T>
 where
-    T: NetworkClient,
+    T: NetworkClient + Send + Sync + ?Sized,
 {
+    /// Provides a list of changes in block associated with the given block reference.
     pub async fn changes_in_block(
         &self,
         block_reference: BlockReference,
@@ -211,6 +218,7 @@ where
         self.client().changes_in_block(block_reference).await
     }
 
+    /// Provides a list of changes in block associated with the given block reference and state changes request.
     pub async fn changes(
         &self,
         block_reference: BlockReference,
@@ -221,10 +229,12 @@ where
             .await
     }
 
+    /// Provides a genesis config associated with the network being used.
     pub async fn genesis_config(&self) -> Result<GenesisConfig> {
         self.client().genesis_config().await
     }
 
+    /// Provides a protocol config associated with the given block reference.
     pub async fn protocol_config(
         &self,
         block_reference: BlockReference,
@@ -232,10 +242,12 @@ where
         self.client().protocol_config(block_reference).await
     }
 
+    /// Provides a receipt associated with the given receipt reference.
     pub async fn receipt(&self, receipt_reference: ReceiptReference) -> Result<ReceiptView> {
         self.client().receipt(receipt_reference).await
     }
 
+    /// Returns the transaction status for a given transaction hash or signed transaction.
     pub async fn tx_status(
         &self,
         transaction_info: TransactionInfo,
@@ -243,6 +255,7 @@ where
         self.client().tx_status(transaction_info).await
     }
 
+    /// Provides a list of validators ordered with respect to their stake.
     pub async fn validators_ordered(
         &self,
         block_id: MaybeBlockId,

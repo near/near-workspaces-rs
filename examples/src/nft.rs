@@ -1,10 +1,11 @@
+use near_workspaces::types::NearToken;
 use serde_json::json;
 
 const NFT_WASM_FILEPATH: &str = "./examples/res/non_fungible_token.wasm";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let worker = workspaces::sandbox().await?;
+    let worker = near_workspaces::sandbox().await?;
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 
@@ -18,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
 
     println!("new_default_meta outcome: {:#?}", outcome);
 
-    let deposit = 10000000000000000000000;
+    let deposit = NearToken::from_yoctonear(10000000000000000000000);
     let outcome = contract
         .call("nft_mint")
         .args_json(json!({
@@ -26,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
             "token_owner_id": contract.id(),
             "token_metadata": {
                 "title": "Olympus Mons",
-                "dscription": "Tallest mountain in charted solar system",
+                "description": "Tallest mountain in charted solar system",
                 "copies": 1,
             },
         }))

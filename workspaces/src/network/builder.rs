@@ -8,7 +8,7 @@ use super::server::ValidatorKey;
 
 pub(crate) type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
-/// This trait provides a way to construct Networks out of a single builder. Currently
+/// This trait provides a way to construct Networks out of a single builder. Currently,
 /// not planned to offer this trait outside, since the custom networks can just construct
 /// themselves however they want utilizing `Worker::new` like so:
 /// ```ignore
@@ -29,6 +29,7 @@ pub struct NetworkBuilder<'a, T> {
     pub(crate) name: &'a str,
     pub(crate) rpc_addr: Option<String>,
     pub(crate) validator_key: Option<ValidatorKey>,
+    pub(crate) api_key: Option<String>,
     _network: PhantomData<T>,
 }
 
@@ -54,6 +55,7 @@ impl<'a, T> NetworkBuilder<'a, T> {
             name,
             rpc_addr: None,
             validator_key: None,
+            api_key: None,
             _network: PhantomData,
         }
     }
@@ -67,6 +69,16 @@ impl<'a, T> NetworkBuilder<'a, T> {
     /// a manually spawned sandbox node.
     pub fn rpc_addr(mut self, addr: &str) -> Self {
         self.rpc_addr = Some(addr.into());
+        self
+    }
+
+    /// Sets the API key for this network. Useful for setting the API key to an RPC
+    /// server that requires it.
+    ///
+    /// Note that if you're using a custom network, the burden is on you to ensure that
+    /// the methods you're calling are supported by the RPC server you're connecting to.
+    pub fn api_key(mut self, api_key: &str) -> Self {
+        self.api_key = Some(api_key.into());
         self
     }
 }

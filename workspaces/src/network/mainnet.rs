@@ -30,7 +30,7 @@ pub struct Mainnet {
 impl FromNetworkBuilder for Mainnet {
     async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
         let rpc_url = build.rpc_addr.unwrap_or_else(|| RPC_URL.into());
-        let client = Client::new(&rpc_url);
+        let client = Client::new(&rpc_url, build.api_key)?;
         client.wait_for_rpc().await?;
 
         Ok(Self {
@@ -39,7 +39,7 @@ impl FromNetworkBuilder for Mainnet {
                 name: build.name.into(),
                 root_id: "near".parse().unwrap(),
                 keystore_path: PathBuf::from(".near-credentials/mainnet/"),
-                rpc_url: url::Url::parse(&rpc_url).expect("url is hardcodeed"),
+                rpc_url: url::Url::parse(&rpc_url).expect("url is hardcoded"),
             },
         })
     }
