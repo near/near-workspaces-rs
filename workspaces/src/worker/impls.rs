@@ -202,7 +202,9 @@ where
         Query::new(
             self.client(),
             StateChanges {
-                state_changes: StateChangesRequestView::AccountChanges { account_ids },
+                state_changes: StateChangesRequestView::AccountChanges {
+                    account_ids: account_ids.to_vec(),
+                },
             },
         )
     }

@@ -18,7 +18,7 @@ async fn main() -> anyhow::Result<()> {
         .into_result()?;
 
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
-    let res = worker.changes(vec![contract.id().clone()]).await?;
+    let res = worker.changes(&[contract.id().clone()]).await?;
 
     // Example output:
     //
