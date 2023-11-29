@@ -198,7 +198,7 @@ where
     T: NetworkClient + Send + Sync + ?Sized,
 {
     /// Provides a list of changes in block associated with the given block reference.
-    pub fn changes(&self, account_ids: Vec<AccountId>) -> Query<'_, StateChanges> {
+    pub fn changes(&self, account_ids: &[AccountId]) -> Query<'_, StateChanges> {
         Query::new(
             self.client(),
             StateChanges {
