@@ -10,7 +10,7 @@ use near_workspaces::types::{Gas, GasMeter, NearToken};
 async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
     let mut worker = near_workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-    let mut total_gas = NearToken::from_yoctonear(0);
+    let mut total_gas = Gas::from_gas(0);
 
     let status_msg = analogous_to_dev_deploy(&worker, &mut total_gas).await?;
 
@@ -25,9 +25,9 @@ async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    total_gas = total_gas.checked_add(as_near(txn.total_gas_burnt)).unwrap();
+    total_gas = total_gas.checked_add(txn.total_gas_burnt).unwrap();
 
-    assert_eq!(total_gas, as_near(gas_meter.elapsed().unwrap()));
+    assert_eq!(total_gas, gas_meter.elapsed().unwrap());
 
     Ok(())
 }
@@ -36,7 +36,7 @@ async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
 async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
     let mut worker = near_workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-    let mut total_gas = NearToken::from_yoctonear(0);
+    let mut total_gas = Gas::from_gas(0);
 
     let status_msg = analogous_to_dev_deploy(&worker, &mut total_gas).await?;
 
@@ -50,7 +50,7 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    total_gas = total_gas.checked_add(as_near(txn.total_gas_burnt)).unwrap();
+    total_gas = total_gas.checked_add(txn.total_gas_burnt).unwrap();
 
     let txn = account
         .call(status_msg.id(), "set_status")
@@ -59,9 +59,9 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
         }))
         .transact()
         .await?;
-    total_gas = total_gas.checked_add(as_near(txn.total_gas_burnt)).unwrap();
+    total_gas = total_gas.checked_add(txn.total_gas_burnt).unwrap();
 
-    assert_eq!(total_gas, as_near(gas_meter.elapsed().unwrap()));
+    assert_eq!(total_gas, gas_meter.elapsed().unwrap());
 
     Ok(())
 }
@@ -70,7 +70,7 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
 async fn test_gas_meter_with_parallel_transactions() -> anyhow::Result<()> {
     let mut worker = near_workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-    let mut total_gas = NearToken::from_yoctonear(0);
+    let mut total_gas = Gas::from_gas(0);
 
     let status_msg = analogous_to_dev_deploy(&worker, &mut total_gas).await?;
 
@@ -96,10 +96,10 @@ async fn test_gas_meter_with_parallel_transactions() -> anyhow::Result<()> {
     }
 
     for task in tasks {
-        total_gas = total_gas.checked_add(as_near(task.await??)).unwrap();
+        total_gas = total_gas.checked_add(task.await??).unwrap();
     }
 
-    assert_eq!(total_gas, as_near(gas_meter.elapsed().unwrap()));
+    assert_eq!(total_gas, gas_meter.elapsed().unwrap());
 
     Ok(())
 }
@@ -108,7 +108,7 @@ async fn test_gas_meter_with_parallel_transactions() -> anyhow::Result<()> {
 async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<()> {
     let mut worker = near_workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-    let mut total_gas = NearToken::from_yoctonear(0);
+    let mut total_gas = Gas::from_gas(0);
 
     let status_msg = analogous_to_dev_deploy(&worker, &mut total_gas).await?;
 
@@ -121,7 +121,7 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
         }))
         .transact()
         .await?;
-    total_gas = total_gas.checked_add(as_near(txn.total_gas_burnt)).unwrap();
+    total_gas = total_gas.checked_add(txn.total_gas_burnt).unwrap();
 
     let txn = account
         .call(status_msg.id(), "set_status")
@@ -130,9 +130,9 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
         }))
         .transact()
         .await?;
-    total_gas = total_gas.checked_add(as_near(txn.total_gas_burnt)).unwrap();
+    total_gas = total_gas.checked_add(txn.total_gas_burnt).unwrap();
 
-    assert_eq!(total_gas, as_near(gas_meter.elapsed().unwrap()));
+    assert_eq!(total_gas, gas_meter.elapsed().unwrap());
 
     let _ = account
         .call(status_msg.id(), "get_status")
@@ -142,7 +142,7 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
         .view()
         .await?;
 
-    assert_eq!(total_gas, as_near(gas_meter.elapsed().unwrap()));
+    assert_eq!(total_gas, gas_meter.elapsed().unwrap());
 
     Ok(())
 }
@@ -151,7 +151,7 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
 async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
     let mut worker = near_workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-    let mut total_gas = NearToken::from_yoctonear(0);
+    let mut total_gas = Gas::from_gas(0);
 
     let contract = analogous_to_dev_deploy(&worker, &mut total_gas).await?;
 
@@ -169,7 +169,7 @@ async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
         })))
         .transact()
         .await?;
-    total_gas = total_gas.checked_add(as_near(txn.total_gas_burnt)).unwrap();
+    total_gas = total_gas.checked_add(txn.total_gas_burnt).unwrap();
 
     let txn = contract
         .batch()
@@ -186,9 +186,9 @@ async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    total_gas = total_gas.checked_add(as_near(txn.total_gas_burnt)).unwrap();
+    total_gas = total_gas.checked_add(txn.total_gas_burnt).unwrap();
 
-    assert_eq!(total_gas, as_near(gas_meter.elapsed().unwrap()));
+    assert_eq!(total_gas, gas_meter.elapsed().unwrap());
 
     Ok(())
 }
@@ -197,7 +197,7 @@ async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
 async fn test_gas_meter_create_account_transaction() -> anyhow::Result<()> {
     let mut worker = near_workspaces::sandbox().await?;
     let gas_meter = GasMeter::now(&mut worker);
-    let mut total_gas = NearToken::from_yoctonear(0);
+    let mut total_gas = Gas::from_gas(0);
 
     let account = worker.root_account()?;
     let sub = account.create_subaccount("subaccount").transact().await?;
@@ -207,13 +207,13 @@ async fn test_gas_meter_create_account_transaction() -> anyhow::Result<()> {
             sub.details
                 .outcomes()
                 .iter()
-                .fold(NearToken::from_yoctonear(0), |acc, receipt| {
-                    acc.checked_add(as_near(receipt.gas_burnt)).unwrap()
+                .fold(Gas::from_gas(0), |acc, receipt| {
+                    acc.checked_add(receipt.gas_burnt).unwrap()
                 }),
         )
         .unwrap();
 
-    assert_eq!(total_gas, as_near(gas_meter.elapsed().unwrap()));
+    assert_eq!(total_gas, gas_meter.elapsed().unwrap());
 
     Ok(())
 }
@@ -231,7 +231,7 @@ async fn test_dropped_gas_meter() -> anyhow::Result<()> {
 
 async fn analogous_to_dev_deploy(
     worker: &Worker<Sandbox>,
-    total_gas: &mut NearToken,
+    total_gas: &mut Gas,
 ) -> anyhow::Result<Contract> {
     let account = worker
         .root_account()?
@@ -245,8 +245,8 @@ async fn analogous_to_dev_deploy(
                 .details
                 .outcomes()
                 .iter()
-                .fold(NearToken::from_yoctonear(0), |acc, receipt| {
-                    acc.checked_add(as_near(receipt.gas_burnt)).unwrap()
+                .fold(Gas::from_gas(0), |acc, receipt| {
+                    acc.checked_add(receipt.gas_burnt).unwrap()
                 }),
         )
         .unwrap();
@@ -260,7 +260,7 @@ async fn analogous_to_dev_deploy(
 
 async fn analogous_to_dev_create_account(
     worker: &Worker<Sandbox>,
-    total_gas: &mut NearToken,
+    total_gas: &mut Gas,
 ) -> anyhow::Result<Account> {
     let account = worker
         .root_account()?
@@ -274,15 +274,11 @@ async fn analogous_to_dev_create_account(
                 .details
                 .outcomes()
                 .iter()
-                .fold(NearToken::from_yoctonear(0), |acc, receipt| {
-                    acc.checked_add(as_near(receipt.gas_burnt)).unwrap()
+                .fold(Gas::from_gas(0), |acc, receipt| {
+                    acc.checked_add(receipt.gas_burnt).unwrap()
                 }),
         )
         .unwrap();
 
     Ok(account.into_result()?)
-}
-
-const fn as_near(gas: Gas) -> NearToken {
-    NearToken::from_yoctonear(gas.as_gas() as u128)
 }

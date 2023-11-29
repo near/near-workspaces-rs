@@ -45,7 +45,7 @@ pub type BlockHeight = u64;
 pub type ShardId = u64;
 
 // Constant taken from nearcore crate to avoid dependency
-pub const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
+pub(crate) const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
 
 fn from_base58(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
     bs58::decode(s).into_vec().map_err(|err| err.into())

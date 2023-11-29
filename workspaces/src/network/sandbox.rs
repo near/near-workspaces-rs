@@ -7,12 +7,9 @@ use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateReque
 use near_primitives::state_record::StateRecord;
 use near_sandbox_utils as sandbox;
 
-#[allow(deprecated)]
-use super::TopLevelAccountCreator;
-
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
+use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
@@ -119,7 +116,6 @@ impl FromNetworkBuilder for Sandbox {
 
 impl AllowDevAccountCreation for Sandbox {}
 
-#[allow(deprecated)]
 #[async_trait]
 impl TopLevelAccountCreator for Sandbox {
     async fn create_tla(
