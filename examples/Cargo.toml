@@ -6,12 +6,12 @@ edition = "2018"
 
 [dev-dependencies]
 anyhow = "1.0"
-borsh = "0.10"
+borsh = "1.2.0"
 maplit = "1.0"
 near-units = "0.2.0"
 near-gas = { version = "0.2.3", features = ["serde", "borsh", "schemars"] }
 serde = "1.0"
-serde_with = "1"
+serde_with = "3.4"
 serde_json = { version = "1.0" }
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
