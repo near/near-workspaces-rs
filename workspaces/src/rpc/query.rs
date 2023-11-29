@@ -43,6 +43,9 @@ use near_primitives::types::{BlockId, BlockReference, StoreKey};
 use near_primitives::views::{BlockView, QueryRequest};
 use near_token::NearToken;
 
+#[cfg(feature = "experimental")]
+use near_primitives::views::StateChangesRequestView;
+
 use crate::error::RpcErrorCode;
 use crate::operations::Function;
 use crate::result::ViewResultDetails;
@@ -184,6 +187,17 @@ pub struct ViewAccessKeyList {
 }
 
 pub struct GasPrice;
+
+#[cfg(feature = "experimental")]
+pub struct StateChanges {
+    pub(crate) state_changes: StateChangesRequestView,
+}
+
+#[cfg(feature = "experimental")]
+pub struct StateChangesInBlock;
+
+#[cfg(feature = "experimental")]
+pub struct ProtocolConfig;
 
 impl ProcessQuery for ViewFunction {
     type Method = methods::query::RpcQueryRequest;
@@ -398,6 +412,55 @@ impl ProcessQuery for GasPrice {
 
     fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
         Ok(NearToken::from_yoctonear(resp.gas_price))
+    }
+}
+
+#[cfg(feature = "experimental")]
+impl ProcessQuery for StateChanges {
+    type Method = methods::EXPERIMENTAL_changes::RpcStateChangesInBlockByTypeRequest;
+    type Output = methods::EXPERIMENTAL_changes::RpcStateChangesInBlockResponse;
+
+    fn into_request(self, block_ref: BlockReference) -> Result<Self::Method> {
+        Ok(Self::Method {
+            block_reference: block_ref,
+            state_changes_request: self.state_changes,
+        })
+    }
+
+    fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
+        Ok(resp)
+    }
+}
+
+#[cfg(feature = "experimental")]
+impl ProcessQuery for StateChangesInBlock {
+    type Method = methods::EXPERIMENTAL_changes_in_block::RpcStateChangesInBlockRequest;
+    type Output = methods::EXPERIMENTAL_changes_in_block::RpcStateChangesInBlockByTypeResponse;
+
+    fn into_request(self, block_ref: BlockReference) -> Result<Self::Method> {
+        Ok(Self::Method {
+            block_reference: block_ref,
+        })
+    }
+
+    fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
+        Ok(resp)
+    }
+}
+
+#[cfg(feature = "experimental")]
+impl ProcessQuery for ProtocolConfig {
+    type Method = methods::EXPERIMENTAL_protocol_config::RpcProtocolConfigRequest;
+    type Output = methods::EXPERIMENTAL_protocol_config::RpcProtocolConfigResponse;
+
+    fn into_request(self, block_ref: BlockReference) -> Result<Self::Method> {
+        Ok(Self::Method {
+            block_reference: block_ref,
+        })
+    }
+
+    fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
+        Ok(resp)
     }
 }
 

@@ -1,5 +1,3 @@
-use near_jsonrpc_primitives::types::transactions::TransactionInfo;
-use near_primitives::hash::CryptoHash;
 use serde_json::json;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
@@ -18,16 +16,12 @@ async fn main() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    let tx_info = {
-        let outcome = outcome.outcome();
-        TransactionInfo::TransactionId {
-            hash: CryptoHash(outcome.transaction_hash.0),
-            account_id: outcome.executor_id.clone(),
-        }
-    };
+    let outcome = outcome.outcome();
 
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
-    let resp = worker.tx_status(tx_info).await?;
+    let resp = worker
+        .tx_status(outcome.transaction_hash, outcome.executor_id.clone())
+        .await?;
 
     // Example outcome:
     //

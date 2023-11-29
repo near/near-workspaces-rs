@@ -14,14 +14,12 @@ use crate::{Account, Network};
 
 #[cfg(feature = "experimental")]
 use {
-    near_chain_configs::{GenesisConfig, ProtocolConfigView},
-    near_jsonrpc_primitives::types::{
-        changes::{RpcStateChangesInBlockByTypeResponse, RpcStateChangesInBlockResponse},
-        receipts::ReceiptReference,
-        transactions::TransactionInfo,
-    },
+    crate::rpc::query::{ProtocolConfig, StateChanges, StateChangesInBlock},
+    crate::CryptoHash,
+    near_chain_configs::GenesisConfig,
+    near_jsonrpc_primitives::types::{receipts::ReceiptReference, transactions::TransactionInfo},
     near_primitives::{
-        types::{BlockReference, MaybeBlockId},
+        types::MaybeBlockId,
         views::{
             validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
             ReceiptView, StateChangesRequestView,
@@ -200,22 +198,25 @@ where
     T: NetworkClient + Send + Sync + ?Sized,
 {
     /// Provides a list of changes in block associated with the given block reference.
-    pub async fn changes_in_block(
-        &self,
-        block_reference: BlockReference,
-    ) -> Result<RpcStateChangesInBlockByTypeResponse> {
-        self.client().changes_in_block(block_reference).await
+    pub fn changes(&self, account_ids: &[AccountId]) -> Query<'_, StateChanges> {
+        Query::new(
+            self.client(),
+            StateChanges {
+                state_changes: StateChangesRequestView::AccountChanges {
+                    account_ids: account_ids.to_vec(),
+                },
+            },
+        )
     }
 
     /// Provides a list of changes in block associated with the given block reference and state changes request.
-    pub async fn changes(
-        &self,
-        block_reference: BlockReference,
-        state_changes_request: StateChangesRequestView,
-    ) -> Result<RpcStateChangesInBlockResponse> {
-        self.client()
-            .changes(block_reference, state_changes_request)
-            .await
+    pub fn changes_in_block(&self) -> Query<'_, StateChangesInBlock> {
+        Query::new(self.client(), StateChangesInBlock)
+    }
+
+    /// Provides a protocol config associated with the given block reference.
+    pub fn protocol_config(&self) -> Query<'_, ProtocolConfig> {
+        Query::new(self.client(), ProtocolConfig)
     }
 
     /// Provides a genesis config associated with the network being used.
@@ -223,25 +224,27 @@ where
         self.client().genesis_config().await
     }
 
-    /// Provides a protocol config associated with the given block reference.
-    pub async fn protocol_config(
-        &self,
-        block_reference: BlockReference,
-    ) -> Result<ProtocolConfigView> {
-        self.client().protocol_config(block_reference).await
-    }
-
     /// Provides a receipt associated with the given receipt reference.
-    pub async fn receipt(&self, receipt_reference: ReceiptReference) -> Result<ReceiptView> {
-        self.client().receipt(receipt_reference).await
+    pub async fn receipt(&self, id: &CryptoHash) -> Result<ReceiptView> {
+        self.client()
+            .receipt(ReceiptReference {
+                receipt_id: near_primitives::hash::CryptoHash(id.0),
+            })
+            .await
     }
 
     /// Returns the transaction status for a given transaction hash or signed transaction.
     pub async fn tx_status(
         &self,
-        transaction_info: TransactionInfo,
+        hash: CryptoHash,
+        account_id: AccountId,
     ) -> Result<FinalExecutionOutcomeWithReceiptView> {
-        self.client().tx_status(transaction_info).await
+        self.client()
+            .tx_status(TransactionInfo::TransactionId {
+                hash: near_primitives::hash::CryptoHash(hash.0),
+                account_id,
+            })
+            .await
     }
 
     /// Provides a list of validators ordered with respect to their stake.

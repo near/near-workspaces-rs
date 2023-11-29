@@ -1,4 +1,3 @@
-use near_primitives::types::BlockReference;
 use serde_json::json;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
@@ -9,40 +8,26 @@ async fn main() -> anyhow::Result<()> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
 
-    let outcome = contract
+    _ = contract
         .call("set_status")
         .args_json(json!({
             "message": "hello_world",
         }))
         .transact()
-        .await?;
-
-    let block_ref = {
-        let hash = near_primitives::hash::CryptoHash(outcome.outcome().block_hash.0);
-        BlockReference::BlockId(near_primitives::types::BlockId::Hash(hash))
-    };
+        .await?
+        .into_result()?;
 
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
-    let res = worker.changes_in_block(block_ref).await?;
+    let res = worker.changes_in_block().await?;
 
     // Example output:
     //
     // StateChangesInBlockByType RpcStateChangesInBlockByTypeResponse {
-    //     block_hash: 7ifRdyBsJMXVyp8zw8uGdBMaRShiXuD6yghrp66jqrst,
+    //     block_hash: CixdibXkD1ifLmmVXNhEiRGRH6eB9171Q2UhCP2NazJz,
     //     changes: [
     //         AccountTouched {
     //             account_id: AccountId(
-    //                 "dev-20230822100117-44171728969098",
-    //             ),
-    //         },
-    //         AccessKeyTouched {
-    //             account_id: AccountId(
-    //                 "dev-20230822100117-44171728969098",
-    //             ),
-    //         },
-    //         DataTouched {
-    //             account_id: AccountId(
-    //                 "dev-20230822100117-44171728969098",
+    //                 "dev-20230913102437-62490697138398",
     //             ),
     //         },
     //     ],
