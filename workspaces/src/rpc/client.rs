@@ -336,20 +336,20 @@ impl Client {
             Err(_) => 10,
         };
 
-        let retry_strategy =
-            std::iter::repeat_with(|| Duration::from_millis(500)).take(2 * timeout_secs);
-        Retry::spawn(retry_strategy, || async { self.status().await })
-            .await
-            .map_err(|e| {
-                Error::full(
-                    RpcErrorCode::ConnectionFailure.into(),
-                    format!(
-                        "Failed to connect to RPC service {} within {} seconds",
-                        self.rpc_addr, timeout_secs
-                    ),
-                    e,
-                )
-            })?;
+        // let retry_strategy =
+        //     std::iter::repeat_with(|| Duration::from_millis(500)).take(2 * timeout_secs);
+        // Retry::spawn(retry_strategy, || async { self.status().await })
+        //     .await
+        //     .map_err(|e| {
+        //         Error::full(
+        //             RpcErrorCode::ConnectionFailure.into(),
+        //             format!(
+        //                 "Failed to connect to RPC service {} within {} seconds",
+        //                 self.rpc_addr, timeout_secs
+        //             ),
+        //             e,
+        //         )
+        //     })?;
         Ok(())
     }
 }
