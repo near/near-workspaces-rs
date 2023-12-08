@@ -83,7 +83,7 @@ impl Sandbox {
 
         let info = Info {
             name: build.name.into(),
-            root_id: AccountId::from_str("test.near").unwrap(),
+            root_id: AccountId::from_str("near").unwrap(),
             keystore_path: PathBuf::from(".near-credentials/sandbox/"),
             rpc_url: url::Url::parse(&server.rpc_addr()).expect("url is hardcoded"),
         };
