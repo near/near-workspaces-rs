@@ -2,6 +2,7 @@
 #![recursion_limit = "256"]
 use test_log::test;
 
+#[ignore = "TODO: Collecting cargo project metadata...failed (see https://github.com/near/near-sdk-rs/pull/1098)"]
 #[test(tokio::test)]
 async fn test_dev_deploy_project() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
