@@ -33,7 +33,7 @@ url = { version = "2.2.2", features = ["serde"] }
 
 near-gas = { version = "0.2.3", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.2.0", features = ["serde"] }
-near-sdk = { version = "4.1", optional = true }
+near-sdk = { git = "https://github.com/near/near-sdk-rs", tag = "near-sdk-v5.0.0-alpha.1", optional = true } # Patches the yanked parity-secp256k1 error (TODO: update on stable)
 near-account-id = "0.17"
 near-crypto = "0.17"
 near-primitives = "0.17"
@@ -52,7 +52,7 @@ libc = "0.2"
 anyhow = "1.0"
 borsh = "0.10"
 futures = "0.3"
-near-sdk = "4.0.0"
+near-sdk = { git = "https://github.com/near/near-sdk-rs", tag = "near-sdk-v5.0.0-alpha.1" } # Patches the yanked parity-secp256k1 error (TODO: update on stable)
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
