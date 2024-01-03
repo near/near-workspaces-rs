@@ -9,7 +9,7 @@ use crate::rpc::client::{
 use crate::rpc::query::{Query, ViewFunction};
 use crate::types::{
     AccessKey, AccountId, Gas, InMemorySigner, KeyType, NearToken, PublicKey, SecretKey,
-    DEFAULT_DEPOSIT,
+    SEED_DEPOSIT,
 };
 use crate::worker::Worker;
 use crate::{Account, CryptoHash, Network};
@@ -436,7 +436,7 @@ impl<'a, 'b> CreateAccountTransaction<'a, 'b> {
             signer,
             parent_id,
             new_account_id,
-            initial_balance: DEFAULT_DEPOSIT,
+            initial_balance: SEED_DEPOSIT,
             secret_key: None,
         }
     }

@@ -44,8 +44,9 @@ pub type BlockHeight = u64;
 /// Shard index, from 0 to NUM_SHARDS - 1.
 pub type ShardId = u64;
 
-// Constant taken from nearcore crate to avoid dependency
-pub(crate) const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
+/// This is an arbitrary amount used in the context of this library to seed test/sandbox accounts with
+/// some amount of NEAR tokens to be able to perform transactions.
+pub(crate) const SEED_DEPOSIT: NearToken = NearToken::from_near(100);
 
 fn from_base58(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
     bs58::decode(s).into_vec().map_err(|err| err.into())

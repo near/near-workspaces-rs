@@ -15,7 +15,7 @@ use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{Execution, ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, SecretKey, DEFAULT_DEPOSIT};
+use crate::types::{AccountId, InMemorySigner, SecretKey, SEED_DEPOSIT};
 use crate::{Account, Contract, Network, Worker};
 
 /// Local sandboxed environment/network, which can be used to test without interacting with
@@ -127,7 +127,7 @@ impl TopLevelAccountCreator for Sandbox {
         let root_signer = self.root_signer()?;
         let outcome = self
             .client()
-            .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
+            .create_account(&root_signer, &id, sk.public_key(), SEED_DEPOSIT)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id, sk);
@@ -151,7 +151,7 @@ impl TopLevelAccountCreator for Sandbox {
                 &root_signer,
                 &id,
                 sk.public_key(),
-                DEFAULT_DEPOSIT,
+                SEED_DEPOSIT,
                 wasm.into(),
             )
             .await?;
