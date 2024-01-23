@@ -31,16 +31,16 @@ tokio-retry = "0.3"
 tracing = "0.1"
 url = { version = "2.2.2", features = ["serde"] }
 
-near-gas = { version = "0.2.3", features = ["serde", "borsh", "schemars"] }
+near-gas = { version = "0.2.5", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.2.0", features = ["serde"] }
-near-sdk = { version = "4.1", optional = true }
-near-account-id = "0.17"
-near-crypto = "0.17"
-near-primitives = "0.17"
-near-jsonrpc-primitives = "0.17"
-near-jsonrpc-client = { version = "0.6", features = ["sandbox"] }
+near-sdk = { version = "5.0.0-alpha.2", optional = true }
+near-account-id = "1.0.0"
+near-crypto = "0.20.0"
+near-primitives = "0.20.0"
+near-jsonrpc-primitives = "0.20.0"
+near-jsonrpc-client = { version = "0.8", features = ["sandbox"] }
 near-sandbox-utils = "0.7.0"
-near-chain-configs = { version = "0.17.0", optional = true }
+near-chain-configs = { version = "0.20.0", optional = true }
 
 [build-dependencies]
 near-sandbox-utils = "0.7.0"
@@ -52,7 +52,7 @@ libc = "0.2"
 anyhow = "1.0"
 borsh = "0.10"
 futures = "0.3"
-near-sdk = "4.0.0"
+near-sdk = "5.0.0-alpha.2"
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 

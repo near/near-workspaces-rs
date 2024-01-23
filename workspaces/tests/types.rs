@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use borsh::{BorshDeserialize, BorshSerialize};
+use near_primitives::{borsh, borsh::BorshDeserialize};
 
 use near_workspaces::types::{KeyType, PublicKey, SecretKey};
 use near_workspaces::AccountId;
@@ -45,7 +45,7 @@ fn test_pubkey_serialization() -> anyhow::Result<()> {
     for key_type in [KeyType::ED25519, KeyType::SECP256K1] {
         let sk = SecretKey::from_seed(key_type, "test");
         let pk = sk.public_key();
-        let bytes = pk.try_to_vec()?;
+        let bytes = borsh::to_vec(&pk)?;
 
         // Borsh Deserialization should equate to the original public key:
         assert_eq!(PublicKey::try_from_slice(&bytes)?, pk);
@@ -91,7 +91,7 @@ async fn test_pubkey_from_sdk_ser() -> anyhow::Result<()> {
 fn test_pubkey_borsh_format_change() -> anyhow::Result<()> {
     let pk = default_workspaces_pubkey()?;
     assert_eq!(
-        pk.try_to_vec()?,
+        borsh::to_vec(&pk)?,
         bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?
     );
 

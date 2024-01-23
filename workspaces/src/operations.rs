@@ -162,12 +162,12 @@ impl Transaction {
         };
 
         if let Ok(actions) = &mut self.actions {
-            actions.push(Action::FunctionCall(FunctionCallAction {
+            actions.push(Action::FunctionCall(Box::new(FunctionCallAction {
                 method_name: function.name.to_string(),
                 args,
                 deposit: function.deposit.as_yoctonear(),
                 gas: function.gas.as_gas(),
-            }));
+            })));
         }
 
         self

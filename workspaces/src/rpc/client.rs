@@ -311,12 +311,12 @@ impl Client {
     pub(crate) async fn tx_async_status(
         &self,
         sender_id: &AccountId,
-        hash: CryptoHash,
+        tx_hash: CryptoHash,
     ) -> Result<FinalExecutionOutcomeView, JsonRpcError<RpcTransactionError>> {
         self.query(methods::tx::RpcTransactionStatusRequest {
             transaction_info: methods::tx::TransactionInfo::TransactionId {
-                account_id: sender_id.clone(),
-                hash,
+                sender_account_id: sender_id.clone(),
+                tx_hash,
             },
         })
         .await
