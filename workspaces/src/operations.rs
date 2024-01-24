@@ -17,6 +17,7 @@ use near_account_id::ParseAccountError;
 use near_gas::NearGas;
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::tx::RpcTransactionError;
+use near_primitives::borsh;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
     DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
@@ -77,7 +78,7 @@ impl Function {
     /// Similar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
     pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
-        match args.try_to_vec() {
+        match borsh::to_vec(&args) {
             Ok(args) => self.args = Ok(args),
             Err(e) => self.args = Err(ErrorKind::DataConversion.custom(e)),
         }

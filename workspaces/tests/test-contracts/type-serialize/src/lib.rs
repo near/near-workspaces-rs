@@ -1,10 +1,11 @@
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
 use near_sdk::{CurveType, PublicKey};
 
 use std::convert::TryFrom;
 
 #[derive(Default, BorshSerialize, BorshDeserialize)]
+#[borsh(crate = "near_sdk::borsh")]
 #[near_bindgen]
 struct Contract {}
 

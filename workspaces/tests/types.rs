@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use near_primitives::{borsh, borsh::BorshDeserialize};
+use near_primitives::borsh::{self, BorshDeserialize};
 
 use near_workspaces::types::{KeyType, PublicKey, SecretKey};
 use near_workspaces::AccountId;
