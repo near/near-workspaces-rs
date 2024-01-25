@@ -1,6 +1,6 @@
 use std::env;
 
-use borsh::{self, BorshDeserialize, BorshSerialize};
+use near_primitives::borsh::{BorshDeserialize, BorshSerialize};
 use near_workspaces::{AccountId, Contract, DevNetwork, Worker};
 use serde_json::json;
 use tracing::info;
@@ -28,12 +28,14 @@ const TESTNET_PREDEPLOYED_CONTRACT_ID: &str = "dev-20211013002148-59466083160385
 // formats. Note that these will be different depending on what data structure
 // we use in our contract.
 #[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize)]
+#[borsh(crate = "near_primitives::borsh")]
 struct Record {
     k: String,
     v: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize)]
+#[borsh(crate = "near_primitives::borsh")]
 struct StatusMessage {
     records: Vec<Record>,
 }
