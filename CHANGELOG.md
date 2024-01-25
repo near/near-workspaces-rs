@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.10.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.9.0...near-workspaces-v0.10.0) - 2024-01-25
+
+### Other
+- Impl Clone on result Value ([#345](https://github.com/near/near-workspaces-rs/pull/345))
+- Upgraded NEAR crates to 0.20.0 release ([#346](https://github.com/near/near-workspaces-rs/pull/346))
+- dependecy bumps ([#338](https://github.com/near/near-workspaces-rs/pull/338))
+- cleanup internals ([#329](https://github.com/near/near-workspaces-rs/pull/329))
+- use stable sandbox by default ([#335](https://github.com/near/near-workspaces-rs/pull/335))
+- [**breaking**] Remove `interop_sdk` feature from defaults ([#339](https://github.com/near/near-workspaces-rs/pull/339))
+- fix typos ([#340](https://github.com/near/near-workspaces-rs/pull/340))
+
 ## [0.9.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.8.0...near-workspaces-v0.9.0) - 2023-10-30
 
 ### Added
