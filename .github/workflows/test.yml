@@ -44,6 +44,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Install libudev-dev
+      run: |
+        sudo apt-get update
+        sudo apt-get install --assume-yes libudev-dev
     - name: run cargo doc
       run: RUSTDOCFLAGS="-D warnings" cargo doc
 
@@ -66,6 +70,10 @@ jobs:
     - uses: Swatinem/rust-cache@v1
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
+    - name: Install libudev-dev
+      run: |
+        sudo apt-get update
+        sudo apt-get install --assume-yes libudev-dev
     - name: Check with stable features
       run: cargo check --verbose
     - name: Run tests with unstable features
@@ -83,6 +91,9 @@ jobs:
           token: ${{ secrets.MY_GITHUB_TOKEN }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Install packages (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --assume-yes libudev-dev
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         env:
