@@ -80,14 +80,14 @@ jobs:
       run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --verbose --features unstable
 
   release-plz:
+    name: Release-plz
     runs-on: ubuntu-latest
-    needs: [clippy, cargo-fmt, cargo-doc, test]
-    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: recursive
           token: ${{ secrets.MY_GITHUB_TOKEN }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
