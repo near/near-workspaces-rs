@@ -9,7 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 bs58 = "0.5"
-near-sdk = "4.1"
+near-sdk = "5.0.0-alpha.2"
 
 [profile.release]
 codegen-units = 1
