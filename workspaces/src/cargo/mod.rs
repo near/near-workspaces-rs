@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::error::ErrorKind;
 
 use cargo_near::commands::build_command::{build, BuildCommand};
@@ -25,10 +23,15 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
         no_abi: true,
         out_dir: None,
         manifest_path: Some(
-            cargo_near::types::utf8_path_buf::Utf8PathBufInner::from_str(
-                &project_path.join("Cargo.toml").to_string_lossy(),
+            cargo_near::types::utf8_path_buf::Utf8PathBuf::from_path_buf(
+                project_path.join("Cargo.toml"),
             )
-            .map_err(|e| ErrorKind::Io.custom(e))?,
+            .map_err(|error_path| {
+                ErrorKind::Io.custom(format!(
+                    "Unable to construct UTF-8 path from: {}",
+                    error_path.display()
+                ))
+            })?,
         ),
     };
 
