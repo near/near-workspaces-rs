@@ -58,9 +58,9 @@ path = "src/croncat.rs"
 name = "various_queries"
 path = "src/various_queries.rs"
 
-[[example]]
-name = "view_abi"
-path = "src/view_abi.rs"
+# [[example]]
+# name = "view_abi"
+# path = "src/view_abi.rs"
 
 [[example]]
 name = "genesis_config"
@@ -97,3 +97,11 @@ path = "src/noop.rs"
 [[example]]
 name = "custom_network"
 path = "src/custom_network.rs"
+
+[[example]]
+name = "build_gen_abi"
+path = "src/build_gen_abi.rs"
+
+[[example]]
+name = "macro_gen_abi"
+path = "src/macro_gen_abi.rs"
