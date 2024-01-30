@@ -58,10 +58,6 @@ path = "src/croncat.rs"
 name = "various_queries"
 path = "src/various_queries.rs"
 
-# [[example]]
-# name = "view_abi"
-# path = "src/view_abi.rs"
-
 [[example]]
 name = "genesis_config"
 path = "src/genesis_config.rs"
