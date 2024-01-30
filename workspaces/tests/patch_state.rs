@@ -1,7 +1,7 @@
 // Required since `test_log` adds more recursion than the standard recursion limit of 128
 #![recursion_limit = "256"]
 
-use borsh::{self, BorshDeserialize, BorshSerialize};
+use near_primitives::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_token::NearToken;
 use serde_json::json;
 use test_log::test;
@@ -12,12 +12,14 @@ use near_workspaces::{AccessKey, AccountDetailsPatch, AccountId, Contract, DevNe
 const STATUS_MSG_WASM_FILEPATH: &str = "../examples/res/status_message.wasm";
 
 #[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize)]
+#[borsh(crate = "near_primitives::borsh")]
 struct Record {
     k: String,
     v: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize)]
+#[borsh(crate = "near_primitives::borsh")]
 struct StatusMessage {
     records: Vec<Record>,
 }
@@ -74,7 +76,7 @@ async fn test_patch_state() -> anyhow::Result<()> {
     });
 
     worker
-        .patch_state(&contract_id, b"STATE", &status_msg.try_to_vec()?)
+        .patch_state(&contract_id, b"STATE", &borsh::to_vec(&status_msg)?)
         .await?;
 
     let status: String = worker
@@ -101,7 +103,7 @@ async fn test_patch() -> anyhow::Result<()> {
 
     worker
         .patch(&contract_id)
-        .state(b"STATE", &status_msg.try_to_vec()?)
+        .state(b"STATE", &borsh::to_vec(&status_msg)?)
         .transact()
         .await?;
 
@@ -140,7 +142,7 @@ async fn test_patch_full() -> anyhow::Result<()> {
         )
         .access_key(sk.public_key(), AccessKey::full_access())
         .code(&status_msg_code)
-        .state(b"STATE", &status_msg.try_to_vec()?)
+        .state(b"STATE", &borsh::to_vec(&status_msg)?)
         .transact()
         .await?;
 

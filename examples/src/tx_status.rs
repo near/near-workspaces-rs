@@ -21,8 +21,8 @@ async fn main() -> anyhow::Result<()> {
     let tx_info = {
         let outcome = outcome.outcome();
         TransactionInfo::TransactionId {
-            hash: CryptoHash(outcome.transaction_hash.0),
-            account_id: outcome.executor_id.clone(),
+            tx_hash: CryptoHash(outcome.transaction_hash.0),
+            sender_account_id: outcome.executor_id.clone(),
         }
     };
 

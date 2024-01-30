@@ -1,6 +1,6 @@
 use std::env;
 
-use borsh::{self, BorshDeserialize, BorshSerialize};
+use near_primitives::borsh::{BorshDeserialize, BorshSerialize};
 use near_workspaces::{AccountId, Contract, DevNetwork, Worker};
 use serde_json::json;
 use tracing::info;
@@ -13,9 +13,9 @@ const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 /// overload testnet and have to go through a couple more cycles than we have to, to showcase spooning.
 ///
 /// If you'd like a different account to deploy it to, run the following:
-/// ```norun
+/// ```rust, norun
 /// async fn deploy_testnet() -> anyhow::Result<()> {
-///     let worker = worspaces::testnet().await?;
+///     let worker = near_workspaces::testnet().await?;
 ///
 ///     let contract = deploy_status_contract(worker, "hello from testnet").await?;
 ///     println!("{}", contract.id());
@@ -28,12 +28,14 @@ const TESTNET_PREDEPLOYED_CONTRACT_ID: &str = "dev-20211013002148-59466083160385
 // formats. Note that these will be different depending on what data structure
 // we use in our contract.
 #[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize)]
+#[borsh(crate = "near_primitives::borsh")]
 struct Record {
     k: String,
     v: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, BorshDeserialize, BorshSerialize)]
+#[borsh(crate = "near_primitives::borsh")]
 struct StatusMessage {
     records: Vec<Record>,
 }
@@ -81,15 +83,16 @@ async fn main() -> anyhow::Result<()> {
             .parse()
             .map_err(anyhow::Error::msg)?;
 
-        let mut state_items = worker.view_state(&contract_id).await?;
+        let state = worker
+            .view_state(&contract_id)
+            .await?
+            .remove(b"STATE".as_slice())
+            .unwrap();
 
-        let state = state_items.remove(b"STATE".as_slice()).unwrap();
-        let status_msg = StatusMessage::try_from_slice(&state)?;
-
-        (contract_id, status_msg)
+        (contract_id, state)
     };
 
-    info!(target: "spooning", "Testnet: {:?}", status_msg);
+    info!(target: "spooning", "Testnet: {:?}", StatusMessage::try_from_slice(&status_msg)?);
 
     // Create our sandboxed environment and grab a worker to do stuff in it:
     let worker = near_workspaces::sandbox().await?;
@@ -99,7 +102,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Patch our testnet STATE into our local sandbox:
     worker
-        .patch_state(sandbox_contract.id(), b"STATE", &status_msg.try_to_vec()?)
+        .patch_state(sandbox_contract.id(), b"STATE", &status_msg)
         .await?;
 
     // Now grab the state to see that it has indeed been patched:
@@ -114,7 +117,7 @@ async fn main() -> anyhow::Result<()> {
     info!(target: "spooning", "New status patched: {:?}", status);
     assert_eq!(&status, "hello from testnet");
 
-    // See that sandbox state was overriden. Grabbing get_status(sandbox_contract_id) should yield Null
+    // See that sandbox state was overridden. Grabbing get_status(sandbox_contract_id) should yield Null
     let result: Option<String> = sandbox_contract
         .view("get_status")
         .args_json(json!({

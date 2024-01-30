@@ -11,6 +11,7 @@ use near_workspaces::types::NearToken;
 use near_workspaces::{Account, AccountId, Contract, Worker};
 use serde::Deserialize;
 use serde_json::json;
+use serde_with::{serde_as, DisplayFromStr};
 
 const MANAGER_CONTRACT: &[u8] = include_bytes!("../res/manager.wasm");
 const COUNTER_CONTRACT: &[u8] = include_bytes!("../res/counter.wasm");
@@ -30,14 +31,15 @@ pub enum AgentStatus {
 /// look at what an `Agent` is all about, refer to the [croncat docs](https://docs.cron.cat/docs/)
 /// to understand further, but for this example all we care about is that an Agent is something
 /// that can run scheduled tasks once it is time and collect rewards thereafter.
+#[serde_as]
 #[derive(Debug, Deserialize)]
 pub struct Agent {
     pub status: AgentStatus,
     pub payable_account_id: AccountId,
-    // NOTE: display_fromstr is used to deserialize from a U128 type returned from the contract
+    // NOTE: DisplayFromStr is used to deserialize from a U128 type returned from the contract
     // which is represented as a string there, and then converted into a rust u128 here.
     pub balance: NearToken,
-    #[serde(with = "serde_with::rust::display_fromstr")]
+    #[serde_as(as = "DisplayFromStr")]
     pub total_tasks_executed: u128,
     pub last_missed_slot: u128,
 }
@@ -186,9 +188,9 @@ pub async fn run_scheduled_tasks(
         NearToken::from_yoctonear(2260000000000000000000u128)
     );
 
-    // This shows how much the agent has profitted from executing the task:
+    // This shows how much the agent has profited from executing the task:
     println!(
-        "Agent profitted {} yN and has been transferred to the agent's account",
+        "Agent profited {} yN and has been transferred to the agent's account",
         before_withdraw.as_yoctonear() - agent_details.balance.as_yoctonear()
     );
 

@@ -16,8 +16,8 @@ use std::io;
 use std::path::Path;
 use std::str::FromStr;
 
-use borsh::{BorshDeserialize, BorshSerialize};
 pub use near_account_id::AccountId;
+use near_primitives::borsh::{BorshDeserialize, BorshSerialize};
 
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
@@ -27,8 +27,7 @@ use crate::result::Result;
 
 pub use self::account::{AccountDetails, AccountDetailsPatch};
 pub use self::chunk::{Chunk, ChunkHeader};
-
-pub use self::gas_meter::{GasHook, GasMeter};
+pub use self::gas_meter::GasMeter;
 
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
@@ -145,6 +144,7 @@ impl PublicKey {
         )?))
     }
 
+    #[cfg(feature = "interop_sdk")]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
         let key_type = KeyType::try_from(bytes[0])?;
         Ok(Self(

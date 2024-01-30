@@ -35,10 +35,10 @@ async fn test_empty_args_error() -> anyhow::Result<()> {
         .await?
         .into_result();
 
-    if let Some(exeuction_err) = res.err() {
-        assert!(format!("{}", exeuction_err).contains("Failed to deserialize input from JSON"));
+    if let Some(execution_err) = res.err() {
+        assert!(format!("{}", execution_err).contains("Failed to deserialize input from JSON"));
         assert!(
-            exeuction_err.total_gas_burnt > NearGas::from_gas(0),
+            execution_err.total_gas_burnt > NearGas::from_gas(0),
             "Gas is still burnt for transaction although inputs are incorrect"
         );
     } else {
