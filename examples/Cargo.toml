@@ -22,6 +22,10 @@ near-workspaces = { path = "../workspaces", features = [
     "unstable",
 ] }
 
+[build-dependencies]
+anyhow = "1.0"
+near-workspaces = { path = "../workspaces" }
+
 [[example]]
 name = "async_transaction"
 path = "src/async_transaction.rs"
@@ -89,3 +93,11 @@ path = "src/noop.rs"
 [[example]]
 name = "custom_network"
 path = "src/custom_network.rs"
+
+[[example]]
+name = "build_gen_abi"
+path = "src/build_gen_abi.rs"
+
+[[example]]
+name = "macro_gen_abi"
+path = "src/macro_gen_abi.rs"
