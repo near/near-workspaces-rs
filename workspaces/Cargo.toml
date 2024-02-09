@@ -34,10 +34,10 @@ near-abi-client = "0.1.1"
 near-gas = { version = "0.2.5", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.2.0", features = ["serde"] }
 near-sdk = { version = "5.0.0-alpha.2", optional = true }
-near-account-id = "1.0.0"
-near-crypto = "0.20.0"
-near-primitives = "0.20.0"
-near-jsonrpc-primitives = "0.20.0"
+near-account-id = "1"
+near-crypto = "0.20"
+near-primitives = "0.20"
+near-jsonrpc-primitives = "0.20"
 near-jsonrpc-client = { version = "0.8", features = ["sandbox"] }
 near-sandbox-utils = "0.7.0"
 near-chain-configs = { version = "0.20.0", optional = true }
