@@ -334,6 +334,13 @@ async fn test_contract() -> anyhow::Result<()> {
 
 For a full example, take a look at [workspaces/tests/deploy_project.rs](https://github.com/near/near-workspaces-rs/blob/main/workspaces/tests/deploy_project.rs).
 
+### Coverage analysis of WASM executables
+
+Generated code coverage reports help identify areas of code that are executed during testing, making it a valuable tool for ensuring the reliability and quality of your contracts.
+[Here](https://hknio.github.io/wasmcov/docs/NEAR) is the step by step guide documentation to achieve this.
+
+The project can be found here: <https://github.com/hknio/wasmcov>
+
 ### Other Features
 
 Other features can be directly found in the `examples/` folder, with some documentation outlining how they can be used.

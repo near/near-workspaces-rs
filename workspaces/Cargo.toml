@@ -30,6 +30,7 @@ tokio-retry = "0.3"
 tracing = "0.1"
 url = { version = "2.2.2", features = ["serde"] }
 
+near-abi-client = "0.1.1"
 near-gas = { version = "0.2.5", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.2.0", features = ["serde"] }
 near-sdk = { version = "5.0.0-alpha.2", optional = true }
