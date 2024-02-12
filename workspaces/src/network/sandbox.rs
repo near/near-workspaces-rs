@@ -1,22 +1,26 @@
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use async_trait::async_trait;
-use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
-use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
+use near_jsonrpc_client::methods::{
+    sandbox_fast_forward::RpcSandboxFastForwardRequest,
+    sandbox_patch_state::RpcSandboxPatchStateRequest,
+};
 use near_primitives::state_record::StateRecord;
 use near_sandbox_utils as sandbox;
 
-use super::builder::{FromNetworkBuilder, NetworkBuilder};
-use super::server::ValidatorKey;
-use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::error::SandboxErrorCode;
-use crate::network::server::SandboxServer;
-use crate::network::Info;
-use crate::result::{Execution, ExecutionFinalResult, Result};
-use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
-use crate::{Account, Contract, Network, Worker};
+use super::{
+    builder::{FromNetworkBuilder, NetworkBuilder},
+    server::ValidatorKey,
+    AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator,
+};
+use crate::{
+    error::SandboxErrorCode,
+    network::{server::SandboxServer, Info},
+    result::{Execution, ExecutionFinalResult, Result},
+    rpc::client::Client,
+    types::{AccountId, InMemorySigner, NearToken, SecretKey},
+    Account, Contract, Network, Worker,
+};
 
 // Constant taken from nearcore crate to avoid dependency
 const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
@@ -126,17 +130,8 @@ impl TopLevelAccountCreator for Sandbox {
         id: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>> {
-        let root_signer = self.root_signer()?;
-        let outcome = self
-            .client()
-            .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
-            .await?;
-
-        let signer = InMemorySigner::from_secret_key(id, sk);
-        Ok(Execution {
-            result: Account::new(signer, worker),
-            details: ExecutionFinalResult::from_view(outcome),
-        })
+        self.create_tla_with_deposit(worker, id, sk, DEFAULT_DEPOSIT)
+            .await
     }
 
     async fn create_tla_and_deploy(
@@ -161,6 +156,26 @@ impl TopLevelAccountCreator for Sandbox {
         let signer = InMemorySigner::from_secret_key(id, sk);
         Ok(Execution {
             result: Contract::new(signer, worker),
+            details: ExecutionFinalResult::from_view(outcome),
+        })
+    }
+
+    async fn create_tla_with_deposit(
+        &self,
+        worker: Worker<dyn Network>,
+        id: AccountId,
+        sk: SecretKey,
+        deposit: NearToken,
+    ) -> Result<Execution<Account>> {
+        let root_signer = self.root_signer()?;
+        let outcome = self
+            .client()
+            .create_account(&root_signer, &id, sk.public_key(), deposit)
+            .await?;
+
+        let signer = InMemorySigner::from_secret_key(id, sk);
+        Ok(Execution {
+            result: Account::new(signer, worker),
             details: ExecutionFinalResult::from_view(outcome),
         })
     }

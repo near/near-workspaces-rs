@@ -94,3 +94,16 @@ async fn test_delete_account() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test(tokio::test)]
+async fn test_dev_account_with_deposit() -> anyhow::Result<()> {
+    let worker = near_workspaces::sandbox().await?;
+
+    let amount = NearToken::from_near(1_111_222);
+
+    let account = worker.dev_create_account_with_deposit(amount).await?;
+
+    assert_eq!(amount, account.view_account().await?.balance);
+
+    Ok(())
+}

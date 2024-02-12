@@ -1,19 +1,20 @@
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use async_trait::async_trait;
 use near_gas::NearGas;
+use near_primitives::views::ExecutionStatusView;
 use url::Url;
 
-use near_primitives::views::ExecutionStatusView;
-
-use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
-use crate::network::Info;
-use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
-use crate::rpc::{client::Client, tool};
-use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
-use crate::{Account, Contract, CryptoHash, Network, Worker};
+use crate::{
+    network::{
+        builder::{FromNetworkBuilder, NetworkBuilder},
+        AllowDevAccountCreation, Info, NetworkClient, NetworkInfo, TopLevelAccountCreator,
+    },
+    result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result},
+    rpc::{client::Client, tool},
+    types::{AccountId, InMemorySigner, NearToken, SecretKey},
+    Account, Contract, CryptoHash, Network, Worker,
+};
 
 /// URL to the testnet RPC node provided by near.org.
 pub const RPC_URL: &str = "https://rpc.testnet.near.org";
@@ -120,6 +121,16 @@ impl TopLevelAccountCreator for Testnet {
             result: Contract::account(account.into_result()?),
             details: ExecutionFinalResult::from_view(outcome),
         })
+    }
+
+    async fn create_tla_with_deposit(
+        &self,
+        _worker: Worker<dyn Network>,
+        _id: AccountId,
+        _sk: SecretKey,
+        _deposit: NearToken,
+    ) -> Result<Execution<Account>> {
+        unimplemented!("Creating accounts with deposit is not supported on Testnet")
     }
 }
 

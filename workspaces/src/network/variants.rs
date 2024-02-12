@@ -1,9 +1,13 @@
-use crate::network::Info;
-use crate::result::{Execution, Result};
-use crate::rpc::client::Client;
-use crate::types::{AccountId, KeyType, SecretKey};
-use crate::{Account, Contract, Worker};
 use async_trait::async_trait;
+use near_token::NearToken;
+
+use crate::{
+    network::Info,
+    result::{Execution, Result},
+    rpc::client::Client,
+    types::{AccountId, KeyType, SecretKey},
+    Account, Contract, Worker,
+};
 
 pub(crate) const DEV_ACCOUNT_SEED: &str = "testificate";
 
@@ -31,6 +35,14 @@ pub trait TopLevelAccountCreator {
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>>;
+
+    async fn create_tla_with_deposit(
+        &self,
+        worker: Worker<dyn Network>,
+        id: AccountId,
+        sk: SecretKey,
+        deposit: NearToken,
+    ) -> Result<Execution<Account>>;
 }
 
 // NOTE: Not all networks/runtimes will have the ability to be able to do dev_deploy.
@@ -45,6 +57,24 @@ where
         let res = self
             .workspace
             .create_tla(self.clone().coerce(), id, sk)
+            .await?;
+
+        for callback in self.tx_callbacks.iter() {
+            callback(res.details.total_gas_burnt)?;
+        }
+
+        Ok(res)
+    }
+
+    pub async fn create_tla_with_deposit(
+        &self,
+        id: AccountId,
+        sk: SecretKey,
+        deposit: NearToken,
+    ) -> Result<Execution<Account>> {
+        let res = self
+            .workspace
+            .create_tla_with_deposit(self.clone().coerce(), id, sk, deposit)
             .await?;
 
         for callback in self.tx_callbacks.iter() {
@@ -81,6 +111,14 @@ where
     pub async fn dev_create_account(&self) -> Result<Account> {
         let (id, sk) = self.dev_generate().await;
         let account = self.create_tla(id.clone(), sk).await?;
+        Ok(account.into_result()?)
+    }
+
+    pub async fn dev_create_account_with_deposit(&self, deposit: NearToken) -> Result<Account> {
+        let (id, sk) = self.dev_generate().await;
+        let account = self
+            .create_tla_with_deposit(id.clone(), sk, deposit)
+            .await?;
         Ok(account.into_result()?)
     }
 
