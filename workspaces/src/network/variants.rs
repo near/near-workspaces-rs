@@ -15,6 +15,7 @@ pub trait NetworkInfo {
     fn info(&self) -> &Info;
 }
 
+// NOTE: only the registrar can create top level accounts as of Protocol >=64
 #[async_trait]
 pub trait TopLevelAccountCreator {
     async fn create_tla(
@@ -39,7 +40,7 @@ pub trait AllowDevAccountCreation {}
 
 impl<T> Worker<T>
 where
-    T: DevNetwork + TopLevelAccountCreator + 'static,
+    T: DevNetwork + TopLevelAccountCreator + 'static + NetworkInfo,
 {
     pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<Execution<Account>> {
         let res = self
@@ -73,7 +74,7 @@ where
     }
 
     pub async fn dev_generate(&self) -> (AccountId, SecretKey) {
-        let id = crate::rpc::tool::random_account_id();
+        let id = crate::rpc::tool::random_account_id(self.info().root_id.clone());
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         (id, sk)
     }

@@ -39,6 +39,7 @@ async fn test_invalid_query() -> anyhow::Result<()> {
         .transact()
         .await?
         .into_result();
+
     let error =
         result.expect_err("expected error while passing deposit to `status_msg.set_status`");
     assert!(format!("{error:?}").contains("Smart contract panicked: Method doesn't accept deposit"));

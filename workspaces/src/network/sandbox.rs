@@ -15,11 +15,9 @@ use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{Execution, ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
-use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
+use crate::types::{AccountId, InMemorySigner, SecretKey, SEED_DEPOSIT};
 use crate::{Account, Contract, Network, Worker};
 
-// Constant taken from nearcore crate to avoid dependency
-const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
 /// Local sandboxed environment/network, which can be used to test without interacting with
 /// networks that are online such as mainnet and testnet. Look at [`workspaces::sandbox`]
 /// for how to spin up a sandboxed network and interact with it.
@@ -129,7 +127,7 @@ impl TopLevelAccountCreator for Sandbox {
         let root_signer = self.root_signer()?;
         let outcome = self
             .client()
-            .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
+            .create_account(&root_signer, &id, sk.public_key(), SEED_DEPOSIT)
             .await?;
 
         let signer = InMemorySigner::from_secret_key(id, sk);
@@ -153,7 +151,7 @@ impl TopLevelAccountCreator for Sandbox {
                 &root_signer,
                 &id,
                 sk.public_key(),
-                DEFAULT_DEPOSIT,
+                SEED_DEPOSIT,
                 wasm.into(),
             )
             .await?;
