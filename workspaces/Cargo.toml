@@ -35,12 +35,12 @@ near-gas = { version = "0.2.5", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.2.0", features = ["serde"] }
 near-sdk = { version = "5.0.0-alpha.2", optional = true }
 near-account-id = "1.0.0"
-near-crypto = "0.20.0"
-near-primitives = "0.20.0"
-near-jsonrpc-primitives = "0.20.0"
+near-crypto = "0.21.2"
+near-primitives = "0.21.2"
+near-jsonrpc-primitives = "0.21.2"
 near-jsonrpc-client = { version = "0.8", features = ["sandbox"] }
 near-sandbox-utils = "0.7.0"
-near-chain-configs = { version = "0.20.0", optional = true }
+near-chain-configs = { version = "0.21.2", optional = true }
 
 [build-dependencies]
 near-sandbox-utils = "0.7.0"
