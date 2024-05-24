@@ -24,7 +24,7 @@ use {
         types::{BlockReference, MaybeBlockId},
         views::{
             validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
-            ReceiptView, StateChangesRequestView,
+            ReceiptView, StateChangesRequestView, TxExecutionStatus,
         },
     },
 };
@@ -241,7 +241,9 @@ where
         &self,
         transaction_info: TransactionInfo,
     ) -> Result<FinalExecutionOutcomeWithReceiptView> {
-        self.client().tx_status(transaction_info).await
+        self.client()
+            .tx_status(transaction_info, TxExecutionStatus::Included)
+            .await
     }
 
     /// Provides a list of validators ordered with respect to their stake.

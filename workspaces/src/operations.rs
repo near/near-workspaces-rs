@@ -513,25 +513,34 @@ impl TransactionStatus {
     /// is in an unexpected state. The error should have further context. Otherwise, if an
     /// `Ok` value with [`Poll::Pending`] is returned, then the transaction has not finished.
     pub async fn status(&self) -> Result<Poll<ExecutionFinalResult>> {
-        let result = self
+        let rpc_resp = self
             .worker
             .client()
             .tx_async_status(
                 &self.sender_id,
                 near_primitives::hash::CryptoHash(self.hash.0),
+                near_primitives::views::TxExecutionStatus::Included,
             )
-            .await
-            .map(ExecutionFinalResult::from_view);
+            .await;
 
-        match result {
-            Ok(result) => Ok(Poll::Ready(result)),
+        let rpc_resp = match rpc_resp {
+            Ok(rpc_resp) => rpc_resp,
             Err(err) => match err {
                 JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
                     RpcTransactionError::UnknownTransaction { .. },
-                )) => Ok(Poll::Pending),
-                other => Err(RpcErrorCode::BroadcastTxFailure.custom(other)),
+                )) => return Ok(Poll::Pending),
+                other => return Err(RpcErrorCode::BroadcastTxFailure.custom(other)),
             },
-        }
+        };
+
+        let Some(final_outcome) = rpc_resp.final_execution_outcome else {
+            // final execution outcome is not available yet.
+            return Ok(Poll::Pending);
+        };
+
+        Ok(Poll::Ready(ExecutionFinalResult::from_view(
+            final_outcome.into_outcome(),
+        )))
     }
 
     /// Wait until the completion of the transaction by polling [`TransactionStatus::status`].

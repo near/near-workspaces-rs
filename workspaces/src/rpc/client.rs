@@ -11,7 +11,7 @@ use tokio_retry::Retry;
 
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::health::RpcStatusError;
-use near_jsonrpc_client::methods::tx::RpcTransactionError;
+use near_jsonrpc_client::methods::tx::{RpcTransactionError, RpcTransactionResponse};
 use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::account::{AccessKey, AccessKeyPermission};
@@ -24,6 +24,7 @@ use near_primitives::transaction::{
 use near_primitives::types::{BlockReference, Finality, Gas};
 use near_primitives::views::{
     AccessKeyView, BlockView, FinalExecutionOutcomeView, QueryRequest, StatusResponse,
+    TxExecutionStatus,
 };
 
 #[cfg(feature = "experimental")]
@@ -312,12 +313,14 @@ impl Client {
         &self,
         sender_id: &AccountId,
         tx_hash: CryptoHash,
-    ) -> Result<FinalExecutionOutcomeView, JsonRpcError<RpcTransactionError>> {
+        wait_until: TxExecutionStatus,
+    ) -> Result<RpcTransactionResponse, JsonRpcError<RpcTransactionError>> {
         self.query(methods::tx::RpcTransactionStatusRequest {
             transaction_info: methods::tx::TransactionInfo::TransactionId {
                 sender_account_id: sender_id.clone(),
                 tx_hash,
             },
+            wait_until,
         })
         .await
     }
@@ -426,13 +429,33 @@ impl Client {
     pub(crate) async fn tx_status(
         &self,
         transaction_info: TransactionInfo,
+        wait_until: TxExecutionStatus,
     ) -> Result<FinalExecutionOutcomeWithReceiptView> {
         let resp = self
             .rpc_client
-            .call(methods::EXPERIMENTAL_tx_status::RpcTransactionStatusRequest { transaction_info })
+            .call(
+                methods::EXPERIMENTAL_tx_status::RpcTransactionStatusRequest {
+                    transaction_info,
+                    wait_until,
+                },
+            )
             .await
             .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-        Ok(resp)
+        let Some(final_outcome) = resp.final_execution_outcome else {
+            return Err(RpcErrorCode::QueryFailure.message("final outcome not available yet"));
+        };
+        let outcome = match final_outcome {
+            near_primitives::views::FinalExecutionOutcomeViewEnum::FinalExecutionOutcomeWithReceipt(outcome) => {
+                outcome
+            }
+            near_primitives::views::FinalExecutionOutcomeViewEnum::FinalExecutionOutcome(_) => {
+                return Err(
+                    RpcErrorCode::QueryReturnedInvalidData.message("while querying transaction status")
+                );
+            },
+        };
+
+        Ok(outcome)
     }
 
     pub(crate) async fn validators_ordered(
