@@ -45,7 +45,7 @@ impl Sandbox {
             )),
         }
     }
-    pub async fn from_builder_with_version<'a>(
+    pub(crate) async fn from_builder_with_version<'a>(
         build: NetworkBuilder<'a, Self>,
         version: &str,
     ) -> Result<Self> {
