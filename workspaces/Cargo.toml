@@ -33,7 +33,7 @@ url = { version = "2.2.2", features = ["serde"] }
 near-abi-client = "0.1.1"
 near-gas = { version = "0.2.5", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.2.0", features = ["serde"] }
-near-sdk = { version = "5.0.0-alpha.2", optional = true }
+near-sdk = { git = "https://github.com/near/near-sdk-rs.git", rev = "5a9acaedc95c5721d2088f263bc99e3de574decf", optional=true }
 near-account-id = "1.0"
 near-crypto = "0.21"
 near-primitives = "0.21"
@@ -51,7 +51,7 @@ libc = "0.2"
 [dev-dependencies]
 anyhow = "1.0"
 futures = "0.3"
-near-sdk = "5.0.0-alpha.2"
+near-sdk = { git = "https://github.com/near/near-sdk-rs.git", rev = "5a9acaedc95c5721d2088f263bc99e3de574decf"}
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
