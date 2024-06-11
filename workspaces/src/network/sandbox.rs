@@ -45,6 +45,20 @@ impl Sandbox {
             )),
         }
     }
+
+    pub(crate) fn register_signer(&self) -> Result<InMemorySigner> {
+        match &self.server.validator_key {
+            ValidatorKey::HomeDir(home_dir) => {
+                let path = home_dir.join("registrar.json");
+                InMemorySigner::from_file(&path)
+            }
+            ValidatorKey::Known(account_id, secret_key) => Ok(InMemorySigner::from_secret_key(
+                account_id.clone(),
+                secret_key.clone(),
+            )),
+        }
+    }
+
     pub(crate) async fn from_builder_with_version<'a>(
         build: NetworkBuilder<'a, Self>,
         version: &str,
@@ -126,7 +140,7 @@ impl TopLevelAccountCreator for Sandbox {
         id: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>> {
-        let root_signer = self.root_signer()?;
+        let root_signer = self.register_signer()?;
         let outcome = self
             .client()
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
@@ -146,7 +160,7 @@ impl TopLevelAccountCreator for Sandbox {
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-        let root_signer = self.root_signer()?;
+        let root_signer = self.register_signer()?;
         let outcome = self
             .client()
             .create_account_and_deploy(

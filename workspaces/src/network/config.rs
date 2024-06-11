@@ -11,8 +11,9 @@
 // churn if we were to.
 
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Write};
 use std::path::Path;
+use std::str::FromStr;
 
 use serde_json::Value;
 
@@ -73,4 +74,84 @@ pub(crate) fn set_sandbox_configs(home_dir: impl AsRef<Path>) -> Result<()> {
             }
         }),
     )
+}
+
+/// Overwrite the $home_dir/genesis.json file over a set of entries. `value` will be used per (key, value) pair
+/// where value can also be another dict. This recursively sets all entry in `value` dict to the config
+/// dict, and saves back into `home_dir` at the end of the day.
+fn overwrite_genesis(home_dir: impl AsRef<Path>) -> Result<()> {
+    let home_dir = home_dir.as_ref();
+    let config_file =
+        File::open(home_dir.join("genesis.json")).map_err(|err| ErrorKind::Io.custom(err))?;
+    let config = BufReader::new(config_file);
+    let mut config: Value =
+        serde_json::from_reader(config).map_err(|err| ErrorKind::DataConversion.custom(err))?;
+
+    let config = config.as_object_mut().expect("expected to be object");
+    let mut total_supply = u128::from_str(
+        config
+            .get_mut("total_supply")
+            .expect("expected exist total_supply")
+            .as_str()
+            .unwrap_or_default(),
+    )
+    .unwrap_or_default();
+    let register_amount = 1_000_000_000_000_000_0000_000_000_000_u128;
+    total_supply += register_amount;
+    config.insert(
+        "total_supply".to_string(),
+        Value::String(total_supply.to_string()),
+    );
+    let records = config.get_mut("records").expect("expect exist records");
+    records
+        .as_array_mut()
+        .expect("expected to be array")
+        .push(serde_json::json!(
+            {
+                  "Account": {
+                    "account_id": "registrar",
+                    "account": {
+                      "amount": register_amount.to_string(),
+                      "locked": "0",
+                      "code_hash": "11111111111111111111111111111111",
+                      "storage_usage": 182
+                    }
+                  }
+            }
+        ));
+    records
+        .as_array_mut()
+        .expect("expected to be array")
+        .push(serde_json::json!(
+            {
+              "AccessKey": {
+                "account_id": "registrar",
+                "public_key": "ed25519:5BGSaf6YjVm7565VzWQHNxoyEjwr3jUpRJSGjREvU9dB",
+                "access_key": {
+                  "nonce": 0,
+                  "permission": "FullAccess"
+                }
+              }
+            }
+        ));
+
+    let config_file =
+        File::create(home_dir.join("genesis.json")).map_err(|err| ErrorKind::Io.custom(err))?;
+    serde_json::to_writer(config_file, &config).map_err(|err| ErrorKind::Io.custom(err))?;
+
+    Ok(())
+}
+
+pub(crate) fn set_sandbox_genesis(home_dir: impl AsRef<Path>) -> Result<()> {
+    overwrite_genesis(&home_dir)?;
+    let registrar_key = r#"{"account_id":"registrar","public_key":"ed25519:5BGSaf6YjVm7565VzWQHNxoyEjwr3jUpRJSGjREvU9dB","private_key":"ed25519:3tgdk2wPraJzT4nsTuf86UX41xgPNk3MHnq8epARMdBNs29AFEztAuaQ7iHddDfXG9F2RzV1XNQYgJyAyoW51UBB"}"#;
+    let mut registrar_wallet = File::create(home_dir.as_ref().join("registrar.json"))
+        .map_err(|err| ErrorKind::Io.custom(err))?;
+    registrar_wallet
+        .write_all(registrar_key.as_bytes())
+        .map_err(|err| ErrorKind::Io.custom(err))?;
+    registrar_wallet
+        .flush()
+        .map_err(|err| ErrorKind::Io.custom(err))?;
+    Ok(())
 }
