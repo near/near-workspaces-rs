@@ -96,7 +96,7 @@ fn overwrite_genesis(home_dir: impl AsRef<Path>) -> Result<()> {
             .unwrap_or_default(),
     )
     .unwrap_or_default();
-    let register_amount = 1_000_000_000_000_000_0000_000_000_000_u128;
+    let register_amount = 10_000_000_000_000_000_000_000_000_000_u128;
     total_supply += register_amount;
     config.insert(
         "total_supply".to_string(),
