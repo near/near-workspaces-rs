@@ -22,7 +22,7 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
     DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
 };
-use near_primitives::views::FinalExecutionOutcomeView;
+use near_primitives::views::{FinalExecutionOutcomeView, TxExecutionStatus};
 use std::convert::TryInto;
 use std::fmt;
 use std::future::IntoFuture;
@@ -532,6 +532,10 @@ impl TransactionStatus {
                 other => return Err(RpcErrorCode::BroadcastTxFailure.custom(other)),
             },
         };
+
+        if matches!(rpc_resp.final_execution_status, TxExecutionStatus::Included) {
+            return Ok(Poll::Pending);
+        }
 
         let Some(final_outcome) = rpc_resp.final_execution_outcome else {
             // final execution outcome is not available yet.

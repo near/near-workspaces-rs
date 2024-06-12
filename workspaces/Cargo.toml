@@ -39,11 +39,11 @@ near-crypto = "0.21"
 near-primitives = "0.21"
 near-jsonrpc-primitives = "0.21"
 near-jsonrpc-client = { version = "0.9", features = ["sandbox"] }
-near-sandbox-utils = { git = "https://github.com/near/near-sandbox.git", rev = "4ca9c1fac434b75ee40c890cda5edd47ce86ead2" }
+near-sandbox-utils = "0.8"
 near-chain-configs = { version = "0.21", optional = true }
 
 [build-dependencies]
-near-sandbox-utils = { git = "https://github.com/near/near-sandbox.git", rev = "4ca9c1fac434b75ee40c890cda5edd47ce86ead2" }
+near-sandbox-utils = "0.8"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
