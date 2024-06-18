@@ -32,6 +32,12 @@ pub use self::gas_meter::GasMeter;
 /// Nonce is a unit used to determine the order of transactions in the pool.
 pub type Nonce = u64;
 
+/// StorageUsage is used to count the amount of storage used by a contract.
+pub type StorageUsage = u64;
+
+/// Version of the NEAR protocol represented as a number.
+pub type ProtocolVersion = u32;
+
 /// Gas units used in the execution of transactions. For a more in depth description of
 /// how and where it can be used, visit [Gas](https://docs.near.org/docs/concepts/gas).
 pub use near_gas::NearGas as Gas;

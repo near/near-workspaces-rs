@@ -13,6 +13,8 @@ use crate::{BlockHeight, CryptoHash, Network, Worker};
 use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
 use crate::result::{Execution, ExecutionFinalResult, Result};
 
+use super::{ProtocolVersion, StorageUsage};
+
 /// `Account` is directly associated to an account in the network provided by the
 /// [`Worker`] that creates it. This type offers methods to interact with any
 /// network, such as creating transactions and calling into contract functions.
@@ -394,6 +396,9 @@ pub struct AccountDetails {
     pub locked: NearToken,
     pub code_hash: CryptoHash,
     pub storage_usage: u64,
+    pub permanent_storage_bytes: StorageUsage,
+    pub protocol_version: ProtocolVersion,
+
     // Deprecated value. Mainly used to be able to convert back into an AccountView
     pub(crate) storage_paid_at: BlockHeight,
 }
@@ -405,6 +410,8 @@ impl AccountDetails {
             locked: NearToken::from_near(0),
             code_hash: CryptoHash::default(),
             storage_usage: 0,
+            permanent_storage_bytes: 0,
+            protocol_version: 0,
             storage_paid_at: 0,
         }
     }
@@ -413,8 +420,10 @@ impl AccountDetails {
         near_primitives::account::Account::new(
             self.balance.as_yoctonear(),
             self.locked.as_yoctonear(),
+            self.permanent_storage_bytes,
             near_primitives::hash::CryptoHash(self.code_hash.0),
             self.storage_usage,
+            self.protocol_version,
         )
     }
 }
@@ -432,7 +441,10 @@ impl From<AccountView> for AccountDetails {
             locked: NearToken::from_yoctonear(account.locked),
             code_hash: CryptoHash(account.code_hash.0),
             storage_usage: account.storage_usage,
+            // permanent_storage_bytes: account.permanent_storage_bytes,
+            permanent_storage_bytes: 0,
             storage_paid_at: account.storage_paid_at,
+            protocol_version: 0,
         }
     }
 }
@@ -445,6 +457,8 @@ impl From<AccountDetailsPatch> for AccountDetails {
             code_hash: value.code_hash.unwrap_or_default(),
             storage_usage: value.storage_usage.unwrap_or_default(),
             storage_paid_at: value.storage_paid_at.unwrap_or_default(),
+            protocol_version: 0,
+            permanent_storage_bytes: 0,
         }
     }
 }
