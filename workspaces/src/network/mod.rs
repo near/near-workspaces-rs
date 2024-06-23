@@ -27,3 +27,4 @@ pub use self::testnet::Testnet;
 pub use self::variants::{
     AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator,
 };
+pub use config::set_sandbox_genesis;

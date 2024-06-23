@@ -142,7 +142,7 @@ fn overwrite_genesis(home_dir: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn set_sandbox_genesis(home_dir: impl AsRef<Path>) -> Result<()> {
+pub fn set_sandbox_genesis(home_dir: impl AsRef<Path>) -> Result<()> {
     overwrite_genesis(&home_dir)?;
     let registrar_key = r#"{"account_id":"registrar","public_key":"ed25519:5BGSaf6YjVm7565VzWQHNxoyEjwr3jUpRJSGjREvU9dB","private_key":"ed25519:3tgdk2wPraJzT4nsTuf86UX41xgPNk3MHnq8epARMdBNs29AFEztAuaQ7iHddDfXG9F2RzV1XNQYgJyAyoW51UBB"}"#;
     let mut registrar_wallet = File::create(home_dir.as_ref().join("registrar.json"))
