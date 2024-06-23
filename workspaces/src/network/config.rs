@@ -96,8 +96,8 @@ fn overwrite_genesis(home_dir: impl AsRef<Path>) -> Result<()> {
             .unwrap_or_default(),
     )
     .unwrap_or_default();
-    let register_amount = 10_000_000_000_000_000_000_000_000_000_u128;
-    total_supply += register_amount;
+    let registrar_amount = 10_000_000_000_000_000_000_000_000_000_u128;
+    total_supply += registrar_amount;
     config.insert(
         "total_supply".to_string(),
         Value::String(total_supply.to_string()),
@@ -111,7 +111,7 @@ fn overwrite_genesis(home_dir: impl AsRef<Path>) -> Result<()> {
                   "Account": {
                     "account_id": "registrar",
                     "account": {
-                      "amount": register_amount.to_string(),
+                      "amount": registrar_amount.to_string(),
                       "locked": "0",
                       "code_hash": "11111111111111111111111111111111",
                       "storage_usage": 182
