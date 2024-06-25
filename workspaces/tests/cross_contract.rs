@@ -29,15 +29,13 @@ async fn test_cross_contract_create_contract() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(FACTORY_CONTRACT).await?;
     let status_amt = NearToken::from_near(35);
 
-    // Expect to fail for trying to create a new contract account with too short of a
+    // Expect to fail for trying to create a new contract account with a
     // top level account name, such as purely just "status"
-    let status_id: AccountId = ("status".to_string() + "." + contract.id().as_str())
-        .parse()
-        .unwrap();
+    let status_id: AccountId = "status".parse().unwrap();
     let outcome = cross_contract_create_contract(&status_id, &status_amt, &contract).await?;
     let failures = outcome.failures();
     assert!(
-        failures.is_empty(),
+        failures.len() == 1,
         "Expected one receipt failure for creating too short of a TLA, but got {} failures",
         failures.len()
     );
@@ -51,9 +49,7 @@ async fn test_cross_contract_calls() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(FACTORY_CONTRACT).await?;
     let status_amt = NearToken::from_near(35);
 
-    let status_id: AccountId = ("status".to_string() + "." + contract.id().as_str())
-        .parse()
-        .unwrap();
+    let status_id: AccountId = format!("status.{}", contract.id()).parse().unwrap();
     cross_contract_create_contract(&status_id, &status_amt, &contract)
         .await?
         .into_result()?;
