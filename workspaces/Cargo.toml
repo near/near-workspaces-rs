@@ -63,4 +63,4 @@ unstable = ["cargo_metadata"]
 experimental = ["near-chain-configs"]
 
 [package.metadata.docs.rs]
-features = ["unstable"]
+all-features = true

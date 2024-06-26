@@ -1,3 +1,5 @@
+use near_primitives::views::StatusResponse;
+
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
 use crate::operations::{CallTransaction, Function};
@@ -191,6 +193,11 @@ where
             .await
             .map(ExecutionFinalResult::from_view)
             .map_err(crate::error::Error::from)
+    }
+
+    /// Returns the status of the network.
+    pub async fn status(&self) -> Result<StatusResponse> {
+        self.client().status().await
     }
 }
 
