@@ -228,7 +228,7 @@ impl Query<'_, ViewFunction> {
 
     /// Similar to `args`, specify an argument that is borsh serializable and can be
     /// accepted by the equivalent contract.
-    pub fn args_borsh<U: borsh::BorshSerialize>(mut self, args: U) -> Self {
+    pub fn args_borsh<U: near_primitives::borsh::BorshSerialize>(mut self, args: U) -> Self {
         self.method.function = self.method.function.args_borsh(args);
         self
     }

@@ -1,6 +1,6 @@
-use std::convert::TryInto;
-
 use crate::error::ErrorKind;
+
+use cargo_near::commands::build_command::{build, BuildCommand};
 
 /// Builds the cargo project located at `project_path` and returns the generated wasm file contents.
 ///
@@ -15,23 +15,28 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
         _ => ErrorKind::Io.custom(e),
     })?;
 
-    let cargo_near_build_command = cargo_near::BuildCommand {
+    let cargo_near_build_command = BuildCommand {
         release: true,
         embed_abi: true,
         doc: false,
-        color: cargo_near::ColorPreference::Always,
+        color: None,
         no_abi: true,
         out_dir: None,
         manifest_path: Some(
-            project_path
-                .join("Cargo.toml")
-                .try_into()
-                .map_err(|e| ErrorKind::Io.custom(e))?,
+            cargo_near::types::utf8_path_buf::Utf8PathBuf::from_path_buf(
+                project_path.join("Cargo.toml"),
+            )
+            .map_err(|error_path| {
+                ErrorKind::Io.custom(format!(
+                    "Unable to construct UTF-8 path from: {}",
+                    error_path.display()
+                ))
+            })?,
         ),
     };
 
     let compile_artifact =
-        cargo_near::build::run(cargo_near_build_command).map_err(|e| ErrorKind::Io.custom(e))?;
+        build::run(cargo_near_build_command).map_err(|e| ErrorKind::Io.custom(e))?;
 
     let file = compile_artifact
         .path
