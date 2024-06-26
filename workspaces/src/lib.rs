@@ -21,6 +21,10 @@ pub mod result;
 pub mod rpc;
 pub mod types;
 
+/// The near_abi_client implementation is currently in flux and we offer a re-export
+/// of it and example code. No public near_abi APIs are baked into workspace-rs yet.
+pub use near_abi_client;
+
 pub use network::pick_unused_port;
 pub use network::variants::{DevNetwork, Network};
 pub use result::Result;

@@ -18,7 +18,9 @@ In workspaces, to connect to our manually launched node, all we have to do is ad
 fn main() {
     let worker = workspaces::sandbox()
         .rpc_addr("http://localhost:3030")
-        .home_dir("/home/user/.near-sandbox-home")
+        .validator_key(workspaces::network::ValidatorKey::HomeDir(
+          "/.near/validator_key.json".into(),
+        ))
         .await?;
 
     Ok(())

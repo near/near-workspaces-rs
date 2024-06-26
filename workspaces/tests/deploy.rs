@@ -70,6 +70,7 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
         .await
         .unwrap();
     tracing::info!(target: "workspaces-test", "sandbox-init: {:?}", output);
+    near_workspaces::network::set_sandbox_genesis(&home_dir)?;
 
     let mut child = near_sandbox_utils::run(&home_dir, rpc_port, net_port)?;
 
