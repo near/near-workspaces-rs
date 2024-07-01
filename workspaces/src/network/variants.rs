@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::network::Info;
 use crate::result::{Execution, Result};
 use crate::rpc::client::Client;
@@ -75,6 +77,11 @@ where
     pub async fn dev_generate(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
+        if self.info().name.eq("testnet") {
+            let id: AccountId = AccountId::from_str(format!("{}.testnet", id.as_str()).as_str())
+                .expect("could not convert string account id into AccountId");
+            return (id, sk);
+        }
         (id, sk)
     }
 
