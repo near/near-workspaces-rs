@@ -43,7 +43,7 @@ pub(crate) async fn url_create_account(
     let helper_url = helper_url.join("account").unwrap();
 
     // TODO(maybe): need this in near-jsonrpc-client as well:
-    let _resp = reqwest::Client::new()
+    let resp = reqwest::Client::new()
         .post(helper_url)
         .header("Content-Type", "application/json")
         .body(
@@ -57,6 +57,33 @@ pub(crate) async fn url_create_account(
         .await
         .map_err(|e| RpcErrorCode::HelperAccountCreationFailure.custom(e))?;
 
+    if resp.status() >= reqwest::StatusCode::BAD_REQUEST {
+        return Err(ErrorKind::Other.message(format!(
+            "The faucet (helper service) server failed with status code <{}>",
+            resp.status()
+        )));
+    }
+
+    let account_creation_transaction = resp
+        .json::<near_jsonrpc_client::methods::tx::RpcTransactionStatusResponse>()
+        .await
+        .map_err(|err| ErrorKind::DataConversion.custom(err))?;
+
+    match account_creation_transaction.status {
+        near_primitives::views::FinalExecutionStatus::SuccessValue(ref value) => {
+            if value == b"false" {
+                return Err(ErrorKind::Other.message(format!(
+                    "The new account <{}> could not be created successfully.",
+                    &account_id
+                )));
+            }
+        }
+        near_primitives::views::FinalExecutionStatus::Failure(err) => {
+            return Err(ErrorKind::Execution.custom(err));
+        }
+        _ => unreachable!()
+    }
+    
     Ok(())
 }
 
