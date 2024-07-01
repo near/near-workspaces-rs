@@ -26,7 +26,7 @@ async fn test_dev_account_creation() -> anyhow::Result<()> {
     let id = AccountId::from_str(format!("{}.testnet", id.as_str()).as_str())?;
     let err = worker.create_tla(id, sk).await;
     assert!(err.is_err_and(|e| e.kind() == &ErrorKind::Execution));
-  
+
     Ok(())
 }
 

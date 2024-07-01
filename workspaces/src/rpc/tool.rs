@@ -81,9 +81,9 @@ pub(crate) async fn url_create_account(
         near_primitives::views::FinalExecutionStatus::Failure(err) => {
             return Err(ErrorKind::Execution.custom(err));
         }
-        _ => unreachable!()
+        _ => unreachable!(),
     }
-    
+
     Ok(())
 }
 
