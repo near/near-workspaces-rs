@@ -1,10 +1,34 @@
 #![recursion_limit = "256"]
+use near_sdk::AccountId;
 use near_token::NearToken;
+use near_workspaces::error::ErrorKind;
+use near_workspaces::network::{Sandbox, Testnet};
+use near_workspaces::Worker;
 use serde_json::{Map, Value};
 use test_log::test;
 
 use std::fs::File;
 use std::path::Path;
+use std::str::FromStr;
+
+#[test(tokio::test)]
+async fn test_dev_account_creation() -> anyhow::Result<()> {
+    let worker: Worker<Sandbox> = near_workspaces::sandbox().await?;
+    worker.dev_create_account().await?;
+
+    let worker: Worker<Testnet> = near_workspaces::testnet().await?;
+    let (id, sk) = worker.dev_generate().await;
+    worker.create_tla(id, sk).await?.into_result()?;
+
+    worker.dev_create_account().await?;
+
+    let (id, sk) = worker.dev_generate().await;
+    let id = AccountId::from_str(format!("{}.testnet", id.as_str()).as_str())?;
+    let err = worker.create_tla(id, sk).await;
+    assert!(err.is_err_and(|e| e.kind() == &ErrorKind::Execution));
+  
+    Ok(())
+}
 
 #[test(tokio::test)]
 async fn test_subaccount_creation() -> anyhow::Result<()> {
