@@ -519,12 +519,17 @@ impl TransactionStatus {
             .tx_async_status(
                 &self.sender_id,
                 near_primitives::hash::CryptoHash(self.hash.0),
+                near_primitives::views::TxExecutionStatus::Final,
             )
             .await
-            .map(ExecutionFinalResult::from_view);
+            .map(|o| {
+                o.final_execution_outcome
+                    .map(|e| ExecutionFinalResult::from_view(e.into_outcome()))
+            });
 
         match result {
-            Ok(result) => Ok(Poll::Ready(result)),
+            Ok(Some(result)) => Ok(Poll::Ready(result)),
+            Ok(None) => Ok(Poll::Pending),
             Err(err) => match err {
                 JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
                     RpcTransactionError::UnknownTransaction { .. },

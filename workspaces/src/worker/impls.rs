@@ -1,3 +1,6 @@
+use near_jsonrpc_client::methods::tx::RpcTransactionResponse;
+use near_primitives::views::TxExecutionStatus;
+
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
 use crate::operations::{CallTransaction, Function};
@@ -22,10 +25,7 @@ use {
     },
     near_primitives::{
         types::{BlockReference, MaybeBlockId},
-        views::{
-            validator_stake_view::ValidatorStakeView, FinalExecutionOutcomeWithReceiptView,
-            ReceiptView, StateChangesRequestView,
-        },
+        views::{validator_stake_view::ValidatorStakeView, ReceiptView, StateChangesRequestView},
     },
 };
 
@@ -240,8 +240,9 @@ where
     pub async fn tx_status(
         &self,
         transaction_info: TransactionInfo,
-    ) -> Result<FinalExecutionOutcomeWithReceiptView> {
-        self.client().tx_status(transaction_info).await
+        wait_until: TxExecutionStatus,
+    ) -> Result<RpcTransactionResponse> {
+        self.client().tx_status(transaction_info, wait_until).await
     }
 
     /// Provides a list of validators ordered with respect to their stake.

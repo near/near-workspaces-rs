@@ -1,5 +1,5 @@
 [workspace]
-members = [
-    "workspaces",
-    "examples",
-]
+members = ["workspaces", "examples"]
+
+[patch.crates-io]
+near-sdk = { git = "https://github.com/near/near-sdk-rs", branch = "master" }

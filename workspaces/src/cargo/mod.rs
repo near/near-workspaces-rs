@@ -16,9 +16,9 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
     })?;
 
     let cargo_near_build_command = BuildCommand {
-        release: true,
-        embed_abi: true,
-        doc: false,
+        no_release: false,
+        no_embed_abi: false,
+        no_doc: true,
         color: None,
         no_abi: true,
         out_dir: None,
