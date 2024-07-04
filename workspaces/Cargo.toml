@@ -35,17 +35,17 @@ near-gas = { version = "0.2.5", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.2.0", features = ["serde"] }
 near-sdk = { version = "5.0.0-alpha.2", optional = true }
 near-account-id = "1.0"
-near-crypto = { git = "https://github.com/near/nearcore", rev = "08941a3c070eca2e6163a4ad1eaed1f0d3ee233c" }
-near-primitives = { git = "https://github.com/near/nearcore", rev = "08941a3c070eca2e6163a4ad1eaed1f0d3ee233c" }
-near-jsonrpc-primitives = { git = "https://github.com/near/nearcore", rev = "08941a3c070eca2e6163a4ad1eaed1f0d3ee233c" }
-near-jsonrpc-client = { git = "https://github.com/near/near-jsonrpc-client-rs", branch = "node/1.40-rc.1", features = [
+near-crypto = "0.23"
+near-primitives = "0.23"
+near-jsonrpc-primitives = "0.23"
+near-jsonrpc-client = { git = "https://github.com/near/near-jsonrpc-client-rs", branch = "node/1.40", features = [
     "sandbox",
 ] }
-near-sandbox-utils = { git = "https://github.com/near/near-sandbox", branch = "node/1.40-rc.1" }
-near-chain-configs = { git = "https://github.com/near/nearcore", rev = "08941a3c070eca2e6163a4ad1eaed1f0d3ee233c", optional = true }
+near-sandbox-utils = { git = "https://github.com/near/near-sandbox", branch = "node/1.40" }
+near-chain-configs = { version = "0.23", optional = true }
 
 [build-dependencies]
-near-sandbox-utils = { git = "https://github.com/near/near-sandbox", branch = "node/1.40-rc.1" }
+near-sandbox-utils = { git = "https://github.com/near/near-sandbox", branch = "node/1.40" }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
