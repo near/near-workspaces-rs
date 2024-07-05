@@ -1,6 +1,8 @@
 use std::fmt;
 use std::path::Path;
 
+use near_primitives::types::StorageUsage;
+use near_primitives::version::PROTOCOL_VERSION;
 use near_primitives::views::AccountView;
 
 use crate::error::ErrorKind;
@@ -329,7 +331,8 @@ pub struct AccountDetailsPatch {
     pub balance: Option<NearToken>,
     pub locked: Option<NearToken>,
     pub code_hash: Option<CryptoHash>,
-    pub storage_usage: Option<u64>,
+    pub storage_usage: Option<StorageUsage>,
+    pub permanent_storage_bytes: Option<StorageUsage>,
     pub(crate) storage_paid_at: Option<BlockHeight>,
 }
 
@@ -367,8 +370,13 @@ impl AccountDetailsPatch {
         self
     }
 
-    pub fn storage_usage(mut self, storage_usage: u64) -> Self {
+    pub fn storage_usage(mut self, storage_usage: StorageUsage) -> Self {
         self.storage_usage = Some(storage_usage);
+        self
+    }
+
+    pub fn permanent_storage_bytes(mut self, permanent_storage_bytes: StorageUsage) -> Self {
+        self.permanent_storage_bytes = Some(permanent_storage_bytes);
         self
     }
 }
@@ -381,6 +389,7 @@ impl From<AccountDetails> for AccountDetailsPatch {
             code_hash: Some(account.code_hash),
             storage_usage: Some(account.storage_usage),
             storage_paid_at: Some(account.storage_paid_at),
+            permanent_storage_bytes: Some(account.permanent_storage_bytes),
         }
     }
 }
@@ -393,7 +402,8 @@ pub struct AccountDetails {
     pub balance: NearToken,
     pub locked: NearToken,
     pub code_hash: CryptoHash,
-    pub storage_usage: u64,
+    pub storage_usage: StorageUsage,
+    permanent_storage_bytes: StorageUsage,
     // Deprecated value. Mainly used to be able to convert back into an AccountView
     pub(crate) storage_paid_at: BlockHeight,
 }
@@ -404,6 +414,7 @@ impl AccountDetails {
             balance: NearToken::from_near(0),
             locked: NearToken::from_near(0),
             code_hash: CryptoHash::default(),
+            permanent_storage_bytes: 0,
             storage_usage: 0,
             storage_paid_at: 0,
         }
@@ -413,8 +424,10 @@ impl AccountDetails {
         near_primitives::account::Account::new(
             self.balance.as_yoctonear(),
             self.locked.as_yoctonear(),
+            self.permanent_storage_bytes,
             near_primitives::hash::CryptoHash(self.code_hash.0),
             self.storage_usage,
+            PROTOCOL_VERSION,
         )
     }
 }
@@ -431,6 +444,8 @@ impl From<AccountView> for AccountDetails {
             balance: NearToken::from_yoctonear(account.amount),
             locked: NearToken::from_yoctonear(account.locked),
             code_hash: CryptoHash(account.code_hash.0),
+            // TODO: protocol_feature_nonrefundable_transfer_nep491 is not supported by near-cli-rs
+            permanent_storage_bytes: 0,
             storage_usage: account.storage_usage,
             storage_paid_at: account.storage_paid_at,
         }
@@ -445,6 +460,7 @@ impl From<AccountDetailsPatch> for AccountDetails {
             code_hash: value.code_hash.unwrap_or_default(),
             storage_usage: value.storage_usage.unwrap_or_default(),
             storage_paid_at: value.storage_paid_at.unwrap_or_default(),
+            permanent_storage_bytes: value.permanent_storage_bytes.unwrap_or_default(),
         }
     }
 }

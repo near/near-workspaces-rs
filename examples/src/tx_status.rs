@@ -27,7 +27,9 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // NOTE: this API is under the "experimental" flag and no guarantees are given.
-    let resp = worker.tx_status(tx_info).await?;
+    let resp = worker
+        .tx_status(tx_info, near_primitives::views::TxExecutionStatus::Final)
+        .await?;
 
     // Example outcome:
     //
