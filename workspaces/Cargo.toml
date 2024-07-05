@@ -1,6 +1,6 @@
 [package]
 name = "near-workspaces"
-version = "0.10.0"
+version = "0.10.1"
 edition = "2018"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -63,4 +63,4 @@ unstable = ["cargo_metadata"]
 experimental = ["near-chain-configs"]
 
 [package.metadata.docs.rs]
-features = ["unstable"]
+all-features = true

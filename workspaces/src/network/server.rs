@@ -122,6 +122,8 @@ impl SandboxServer {
         // Configure `$home_dir/config.json` to our liking. Sandbox requires extra settings
         // for the best user experience, and being able to offer patching large state payloads.
         crate::network::config::set_sandbox_configs(&home_dir)?;
+        // Configure `$home_dir/genesis.json` to our liking.
+        crate::network::config::set_sandbox_genesis(&home_dir)?;
 
         // Try running the server with the follow provided rpc_ports and net_ports
         let (rpc_port, rpc_port_lock) = acquire_unused_port().await?;

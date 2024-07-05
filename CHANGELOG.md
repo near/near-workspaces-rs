@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.10.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.10.0...near-workspaces-v0.10.1) - 2024-06-26
+
+### Added
+- Exposes status RPC API method ([#308](https://github.com/near/near-workspaces-rs/pull/308))
+- Fixed `dev_deploy` to use registrar account to create top-level accounts (nearcore 1.37.0+ forbidden to create top-level accounts by non-registrar accounts) ([#360](https://github.com/near/near-workspaces-rs/pull/360))
+- Re-exported near-abi-client ([#303](https://github.com/near/near-workspaces-rs/pull/303))
+
+### Other
+- a way to get account with more than 100 near on sandbox ([#351](https://github.com/near/near-workspaces-rs/pull/351))
+- Updated cargo-near to "0.5.2" ([#347](https://github.com/near/near-workspaces-rs/pull/347))
+
 ## [0.10.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.9.0...near-workspaces-v0.10.0) - 2024-01-25
 
 ### Other

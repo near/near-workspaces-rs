@@ -10,7 +10,6 @@ use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
-use near_jsonrpc_client::methods::health::RpcStatusError;
 use near_jsonrpc_client::methods::tx::{RpcTransactionError, RpcTransactionResponse};
 use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
@@ -292,18 +291,13 @@ impl Client {
         .await
     }
 
-    pub(crate) async fn status(&self) -> Result<StatusResponse, JsonRpcError<RpcStatusError>> {
+    pub(crate) async fn status(&self) -> Result<StatusResponse> {
         let result = self
             .rpc_client
             .call(methods::status::RpcStatusRequest)
-            .await;
-
-        tracing::debug!(
-            target: "workspaces",
-            "Querying RPC with RpcStatusRequest resulted in {:?}",
-            result,
-        );
-        result
+            .await
+            .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+        Ok(result)
     }
 
     pub(crate) async fn tx_async_status(

@@ -1,4 +1,5 @@
 use near_jsonrpc_client::methods::tx::RpcTransactionResponse;
+use near_primitives::views::StatusResponse;
 use near_primitives::views::TxExecutionStatus;
 
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
@@ -191,6 +192,11 @@ where
             .await
             .map(ExecutionFinalResult::from_view)
             .map_err(crate::error::Error::from)
+    }
+
+    /// Returns the status of the network.
+    pub async fn status(&self) -> Result<StatusResponse> {
+        self.client().status().await
     }
 }
 
