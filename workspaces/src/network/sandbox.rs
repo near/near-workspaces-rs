@@ -66,9 +66,7 @@ impl Sandbox {
         // Check the conditions of the provided rpc_url and validator_key
         let mut server = match (build.rpc_addr, build.validator_key) {
             // Connect to a provided sandbox:
-            (Some(rpc_url), Some(validator_key)) => {
-                SandboxServer::connect(rpc_url, validator_key).await?
-            }
+            (Some(rpc_url), Some(validator_key)) => SandboxServer::new(rpc_url, validator_key)?,
 
             // Spawn a new sandbox since rpc_url and home_dir weren't specified:
             (None, None) => SandboxServer::run_new_with_version(version).await?,

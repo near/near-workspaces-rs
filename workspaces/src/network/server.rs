@@ -94,7 +94,7 @@ pub struct SandboxServer {
 impl SandboxServer {
     /// Connect a sandbox server that's already been running, provided we know the rpc_addr
     /// and home_dir pointing to the sandbox process.
-    pub(crate) async fn connect(rpc_addr: String, validator_key: ValidatorKey) -> Result<Self> {
+    pub(crate) fn new(rpc_addr: String, validator_key: ValidatorKey) -> Result<Self> {
         let rpc_addr = Url::parse(&rpc_addr).map_err(|e| {
             SandboxErrorCode::InitFailure.full(format!("Invalid rpc_url={rpc_addr}"), e)
         })?;
