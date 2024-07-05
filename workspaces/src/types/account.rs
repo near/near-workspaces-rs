@@ -1,6 +1,8 @@
 use std::fmt;
 use std::path::Path;
 
+use near_primitives::types::StorageUsage;
+use near_primitives::version::PROTOCOL_VERSION;
 use near_primitives::views::AccountView;
 
 use crate::error::ErrorKind;
@@ -329,7 +331,7 @@ pub struct AccountDetailsPatch {
     pub balance: Option<NearToken>,
     pub locked: Option<NearToken>,
     pub code_hash: Option<CryptoHash>,
-    pub storage_usage: Option<u64>,
+    pub storage_usage: Option<StorageUsage>,
     pub(crate) storage_paid_at: Option<BlockHeight>,
 }
 
@@ -367,7 +369,7 @@ impl AccountDetailsPatch {
         self
     }
 
-    pub fn storage_usage(mut self, storage_usage: u64) -> Self {
+    pub fn storage_usage(mut self, storage_usage: StorageUsage) -> Self {
         self.storage_usage = Some(storage_usage);
         self
     }
@@ -393,7 +395,7 @@ pub struct AccountDetails {
     pub balance: NearToken,
     pub locked: NearToken,
     pub code_hash: CryptoHash,
-    pub storage_usage: u64,
+    pub storage_usage: StorageUsage,
     // Deprecated value. Mainly used to be able to convert back into an AccountView
     pub(crate) storage_paid_at: BlockHeight,
 }
@@ -413,8 +415,10 @@ impl AccountDetails {
         near_primitives::account::Account::new(
             self.balance.as_yoctonear(),
             self.locked.as_yoctonear(),
+            0,
             near_primitives::hash::CryptoHash(self.code_hash.0),
             self.storage_usage,
+            PROTOCOL_VERSION,
         )
     }
 }

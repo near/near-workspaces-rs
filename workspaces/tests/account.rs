@@ -76,10 +76,6 @@ async fn test_delete_account() -> anyhow::Result<()> {
 
     _ = alice.clone().delete_account(bob.id()).await?;
 
-    // All sandbox accounts start with a balance of 100 NEAR tokens.
-    // On account deletion, alice's balance is debited to bob as beneficiary.
-    assert!(bob.view_account().await?.balance > NearToken::from_near(100));
-
     // Alice's account should be deleted.
     let res = alice.view_account().await;
 
@@ -91,6 +87,10 @@ async fn test_delete_account() -> anyhow::Result<()> {
         .unwrap()
         .to_string()
         .contains(&format!("{} does not exist while viewing", alice.id())),);
+
+    // All sandbox accounts start with a balance of 100 NEAR tokens.
+    // On account deletion, alice's balance is debited to bob as beneficiary.
+    assert!(bob.view_account().await?.balance > NearToken::from_near(100));
 
     Ok(())
 }

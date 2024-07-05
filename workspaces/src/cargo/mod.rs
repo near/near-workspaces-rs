@@ -6,6 +6,7 @@ use cargo_near::commands::build_command::{build, BuildCommand};
 ///
 /// NOTE: This function does not check whether the resulting wasm file is a valid smart
 /// contract or not.
+/// NOTE: This function builds the project using default features
 pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
     let project_path = std::fs::canonicalize(project_path).map_err(|e| match e.kind() {
         std::io::ErrorKind::NotFound => ErrorKind::Io.message(format!(
@@ -16,9 +17,9 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
     })?;
 
     let cargo_near_build_command = BuildCommand {
-        release: true,
-        embed_abi: true,
-        doc: false,
+        no_release: false,
+        no_embed_abi: false,
+        no_doc: true,
         color: None,
         no_abi: true,
         out_dir: None,
@@ -33,6 +34,8 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
                 ))
             })?,
         ),
+        features: None,
+        no_default_features: false,
     };
 
     let compile_artifact =
