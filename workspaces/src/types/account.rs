@@ -332,7 +332,6 @@ pub struct AccountDetailsPatch {
     pub locked: Option<NearToken>,
     pub code_hash: Option<CryptoHash>,
     pub storage_usage: Option<StorageUsage>,
-    pub permanent_storage_bytes: Option<StorageUsage>,
     pub(crate) storage_paid_at: Option<BlockHeight>,
 }
 
@@ -374,11 +373,6 @@ impl AccountDetailsPatch {
         self.storage_usage = Some(storage_usage);
         self
     }
-
-    pub fn permanent_storage_bytes(mut self, permanent_storage_bytes: StorageUsage) -> Self {
-        self.permanent_storage_bytes = Some(permanent_storage_bytes);
-        self
-    }
 }
 
 impl From<AccountDetails> for AccountDetailsPatch {
@@ -389,7 +383,6 @@ impl From<AccountDetails> for AccountDetailsPatch {
             code_hash: Some(account.code_hash),
             storage_usage: Some(account.storage_usage),
             storage_paid_at: Some(account.storage_paid_at),
-            permanent_storage_bytes: Some(account.permanent_storage_bytes),
         }
     }
 }
@@ -403,7 +396,8 @@ pub struct AccountDetails {
     pub locked: NearToken,
     pub code_hash: CryptoHash,
     pub storage_usage: StorageUsage,
-    permanent_storage_bytes: StorageUsage,
+    // TODO: protocol_feature_nonrefundable_transfer_nep491 is not supported by near-cli-rs
+    pub permanent_storage_bytes: StorageUsage,
     // Deprecated value. Mainly used to be able to convert back into an AccountView
     pub(crate) storage_paid_at: BlockHeight,
 }
@@ -444,7 +438,6 @@ impl From<AccountView> for AccountDetails {
             balance: NearToken::from_yoctonear(account.amount),
             locked: NearToken::from_yoctonear(account.locked),
             code_hash: CryptoHash(account.code_hash.0),
-            // TODO: protocol_feature_nonrefundable_transfer_nep491 is not supported by near-cli-rs
             permanent_storage_bytes: 0,
             storage_usage: account.storage_usage,
             storage_paid_at: account.storage_paid_at,
@@ -460,7 +453,7 @@ impl From<AccountDetailsPatch> for AccountDetails {
             code_hash: value.code_hash.unwrap_or_default(),
             storage_usage: value.storage_usage.unwrap_or_default(),
             storage_paid_at: value.storage_paid_at.unwrap_or_default(),
-            permanent_storage_bytes: value.permanent_storage_bytes.unwrap_or_default(),
+            permanent_storage_bytes: 0,
         }
     }
 }
