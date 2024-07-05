@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.11.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.10.1...near-workspaces-v0.11.0) - 2024-07-05
+
+### Other
+- Upgraded deps ([#363](https://github.com/near/near-workspaces-rs/pull/363))
+
 ## [0.10.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.10.0...near-workspaces-v0.10.1) - 2024-06-26
 
 ### Added
