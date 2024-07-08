@@ -1,6 +1,4 @@
-use near_jsonrpc_client::methods::tx::RpcTransactionResponse;
 use near_primitives::views::StatusResponse;
-use near_primitives::views::TxExecutionStatus;
 
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
@@ -19,6 +17,7 @@ use crate::{Account, Network};
 #[cfg(feature = "experimental")]
 use {
     near_chain_configs::{GenesisConfig, ProtocolConfigView},
+    near_jsonrpc_client::methods::tx::RpcTransactionResponse,
     near_jsonrpc_primitives::types::{
         changes::{RpcStateChangesInBlockByTypeResponse, RpcStateChangesInBlockResponse},
         receipts::ReceiptReference,
@@ -26,7 +25,10 @@ use {
     },
     near_primitives::{
         types::{BlockReference, MaybeBlockId},
-        views::{validator_stake_view::ValidatorStakeView, ReceiptView, StateChangesRequestView},
+        views::{
+            validator_stake_view::ValidatorStakeView, ReceiptView, StateChangesRequestView,
+            TxExecutionStatus,
+        },
     },
 };
 
