@@ -542,9 +542,15 @@ impl TransactionStatus {
             return Ok(Poll::Pending);
         };
 
-        Ok(Poll::Ready(ExecutionFinalResult::from_view(
-            final_outcome.into_outcome(),
-        )))
+        let outcome = final_outcome.into_outcome();
+
+        match outcome.status {
+            near_primitives::views::FinalExecutionStatus::NotStarted => return Ok(Poll::Pending),
+            near_primitives::views::FinalExecutionStatus::Started => return Ok(Poll::Pending),
+            _ => (),
+        }
+
+        Ok(Poll::Ready(ExecutionFinalResult::from_view(outcome)))
     }
 
     /// Wait until the completion of the transaction by polling [`TransactionStatus::status`].
