@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::network::Info;
 use crate::result::{Execution, Result};
 use crate::rpc::client::Client;
