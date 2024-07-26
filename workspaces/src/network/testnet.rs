@@ -7,6 +7,7 @@ use url::Url;
 
 use near_primitives::views::ExecutionStatusView;
 
+use crate::error::ErrorKind;
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
 use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
@@ -75,6 +76,11 @@ impl TopLevelAccountCreator for Testnet {
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
     ) -> Result<Execution<Account>> {
+        let mut id = id;
+        if self.info().name.eq("testnet") {
+            id = AccountId::from_str(format!("{}.testnet", id.as_str()).as_str()).
+            map_err(|err| ErrorKind::DataConversion.custom(err))?;
+        }
         let url = Url::parse(HELPER_URL).unwrap();
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id, sk);
