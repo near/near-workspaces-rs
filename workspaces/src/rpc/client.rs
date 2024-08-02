@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 use crate::types::NearToken;
 use near_gas::NearGas;
@@ -26,6 +27,8 @@ use near_primitives::views::{
     TxExecutionStatus,
 };
 
+use once_cell::sync::Lazy;
+
 #[cfg(feature = "experimental")]
 use {
     near_chain_configs::{GenesisConfig, ProtocolConfigView},
@@ -47,6 +50,9 @@ use crate::{Network, Worker};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
 pub(crate) const DEFAULT_CALL_DEPOSIT: NearToken = NearToken::from_near(0);
+
+static NONCE_CACHE: Lazy<Mutex<HashMap<(AccountId, near_crypto::PublicKey), Nonce>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
@@ -589,8 +595,25 @@ pub(crate) async fn send_batch_tx_async_and_retry(
 ) -> Result<TransactionStatus> {
     let signer = &signer.inner();
     let cache_key = (signer.account_id.clone(), signer.secret_key.public_key());
+
     retry(|| async {
-        let (block_hash, nonce) = fetch_tx_nonce(worker.client(), &cache_key).await?;
+        let mut cache = NONCE_CACHE.lock().await;
+        let (block_hash, nonce) = if let Some(&cached_nonce) = cache.get(&cache_key) {
+            // Fetch latest block_hash since the previous one is now invalid for new transactions:
+            let block = worker
+                .client()
+                .view_block(Some(Finality::Final.into()))
+                .await?;
+            let block_hash = block.header.hash;
+            (block_hash, cached_nonce + 1)
+        } else {
+            fetch_tx_nonce(worker.client(), &cache_key).await?
+        };
+
+        // Update the cache with the new nonce
+        cache.insert(cache_key.clone(), nonce);
+        drop(cache); // Release the lock
+
         let hash = worker
             .client()
             .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
