@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
-use tokio::sync::Mutex;
 
 use crate::types::NearToken;
 use near_gas::NearGas;
@@ -27,8 +26,6 @@ use near_primitives::views::{
     TxExecutionStatus,
 };
 
-use once_cell::sync::Lazy;
-
 #[cfg(feature = "experimental")]
 use {
     near_chain_configs::{GenesisConfig, ProtocolConfigView},
@@ -50,9 +47,6 @@ use crate::{Network, Worker};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
 pub(crate) const DEFAULT_CALL_DEPOSIT: NearToken = NearToken::from_near(0);
-
-static NONCE_CACHE: Lazy<Mutex<HashMap<(AccountId, near_crypto::PublicKey), Nonce>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
@@ -507,16 +501,20 @@ async fn fetch_tx_nonce(
         let (access_key, block_hash) =
             access_key(client, account_id.clone(), public_key.clone()).await?;
 
-        // case where multiple writers end up at the same lock acquisition point and tries
-        // to overwrite the cached value that a previous writer already wrote.
-        let nonce = client
-            .access_key_nonces
-            .write()
-            .await
+        let mut nonces = client.access_key_nonces.write().await;
+        // Double-check if another thread has updated the nonce while we were fetching the access key
+        if let Some(nonce) = nonces.get(cache_key) {
+            let nonce = nonce.fetch_add(1, Ordering::SeqCst);
+            return Ok((block_hash, nonce + 1));
+        }
+
+        // Insert the new nonce into the cache
+        let nonce = nonces
             .entry(cache_key.clone())
             .or_insert_with(|| AtomicU64::new(access_key.nonce + 1))
             .fetch_max(access_key.nonce + 1, Ordering::SeqCst)
             .max(access_key.nonce + 1);
+        drop(nonces);
 
         Ok((block_hash, nonce))
     }
@@ -595,25 +593,8 @@ pub(crate) async fn send_batch_tx_async_and_retry(
 ) -> Result<TransactionStatus> {
     let signer = &signer.inner();
     let cache_key = (signer.account_id.clone(), signer.secret_key.public_key());
-
     retry(|| async {
-        let mut cache = NONCE_CACHE.lock().await;
-        let (block_hash, nonce) = if let Some(&cached_nonce) = cache.get(&cache_key) {
-            // Fetch latest block_hash since the previous one is now invalid for new transactions:
-            let block = worker
-                .client()
-                .view_block(Some(Finality::Final.into()))
-                .await?;
-            let block_hash = block.header.hash;
-            (block_hash, cached_nonce + 1)
-        } else {
-            fetch_tx_nonce(worker.client(), &cache_key).await?
-        };
-
-        // Update the cache with the new nonce
-        cache.insert(cache_key.clone(), nonce);
-        drop(cache); // Release the lock
-
+        let (block_hash, nonce) = fetch_tx_nonce(worker.client(), &cache_key).await?;
         let hash = worker
             .client()
             .query(&methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {

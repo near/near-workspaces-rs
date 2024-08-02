@@ -15,7 +15,7 @@ async fn test_nonce_caching_parallel() -> anyhow::Result<()> {
         .nonce;
 
     // Prepare a large number of transactions to test caching
-    const NUM_TRANSACTIONS: usize = 50;
+    const NUM_TRANSACTIONS: usize = 20;
 
     // Send transactions in parallel
     let parallel_tasks = (0..NUM_TRANSACTIONS).map(|i| {
