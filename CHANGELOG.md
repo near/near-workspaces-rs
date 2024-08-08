@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.11.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.11.0...near-workspaces-v0.11.1) - 2024-08-07
+
+### Fixed
+- Gracefully handle account creation request errors from a faucet service [testnet-only] ([#366](https://github.com/near/near-workspaces-rs/pull/366))
+
 ## [0.11.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.10.1...near-workspaces-v0.11.0) - 2024-07-05
 
 ### Other
