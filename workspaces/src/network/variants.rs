@@ -16,15 +16,15 @@ pub trait NetworkInfo {
 }
 
 #[async_trait]
-pub trait TopLevelAccountCreator {
-    async fn create_tla(
+pub trait DevAccountCreator {
+    async fn create_dev_account(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>>;
 
-    async fn create_tla_and_deploy(
+    async fn create_dev_account_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
@@ -39,12 +39,16 @@ pub trait AllowDevAccountCreation {}
 
 impl<T> Worker<T>
 where
-    T: DevNetwork + TopLevelAccountCreator + 'static,
+    T: DevNetwork + DevAccountCreator + 'static,
 {
-    pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<Execution<Account>> {
+    pub async fn create_dev_account(
+        &self,
+        id: AccountId,
+        sk: SecretKey,
+    ) -> Result<Execution<Account>> {
         let res = self
             .workspace
-            .create_tla(self.clone().coerce(), id, sk)
+            .create_dev_account(self.clone().coerce(), id, sk)
             .await?;
 
         for callback in self.tx_callbacks.iter() {
@@ -54,7 +58,7 @@ where
         Ok(res)
     }
 
-    pub async fn create_tla_and_deploy(
+    pub async fn create_dev_account_and_deploy(
         &self,
         id: AccountId,
         sk: SecretKey,
@@ -62,7 +66,7 @@ where
     ) -> Result<Execution<Contract>> {
         let res = self
             .workspace
-            .create_tla_and_deploy(self.clone().coerce(), id, sk, wasm)
+            .create_dev_account_and_deploy(self.clone().coerce(), id, sk, wasm)
             .await?;
 
         for callback in self.tx_callbacks.iter() {
@@ -92,13 +96,15 @@ where
     ///
     pub async fn dev_create_account(&self) -> Result<Account> {
         let (id, sk) = self.dev_generate().await;
-        let account = self.create_tla(id.clone(), sk).await?;
+        let account = self.create_dev_account(id.clone(), sk).await?;
         Ok(account.into_result()?)
     }
 
     pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
         let (id, sk) = self.dev_generate().await;
-        let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
+        let contract = self
+            .create_dev_account_and_deploy(id.clone(), sk, wasm)
+            .await?;
         Ok(contract.into_result()?)
     }
 }
@@ -110,9 +116,6 @@ pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static {}
+pub trait DevNetwork: DevAccountCreator + AllowDevAccountCreation + Network + 'static {}
 
-impl<T> DevNetwork for T where
-    T: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static
-{
-}
+impl<T> DevNetwork for T where T: DevAccountCreator + AllowDevAccountCreation + Network + 'static {}

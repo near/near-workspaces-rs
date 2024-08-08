@@ -9,7 +9,7 @@ use near_sandbox_utils as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use super::{AllowDevAccountCreation, DevAccountCreator, NetworkClient, NetworkInfo};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
@@ -131,8 +131,8 @@ impl FromNetworkBuilder for Sandbox {
 impl AllowDevAccountCreation for Sandbox {}
 
 #[async_trait]
-impl TopLevelAccountCreator for Sandbox {
-    async fn create_tla(
+impl DevAccountCreator for Sandbox {
+    async fn create_dev_account(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
@@ -151,7 +151,7 @@ impl TopLevelAccountCreator for Sandbox {
         })
     }
 
-    async fn create_tla_and_deploy(
+    async fn create_dev_account_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
