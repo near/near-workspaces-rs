@@ -4,3 +4,4 @@
 # The version specified below, should be at least as high as the maximum `rust-version` within the workspace.
 channel = "1.80"
 components = ["rustfmt", "clippy", "rust-analyzer"]
+targets = ["wasm32-unknown-unknown"]

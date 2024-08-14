@@ -14,7 +14,6 @@ async-trait = "0.1"
 base64 = "0.22"
 bs58 = "0.5"
 cargo_metadata = { version = "0.18", optional = true }
-# For cargo-near release
 cargo-near = { version = "0.8", default-features = false }
 chrono = "0.4.19"
 fs2 = "0.4"
