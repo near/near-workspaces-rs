@@ -47,6 +47,7 @@ use crate::{Network, Worker};
 
 pub(crate) const DEFAULT_CALL_FN_GAS: NearGas = NearGas::from_tgas(10);
 pub(crate) const DEFAULT_CALL_DEPOSIT: NearToken = NearToken::from_near(0);
+pub(crate) const DEFAULT_PRIORITY_FEE: u64 = 0;
 
 /// A client that wraps around [`JsonRpcClient`], and provides more capabilities such
 /// as retry w/ exponential backoff and utility functions for sending transactions.
@@ -96,7 +97,7 @@ impl Client {
                         tracing::info!(
                             target: "workspaces",
                             "Submitting transaction with actions {:?} succeeded with status {:?}",
-                            method.signed_transaction.transaction.actions,
+                            method.signed_transaction.transaction.actions(),
                             response.status
                         );
                     }
@@ -560,8 +561,11 @@ pub(crate) async fn send_batch_tx_and_retry(
     receiver_id: &AccountId,
     actions: Vec<Action>,
 ) -> Result<FinalExecutionOutcomeView> {
-    let signer = signer.inner();
-    let cache_key = (signer.account_id.clone(), signer.secret_key.public_key());
+    let inner = signer.inner();
+    let cache_key = (
+        signer.account_id.clone(),
+        signer.secret_key.public_key().into(),
+    );
     retry(|| async {
         let (block_hash, nonce) = fetch_tx_nonce(client, &cache_key).await?;
         send_tx(
@@ -571,9 +575,10 @@ pub(crate) async fn send_batch_tx_and_retry(
                 nonce,
                 signer.account_id.clone(),
                 receiver_id.clone(),
-                &signer as &dyn near_crypto::Signer,
+                &inner,
                 actions.clone(),
                 block_hash,
+                DEFAULT_PRIORITY_FEE,
             ),
         )
         .await
@@ -587,8 +592,11 @@ pub(crate) async fn send_batch_tx_async_and_retry(
     receiver_id: &AccountId,
     actions: Vec<Action>,
 ) -> Result<TransactionStatus> {
-    let signer = &signer.inner();
-    let cache_key = (signer.account_id.clone(), signer.secret_key.public_key());
+    let inner = signer.inner();
+    let cache_key = (
+        signer.account_id.clone(),
+        signer.secret_key.public_key().into(),
+    );
     retry(|| async {
         let (block_hash, nonce) = fetch_tx_nonce(worker.client(), &cache_key).await?;
         let hash = worker
@@ -598,9 +606,10 @@ pub(crate) async fn send_batch_tx_async_and_retry(
                     nonce,
                     signer.account_id.clone(),
                     receiver_id.clone(),
-                    signer as &dyn near_crypto::Signer,
+                    &inner,
                     actions.clone(),
                     block_hash,
+                    DEFAULT_PRIORITY_FEE,
                 ),
             })
             .await
