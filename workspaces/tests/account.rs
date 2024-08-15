@@ -1,9 +1,10 @@
 #![recursion_limit = "256"]
 use near_token::NearToken;
+use near_workspaces::network::NetworkInfo;
 use serde_json::{Map, Value};
 use test_log::test;
 
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::Path;
 
 #[test(tokio::test)]
@@ -31,6 +32,18 @@ async fn test_subaccount_creation() -> anyhow::Result<()> {
         contents.get("account_id"),
         Some(&Value::String(sub.id().to_string()))
     );
+
+    let res = worker
+        .delete_account(sub.id(), sub.signer(), &worker.info().root_id)
+        .await?;
+    assert!(res.is_success());
+
+    let res = worker
+        .delete_account(account.id(), account.signer(), &worker.info().root_id)
+        .await?;
+    assert!(res.is_success());
+
+    fs::remove_file(savedir.join(format!("{}.json", sub.id())))?;
 
     Ok(())
 }
