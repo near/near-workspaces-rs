@@ -1,7 +1,5 @@
 use crate::error::ErrorKind;
 
-use cargo_near::commands::build_command::{BuildCommand, BuildContext, CliBuildCommand};
-
 /// Builds the cargo project located at `project_path` and returns the generated wasm file contents.
 ///
 /// NOTE: This function does not check whether the resulting wasm file is a valid smart
@@ -16,12 +14,10 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
         _ => ErrorKind::Io.custom(e),
     })?;
 
-    // Hack to create a structure as no_docker is private in BuildCommand
-    let cargo_near_build_command: BuildCommand = CliBuildCommand {
+    let cargo_opts = cargo_near::BuildOpts {
         no_release: false,
-        no_docker: true,
-        no_locked: false,
         no_embed_abi: false,
+        no_locked: true,
         no_doc: true,
         color: None,
         no_abi: true,
@@ -39,12 +35,9 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
         ),
         features: None,
         no_default_features: false,
-    }
-    .into();
+    };
 
-    let compile_artifact = cargo_near_build_command
-        .run(BuildContext::Build)
-        .map_err(|e| ErrorKind::Io.custom(e))?;
+    let compile_artifact = cargo_near::build(cargo_opts).map_err(|e| ErrorKind::Io.custom(e))?;
 
     let file = compile_artifact
         .path
