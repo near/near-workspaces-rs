@@ -17,6 +17,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 pub use near_account_id::AccountId;
+use near_crypto::Signer;
 use near_primitives::borsh::{BorshDeserialize, BorshSerialize};
 
 use serde::{Deserialize, Serialize};
@@ -292,11 +293,11 @@ impl InMemorySigner {
         ))
     }
 
-    pub(crate) fn inner(&self) -> near_crypto::InMemorySigner {
-        near_crypto::InMemorySigner::from_secret_key(
+    pub(crate) fn inner(&self) -> Signer {
+        Signer::InMemory(near_crypto::InMemorySigner::from_secret_key(
             self.account_id.clone(),
             self.secret_key.0.clone(),
-        )
+        ))
     }
 }
 

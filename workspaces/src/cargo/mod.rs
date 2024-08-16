@@ -1,7 +1,5 @@
 use crate::error::ErrorKind;
 
-use cargo_near::commands::build_command::{build, BuildCommand};
-
 /// Builds the cargo project located at `project_path` and returns the generated wasm file contents.
 ///
 /// NOTE: This function does not check whether the resulting wasm file is a valid smart
@@ -16,9 +14,10 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
         _ => ErrorKind::Io.custom(e),
     })?;
 
-    let cargo_near_build_command = BuildCommand {
+    let cargo_opts = cargo_near::BuildOpts {
         no_release: false,
         no_embed_abi: false,
+        no_locked: true,
         no_doc: true,
         color: None,
         no_abi: true,
@@ -38,8 +37,7 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
         no_default_features: false,
     };
 
-    let compile_artifact =
-        build::run(cargo_near_build_command).map_err(|e| ErrorKind::Io.custom(e))?;
+    let compile_artifact = cargo_near::build(cargo_opts).map_err(|e| ErrorKind::Io.custom(e))?;
 
     let file = compile_artifact
         .path
