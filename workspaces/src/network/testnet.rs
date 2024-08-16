@@ -10,7 +10,7 @@ use near_primitives::views::ExecutionStatusView;
 use crate::error::ErrorKind;
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
-use crate::network::{AllowDevAccountCreation, DevAccountCreator, NetworkClient, NetworkInfo};
+use crate::network::{AllowDevAccountCreation, TopLevelAccountCreator, NetworkClient, NetworkInfo};
 use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
@@ -68,8 +68,8 @@ impl std::fmt::Debug for Testnet {
 impl AllowDevAccountCreation for Testnet {}
 
 #[async_trait]
-impl DevAccountCreator for Testnet {
-    async fn create_dev_account(
+impl TopLevelAccountCreator for Testnet {
+    async fn create_tla(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
@@ -78,15 +78,8 @@ impl DevAccountCreator for Testnet {
     ) -> Result<Execution<Account>> {
         let url = Url::parse(HELPER_URL).unwrap();
         //only registrar can create tla on testnet, so must concatenate random created id with .testnet
-        let id = if self.info().name.eq("testnet") {
-            AccountId::from_str(format!("{}.testnet", id.as_str()).as_str())
-                .map_err(|e| ErrorKind::DataConversion.custom(e))?
-        } else {
-            return Err(ErrorKind::Other.message(format!(
-                "Invalid network. Expected testnet, but got {}",
-                self.info().name
-            )));
-        };
+        let id = AccountId::from_str(format!("{}.{}", id, self.info().root_id).as_str())
+                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id, sk);
 
@@ -115,7 +108,7 @@ impl DevAccountCreator for Testnet {
         })
     }
 
-    async fn create_dev_account_and_deploy(
+    async fn create_tla_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
@@ -123,7 +116,7 @@ impl DevAccountCreator for Testnet {
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
         let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
-        let account = self.create_dev_account(worker, id.clone(), sk).await?;
+        let account = self.create_tla(worker, id.clone(), sk).await?;
 
         let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;
 
