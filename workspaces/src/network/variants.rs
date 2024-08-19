@@ -35,14 +35,14 @@ pub trait SponsoredAccountCreator {
 
 #[async_trait]
 pub trait TopLevelAccountCreator {
-    async fn create_tla_account(
+    async fn create_tla(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>>;
 
-    async fn create_tla_account_and_deploy(
+    async fn create_tla_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
@@ -66,7 +66,7 @@ where
     ) -> Result<Execution<Account>> {
         let res = self
             .workspace
-            .create_tla_account(self.clone().coerce(), id, sk)
+            .create_tla(self.clone().coerce(), id, sk)
             .await?;
 
         for callback in self.tx_callbacks.iter() {
@@ -84,7 +84,7 @@ where
     ) -> Result<Execution<Contract>> {
         let res = self
             .workspace
-            .create_tla_account_and_deploy(self.clone().coerce(), id, sk, wasm)
+            .create_tla_and_deploy(self.clone().coerce(), id, sk, wasm)
             .await?;
 
         for callback in self.tx_callbacks.iter() {
@@ -137,4 +137,6 @@ impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 pub trait DevNetwork: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static {}
 
 impl<T> DevNetwork for T where
-    T: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static {}
+    T: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static
+{
+}

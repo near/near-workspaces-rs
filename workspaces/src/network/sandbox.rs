@@ -9,7 +9,10 @@ use near_sandbox_utils as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{AllowDevAccountCreation, SponsoredAccountCreator, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use super::{
+    AllowDevAccountCreation, NetworkClient, NetworkInfo, SponsoredAccountCreator,
+    TopLevelAccountCreator,
+};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
@@ -186,7 +189,7 @@ impl SponsoredAccountCreator for Sandbox {
         id: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>> {
-      todo!()
+        todo!()
     }
     async fn create_sponsored_account_and_deploy(
         &self,
@@ -195,7 +198,7 @@ impl SponsoredAccountCreator for Sandbox {
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-       todo!()
+        todo!()
     }
 }
 

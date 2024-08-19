@@ -10,7 +10,9 @@ use near_primitives::views::ExecutionStatusView;
 use crate::error::ErrorKind;
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
-use crate::network::{AllowDevAccountCreation,SponsoredAccountCreator, NetworkClient, NetworkInfo};
+use crate::network::{
+    AllowDevAccountCreation, NetworkClient, NetworkInfo, SponsoredAccountCreator,
+};
 use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
