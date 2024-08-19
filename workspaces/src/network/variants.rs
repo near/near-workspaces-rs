@@ -16,15 +16,33 @@ pub trait NetworkInfo {
 }
 
 #[async_trait]
-pub trait DevAccountCreator {
-    async fn create_dev_account(
+pub trait SponsoredAccountCreator {
+    async fn create_sponsored_account(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>>;
 
-    async fn create_dev_account_and_deploy(
+    async fn create_sponsored_account_and_deploy(
+        &self,
+        worker: Worker<dyn Network>,
+        id: AccountId,
+        sk: SecretKey,
+        wasm: &[u8],
+    ) -> Result<Execution<Contract>>;
+}
+
+#[async_trait]
+pub trait TopLevelAccountCreator {
+    async fn create_tla_account(
+        &self,
+        worker: Worker<dyn Network>,
+        id: AccountId,
+        sk: SecretKey,
+    ) -> Result<Execution<Account>>;
+
+    async fn create_tla_account_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
@@ -39,7 +57,7 @@ pub trait AllowDevAccountCreation {}
 
 impl<T> Worker<T>
 where
-    T: DevNetwork + DevAccountCreator + 'static,
+    T: DevNetwork + TopLevelAccountCreator + 'static,
 {
     pub async fn create_dev_account(
         &self,
@@ -48,7 +66,7 @@ where
     ) -> Result<Execution<Account>> {
         let res = self
             .workspace
-            .create_dev_account(self.clone().coerce(), id, sk)
+            .create_tla_account(self.clone().coerce(), id, sk)
             .await?;
 
         for callback in self.tx_callbacks.iter() {
@@ -66,7 +84,7 @@ where
     ) -> Result<Execution<Contract>> {
         let res = self
             .workspace
-            .create_dev_account_and_deploy(self.clone().coerce(), id, sk, wasm)
+            .create_tla_account_and_deploy(self.clone().coerce(), id, sk, wasm)
             .await?;
 
         for callback in self.tx_callbacks.iter() {
@@ -116,6 +134,7 @@ pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: DevAccountCreator + AllowDevAccountCreation + Network + 'static {}
+pub trait DevNetwork: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static {}
 
-impl<T> DevNetwork for T where T: DevAccountCreator + AllowDevAccountCreation + Network + 'static {}
+impl<T> DevNetwork for T where
+    T: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static {}

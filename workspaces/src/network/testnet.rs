@@ -10,7 +10,7 @@ use near_primitives::views::ExecutionStatusView;
 use crate::error::ErrorKind;
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
-use crate::network::{AllowDevAccountCreation, TopLevelAccountCreator, NetworkClient, NetworkInfo};
+use crate::network::{AllowDevAccountCreation,SponsoredAccountCreator, NetworkClient, NetworkInfo};
 use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
@@ -68,8 +68,8 @@ impl std::fmt::Debug for Testnet {
 impl AllowDevAccountCreation for Testnet {}
 
 #[async_trait]
-impl TopLevelAccountCreator for Testnet {
-    async fn create_tla(
+impl SponsoredAccountCreator for Testnet {
+    async fn create_sponsored_account(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
@@ -79,7 +79,7 @@ impl TopLevelAccountCreator for Testnet {
         let url = Url::parse(HELPER_URL).unwrap();
         //only registrar can create tla on testnet, so must concatenate random created id with .testnet
         let id = AccountId::from_str(format!("{}.{}", id, self.info().root_id).as_str())
-                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id, sk);
 
@@ -108,22 +108,23 @@ impl TopLevelAccountCreator for Testnet {
         })
     }
 
-    async fn create_tla_and_deploy(
+    async fn create_sponsored_account_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-        let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
-        let account = self.create_tla(worker, id.clone(), sk).await?;
+        todo!()
+        // let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
+        // let account = self.create_dev_account(worker, id.clone(), sk).await?;
 
-        let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;
+        // let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;
 
-        Ok(Execution {
-            result: Contract::account(account.into_result()?),
-            details: ExecutionFinalResult::from_view(outcome),
-        })
+        // Ok(Execution {
+        //     result: Contract::account(account.into_result()?),
+        //     details: ExecutionFinalResult::from_view(outcome),
+        // })
     }
 }
 

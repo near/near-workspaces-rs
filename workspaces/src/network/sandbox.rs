@@ -9,7 +9,7 @@ use near_sandbox_utils as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{AllowDevAccountCreation, DevAccountCreator, NetworkClient, NetworkInfo};
+use super::{AllowDevAccountCreation, SponsoredAccountCreator, NetworkClient, NetworkInfo, TopLevelAccountCreator};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
@@ -131,8 +131,8 @@ impl FromNetworkBuilder for Sandbox {
 impl AllowDevAccountCreation for Sandbox {}
 
 #[async_trait]
-impl DevAccountCreator for Sandbox {
-    async fn create_dev_account(
+impl TopLevelAccountCreator for Sandbox {
+    async fn create_tla_account(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
@@ -151,7 +151,7 @@ impl DevAccountCreator for Sandbox {
         })
     }
 
-    async fn create_dev_account_and_deploy(
+    async fn create_tla_account_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         id: AccountId,
@@ -175,6 +175,27 @@ impl DevAccountCreator for Sandbox {
             result: Contract::new(signer, worker),
             details: ExecutionFinalResult::from_view(outcome),
         })
+    }
+}
+
+#[async_trait]
+impl SponsoredAccountCreator for Sandbox {
+    async fn create_sponsored_account(
+        &self,
+        worker: Worker<dyn Network>,
+        id: AccountId,
+        sk: SecretKey,
+    ) -> Result<Execution<Account>> {
+      todo!()
+    }
+    async fn create_sponsored_account_and_deploy(
+        &self,
+        worker: Worker<dyn Network>,
+        id: AccountId,
+        sk: SecretKey,
+        wasm: &[u8],
+    ) -> Result<Execution<Contract>> {
+       todo!()
     }
 }
 
