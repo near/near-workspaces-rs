@@ -3,6 +3,7 @@
 
 use near_primitives::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_token::NearToken;
+use near_workspaces::network::SponsoredAccountCreator;
 use serde_json::json;
 use test_log::test;
 
@@ -25,7 +26,7 @@ struct StatusMessage {
 }
 
 async fn view_status_state(
-    worker: &Worker<impl DevNetwork>,
+    worker: &Worker<impl DevNetwork + SponsoredAccountCreator>,
 ) -> anyhow::Result<(AccountId, StatusMessage)> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await.unwrap();

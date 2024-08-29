@@ -74,14 +74,15 @@ impl SponsoredAccountCreator for Testnet {
     async fn create_sponsored_account(
         &self,
         worker: Worker<dyn Network>,
-        id: AccountId,
+        subaccount_prefix: AccountId,
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
     ) -> Result<Execution<Account>> {
         let url = Url::parse(HELPER_URL).unwrap();
         //only registrar can create tla on testnet, so must concatenate random created id with .testnet
-        let id = AccountId::from_str(format!("{}.{}", id, self.info().root_id).as_str())
-            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+        let id =
+            AccountId::from_str(format!("{}.{}", subaccount_prefix, self.info().root_id).as_str())
+                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id, sk);
 
@@ -113,20 +114,24 @@ impl SponsoredAccountCreator for Testnet {
     async fn create_sponsored_account_and_deploy(
         &self,
         worker: Worker<dyn Network>,
-        id: AccountId,
+        subaccount_prefix: AccountId,
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-        todo!()
-        // let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
-        // let account = self.create_dev_account(worker, id.clone(), sk).await?;
+        let signer = InMemorySigner::from_secret_key(subaccount_prefix.clone(), sk.clone());
+        let account = self
+            .create_sponsored_account(worker, subaccount_prefix.clone(), sk)
+            .await?;
 
-        // let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;
+        let outcome = self
+            .client()
+            .deploy(&signer, &subaccount_prefix, wasm.into())
+            .await?;
 
-        // Ok(Execution {
-        //     result: Contract::account(account.into_result()?),
-        //     details: ExecutionFinalResult::from_view(outcome),
-        // })
+        Ok(Execution {
+            result: Contract::account(account.into_result()?),
+            details: ExecutionFinalResult::from_view(outcome),
+        })
     }
 }
 

@@ -1,12 +1,15 @@
 #![recursion_limit = "256"]
 use near_gas::NearGas;
+use near_workspaces::network::TopLevelAccountCreator;
 use near_workspaces::types::NearToken;
 use near_workspaces::{Contract, DevNetwork, Worker};
 use test_log::test;
 
-async fn init(worker: &Worker<impl DevNetwork>) -> anyhow::Result<Contract> {
+async fn init(
+    worker: &Worker<impl DevNetwork + TopLevelAccountCreator>,
+) -> anyhow::Result<Contract> {
     let contract = worker
-        .dev_deploy(include_bytes!("../../examples/res/fungible_token.wasm"))
+        .dev_deploy_tla(include_bytes!("../../examples/res/fungible_token.wasm"))
         .await?;
 
     contract

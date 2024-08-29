@@ -54,8 +54,8 @@ async fn test_transfer_near() -> anyhow::Result<()> {
 
     let worker = near_workspaces::sandbox().await?;
     let (alice, bob) = (
-        worker.dev_create_account().await?,
-        worker.dev_create_account().await?,
+        worker.dev_create_tla().await?,
+        worker.dev_create_tla().await?,
     );
 
     assert_eq!(alice.view_account().await?.balance, INITIAL_BALANCE);
@@ -83,8 +83,8 @@ async fn test_delete_account() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
 
     let (alice, bob) = (
-        worker.dev_create_account().await?,
-        worker.dev_create_account().await?,
+        worker.dev_create_tla().await?,
+        worker.dev_create_tla().await?,
     );
 
     _ = alice.clone().delete_account(bob.id()).await?;

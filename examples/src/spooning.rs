@@ -1,6 +1,7 @@
 use std::env;
 
 use near_primitives::borsh::{BorshDeserialize, BorshSerialize};
+use near_workspaces::network::SponsoredAccountCreator;
 use near_workspaces::{AccountId, Contract, DevNetwork, Worker};
 use serde_json::json;
 use tracing::info;
@@ -46,7 +47,7 @@ struct StatusMessage {
 /// For example, our predeployed testnet contract has already done this:
 ///    set_status(TESTNET_PREDEPLOYED_CONTRACT_ID) = "hello from testnet"
 async fn deploy_status_contract(
-    worker: &Worker<impl DevNetwork>,
+    worker: &Worker<impl DevNetwork + SponsoredAccountCreator>,
     msg: &str,
 ) -> anyhow::Result<Contract> {
     let wasm = std::fs::read(STATUS_MSG_WASM_FILEPATH)?;
