@@ -1,12 +1,12 @@
-use near_workspaces::operations::Function;
-use near_workspaces::types::NearToken;
-use serde_json::json;
+// use near_workspaces::operations::Function;
+// use near_workspaces::types::NearToken;
+// use serde_json::json;
 use test_log::test;
 
 #[test(tokio::test)]
 async fn test_batch_tx() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
-    let contract = worker
+    let _contract = worker
         .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
         .await?;
 
