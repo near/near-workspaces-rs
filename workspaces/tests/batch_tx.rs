@@ -7,7 +7,7 @@ use test_log::test;
 async fn test_batch_tx() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     let contract = worker
-        .dev_deploy(include_bytes!("../../examples/res/status_message.wasm"))
+        .dev_deploy_tla(include_bytes!("../../examples/res/status_message.wasm"))
         .await?;
 
     // Batch transaction with two `call`s into `set_status`. The second one
