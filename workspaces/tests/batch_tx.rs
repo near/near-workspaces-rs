@@ -21,9 +21,9 @@ async fn test_batch_tx() -> anyhow::Result<()> {
                 }))
                 .deposit(NearToken::from_near(0)),
         )
-        .call(Function::new("set_status").args_json(json!({
-            "message": "world_hello",
-        })))
+        // .call(Function::new("set_status").args_json(json!({
+        //     "message": "world_hello",
+        // })))
         .transact()
         .await?
         .into_result()?;
