@@ -47,8 +47,7 @@ jobs:
     needs: cargo-fmt
     strategy:
       matrix:
-        #, ubuntu-latest]
-        platform: [macos-latest]
+        platform: [macos-latest, ubuntu-latest]
         toolchain: [stable]
     runs-on: ${{ matrix.platform }}
 

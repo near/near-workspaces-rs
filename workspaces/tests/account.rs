@@ -103,7 +103,6 @@ async fn test_delete_account() -> anyhow::Result<()> {
 
     // All sandbox accounts start with a balance of 100 NEAR tokens.
     // On account deletion, alice's balance is debited to bob as beneficiary.
-    println!("Bob's balance: {:?}", bob.view_account().await?.balance);
     assert!(bob.view_account().await?.balance > NearToken::from_near(100));
 
     Ok(())
