@@ -9,8 +9,8 @@ anyhow = "1.0"
 maplit = "1.0"
 near-units = "0.2.0"
 near-gas = { version = "0.3", features = ["serde", "borsh", "schemars"] }
-near-jsonrpc-primitives = "0.24"
-near-primitives = "0.24"
+near-jsonrpc-primitives = "0.25"
+near-primitives = "0.25"
 serde = "1.0"
 serde_with = "3.4"
 serde_json = { version = "1.0" }
