@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 
 use near_gas::NearGas;
-use near_workspaces::network::{Sandbox, SponsoredAccountCreator};
+use near_workspaces::network::Sandbox;
 use near_workspaces::types::NearToken;
 use near_workspaces::{Account, AccountId, Contract, Worker};
 use near_workspaces::{BlockHeight, DevNetwork};
@@ -187,7 +187,7 @@ async fn deposit_tokens(
 /// Create our own custom Fungible Token contract and setup the initial state.
 async fn create_custom_ft(
     owner: &Account,
-    worker: &Worker<impl DevNetwork + SponsoredAccountCreator>,
+    worker: &Worker<impl DevNetwork>,
 ) -> anyhow::Result<Contract> {
     let ft: Contract = worker
         .dev_deploy(&std::fs::read(FT_CONTRACT_FILEPATH)?)
