@@ -3,7 +3,6 @@
 
 use near_primitives::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_token::NearToken;
-use near_workspaces::network::SponsoredAccountCreator;
 use serde_json::json;
 use test_log::test;
 
