@@ -170,7 +170,7 @@ async fn test_patch_code_hash() -> anyhow::Result<()> {
     let status_msg_acc = worker.view_account(&contract_id).await?;
     let status_msg_code = worker.view_code(&contract_id).await?;
 
-    let bob = worker.dev_create_account().await?;
+    let bob = worker.dev_create().await?;
 
     // Patching code bytes should also set the code hash, otherwise the node will crash
     // when we try to do anything with the contract.
@@ -191,7 +191,7 @@ async fn test_patch_code_hash() -> anyhow::Result<()> {
 async fn test_patch_account_from_current() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
 
-    let bob = worker.dev_create_account().await?;
+    let bob = worker.dev_create().await?;
 
     const NEW_BALANCE: NearToken = NearToken::from_yoctonear(10_u128.pow(16));
 

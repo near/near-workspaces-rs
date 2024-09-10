@@ -56,13 +56,9 @@ pub trait TopLevelAccountCreator {
     ) -> Result<Execution<Contract>>;
 }
 
-// NOTE: Not all networks/runtimes will have the ability to be able to do dev_deploy or dev_deploy_tla.
-// This trait acts as segmented boundary for only specific networks such as sandbox and testnet.
-pub trait AllowDevAccountCreation {}
-
 impl<T> Worker<T>
 where
-    T: DevNetwork + TopLevelAccountCreator + 'static,
+    T: Network + TopLevelAccountCreator + 'static,
 {
     pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<Execution<Account>> {
         let res = self
@@ -128,9 +124,9 @@ where
 
 impl<T> Worker<T>
 where
-    T: DevNetwork + SponsoredAccountCreator + 'static,
+    T: DevNetwork + 'static,
 {
-    pub async fn create_dev_account(
+    pub async fn create_sponsored_account(
         &self,
         subaccount_prefix: AccountId,
         sk: SecretKey,
@@ -151,12 +147,16 @@ where
         Ok(res)
     }
 
-    pub async fn create_dev_account_and_deploy(
+    pub async fn create_sponsored_account_and_deploy(
         &self,
         subaccount_prefix: AccountId,
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
+        if subaccount_prefix.as_str().contains('.') {
+            return Err(crate::error::ErrorKind::Io
+                .custom("Subaccount prefix for sponsored account cannot contain '.'"));
+        }
         let res = self
             .workspace
             .create_sponsored_account_and_deploy(self.clone().coerce(), subaccount_prefix, sk, wasm)
@@ -175,28 +175,19 @@ where
         (id, sk)
     }
 
-    /// Creates a top level developement account.
-    /// On sandbox network it has a balance of 100 Near.
-    /// If you need more Near for your tests in sandbox consider using `root_account()` method:
-    ///
-    /// # Examples
-    /// ```
-    /// use near_workspaces::{result::Result, Account, network::Sandbox, Worker};
-    /// fn get_account_with_lots_of_near(worker: &Worker<Sandbox>) -> Result<Account> {
-    ///     worker.root_account()
-    /// }
-    /// ```
-    ///
-    pub async fn dev_create_account(&self) -> Result<Account> {
+    /// Creates a sub-account of the network root account with
+    /// random account ID and secret key. By default, balance is around 10 Near.
+
+    pub async fn dev_create(&self) -> Result<Account> {
         let (id, sk) = self.dev_generate().await;
-        let account = self.create_dev_account(id.clone(), sk).await?;
+        let account = self.create_sponsored_account(id.clone(), sk).await?;
         Ok(account.into_result()?)
     }
 
     pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
         let (id, sk) = self.dev_generate().await;
         let contract = self
-            .create_dev_account_and_deploy(id.clone(), sk, wasm)
+            .create_sponsored_account_and_deploy(id.clone(), sk, wasm)
             .await?;
         Ok(contract.into_result()?)
     }
@@ -209,6 +200,6 @@ pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: AllowDevAccountCreation + Network + 'static {}
+pub trait DevNetwork: Network + SponsoredAccountCreator + 'static {}
 
-impl<T> DevNetwork for T where T: AllowDevAccountCreation + Network + 'static {}
+impl<T> DevNetwork for T where T: Network + SponsoredAccountCreator + 'static {}

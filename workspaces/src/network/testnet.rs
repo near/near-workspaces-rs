@@ -10,9 +10,7 @@ use near_primitives::views::ExecutionStatusView;
 use crate::error::ErrorKind;
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
-use crate::network::{
-    AllowDevAccountCreation, NetworkClient, NetworkInfo, SponsoredAccountCreator,
-};
+use crate::network::{NetworkClient, NetworkInfo, SponsoredAccountCreator};
 use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
@@ -66,8 +64,6 @@ impl std::fmt::Debug for Testnet {
             .finish()
     }
 }
-
-impl AllowDevAccountCreation for Testnet {}
 
 #[async_trait]
 impl SponsoredAccountCreator for Testnet {

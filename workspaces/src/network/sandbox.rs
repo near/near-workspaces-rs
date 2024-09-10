@@ -9,10 +9,7 @@ use near_sandbox_utils as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{
-    AllowDevAccountCreation, NetworkClient, NetworkInfo, SponsoredAccountCreator,
-    TopLevelAccountCreator,
-};
+use super::{NetworkClient, NetworkInfo, SponsoredAccountCreator, TopLevelAccountCreator};
 use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::network::server::SandboxServer;
 use crate::network::Info;
@@ -130,8 +127,6 @@ impl FromNetworkBuilder for Sandbox {
         Self::from_builder_with_version(build, sandbox::DEFAULT_NEAR_SANDBOX_VERSION).await
     }
 }
-
-impl AllowDevAccountCreation for Sandbox {}
 
 #[async_trait]
 impl TopLevelAccountCreator for Sandbox {
