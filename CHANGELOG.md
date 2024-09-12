@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.14.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.13.0...near-workspaces-v0.14.0) - 2024-09-12
+
+### Other
+
+- [**breaking**] Updated near-* dependencies to 0.26 release ([#377](https://github.com/near/near-workspaces-rs/pull/377))
+
 ## [0.13.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.12.0...near-workspaces-v0.13.0) - 2024-09-10
 
 ### Other
