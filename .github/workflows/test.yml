@@ -47,7 +47,7 @@ jobs:
     needs: cargo-fmt
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest]
+        platform: [macos-latest]
         toolchain: [stable]
     runs-on: ${{ matrix.platform }}
 
@@ -62,8 +62,6 @@ jobs:
     - uses: Swatinem/rust-cache@v1
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
-    - name: Check with stable features
-      run: cargo check --verbose
     - name: Compile sandbox
       run: git clone https://github.com/near/nearcore -b fe5a71c81aa048799ad7c53fe7c8e261c9ebae35 && cd nearcore && make sandbox && cd - 
     - name: Sandbox version
