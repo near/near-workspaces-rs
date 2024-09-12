@@ -64,8 +64,12 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Check with stable features
       run: cargo check --verbose
+    - name: Compile sandbox
+      run: git clone https://github.com/near/nearcore -b fe5a71c81aa048799ad7c53fe7c8e261c9ebae35 && cd nearcore && make sandbox && cd - 
+    - name: Sandbox version
+      run: ./nearcore/target/debug/neard-sandbox -V
     - name: Run tests with unstable features
-      run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --verbose --features unstable
+      run: NEAR_RPC_TIMEOUT_SECS=100 NEAR_SANDBOX_BIN_PATH=./nearcore/target/debug/neard-sandbox cargo test --verbose --features unstable
 
   release-plz:
     runs-on: ubuntu-latest
