@@ -67,7 +67,7 @@ jobs:
     - name: Sandbox version
       run: ./nearcore/target/debug/neard-sandbox -V
     - name: Run tests with unstable features
-      run: NEAR_RPC_TIMEOUT_SECS=100 NEAR_SANDBOX_BIN_PATH=./nearcore/target/debug/neard-sandbox cargo test --verbose --features unstable
+      run: NEAR_RPC_TIMEOUT_SECS=100 NEAR_SANDBOX_BIN_PATH=$(pwd)/nearcore/target/debug/neard-sandbox cargo test --verbose --features unstable
 
   # release-plz:
   #   runs-on: ubuntu-latest
