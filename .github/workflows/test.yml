@@ -63,7 +63,7 @@ jobs:
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
     - name: Compile sandbox
-      run: git clone https://github.com/near/nearcore && cd nearcore && git checkout ea0773929eda36eac7f3d4e17aedc25026086bd0 && make sandbox && cd - 
+      run: git clone https://github.com/near/nearcore && cd nearcore && git checkout cd7526dbc31f123f16476bdc033d80b4ac7873f6 && make sandbox && cd - 
     - name: Sandbox version
       run: ./nearcore/target/debug/neard-sandbox -V
     - name: Run tests with unstable features
