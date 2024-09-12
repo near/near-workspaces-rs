@@ -1,6 +1,6 @@
 [package]
 name = "near-workspaces"
-version = "0.13.0"
+version = "0.14.0"
 edition = "2018"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -33,14 +33,15 @@ url = { version = "2.2.2", features = ["serde"] }
 near-abi-client = "0.1.1"
 near-gas = { version = "0.3", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.3", features = ["serde"] }
-near-sdk = { version = "5.4", optional = true }
+near-sdk = { version = "5.5", optional = true }
 near-account-id = "1.0.0"
-near-crypto = "0.25"
-near-primitives = "0.25"
-near-jsonrpc-primitives = "0.25"
-near-jsonrpc-client = { version = "0.12", features = ["sandbox"] }
+
+near-crypto = "0.26"
+near-primitives = "0.26"
+near-jsonrpc-primitives = "0.26"
+near-jsonrpc-client = { version = "0.13", features = ["sandbox"] }
 near-sandbox-utils = { git = "https://github.com/near/near-sandbox.git", branch = "sandbox-2.2.0" }
-near-chain-configs = { version = "0.25", optional = true }
+near-chain-configs = { version = "0.26", optional = true }
 
 [build-dependencies]
 near-sandbox-utils = { git = "https://github.com/near/near-sandbox.git", branch = "sandbox-2.2.0" }
@@ -52,7 +53,7 @@ libc = "0.2"
 [dev-dependencies]
 anyhow = "1.0"
 futures = "0.3"
-near-sdk = "5.4"
+near-sdk = "5.5"
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
