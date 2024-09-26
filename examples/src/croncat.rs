@@ -62,7 +62,7 @@ async fn main() -> anyhow::Result<()> {
         .into_result()?;
 
     // Create a root croncat account with agent subaccounts to schedule tasks.
-    let croncat = worker.dev_create_account().await?;
+    let croncat = worker.dev_create().await?;
 
     // This will setup a task to call into the counter contract, with a cadence of 1 hour.
     println!("Creating task for `counter.increment`");

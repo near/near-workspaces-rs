@@ -1,7 +1,7 @@
 use near_primitives::views::StatusResponse;
 
-use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
 use crate::network::{Info, Sandbox};
+use crate::network::{NetworkClient, NetworkInfo};
 use crate::operations::{CallTransaction, Function};
 use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
@@ -40,8 +40,6 @@ impl<T: ?Sized> Clone for Worker<T> {
         }
     }
 }
-
-impl<T> AllowDevAccountCreation for Worker<T> where T: AllowDevAccountCreation {}
 
 impl<T> NetworkInfo for Worker<T>
 where
