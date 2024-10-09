@@ -27,7 +27,11 @@ pub(crate) fn into_state_map(state_items: Vec<StateItem>) -> HashMap<Vec<u8>, Ve
 pub(crate) fn random_account_id() -> AccountId {
     let mut rng = rand::thread_rng();
     let random_num = rng.gen_range(10000000000000usize..99999999999999);
-    let account_id = format!("dev-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), random_num);
+    let account_id = format!(
+        "dev-{}-{}.test.near",
+        Utc::now().format("%Y%m%d%H%M%S"),
+        random_num
+    );
     let account_id: AccountId = account_id
         .try_into()
         .expect("could not convert dev account into AccountId");
