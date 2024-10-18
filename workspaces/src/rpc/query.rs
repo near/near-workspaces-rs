@@ -1,8 +1,9 @@
-//! This module defines a bunch of internal types used solely for querying into RPC
-//! methods to retrieve info about what's on the chain. Note that the types defined
-//! are exposed as-is for users to reference in their own functions or structs as
-//! needed. These types cannot be created outside of workspaces. To use them, refer
-//! to surface level types like [`Account`], [`Contract`] and [`Worker`].
+//! This module defines a bunch of internal types used solely for querying into
+//! RPC methods to get info about what's on the chain.
+//!
+//! Note that the types defined are exposed as-is for users to reference in their own
+//! functions or structs as needed. These types cannot be created outside of workspaces.
+//! To use them, refer to surface level types like [`Account`], [`Contract`] and [`Worker`].
 //!
 //! For example, to query into downloading contract state:
 //! ```
@@ -133,9 +134,10 @@ where
 }
 
 // Note: this trait is exposed publicly due to constraining with the impl offering `finality`.
-/// Trait used as a converter from WorkspaceRequest to near-rpc request, and from near-rpc
-/// response to a WorkspaceResult. Mostly used internally to facilitate syntax sugar for performing
-/// RPC requests with async builders.
+/// Trait used as a converter from WorkspaceRequest to near-rpc request,
+/// and from near-rpc response to a WorkspaceResult.
+///
+/// Mostly used internally to facilitate syntax sugar for performing RPC requests with async builders.
 pub trait ProcessQuery {
     // TODO: associated default type is unstable. So for now, will require writing
     // the manual impls for query_request
@@ -401,10 +403,10 @@ impl ProcessQuery for GasPrice {
     }
 }
 
-/// Query object used to query for chunk related details at a specific `ChunkReference` which
-/// consists of either a chunk [`CryptoHash`], or a `BlockShardId` (which consists of [`ShardId`]
-/// and either block [`CryptoHash`] or [`BlockHeight`]).
+/// Query object to query for chunk related details at a specific `ChunkReference` which
+/// consists of either a chunk [`CryptoHash`], or a `BlockShardId`.
 ///
+/// `BlockShardId` consists of [`ShardId`] and either block [`CryptoHash`] or [`BlockHeight`]
 /// The default behavior where a `ChunkReference` is not supplied will use a `BlockShardId`
 /// referencing the latest block `CryptoHash` with `ShardId` of 0.
 pub struct QueryChunk<'a> {

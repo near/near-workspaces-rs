@@ -9,8 +9,9 @@ use std::path::PathBuf;
 /// URL to the betanet RPC node provided by near.org.
 pub const RPC_URL: &str = "https://rpc.betanet.near.org";
 
-/// Betanet related configuration for interacting with betanet. Look at
-/// [`workspaces::betanet`] for how to spin up a [`Worker`] that can be
+/// Betanet related configuration for interacting with betanet.
+///
+/// Look at [`workspaces::betanet`] for how to spin up a [`Worker`] that can be
 /// used to interact with betanet. Note that betanet account creation
 /// is not currently supported, and these calls into creating a betanet
 /// worker is meant for retrieving data and/or making queries only.

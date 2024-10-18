@@ -8,8 +8,10 @@ use crate::network::{Betanet, Custom, Mainnet, Sandbox, Testnet};
 use crate::types::gas_meter::GasHook;
 use crate::{Network, Result};
 
-/// The `Worker` type allows us to interact with any NEAR related networks, such
-/// as mainnet and testnet. This controls where the environment the worker is
+/// The `Worker` type allows us to interact with any NEAR related networks,
+/// such as mainnet and testnet.
+///
+/// This controls where the environment the worker is
 /// running on top of it. Refer to this for all network related actions such as
 /// deploying a contract, or interacting with transactions.
 pub struct Worker<T: ?Sized> {

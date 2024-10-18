@@ -20,7 +20,9 @@ use crate::{Account, Contract, Network, Worker};
 
 // Constant taken from nearcore crate to avoid dependency
 const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
-/// Local sandboxed environment/network, which can be used to test without interacting with
+/// Local sandboxed environment/network
+///
+/// Can be used to test without interacting with
 /// networks that are online such as mainnet and testnet. Look at [`workspaces::sandbox`]
 /// for how to spin up a sandboxed network and interact with it.
 ///
