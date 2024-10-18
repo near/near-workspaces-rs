@@ -19,7 +19,9 @@ use crate::types::{CryptoHash, Gas, NearToken};
 pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
 
 /// Execution related info as a result of performing a successful transaction
-/// execution on the network. This value can be converted into the returned
+/// execution on the network.
+///
+/// This value can be converted into the returned
 /// value of the transaction via [`ExecutionSuccess::json`] or [`ExecutionSuccess::borsh`]
 pub type ExecutionSuccess = ExecutionResult<Value>;
 
@@ -29,6 +31,7 @@ pub type ExecutionSuccess = ExecutionResult<Value>;
 pub type ExecutionFailure = ExecutionResult<TxExecutionError>;
 
 /// Struct to hold a type we want to return along w/ the execution result view.
+///
 /// This view has extra info about the execution, such as gas usage and whether
 /// the transaction failed to be processed on the chain.
 #[non_exhaustive]

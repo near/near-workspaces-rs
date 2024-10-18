@@ -16,7 +16,9 @@ use crate::operations::{CallTransaction, CreateAccountTransaction, Transaction};
 use crate::result::{Execution, ExecutionFinalResult, Result};
 
 /// `Account` is directly associated to an account in the network provided by the
-/// [`Worker`] that creates it. This type offers methods to interact with any
+/// [`Worker`] that creates it.
+///
+/// This type offers methods to interact with any
 /// network, such as creating transactions and calling into contract functions.
 #[derive(Clone)]
 pub struct Account {
@@ -201,7 +203,9 @@ impl Account {
 }
 
 /// `Contract` is directly associated to a contract in the network provided by the
-/// [`Worker`] that creates it. This type offers methods to interact with any
+/// [`Worker`] that creates it.
+///
+/// This type offers methods to interact with any
 /// network, such as creating transactions and calling into contract functions.
 #[derive(Clone)]
 pub struct Contract {

@@ -10,9 +10,10 @@ use crate::types::{BlockHeight, KeyType, PublicKey, SecretKey};
 use crate::{AccessKey, AccountDetailsPatch, Result};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
 
-/// A [`Transaction`]-like object that allows us to specify details about importing
-/// a contract from a different network into our sandbox local network. This creates
-/// a new [`Transaction`] to be committed to the sandbox network once `transact()`
+/// A [`Transaction`]-like object with details about importing a contract from a network
+/// into sandbox local network.
+///
+/// This creates a new [`Transaction`] to be committed to the sandbox network once `transact()`
 /// has been called. This does not commit any new transactions from the network
 /// this object is importing from.
 ///

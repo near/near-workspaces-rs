@@ -105,7 +105,9 @@ impl Function {
 }
 
 /// A builder-like object that will allow specifying various actions to be performed
-/// in a single transaction. For details on each of the actions, find them in
+/// in a single transaction.
+///
+/// For details on each of the actions, find them in
 /// [NEAR transactions](https://docs.near.org/docs/concepts/transaction).
 ///
 /// All actions are performed on the account specified by `receiver_id`. This object
