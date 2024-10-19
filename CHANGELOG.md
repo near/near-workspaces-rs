@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.14.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.14.0...near-workspaces-v0.14.1) - 2024-10-18
+
+### Fixed
+
+- TransactionStatus::status should not be waiting for Final ([#379](https://github.com/near/near-workspaces-rs/pull/379))
+
+### Other
+
+- fix clippy 1.82 (doc preambles) ([#381](https://github.com/near/near-workspaces-rs/pull/381))
+- bump cargo-near-build to 0.2.0 ([#380](https://github.com/near/near-workspaces-rs/pull/380))
+
 ## [0.14.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.13.0...near-workspaces-v0.14.0) - 2024-09-12
 
 ### Other
