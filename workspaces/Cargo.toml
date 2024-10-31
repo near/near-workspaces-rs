@@ -57,9 +57,9 @@ tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
 [features]
 default = ["install"]
-install = []                          # Install the sandbox binary during compile time
+install = []                                              # Install the sandbox binary during compile time
 interop_sdk = ["near-sdk"]
-unstable = ["cargo_metadata", "dep:cargo-near-build"]
+unstable = ["dep:cargo_metadata", "dep:cargo-near-build"]
 experimental = ["near-chain-configs"]
 
 [package.metadata.docs.rs]
