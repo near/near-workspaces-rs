@@ -13,7 +13,6 @@ Library for automating workflows and testing NEAR smart contracts.
 async-trait = "0.1"
 base64 = "0.22"
 bs58 = "0.5"
-cargo_metadata = { version = "0.18", optional = true }
 cargo-near-build = { version = "0.2.0", optional = true }
 chrono = "0.4.19"
 fs2 = "0.4"
@@ -59,7 +58,7 @@ tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 default = ["install"]
 install = []                                              # Install the sandbox binary during compile time
 interop_sdk = ["near-sdk"]
-unstable = ["dep:cargo_metadata", "dep:cargo-near-build"]
+unstable = ["dep:cargo-near-build"]
 experimental = ["near-chain-configs"]
 
 [package.metadata.docs.rs]
