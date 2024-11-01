@@ -25,8 +25,9 @@ pub const HELPER_URL: &str = "https://helper.testnet.near.org";
 /// URL to the testnet archival RPC node provided by near.org.
 pub const ARCHIVAL_URL: &str = "https://archival-rpc.testnet.near.org";
 
-/// Testnet related configuration for interacting with testnet. Look at
-/// [`workspaces::testnet`] and [`workspaces::testnet_archival`] for how
+/// Testnet related configuration for interacting with testnet.
+///
+/// Look at [`workspaces::testnet`] and [`workspaces::testnet_archival`] for how
 /// to spin up a [`Worker`] that can be used to run tests in testnet.
 ///
 /// [`workspaces::testnet`]: crate::testnet

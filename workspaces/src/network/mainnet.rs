@@ -11,8 +11,9 @@ pub const RPC_URL: &str = "https://rpc.mainnet.near.org";
 /// URL to the mainnet archival RPC node provided by near.org.
 pub const ARCHIVAL_URL: &str = "https://archival-rpc.mainnet.near.org";
 
-/// Mainnet related configuration for interacting with mainnet. Look at
-/// [`workspaces::mainnet`] and [`workspaces::mainnet_archival`] for how to
+/// Mainnet related configuration for interacting with mainnet.
+///
+/// Look at [`workspaces::mainnet`] and [`workspaces::mainnet_archival`] for how to
 /// spin up a [`Worker`] that can be used to interact with mainnet. Note that
 /// mainnet account creation is not currently supported, and these calls into
 /// creating a mainnet worker is meant for retrieving data and/or making

@@ -1,4 +1,6 @@
-//! Types used in the workspaces crate. A lot of these are types are copied over from near_primitives
+//! Types used in the workspaces crate.
+//!
+//! A lot of these are types are copied over from near_primitives
 //! since those APIs are not yet stable. Once they are, we can directly reference them here, so no
 //! changes on the library consumer side is needed. Just keep using these types defined here as-is.
 
@@ -222,7 +224,9 @@ impl BorshDeserialize for PublicKey {
     }
 }
 
-/// Secret key of an account on chain. Usually created along with a [`PublicKey`]
+/// Secret key of an account on chain.
+///
+/// Usually created along with a [`PublicKey`]
 /// to form a keypair associated to the account. To generate a new keypair, use
 /// one of the creation methods found here, such as [`SecretKey::from_seed`]
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -367,7 +371,9 @@ impl From<near_primitives::hash::CryptoHash> for CryptoHash {
     }
 }
 
-/// Access key provides limited access to an account. Each access key belongs to some account and
+/// Access key provides limited access to an account.
+///
+/// Each access key belongs to some account and
 /// is identified by a unique (within the account) public key. One account may have large number of
 /// access keys. Access keys allow to act on behalf of the account by restricting transactions
 /// that can be issued.
@@ -434,6 +440,7 @@ pub enum AccessKeyPermission {
 }
 
 /// Grants limited permission to make transactions with FunctionCallActions
+///
 /// The permission can limit the allowed balance to be spent on the prepaid gas.
 /// It also restrict the account ID of the receiver for this function call.
 /// It also can restrict the method name for the allowed function calls.

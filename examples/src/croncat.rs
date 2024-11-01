@@ -27,6 +27,7 @@ pub enum AgentStatus {
 
 /// `Agent` struct taken from [croncat repo](github.com/CronCats/contracts/) to deserialize
 /// into after we get the result of a transaction and converting over to this particular type.
+///
 /// Helpful for understanding what our output is from a contract call. For a more in depth
 /// look at what an `Agent` is all about, refer to the [croncat docs](https://docs.cron.cat/docs/)
 /// to understand further, but for this example all we care about is that an Agent is something

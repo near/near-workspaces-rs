@@ -22,7 +22,7 @@ use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
     DeployContractAction, FunctionCallAction, StakeAction, TransferAction,
 };
-use near_primitives::views::FinalExecutionOutcomeView;
+use near_primitives::views::{FinalExecutionOutcomeView, TxExecutionStatus};
 use std::convert::TryInto;
 use std::fmt;
 use std::future::IntoFuture;
@@ -105,7 +105,9 @@ impl Function {
 }
 
 /// A builder-like object that will allow specifying various actions to be performed
-/// in a single transaction. For details on each of the actions, find them in
+/// in a single transaction.
+///
+/// For details on each of the actions, find them in
 /// [NEAR transactions](https://docs.near.org/docs/concepts/transaction).
 ///
 /// All actions are performed on the account specified by `receiver_id`. This object
@@ -513,30 +515,44 @@ impl TransactionStatus {
     /// is in an unexpected state. The error should have further context. Otherwise, if an
     /// `Ok` value with [`Poll::Pending`] is returned, then the transaction has not finished.
     pub async fn status(&self) -> Result<Poll<ExecutionFinalResult>> {
-        let result = self
+        let rpc_resp = self
             .worker
             .client()
             .tx_async_status(
                 &self.sender_id,
                 near_primitives::hash::CryptoHash(self.hash.0),
-                near_primitives::views::TxExecutionStatus::Final,
+                TxExecutionStatus::Included,
             )
-            .await
-            .map(|o| {
-                o.final_execution_outcome
-                    .map(|e| ExecutionFinalResult::from_view(e.into_outcome()))
-            });
+            .await;
 
-        match result {
-            Ok(Some(result)) => Ok(Poll::Ready(result)),
-            Ok(None) => Ok(Poll::Pending),
+        let rpc_resp = match rpc_resp {
+            Ok(rpc_resp) => rpc_resp,
             Err(err) => match err {
                 JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
                     RpcTransactionError::UnknownTransaction { .. },
-                )) => Ok(Poll::Pending),
-                other => Err(RpcErrorCode::BroadcastTxFailure.custom(other)),
+                )) => return Ok(Poll::Pending),
+                other => return Err(RpcErrorCode::BroadcastTxFailure.custom(other)),
             },
+        };
+
+        if matches!(rpc_resp.final_execution_status, TxExecutionStatus::Included) {
+            return Ok(Poll::Pending);
         }
+
+        let Some(final_outcome) = rpc_resp.final_execution_outcome else {
+            // final execution outcome is not available yet.
+            return Ok(Poll::Pending);
+        };
+
+        let outcome = final_outcome.into_outcome();
+
+        match outcome.status {
+            near_primitives::views::FinalExecutionStatus::NotStarted => return Ok(Poll::Pending),
+            near_primitives::views::FinalExecutionStatus::Started => return Ok(Poll::Pending),
+            _ => (),
+        }
+
+        Ok(Poll::Ready(ExecutionFinalResult::from_view(outcome)))
     }
 
     /// Wait until the completion of the transaction by polling [`TransactionStatus::status`].
