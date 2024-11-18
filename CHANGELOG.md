@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.15.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.14.1...near-workspaces-v0.15.0) - 2024-11-18
+
+### Other
+
+- [**breaking**] updates near-* dependencies to 0.27 release ([#387](https://github.com/near/near-workspaces-rs/pull/387))
+- [**breaking**] reexport `cargo-near-build` for configurable build if needed ([#386](https://github.com/near/near-workspaces-rs/pull/386))
+- make cargo-near-build optional in manifest ([#383](https://github.com/near/near-workspaces-rs/pull/383))
+
 ## [0.14.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.14.0...near-workspaces-v0.14.1) - 2024-10-18
 
 ### Fixed
