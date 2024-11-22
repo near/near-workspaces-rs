@@ -3,13 +3,13 @@ use near_token::NearToken;
 use serde_json::{Map, Value};
 use test_log::test;
 
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::Path;
 
 #[test(tokio::test)]
 async fn test_subaccount_creation() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
-    let account = worker.dev_create_account().await?;
+    let account = worker.dev_create().await?;
 
     let sub = account
         .create_subaccount("subaccount")
@@ -32,6 +32,8 @@ async fn test_subaccount_creation() -> anyhow::Result<()> {
         Some(&Value::String(sub.id().to_string()))
     );
 
+    fs::remove_file(savedir.join(format!("{}.json", sub.id())))?;
+
     Ok(())
 }
 
@@ -41,8 +43,8 @@ async fn test_transfer_near() -> anyhow::Result<()> {
 
     let worker = near_workspaces::sandbox().await?;
     let (alice, bob) = (
-        worker.dev_create_account().await?,
-        worker.dev_create_account().await?,
+        worker.dev_create_tla().await?,
+        worker.dev_create_tla().await?,
     );
 
     assert_eq!(alice.view_account().await?.balance, INITIAL_BALANCE);
@@ -69,10 +71,7 @@ async fn test_transfer_near() -> anyhow::Result<()> {
 async fn test_delete_account() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
 
-    let (alice, bob) = (
-        worker.dev_create_account().await?,
-        worker.dev_create_account().await?,
-    );
+    let (alice, bob) = (worker.dev_create().await?, worker.dev_create().await?);
 
     _ = alice.clone().delete_account(bob.id()).await?;
 
