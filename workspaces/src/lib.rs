@@ -10,6 +10,8 @@
 mod cargo;
 #[cfg(feature = "unstable")]
 pub use cargo::compile_project;
+#[cfg(feature = "unstable")]
+pub use cargo_near_build;
 
 mod worker;
 

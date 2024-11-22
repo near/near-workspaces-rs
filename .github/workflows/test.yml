@@ -53,6 +53,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Free Disk Space (Ubuntu)
+      if: matrix.platform == 'ubuntu-latest' 
+      uses: jlumbroso/free-disk-space@v1.3.1
+      with:
+        # this might remove tools that are actually needed,
+        # if set to "true" but frees about 6 GB
+        tool-cache: false
+        
+        # all of these default to true, but feel free to set to
+        # "false" if necessary for your workflow
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true
     - name: "${{ matrix.toolchain }}"
       uses: actions-rs/toolchain@v1
       with:
@@ -63,9 +79,9 @@ jobs:
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
     - name: Check with stable features
-      run: cargo check --verbose
+      run: cargo check
     - name: Run tests with unstable features
-      run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --verbose --features unstable
+      run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --features unstable
 
   release-plz:
     runs-on: ubuntu-latest

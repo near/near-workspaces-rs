@@ -1,6 +1,6 @@
 [package]
 name = "near-workspaces"
-version = "0.14.1"
+version = "0.15.0"
 edition = "2018"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -13,8 +13,7 @@ Library for automating workflows and testing NEAR smart contracts.
 async-trait = "0.1"
 base64 = "0.22"
 bs58 = "0.5"
-cargo_metadata = { version = "0.18", optional = true }
-cargo-near-build = { version = "0.2.0" }
+cargo-near-build = { version = "0.3.0", optional = true }
 chrono = "0.4.19"
 fs2 = "0.4"
 rand = "0.8.4"
@@ -33,17 +32,17 @@ url = { version = "2.2.2", features = ["serde"] }
 near-abi-client = "0.1.1"
 near-gas = { version = "0.3", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.3", features = ["serde"] }
-near-sdk = { version = "5.5", optional = true }
+near-sdk = { version = "5.6", optional = true }
 near-account-id = "1.0.0"
-near-crypto = "0.26"
-near-primitives = "0.26"
-near-jsonrpc-primitives = "0.26"
-near-jsonrpc-client = { version = "0.13", features = ["sandbox"] }
-near-sandbox-utils = "0.10"
-near-chain-configs = { version = "0.26", optional = true }
+near-crypto = "0.27"
+near-primitives = "0.27"
+near-jsonrpc-primitives = "0.27"
+near-jsonrpc-client = { version = "0.14", features = ["sandbox"] }
+near-sandbox-utils = "0.12"
+near-chain-configs = { version = "0.27", optional = true }
 
 [build-dependencies]
-near-sandbox-utils = "0.10"
+near-sandbox-utils = "0.12"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -51,7 +50,7 @@ libc = "0.2"
 [dev-dependencies]
 anyhow = "1.0"
 futures = "0.3"
-near-sdk = "5.5"
+near-sdk = "5.6"
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
@@ -59,7 +58,7 @@ tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 default = ["install"]
 install = []                          # Install the sandbox binary during compile time
 interop_sdk = ["near-sdk"]
-unstable = ["cargo_metadata"]
+unstable = ["dep:cargo-near-build"]
 experimental = ["near-chain-configs"]
 
 [package.metadata.docs.rs]
