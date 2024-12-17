@@ -90,7 +90,7 @@ impl<'a, T> Query<'a, T> {
 }
 
 // Constrained to RpcQueryRequest, since methods like GasPrice only take block_id but not Finality.
-impl<'a, T> Query<'a, T>
+impl<T> Query<'_, T>
 where
     T: ProcessQuery<Method = methods::query::RpcQueryRequest>,
 {
