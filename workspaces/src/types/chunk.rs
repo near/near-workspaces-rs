@@ -55,7 +55,7 @@ impl From<ChunkHeaderView> for ChunkHeader {
             prev_block_hash: view.prev_block_hash.into(),
             height_created: view.height_created,
             height_included: view.height_included,
-            shard_id: view.shard_id,
+            shard_id: view.shard_id.into(),
             gas_used: NearGas::from_gas(view.gas_used),
             gas_limit: NearGas::from_gas(view.gas_limit),
             balance_burnt: NearToken::from_yoctonear(view.balance_burnt),
