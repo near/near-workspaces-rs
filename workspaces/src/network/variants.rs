@@ -15,9 +15,12 @@ pub trait NetworkInfo {
     fn info(&self) -> &Info;
 }
 
-/// Trait provides the ability to create a sponsored account. A sponsored account is a subaccount
-/// of the network's root account. The `subaccount_prefix` is a prefix for the subaccount ID.
-/// For example, if this parameter is `"subaccount"`, the full ID for testnet will be `"subaccount.testnet"`.
+/// Trait provides the ability to create a sponsored account.
+/// 
+/// A sponsored account is a subaccount of the network's root account.
+/// The `subaccount_prefix` is a prefix for the subaccount ID.
+/// For example, if this parameter is `"subaccount"` then
+/// the full ID for testnet will be `"subaccount.testnet"`.
 ///
 /// It is expected that the `subaccount_prefix` does not contain a `.`.
 #[async_trait]
@@ -177,7 +180,6 @@ where
 
     /// Creates a sub-account of the network root account with
     /// random account ID and secret key. By default, balance is around 10 Near.
-
     pub async fn dev_create(&self) -> Result<Account> {
         let (id, sk) = self.dev_generate().await;
         let account = self.create_sponsored_account(id.clone(), sk).await?;
