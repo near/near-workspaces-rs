@@ -16,7 +16,7 @@ pub trait NetworkInfo {
 }
 
 /// Trait provides the ability to create a sponsored account.
-/// 
+///
 /// A sponsored account is a subaccount of the network's root account.
 /// The `subaccount_prefix` is a prefix for the subaccount ID.
 /// For example, if this parameter is `"subaccount"` then
