@@ -90,7 +90,7 @@ impl<'a, T> Query<'a, T> {
 }
 
 // Constrained to RpcQueryRequest, since methods like GasPrice only take block_id but not Finality.
-impl<'a, T> Query<'a, T>
+impl<T> Query<'_, T>
 where
     T: ProcessQuery<Method = methods::query::RpcQueryRequest>,
 {
@@ -428,7 +428,7 @@ impl<'a> QueryChunk<'a> {
     pub fn block_hash_and_shard(mut self, hash: CryptoHash, shard_id: ShardId) -> Self {
         self.chunk_ref = Some(ChunkReference::BlockShardId {
             block_id: BlockId::Hash(near_primitives::hash::CryptoHash(hash.0)),
-            shard_id,
+            shard_id: shard_id.into(),
         });
         self
     }
@@ -439,7 +439,7 @@ impl<'a> QueryChunk<'a> {
     pub fn block_height_and_shard(mut self, height: BlockHeight, shard_id: ShardId) -> Self {
         self.chunk_ref = Some(ChunkReference::BlockShardId {
             block_id: BlockId::Height(height),
-            shard_id,
+            shard_id: shard_id.into(),
         });
         self
     }
@@ -467,7 +467,7 @@ impl<'a> std::future::IntoFuture for QueryChunk<'a> {
                 let block_view = self.client.view_block(None).await?;
                 ChunkReference::BlockShardId {
                     block_id: BlockId::Hash(block_view.header.hash),
-                    shard_id: 0,
+                    shard_id: 0.into(),
                 }
             };
 
