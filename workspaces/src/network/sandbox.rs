@@ -9,8 +9,8 @@ use near_sandbox_utils as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
-use crate::error::SandboxErrorCode;
+use super::{NetworkClient, NetworkInfo, SponsoredAccountCreator, TopLevelAccountCreator};
+use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{Execution, ExecutionFinalResult, Result};
@@ -130,8 +130,6 @@ impl FromNetworkBuilder for Sandbox {
     }
 }
 
-impl AllowDevAccountCreation for Sandbox {}
-
 #[async_trait]
 impl TopLevelAccountCreator for Sandbox {
     async fn create_tla(
@@ -145,7 +143,6 @@ impl TopLevelAccountCreator for Sandbox {
             .client()
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
             .await?;
-
         let signer = InMemorySigner::from_secret_key(id, sk);
         Ok(Execution {
             result: Account::new(signer, worker),
@@ -171,7 +168,57 @@ impl TopLevelAccountCreator for Sandbox {
                 wasm.into(),
             )
             .await?;
+        let signer = InMemorySigner::from_secret_key(id, sk);
+        Ok(Execution {
+            result: Contract::new(signer, worker),
+            details: ExecutionFinalResult::from_view(outcome),
+        })
+    }
+}
 
+#[async_trait]
+impl SponsoredAccountCreator for Sandbox {
+    async fn create_sponsored_account(
+        &self,
+        worker: Worker<dyn Network>,
+        subaccount_prefix: AccountId,
+        sk: SecretKey,
+    ) -> Result<Execution<Account>> {
+        let id =
+            AccountId::from_str(format!("{}.{}", subaccount_prefix, self.info().root_id).as_str())
+                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+        let root_signer = self.root_signer()?;
+        let outcome = self
+            .client()
+            .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
+            .await?;
+        let signer = InMemorySigner::from_secret_key(id, sk);
+        Ok(Execution {
+            result: Account::new(signer, worker),
+            details: ExecutionFinalResult::from_view(outcome),
+        })
+    }
+    async fn create_sponsored_account_and_deploy(
+        &self,
+        worker: Worker<dyn Network>,
+        subaccount_prefix: AccountId,
+        sk: SecretKey,
+        wasm: &[u8],
+    ) -> Result<Execution<Contract>> {
+        let id =
+            AccountId::from_str(format!("{}.{}", subaccount_prefix, self.info().root_id).as_str())
+                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+        let root_signer = self.root_signer()?;
+        let outcome = self
+            .client()
+            .create_account_and_deploy(
+                &root_signer,
+                &id,
+                sk.public_key(),
+                DEFAULT_DEPOSIT,
+                wasm.into(),
+            )
+            .await?;
         let signer = InMemorySigner::from_secret_key(id, sk);
         Ok(Execution {
             result: Contract::new(signer, worker),
