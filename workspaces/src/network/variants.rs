@@ -15,6 +15,32 @@ pub trait NetworkInfo {
     fn info(&self) -> &Info;
 }
 
+/// Trait provides the ability to create a sponsored account.
+///
+/// A sponsored account is a subaccount of the network's root account.
+/// The `subaccount_prefix` is a prefix for the subaccount ID.
+/// For example, if this parameter is `"subaccount"` then
+/// the full ID for testnet will be `"subaccount.testnet"`.
+///
+/// It is expected that the `subaccount_prefix` does not contain a `.`.
+#[async_trait]
+pub trait SponsoredAccountCreator {
+    async fn create_sponsored_account(
+        &self,
+        worker: Worker<dyn Network>,
+        subaccount_prefix: AccountId,
+        sk: SecretKey,
+    ) -> Result<Execution<Account>>;
+
+    async fn create_sponsored_account_and_deploy(
+        &self,
+        worker: Worker<dyn Network>,
+        subaccount_prefix: AccountId,
+        sk: SecretKey,
+        wasm: &[u8],
+    ) -> Result<Execution<Contract>>;
+}
+
 #[async_trait]
 pub trait TopLevelAccountCreator {
     async fn create_tla(
@@ -33,13 +59,9 @@ pub trait TopLevelAccountCreator {
     ) -> Result<Execution<Contract>>;
 }
 
-// NOTE: Not all networks/runtimes will have the ability to be able to do dev_deploy.
-// This trait acts as segmented boundary for only specific networks such as sandbox and testnet.
-pub trait AllowDevAccountCreation {}
-
 impl<T> Worker<T>
 where
-    T: DevNetwork + TopLevelAccountCreator + 'static,
+    T: Network + TopLevelAccountCreator + 'static,
 {
     pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<Execution<Account>> {
         let res = self
@@ -72,7 +94,7 @@ where
         Ok(res)
     }
 
-    pub async fn dev_generate(&self) -> (AccountId, SecretKey) {
+    pub async fn generate_tla_credentials(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         (id, sk)
@@ -90,15 +112,85 @@ where
     /// }
     /// ```
     ///
-    pub async fn dev_create_account(&self) -> Result<Account> {
-        let (id, sk) = self.dev_generate().await;
+    pub async fn dev_create_tla(&self) -> Result<Account> {
+        let (id, sk) = self.generate_tla_credentials().await;
         let account = self.create_tla(id.clone(), sk).await?;
         Ok(account.into_result()?)
     }
 
-    pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
-        let (id, sk) = self.dev_generate().await;
+    pub async fn dev_deploy_tla(&self, wasm: &[u8]) -> Result<Contract> {
+        let (id, sk) = self.generate_tla_credentials().await;
         let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
+        Ok(contract.into_result()?)
+    }
+}
+
+impl<T> Worker<T>
+where
+    T: DevNetwork + 'static,
+{
+    pub async fn create_sponsored_account(
+        &self,
+        subaccount_prefix: AccountId,
+        sk: SecretKey,
+    ) -> Result<Execution<Account>> {
+        if subaccount_prefix.as_str().contains('.') {
+            return Err(crate::error::ErrorKind::Io
+                .custom("Subaccount prefix for sponsored account cannot contain '.'"));
+        }
+        let res = self
+            .workspace
+            .create_sponsored_account(self.clone().coerce(), subaccount_prefix, sk)
+            .await?;
+
+        for callback in self.tx_callbacks.iter() {
+            callback(res.details.total_gas_burnt)?;
+        }
+
+        Ok(res)
+    }
+
+    pub async fn create_sponsored_account_and_deploy(
+        &self,
+        subaccount_prefix: AccountId,
+        sk: SecretKey,
+        wasm: &[u8],
+    ) -> Result<Execution<Contract>> {
+        if subaccount_prefix.as_str().contains('.') {
+            return Err(crate::error::ErrorKind::Io
+                .custom("Subaccount prefix for sponsored account cannot contain '.'"));
+        }
+        let res = self
+            .workspace
+            .create_sponsored_account_and_deploy(self.clone().coerce(), subaccount_prefix, sk, wasm)
+            .await?;
+
+        for callback in self.tx_callbacks.iter() {
+            callback(res.details.total_gas_burnt)?;
+        }
+
+        Ok(res)
+    }
+
+    pub async fn generate_sponsored_credentials(&self) -> (AccountId, SecretKey) {
+        let id = crate::rpc::tool::random_account_id();
+        let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
+        (id, sk)
+    }
+
+    /// Creates a sub-account of the network root account with
+    /// random account ID and secret key. By default, balance is around 10 Near.
+    pub async fn dev_create_account(&self) -> Result<Account> {
+        let (id, sk) = self.generate_sponsored_credentials().await;
+        let account = self.create_sponsored_account(id.clone(), sk).await?;
+        Ok(account.into_result()?)
+    }
+
+    pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
+        let (id, sk) = self.generate_sponsored_credentials().await;
+        let contract = self
+            .create_sponsored_account_and_deploy(id.clone(), sk, wasm)
+            .await?;
         Ok(contract.into_result()?)
     }
 }
@@ -110,9 +202,6 @@ pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
 /// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static {}
+pub trait DevNetwork: Network + SponsoredAccountCreator + 'static {}
 
-impl<T> DevNetwork for T where
-    T: TopLevelAccountCreator + AllowDevAccountCreation + Network + 'static
-{
-}
+impl<T> DevNetwork for T where T: Network + SponsoredAccountCreator + 'static {}
