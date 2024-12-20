@@ -172,7 +172,7 @@ where
         Ok(res)
     }
 
-    pub async fn dev_generate(&self) -> (AccountId, SecretKey) {
+    pub async fn generate_sponsored_credentials(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         (id, sk)
@@ -180,14 +180,14 @@ where
 
     /// Creates a sub-account of the network root account with
     /// random account ID and secret key. By default, balance is around 10 Near.
-    pub async fn dev_create(&self) -> Result<Account> {
-        let (id, sk) = self.dev_generate().await;
+    pub async fn dev_create_account(&self) -> Result<Account> {
+        let (id, sk) = self.generate_sponsored_credentials().await;
         let account = self.create_sponsored_account(id.clone(), sk).await?;
         Ok(account.into_result()?)
     }
 
     pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
-        let (id, sk) = self.dev_generate().await;
+        let (id, sk) = self.generate_sponsored_credentials().await;
         let contract = self
             .create_sponsored_account_and_deploy(id.clone(), sk, wasm)
             .await?;

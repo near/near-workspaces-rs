@@ -8,7 +8,7 @@ const STATUS_MSG_CONTRACT: &[u8] = include_bytes!("../../examples/res/status_mes
 async fn test_parallel() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
-    let account = worker.dev_create().await?;
+    let account = worker.dev_create_account().await?;
 
     let parallel_tasks = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
         .iter()
@@ -46,7 +46,7 @@ async fn test_parallel() -> anyhow::Result<()> {
 async fn test_parallel_async() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     let contract = worker.dev_deploy(STATUS_MSG_CONTRACT).await?;
-    let account = worker.dev_create().await?;
+    let account = worker.dev_create_account().await?;
 
     // nonce of access key before any transactions occurred.
     let nonce_start = worker

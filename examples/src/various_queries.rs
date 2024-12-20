@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
         .await?;
     println!("Latest Chunk: {chunk:#?}");
 
-    let bob = worker.dev_create().await?;
+    let bob = worker.dev_create_account().await?;
     println!("\nCreated bob's account with id {:?}", bob.id());
 
     // Show all the access keys relating to bob:

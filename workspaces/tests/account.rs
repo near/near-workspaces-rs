@@ -9,7 +9,7 @@ use std::path::Path;
 #[test(tokio::test)]
 async fn test_subaccount_creation() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
-    let account = worker.dev_create().await?;
+    let account = worker.dev_create_account().await?;
 
     let sub = account
         .create_subaccount("subaccount")
@@ -71,7 +71,10 @@ async fn test_transfer_near() -> anyhow::Result<()> {
 async fn test_delete_account() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
 
-    let (alice, bob) = (worker.dev_create().await?, worker.dev_create().await?);
+    let (alice, bob) = (
+        worker.dev_create_account().await?,
+        worker.dev_create_account().await?,
+    );
 
     _ = alice.clone().delete_account(bob.id()).await?;
 
