@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -36,16 +37,7 @@ pub struct Sandbox {
 
 impl Sandbox {
     pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
-        match &self.server.validator_key {
-            ValidatorKey::HomeDir(home_dir) => {
-                let path = home_dir.join("validator_key.json");
-                InMemorySigner::from_file(&path)
-            }
-            ValidatorKey::Known(account_id, secret_key) => Ok(InMemorySigner::from_secret_key(
-                account_id.clone(),
-                secret_key.clone(),
-            )),
-        }
+        InMemorySigner::try_from(self.server.validator_key.clone())
     }
 
     pub(crate) fn registrar_signer(&self) -> Result<InMemorySigner> {
@@ -95,9 +87,11 @@ impl Sandbox {
         // lockfiles as soon as possible.
         server.unlock_lockfiles()?;
 
+        let root_id = InMemorySigner::try_from(server.validator_key.clone())?.account_id;
+
         let info = Info {
             name: build.name.into(),
-            root_id: AccountId::from_str("test.near").unwrap(),
+            root_id,
             keystore_path: PathBuf::from(".near-credentials/sandbox/"),
             rpc_url: url::Url::parse(&server.rpc_addr()).expect("url is hardcoded"),
         };

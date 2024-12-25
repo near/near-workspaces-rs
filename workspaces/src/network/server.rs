@@ -75,7 +75,7 @@ async fn init_home_dir_with_version(version: &str) -> Result<TempDir> {
     Ok(home_dir)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum ValidatorKey {
     HomeDir(PathBuf),
