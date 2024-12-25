@@ -60,6 +60,14 @@ pub trait TopLevelAccountCreator {
     ) -> Result<Execution<Contract>>;
 }
 
+impl<T> Worker<T> {
+    pub async fn generate_dev_account_credentials(&self) -> (AccountId, SecretKey) {
+        let id = crate::rpc::tool::random_account_id();
+        let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
+        (id, sk)
+    }
+}
+
 impl<T> Worker<T>
 where
     T: Network + TopLevelAccountCreator + 'static,
@@ -97,25 +105,19 @@ where
         Ok(res)
     }
 
-    pub async fn generate_tla_credentials(&self) -> (AccountId, SecretKey) {
-        let id = crate::rpc::tool::random_account_id();
-        let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
-        (id, sk)
-    }
-
     /// Creates a top level developement account.
     /// On sandbox network it has a balance of 100 Near.
     /// If you need more Near for your tests in sandbox consider using [`Worker::<Sandbox>::root_account`] method.
     pub async fn dev_create_tla(&self) -> Result<Account> {
-        let (id, sk) = self.generate_tla_credentials().await;
-        let account = self.create_tla(id.clone(), sk).await?;
+        let (id, sk) = self.generate_dev_account_credentials().await;
+        let account = self.create_tla(id, sk).await?;
         Ok(account.into_result()?)
     }
 
     /// Creates a top level developement account and deploys wasm code to it.
     pub async fn dev_deploy_tla(&self, wasm: &[u8]) -> Result<Contract> {
-        let (id, sk) = self.generate_tla_credentials().await;
-        let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
+        let (id, sk) = self.generate_dev_account_credentials().await;
+        let contract = self.create_tla_and_deploy(id, sk, wasm).await?;
         Ok(contract.into_result()?)
     }
 }
@@ -167,24 +169,18 @@ where
         Ok(res)
     }
 
-    pub async fn generate_sponsored_credentials(&self) -> (AccountId, SecretKey) {
-        let id = crate::rpc::tool::random_account_id();
-        let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
-        (id, sk)
-    }
-
     /// Creates a sub-account of the network root account with
     /// random account ID and secret key. By default, balance is around 10 Near.
     pub async fn dev_create_account(&self) -> Result<Account> {
-        let (id, sk) = self.generate_sponsored_credentials().await;
-        let account = self.create_sponsored_account(id.clone(), sk).await?;
+        let (id, sk) = self.generate_dev_account_credentials().await;
+        let account = self.create_sponsored_account(id, sk).await?;
         Ok(account.into_result()?)
     }
 
     pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
-        let (id, sk) = self.generate_sponsored_credentials().await;
+        let (id, sk) = self.generate_dev_account_credentials().await;
         let contract = self
-            .create_sponsored_account_and_deploy(id.clone(), sk, wasm)
+            .create_sponsored_account_and_deploy(id, sk, wasm)
             .await?;
         Ok(contract.into_result()?)
     }
