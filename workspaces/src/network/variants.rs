@@ -102,16 +102,7 @@ where
 
     /// Creates a top level developement account.
     /// On sandbox network it has a balance of 100 Near.
-    /// If you need more Near for your tests in sandbox consider using `root_account()` method:
-    ///
-    /// # Examples
-    /// ```
-    /// use near_workspaces::{result::Result, Account, network::Sandbox, Worker};
-    /// fn get_account_with_lots_of_near(worker: &Worker<Sandbox>) -> Result<Account> {
-    ///     worker.root_account()
-    /// }
-    /// ```
-    ///
+    /// If you need more Near for your tests in sandbox consider using [`Worker::<Sandbox>::root_account`] method.
     pub async fn dev_create_tla(&self) -> Result<Account> {
         let (id, sk) = self.generate_tla_credentials().await;
         let account = self.create_tla(id.clone(), sk).await?;

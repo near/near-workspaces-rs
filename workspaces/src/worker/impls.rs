@@ -291,6 +291,16 @@ impl Worker<Testnet> {
 }
 
 impl Worker<Sandbox> {
+    /// Returns root account of this `Sandbox` instance
+    ///
+    /// # Examples
+    /// ```
+    /// use near_workspaces::{result::Result, Account, network::Sandbox, Worker};
+    /// fn get_account_with_lots_of_near(worker: &Worker<Sandbox>) -> Result<Account> {
+    ///     worker.root_account()
+    /// }
+    /// ```
+    ///
     pub fn root_account(&self) -> Result<Account> {
         let signer = self.workspace.root_signer()?;
         Ok(Account::new(signer, self.clone().coerce()))
