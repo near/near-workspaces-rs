@@ -10,7 +10,7 @@ use near_primitives::views::ExecutionStatusView;
 use crate::error::ErrorKind;
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
-use crate::network::{NetworkClient, NetworkInfo, SponsoredAccountCreator};
+use crate::network::{NetworkClient, NetworkInfo, RootAccountSubaccountCreator};
 use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
@@ -67,8 +67,12 @@ impl std::fmt::Debug for Testnet {
 }
 
 #[async_trait]
-impl SponsoredAccountCreator for Testnet {
-    async fn create_sponsored_account(
+impl RootAccountSubaccountCreator for Testnet {
+    fn root_account_id(&self) -> Result<AccountId> {
+        Ok(self.info().root_id.clone())
+    }
+
+    async fn create_root_account_subaccount(
         &self,
         worker: Worker<dyn Network>,
         subaccount_prefix: AccountId,
@@ -76,10 +80,12 @@ impl SponsoredAccountCreator for Testnet {
         // TODO: return Account only, but then you don't get metadata info for it...
     ) -> Result<Execution<Account>> {
         let url = Url::parse(HELPER_URL).unwrap();
+        let root_id = self
+            .root_account_id()
+            .expect("no source of error expected on testnet");
         //only registrar can create tla on testnet, so must concatenate random created id with .testnet
-        let id =
-            AccountId::from_str(format!("{}.{}", subaccount_prefix, self.info().root_id).as_str())
-                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+        let id = AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
+            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id, sk);
 
@@ -108,7 +114,7 @@ impl SponsoredAccountCreator for Testnet {
         })
     }
 
-    async fn create_sponsored_account_and_deploy(
+    async fn create_root_account_subaccount_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         subaccount_prefix: AccountId,
@@ -117,7 +123,7 @@ impl SponsoredAccountCreator for Testnet {
     ) -> Result<Execution<Contract>> {
         let signer = InMemorySigner::from_secret_key(subaccount_prefix.clone(), sk.clone());
         let account = self
-            .create_sponsored_account(worker, subaccount_prefix.clone(), sk)
+            .create_root_account_subaccount(worker, subaccount_prefix.clone(), sk)
             .await?;
 
         let outcome = self

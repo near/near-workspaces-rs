@@ -15,24 +15,29 @@ pub trait NetworkInfo {
     fn info(&self) -> &Info;
 }
 
-/// Trait provides the ability to create a sponsored account.
+/// Trait provides the ability to create a sponsored subaccount of network's root account.
 ///
-/// A sponsored account is a subaccount of the network's root account.
+/// Network's root account is identified by value returned by [`Self::root_account_id`] method.
 /// The `subaccount_prefix` is a prefix for the subaccount ID.
 /// For example, if this parameter is `"subaccount"` then
 /// the full ID for testnet will be `"subaccount.testnet"`.
 ///
 /// It is expected that the `subaccount_prefix` does not contain a `.`.
 #[async_trait]
-pub trait SponsoredAccountCreator {
-    async fn create_sponsored_account(
+pub trait RootAccountSubaccountCreator {
+    /// for sandbox value of [`Worker::<Sandbox>::root_account`]
+    /// and for testnet value of [`Worker::<Testnet>::root_account_id`]
+    /// are consistent with id that this method returns
+    fn root_account_id(&self) -> Result<AccountId>;
+
+    async fn create_root_account_subaccount(
         &self,
         worker: Worker<dyn Network>,
         subaccount_prefix: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>>;
 
-    async fn create_sponsored_account_and_deploy(
+    async fn create_root_account_subaccount_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         subaccount_prefix: AccountId,
@@ -126,18 +131,18 @@ impl<T> Worker<T>
 where
     T: DevNetwork + 'static,
 {
-    pub async fn create_sponsored_account(
+    pub async fn create_root_account_subaccount(
         &self,
         subaccount_prefix: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>> {
         if subaccount_prefix.as_str().contains('.') {
             return Err(crate::error::ErrorKind::Io
-                .custom("Subaccount prefix for sponsored account cannot contain '.'"));
+                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
         }
         let res = self
             .workspace
-            .create_sponsored_account(self.clone().coerce(), subaccount_prefix, sk)
+            .create_root_account_subaccount(self.clone().coerce(), subaccount_prefix, sk)
             .await?;
 
         for callback in self.tx_callbacks.iter() {
@@ -147,7 +152,7 @@ where
         Ok(res)
     }
 
-    pub async fn create_sponsored_account_and_deploy(
+    pub async fn create_root_account_subaccount_and_deploy(
         &self,
         subaccount_prefix: AccountId,
         sk: SecretKey,
@@ -155,11 +160,16 @@ where
     ) -> Result<Execution<Contract>> {
         if subaccount_prefix.as_str().contains('.') {
             return Err(crate::error::ErrorKind::Io
-                .custom("Subaccount prefix for sponsored account cannot contain '.'"));
+                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
         }
         let res = self
             .workspace
-            .create_sponsored_account_and_deploy(self.clone().coerce(), subaccount_prefix, sk, wasm)
+            .create_root_account_subaccount_and_deploy(
+                self.clone().coerce(),
+                subaccount_prefix,
+                sk,
+                wasm,
+            )
             .await?;
 
         for callback in self.tx_callbacks.iter() {
@@ -169,18 +179,21 @@ where
         Ok(res)
     }
 
-    /// Creates a sub-account of the network root account with
-    /// random account ID and secret key. By default, balance is around 10 Near.
+    /// Creates a subaccount of the network's [root account](RootAccountSubaccountCreator::root_account_id) with
+    /// random account ID and secret key. By default, balance is around 10 Near for testnet
+    /// and 100 NEAR for sandbox.
     pub async fn dev_create_account(&self) -> Result<Account> {
         let (id, sk) = self.generate_dev_account_credentials().await;
-        let account = self.create_sponsored_account(id, sk).await?;
+        let account = self.create_root_account_subaccount(id, sk).await?;
         Ok(account.into_result()?)
     }
 
+    /// Creates a subaccount of the network's [root account](RootAccountSubaccountCreator::root_account_id) with
+    /// random account ID and secret key and deploys provided wasm code into it.
     pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
         let (id, sk) = self.generate_dev_account_credentials().await;
         let contract = self
-            .create_sponsored_account_and_deploy(id, sk, wasm)
+            .create_root_account_subaccount_and_deploy(id, sk, wasm)
             .await?;
         Ok(contract.into_result()?)
     }
@@ -192,7 +205,7 @@ pub trait Network: NetworkInfo + NetworkClient + Send + Sync {}
 
 impl<T> Network for T where T: NetworkInfo + NetworkClient + Send + Sync {}
 
-/// DevNetwork is a Network that can call into `dev_create` and `dev_deploy` to create developer accounts.
-pub trait DevNetwork: Network + SponsoredAccountCreator + 'static {}
+/// DevNetwork is a Network that can call into [`Worker::dev_create_account`] and [`Worker::dev_deploy`] to create developer accounts.
+pub trait DevNetwork: Network + RootAccountSubaccountCreator + 'static {}
 
-impl<T> DevNetwork for T where T: Network + SponsoredAccountCreator + 'static {}
+impl<T> DevNetwork for T where T: Network + RootAccountSubaccountCreator + 'static {}

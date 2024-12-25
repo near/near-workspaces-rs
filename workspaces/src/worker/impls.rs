@@ -1,6 +1,6 @@
 use near_primitives::views::StatusResponse;
 
-use crate::network::{Info, Sandbox, Testnet};
+use crate::network::{Info, RootAccountSubaccountCreator, Sandbox, Testnet};
 use crate::network::{NetworkClient, NetworkInfo};
 use crate::operations::{CallTransaction, Function};
 use crate::result::{ExecutionFinalResult, Result};
@@ -285,8 +285,11 @@ where
 }
 
 impl Worker<Testnet> {
+    /// it's just `"testnet"`
     pub fn root_account_id(&self) -> AccountId {
-        self.workspace.info().root_id.clone()
+        self.workspace
+            .root_account_id()
+            .expect("no source of error expected for testnet")
     }
 }
 

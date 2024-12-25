@@ -10,7 +10,7 @@ use near_sandbox_utils as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{NetworkClient, NetworkInfo, SponsoredAccountCreator, TopLevelAccountCreator};
+use super::{NetworkClient, NetworkInfo, RootAccountSubaccountCreator, TopLevelAccountCreator};
 use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::network::server::SandboxServer;
 use crate::network::Info;
@@ -171,16 +171,20 @@ impl TopLevelAccountCreator for Sandbox {
 }
 
 #[async_trait]
-impl SponsoredAccountCreator for Sandbox {
-    async fn create_sponsored_account(
+impl RootAccountSubaccountCreator for Sandbox {
+    fn root_account_id(&self) -> Result<AccountId> {
+        Ok(self.root_signer()?.account_id)
+    }
+
+    async fn create_root_account_subaccount(
         &self,
         worker: Worker<dyn Network>,
         subaccount_prefix: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>> {
-        let id =
-            AccountId::from_str(format!("{}.{}", subaccount_prefix, self.info().root_id).as_str())
-                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+        let root_id = self.root_account_id()?;
+        let id = AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
+            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
         let root_signer = self.root_signer()?;
         let outcome = self
             .client()
@@ -192,7 +196,7 @@ impl SponsoredAccountCreator for Sandbox {
             details: ExecutionFinalResult::from_view(outcome),
         })
     }
-    async fn create_sponsored_account_and_deploy(
+    async fn create_root_account_subaccount_and_deploy(
         &self,
         worker: Worker<dyn Network>,
         subaccount_prefix: AccountId,
