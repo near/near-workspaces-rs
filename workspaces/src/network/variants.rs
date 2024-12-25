@@ -66,7 +66,7 @@ pub trait TopLevelAccountCreator {
 }
 
 impl<T> Worker<T> {
-    pub async fn generate_dev_account_credentials(&self) -> (AccountId, SecretKey) {
+    pub fn generate_dev_account_credentials(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
         let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
         (id, sk)
@@ -114,14 +114,14 @@ where
     /// On sandbox network it has a balance of 100 Near.
     /// If you need more Near for your tests in sandbox consider using [`Worker::<Sandbox>::root_account`] method.
     pub async fn dev_create_tla(&self) -> Result<Account> {
-        let (id, sk) = self.generate_dev_account_credentials().await;
+        let (id, sk) = self.generate_dev_account_credentials();
         let account = self.create_tla(id, sk).await?;
         Ok(account.into_result()?)
     }
 
     /// Creates a top level developement account and deploys wasm code to it.
     pub async fn dev_deploy_tla(&self, wasm: &[u8]) -> Result<Contract> {
-        let (id, sk) = self.generate_dev_account_credentials().await;
+        let (id, sk) = self.generate_dev_account_credentials();
         let contract = self.create_tla_and_deploy(id, sk, wasm).await?;
         Ok(contract.into_result()?)
     }
@@ -183,7 +183,7 @@ where
     /// random account ID and secret key. By default, balance is around 10 Near for testnet
     /// and 100 NEAR for sandbox.
     pub async fn dev_create_account(&self) -> Result<Account> {
-        let (id, sk) = self.generate_dev_account_credentials().await;
+        let (id, sk) = self.generate_dev_account_credentials();
         let account = self.create_root_account_subaccount(id, sk).await?;
         Ok(account.into_result()?)
     }
@@ -191,7 +191,7 @@ where
     /// Creates a subaccount of the network's [root account](RootAccountSubaccountCreator::root_account_id) with
     /// random account ID and secret key and deploys provided wasm code into it.
     pub async fn dev_deploy(&self, wasm: &[u8]) -> Result<Contract> {
-        let (id, sk) = self.generate_dev_account_credentials().await;
+        let (id, sk) = self.generate_dev_account_credentials();
         let contract = self
             .create_root_account_subaccount_and_deploy(id, sk, wasm)
             .await?;
