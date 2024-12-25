@@ -41,6 +41,7 @@ pub trait SponsoredAccountCreator {
     ) -> Result<Execution<Contract>>;
 }
 
+/// tla - stands for "top level account"
 #[async_trait]
 pub trait TopLevelAccountCreator {
     async fn create_tla(
@@ -63,6 +64,7 @@ impl<T> Worker<T>
 where
     T: Network + TopLevelAccountCreator + 'static,
 {
+    /// Creates account `id` as top level account
     pub async fn create_tla(&self, id: AccountId, sk: SecretKey) -> Result<Execution<Account>> {
         let res = self
             .workspace
@@ -76,6 +78,7 @@ where
         Ok(res)
     }
 
+    /// Creates account `id` as top level account and deploys wasm code to it
     pub async fn create_tla_and_deploy(
         &self,
         id: AccountId,
@@ -109,6 +112,7 @@ where
         Ok(account.into_result()?)
     }
 
+    /// Creates a top level developement account and deploys wasm code to it.
     pub async fn dev_deploy_tla(&self, wasm: &[u8]) -> Result<Contract> {
         let (id, sk) = self.generate_tla_credentials().await;
         let contract = self.create_tla_and_deploy(id.clone(), sk, wasm).await?;
