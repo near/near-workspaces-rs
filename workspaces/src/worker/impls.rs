@@ -1,6 +1,6 @@
 use near_primitives::views::StatusResponse;
 
-use crate::network::{Info, Sandbox};
+use crate::network::{Info, Sandbox, Testnet};
 use crate::network::{NetworkClient, NetworkInfo};
 use crate::operations::{CallTransaction, Function};
 use crate::result::{ExecutionFinalResult, Result};
@@ -281,6 +281,12 @@ where
             signer.clone(),
             function,
         )
+    }
+}
+
+impl Worker<Testnet> {
+    pub fn root_account_id(&self) -> AccountId {
+        self.workspace.info().root_id.clone()
     }
 }
 
