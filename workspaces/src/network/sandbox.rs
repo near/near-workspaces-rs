@@ -203,9 +203,9 @@ impl RootAccountSubaccountCreator for Sandbox {
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-        let id =
-            AccountId::from_str(format!("{}.{}", subaccount_prefix, self.info().root_id).as_str())
-                .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+        let root_id = self.root_account_id()?;
+        let id = AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
+            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
         let root_signer = self.root_signer()?;
         let outcome = self
             .client()
