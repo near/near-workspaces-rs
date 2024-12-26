@@ -1,7 +1,7 @@
 use near_primitives::views::StatusResponse;
 
-use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo};
-use crate::network::{Info, Sandbox};
+use crate::network::{Info, RootAccountSubaccountCreator, Sandbox, Testnet};
+use crate::network::{NetworkClient, NetworkInfo};
 use crate::operations::{CallTransaction, Function};
 use crate::result::{ExecutionFinalResult, Result};
 use crate::rpc::client::Client;
@@ -40,8 +40,6 @@ impl<T: ?Sized> Clone for Worker<T> {
         }
     }
 }
-
-impl<T> AllowDevAccountCreation for Worker<T> where T: AllowDevAccountCreation {}
 
 impl<T> NetworkInfo for Worker<T>
 where
@@ -286,7 +284,26 @@ where
     }
 }
 
+impl Worker<Testnet> {
+    /// it's just `"testnet"`
+    pub fn root_account_id(&self) -> AccountId {
+        self.workspace
+            .root_account_id()
+            .expect("no source of error expected for testnet")
+    }
+}
+
 impl Worker<Sandbox> {
+    /// Returns root account of this `Sandbox` instance
+    ///
+    /// # Examples
+    /// ```
+    /// use near_workspaces::{result::Result, Account, network::Sandbox, Worker};
+    /// fn get_account_with_lots_of_near(worker: &Worker<Sandbox>) -> Result<Account> {
+    ///     worker.root_account()
+    /// }
+    /// ```
+    ///
     pub fn root_account(&self) -> Result<Account> {
         let signer = self.workspace.root_signer()?;
         Ok(Account::new(signer, self.clone().coerce()))

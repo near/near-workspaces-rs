@@ -305,6 +305,22 @@ impl InMemorySigner {
     }
 }
 
+impl TryFrom<crate::network::ValidatorKey> for InMemorySigner {
+    type Error = crate::error::Error;
+
+    fn try_from(value: crate::network::ValidatorKey) -> std::result::Result<Self, Self::Error> {
+        match value {
+            crate::network::ValidatorKey::HomeDir(home_dir) => {
+                let path = home_dir.join("validator_key.json");
+                Self::from_file(&path)
+            }
+            crate::network::ValidatorKey::Known(account_id, secret_key) => {
+                Ok(Self::from_secret_key(account_id, secret_key))
+            }
+        }
+    }
+}
+
 // type taken from near_primitives::hash::CryptoHash.
 /// CryptoHash is type for storing the hash of a specific block.
 #[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]

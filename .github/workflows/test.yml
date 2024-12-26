@@ -46,6 +46,7 @@ jobs:
   test:
     needs: cargo-fmt
     strategy:
+      fail-fast: false
       matrix:
         platform: [ubuntu-latest, macos-latest]
         toolchain: [stable]

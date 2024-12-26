@@ -1,5 +1,5 @@
+use std::convert::TryFrom;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
@@ -9,7 +9,7 @@ use near_sandbox_utils as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
-use super::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use super::{NetworkClient, NetworkInfo, RootAccountSubaccountCreator, TopLevelAccountCreator};
 use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
@@ -36,16 +36,7 @@ pub struct Sandbox {
 
 impl Sandbox {
     pub(crate) fn root_signer(&self) -> Result<InMemorySigner> {
-        match &self.server.validator_key {
-            ValidatorKey::HomeDir(home_dir) => {
-                let path = home_dir.join("validator_key.json");
-                InMemorySigner::from_file(&path)
-            }
-            ValidatorKey::Known(account_id, secret_key) => Ok(InMemorySigner::from_secret_key(
-                account_id.clone(),
-                secret_key.clone(),
-            )),
-        }
+        InMemorySigner::try_from(self.server.validator_key.clone())
     }
 
     pub(crate) fn registrar_signer(&self) -> Result<InMemorySigner> {
@@ -95,9 +86,11 @@ impl Sandbox {
         // lockfiles as soon as possible.
         server.unlock_lockfiles()?;
 
+        let root_id = InMemorySigner::try_from(server.validator_key.clone())?.account_id;
+
         let info = Info {
             name: build.name.into(),
-            root_id: AccountId::from_str("test.near").unwrap(),
+            root_id,
             keystore_path: PathBuf::from(".near-credentials/sandbox/"),
             rpc_url: url::Url::parse(&server.rpc_addr()).expect("url is hardcoded"),
         };
@@ -130,8 +123,6 @@ impl FromNetworkBuilder for Sandbox {
     }
 }
 
-impl AllowDevAccountCreation for Sandbox {}
-
 #[async_trait]
 impl TopLevelAccountCreator for Sandbox {
     async fn create_tla(
@@ -145,7 +136,6 @@ impl TopLevelAccountCreator for Sandbox {
             .client()
             .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
             .await?;
-
         let signer = InMemorySigner::from_secret_key(id, sk);
         Ok(Execution {
             result: Account::new(signer, worker),
@@ -171,7 +161,57 @@ impl TopLevelAccountCreator for Sandbox {
                 wasm.into(),
             )
             .await?;
+        let signer = InMemorySigner::from_secret_key(id, sk);
+        Ok(Execution {
+            result: Contract::new(signer, worker),
+            details: ExecutionFinalResult::from_view(outcome),
+        })
+    }
+}
 
+#[async_trait]
+impl RootAccountSubaccountCreator for Sandbox {
+    fn root_account_id(&self) -> Result<AccountId> {
+        Ok(self.root_signer()?.account_id)
+    }
+
+    async fn create_root_account_subaccount(
+        &self,
+        worker: Worker<dyn Network>,
+        subaccount_prefix: AccountId,
+        sk: SecretKey,
+    ) -> Result<Execution<Account>> {
+        let id = self.compute_subaccount_id(subaccount_prefix)?;
+        let root_signer = self.root_signer()?;
+        let outcome = self
+            .client()
+            .create_account(&root_signer, &id, sk.public_key(), DEFAULT_DEPOSIT)
+            .await?;
+        let signer = InMemorySigner::from_secret_key(id, sk);
+        Ok(Execution {
+            result: Account::new(signer, worker),
+            details: ExecutionFinalResult::from_view(outcome),
+        })
+    }
+    async fn create_root_account_subaccount_and_deploy(
+        &self,
+        worker: Worker<dyn Network>,
+        subaccount_prefix: AccountId,
+        sk: SecretKey,
+        wasm: &[u8],
+    ) -> Result<Execution<Contract>> {
+        let id = self.compute_subaccount_id(subaccount_prefix)?;
+        let root_signer = self.root_signer()?;
+        let outcome = self
+            .client()
+            .create_account_and_deploy(
+                &root_signer,
+                &id,
+                sk.public_key(),
+                DEFAULT_DEPOSIT,
+                wasm.into(),
+            )
+            .await?;
         let signer = InMemorySigner::from_secret_key(id, sk);
         Ok(Execution {
             result: Contract::new(signer, worker),

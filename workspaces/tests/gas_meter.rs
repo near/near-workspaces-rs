@@ -13,9 +13,9 @@ async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
     let status_msg = {
-        let (id, sk) = worker.dev_generate().await;
+        let (id, sk) = worker.generate_dev_account_credentials();
         let contract = worker
-            .create_tla_and_deploy(
+            .create_root_account_subaccount_and_deploy(
                 id.clone(),
                 sk,
                 include_bytes!("../../examples/res/status_message.wasm"),
@@ -28,8 +28,10 @@ async fn test_gas_meter_with_single_transaction() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_create_account().await?;
     let account = {
-        let (id, sk) = worker.dev_generate().await;
-        let account = worker.create_tla(id.clone(), sk).await?;
+        let (id, sk) = worker.generate_dev_account_credentials();
+        let account = worker
+            .create_root_account_subaccount(id.clone(), sk)
+            .await?;
         total_gas += account.details.total_gas_burnt.as_gas();
 
         account.into_result()?
@@ -57,9 +59,9 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
     let status_msg = {
-        let (id, sk) = worker.dev_generate().await;
+        let (id, sk) = worker.generate_dev_account_credentials();
         let contract = worker
-            .create_tla_and_deploy(
+            .create_root_account_subaccount_and_deploy(
                 id.clone(),
                 sk,
                 include_bytes!("../../examples/res/status_message.wasm"),
@@ -72,8 +74,10 @@ async fn test_gas_meter_with_multiple_transactions() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_create_account().await?;
     let account = {
-        let (id, sk) = worker.dev_generate().await;
-        let account = worker.create_tla(id.clone(), sk).await?;
+        let (id, sk) = worker.generate_dev_account_credentials();
+        let account = worker
+            .create_root_account_subaccount(id.clone(), sk)
+            .await?;
         total_gas += account.details.total_gas_burnt.as_gas();
 
         account.into_result()?
@@ -110,9 +114,9 @@ async fn test_gas_meter_with_parallel_transactions() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
     let status_msg = {
-        let (id, sk) = worker.dev_generate().await;
+        let (id, sk) = worker.generate_dev_account_credentials();
         let contract = worker
-            .create_tla_and_deploy(
+            .create_root_account_subaccount_and_deploy(
                 id.clone(),
                 sk,
                 include_bytes!("../../examples/res/status_message.wasm"),
@@ -125,8 +129,10 @@ async fn test_gas_meter_with_parallel_transactions() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_create_account().await?;
     let account = {
-        let (id, sk) = worker.dev_generate().await;
-        let account = worker.create_tla(id.clone(), sk).await?;
+        let (id, sk) = worker.generate_dev_account_credentials();
+        let account = worker
+            .create_root_account_subaccount(id.clone(), sk)
+            .await?;
         total_gas += account.details.total_gas_burnt.as_gas();
 
         account.into_result()?
@@ -168,9 +174,9 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
 
     // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
     let status_msg = {
-        let (id, sk) = worker.dev_generate().await;
+        let (id, sk) = worker.generate_dev_account_credentials();
         let contract = worker
-            .create_tla_and_deploy(
+            .create_root_account_subaccount_and_deploy(
                 id.clone(),
                 sk,
                 include_bytes!("../../examples/res/status_message.wasm"),
@@ -183,8 +189,10 @@ async fn test_gas_meter_with_multiple_transactions_and_view() -> anyhow::Result<
 
     // analogous to: worker.dev_create_account().await?;
     let account = {
-        let (id, sk) = worker.dev_generate().await;
-        let account = worker.create_tla(id.clone(), sk).await?;
+        let (id, sk) = worker.generate_dev_account_credentials();
+        let account = worker
+            .create_root_account_subaccount(id.clone(), sk)
+            .await?;
         total_gas += account.details.total_gas_burnt.as_gas();
 
         account.into_result()?
@@ -231,9 +239,9 @@ async fn test_gas_meter_batch_tx() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_deploy(include_bytes!("*.wasm")).await?;
     let contract = {
-        let (id, sk) = worker.dev_generate().await;
+        let (id, sk) = worker.generate_dev_account_credentials();
         let contract = worker
-            .create_tla_and_deploy(
+            .create_root_account_subaccount_and_deploy(
                 id.clone(),
                 sk,
                 include_bytes!("../../examples/res/status_message.wasm"),
@@ -290,8 +298,10 @@ async fn test_gas_meter_create_account_transaction() -> anyhow::Result<()> {
 
     // analogous to: worker.dev_create_account().await?;
     let account = {
-        let (id, sk) = worker.dev_generate().await;
-        let account = worker.create_tla(id.clone(), sk).await?;
+        let (id, sk) = worker.generate_dev_account_credentials();
+        let account = worker
+            .create_root_account_subaccount(id.clone(), sk)
+            .await?;
         total_gas += account.details.total_gas_burnt.as_gas();
 
         account.into_result()?

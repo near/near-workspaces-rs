@@ -25,6 +25,6 @@ pub use self::sandbox::Sandbox;
 pub use self::server::{pick_unused_port, ValidatorKey};
 pub use self::testnet::Testnet;
 pub use self::variants::{
-    AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator,
+    NetworkClient, NetworkInfo, RootAccountSubaccountCreator, TopLevelAccountCreator,
 };
 pub use config::set_sandbox_genesis;

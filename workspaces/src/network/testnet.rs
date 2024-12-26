@@ -9,7 +9,7 @@ use near_primitives::views::ExecutionStatusView;
 
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
-use crate::network::{AllowDevAccountCreation, NetworkClient, NetworkInfo, TopLevelAccountCreator};
+use crate::network::{NetworkClient, NetworkInfo, RootAccountSubaccountCreator};
 use crate::result::{Execution, ExecutionDetails, ExecutionFinalResult, ExecutionOutcome, Result};
 use crate::rpc::{client::Client, tool};
 use crate::types::{AccountId, InMemorySigner, NearToken, SecretKey};
@@ -18,7 +18,7 @@ use crate::{Account, Contract, CryptoHash, Network, Worker};
 /// URL to the testnet RPC node provided by near.org.
 pub const RPC_URL: &str = "https://rpc.testnet.near.org";
 
-/// URL to the helper contract used to create top-level-accounts (TLA) provided by near.org.
+/// URL to the helper contract used to create named accounts provided by near.org.
 pub const HELPER_URL: &str = "https://helper.testnet.near.org";
 
 /// URL to the testnet archival RPC node provided by near.org.
@@ -65,18 +65,22 @@ impl std::fmt::Debug for Testnet {
     }
 }
 
-impl AllowDevAccountCreation for Testnet {}
-
 #[async_trait]
-impl TopLevelAccountCreator for Testnet {
-    async fn create_tla(
+impl RootAccountSubaccountCreator for Testnet {
+    fn root_account_id(&self) -> Result<AccountId> {
+        Ok(self.info().root_id.clone())
+    }
+
+    async fn create_root_account_subaccount(
         &self,
         worker: Worker<dyn Network>,
-        id: AccountId,
+        subaccount_prefix: AccountId,
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
     ) -> Result<Execution<Account>> {
+        let id = self.compute_subaccount_id(subaccount_prefix)?;
         let url = Url::parse(HELPER_URL).unwrap();
+        //only registrar can create tla on testnet, so must concatenate random created id with .testnet
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id, sk);
 
@@ -105,22 +109,19 @@ impl TopLevelAccountCreator for Testnet {
         })
     }
 
-    async fn create_tla_and_deploy(
+    async fn create_root_account_subaccount_and_deploy(
         &self,
         worker: Worker<dyn Network>,
-        id: AccountId,
+        subaccount_prefix: AccountId,
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-        let signer = InMemorySigner::from_secret_key(id.clone(), sk.clone());
-        let account = self.create_tla(worker, id.clone(), sk).await?;
+        let account = self
+            .create_root_account_subaccount(worker, subaccount_prefix.clone(), sk)
+            .await?;
+        let account = account.into_result()?;
 
-        let outcome = self.client().deploy(&signer, &id, wasm.into()).await?;
-
-        Ok(Execution {
-            result: Contract::account(account.into_result()?),
-            details: ExecutionFinalResult::from_view(outcome),
-        })
+        account.deploy(wasm).await
     }
 }
 

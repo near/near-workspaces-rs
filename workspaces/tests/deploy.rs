@@ -2,8 +2,8 @@
 use serde::{Deserialize, Serialize};
 use test_log::test;
 
-use near_workspaces::network::{Sandbox, ValidatorKey};
-use near_workspaces::{pick_unused_port, Worker};
+use near_workspaces::network::ValidatorKey;
+use near_workspaces::{pick_unused_port, DevNetwork, Worker};
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{
@@ -31,9 +31,14 @@ fn expected() -> NftMetadata {
     serde_json::from_str(EXPECTED_NFT_METADATA).unwrap()
 }
 
-async fn deploy_and_assert(worker: Worker<Sandbox>) -> anyhow::Result<()> {
+async fn deploy_and_assert<T>(worker: Worker<T>) -> anyhow::Result<()>
+where
+    T: DevNetwork + 'static,
+{
     let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
+
+    dbg!(&contract);
 
     contract
         .call("new_default_meta")
@@ -50,10 +55,55 @@ async fn deploy_and_assert(worker: Worker<Sandbox>) -> anyhow::Result<()> {
     Ok(())
 }
 
+async fn dev_create_account_and_assert<T>(worker: Worker<T>) -> anyhow::Result<()>
+where
+    T: DevNetwork + 'static,
+{
+    let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
+    let account = worker.dev_create_account().await?;
+    dbg!(&account);
+
+    account.deploy(&wasm).await?.into_result()?;
+
+    account
+        .call(account.id(), "new_default_meta")
+        .args_json(serde_json::json!({
+            "owner_id": account.id()
+        }))
+        .transact()
+        .await?
+        .into_result()?;
+
+    let actual: NftMetadata = account.view(account.id(), "nft_metadata").await?.json()?;
+
+    assert_eq!(actual, expected());
+    Ok(())
+}
 #[test(tokio::test)]
-async fn test_dev_deploy() -> anyhow::Result<()> {
+async fn test_dev_deploy_sandbox() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     deploy_and_assert(worker).await?;
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn test_dev_deploy_testnet() -> anyhow::Result<()> {
+    let worker = near_workspaces::testnet().await?;
+    deploy_and_assert(worker).await?;
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn test_dev_create_account_sandbox() -> anyhow::Result<()> {
+    let worker = near_workspaces::sandbox().await?;
+    dev_create_account_and_assert(worker).await?;
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn test_dev_create_account_testnet() -> anyhow::Result<()> {
+    let worker = near_workspaces::testnet().await?;
+    dev_create_account_and_assert(worker).await?;
     Ok(())
 }
 
