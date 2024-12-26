@@ -79,6 +79,10 @@ impl RootAccountSubaccountCreator for Testnet {
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
     ) -> Result<Execution<Account>> {
+        if subaccount_prefix.as_str().contains('.') {
+            return Err(crate::error::ErrorKind::Io
+                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
+        }
         let url = Url::parse(HELPER_URL).unwrap();
         let root_id = self
             .root_account_id()

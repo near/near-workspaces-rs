@@ -22,7 +22,7 @@ pub trait NetworkInfo {
 /// For example, if this parameter is `"subaccount"` then
 /// the full ID for testnet will be `"subaccount.testnet"`.
 ///
-/// It is expected that the `subaccount_prefix` does not contain a `.`.
+/// Currently all implementations validate that `subaccount_prefix` does not contain a `.`.
 #[async_trait]
 pub trait RootAccountSubaccountCreator {
     /// for sandbox value of [`Worker::<Sandbox>::root_account`]
@@ -136,10 +136,6 @@ where
         subaccount_prefix: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>> {
-        if subaccount_prefix.as_str().contains('.') {
-            return Err(crate::error::ErrorKind::Io
-                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
-        }
         let res = self
             .workspace
             .create_root_account_subaccount(self.clone().coerce(), subaccount_prefix, sk)
@@ -158,10 +154,6 @@ where
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-        if subaccount_prefix.as_str().contains('.') {
-            return Err(crate::error::ErrorKind::Io
-                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
-        }
         let res = self
             .workspace
             .create_root_account_subaccount_and_deploy(

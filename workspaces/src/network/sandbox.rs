@@ -182,6 +182,10 @@ impl RootAccountSubaccountCreator for Sandbox {
         subaccount_prefix: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>> {
+        if subaccount_prefix.as_str().contains('.') {
+            return Err(crate::error::ErrorKind::Io
+                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
+        }
         let root_id = self.root_account_id()?;
         let id = AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
             .map_err(|e| ErrorKind::DataConversion.custom(e))?;
@@ -203,6 +207,10 @@ impl RootAccountSubaccountCreator for Sandbox {
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
+        if subaccount_prefix.as_str().contains('.') {
+            return Err(crate::error::ErrorKind::Io
+                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
+        }
         let root_id = self.root_account_id()?;
         let id = AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
             .map_err(|e| ErrorKind::DataConversion.custom(e))?;
