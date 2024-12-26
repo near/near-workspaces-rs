@@ -121,20 +121,12 @@ impl RootAccountSubaccountCreator for Testnet {
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-        let signer = InMemorySigner::from_secret_key(subaccount_prefix.clone(), sk.clone());
         let account = self
             .create_root_account_subaccount(worker, subaccount_prefix.clone(), sk)
             .await?;
+        let account = account.into_result()?;
 
-        let outcome = self
-            .client()
-            .deploy(&signer, &subaccount_prefix, wasm.into())
-            .await?;
-
-        Ok(Execution {
-            result: Contract::account(account.into_result()?),
-            details: ExecutionFinalResult::from_view(outcome),
-        })
+        account.deploy(wasm).await
     }
 }
 
