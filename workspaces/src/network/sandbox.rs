@@ -1,6 +1,5 @@
 use std::convert::TryFrom;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
@@ -11,7 +10,7 @@ use near_sandbox_utils as sandbox;
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
 use super::{NetworkClient, NetworkInfo, RootAccountSubaccountCreator, TopLevelAccountCreator};
-use crate::error::{ErrorKind, SandboxErrorCode};
+use crate::error::SandboxErrorCode;
 use crate::network::server::SandboxServer;
 use crate::network::Info;
 use crate::result::{Execution, ExecutionFinalResult, Result};
@@ -182,13 +181,7 @@ impl RootAccountSubaccountCreator for Sandbox {
         subaccount_prefix: AccountId,
         sk: SecretKey,
     ) -> Result<Execution<Account>> {
-        if subaccount_prefix.as_str().contains('.') {
-            return Err(crate::error::ErrorKind::Io
-                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
-        }
-        let root_id = self.root_account_id()?;
-        let id = AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
-            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+        let id = self.compute_subaccount_id(subaccount_prefix)?;
         let root_signer = self.root_signer()?;
         let outcome = self
             .client()
@@ -207,13 +200,7 @@ impl RootAccountSubaccountCreator for Sandbox {
         sk: SecretKey,
         wasm: &[u8],
     ) -> Result<Execution<Contract>> {
-        if subaccount_prefix.as_str().contains('.') {
-            return Err(crate::error::ErrorKind::Io
-                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
-        }
-        let root_id = self.root_account_id()?;
-        let id = AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
-            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
+        let id = self.compute_subaccount_id(subaccount_prefix)?;
         let root_signer = self.root_signer()?;
         let outcome = self
             .client()

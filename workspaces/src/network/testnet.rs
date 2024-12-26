@@ -7,7 +7,6 @@ use url::Url;
 
 use near_primitives::views::ExecutionStatusView;
 
-use crate::error::ErrorKind;
 use crate::network::builder::{FromNetworkBuilder, NetworkBuilder};
 use crate::network::Info;
 use crate::network::{NetworkClient, NetworkInfo, RootAccountSubaccountCreator};
@@ -79,17 +78,9 @@ impl RootAccountSubaccountCreator for Testnet {
         sk: SecretKey,
         // TODO: return Account only, but then you don't get metadata info for it...
     ) -> Result<Execution<Account>> {
-        if subaccount_prefix.as_str().contains('.') {
-            return Err(crate::error::ErrorKind::Io
-                .custom("Subaccount prefix for subaccount created cannot contain '.'"));
-        }
+        let id = self.compute_subaccount_id(subaccount_prefix)?;
         let url = Url::parse(HELPER_URL).unwrap();
-        let root_id = self
-            .root_account_id()
-            .expect("no source of error expected on testnet");
         //only registrar can create tla on testnet, so must concatenate random created id with .testnet
-        let id = AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
-            .map_err(|e| ErrorKind::DataConversion.custom(e))?;
         tool::url_create_account(url, id.clone(), sk.public_key()).await?;
         let signer = InMemorySigner::from_secret_key(id, sk);
 

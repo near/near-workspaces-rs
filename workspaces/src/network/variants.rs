@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use crate::error::ErrorKind;
 use crate::network::Info;
 use crate::result::{Execution, Result};
 use crate::rpc::client::Client;
@@ -29,6 +32,17 @@ pub trait RootAccountSubaccountCreator {
     /// and for testnet value of [`Worker::<Testnet>::root_account_id`]
     /// are consistent with id that this method returns
     fn root_account_id(&self) -> Result<AccountId>;
+
+    fn compute_subaccount_id(&self, subaccount_prefix: AccountId) -> Result<AccountId> {
+        if subaccount_prefix.as_str().contains('.') {
+            return Err(
+                ErrorKind::Io.custom("Subaccount prefix for subaccount created cannot contain '.'")
+            );
+        }
+        let root_id = self.root_account_id()?;
+        AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
+            .map_err(|e| ErrorKind::DataConversion.custom(e))
+    }
 
     async fn create_root_account_subaccount(
         &self,
