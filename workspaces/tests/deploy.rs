@@ -55,6 +55,30 @@ where
     Ok(())
 }
 
+async fn dev_create_account_and_assert<T>(worker: Worker<T>) -> anyhow::Result<()>
+where
+    T: DevNetwork + 'static,
+{
+    let wasm = std::fs::read(NFT_WASM_FILEPATH)?;
+    let account = worker.dev_create_account().await?;
+    dbg!(&account);
+
+    account.deploy(&wasm).await?.into_result()?;
+
+    account
+        .call(account.id(), "new_default_meta")
+        .args_json(serde_json::json!({
+            "owner_id": account.id()
+        }))
+        .transact()
+        .await?
+        .into_result()?;
+
+    let actual: NftMetadata = account.view(account.id(), "nft_metadata").await?.json()?;
+
+    assert_eq!(actual, expected());
+    Ok(())
+}
 #[test(tokio::test)]
 async fn test_dev_deploy_sandbox() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
@@ -66,6 +90,20 @@ async fn test_dev_deploy_sandbox() -> anyhow::Result<()> {
 async fn test_dev_deploy_testnet() -> anyhow::Result<()> {
     let worker = near_workspaces::testnet().await?;
     deploy_and_assert(worker).await?;
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn test_dev_create_account_sandbox() -> anyhow::Result<()> {
+    let worker = near_workspaces::sandbox().await?;
+    dev_create_account_and_assert(worker).await?;
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn test_dev_create_account_testnet() -> anyhow::Result<()> {
+    let worker = near_workspaces::testnet().await?;
+    dev_create_account_and_assert(worker).await?;
     Ok(())
 }
 
