@@ -171,7 +171,7 @@ impl SandboxServer {
     /// the sandbox node.
     pub(crate) fn unlock_lockfiles(&mut self) -> Result<()> {
         if let Some(rpc_port_lock) = self.rpc_port_lock.take() {
-            rpc_port_lock.unlock().map_err(|e| {
+            <std::fs::File as FileExt>::unlock(&rpc_port_lock).map_err(|e| {
                 ErrorKind::Io.full(
                     format!(
                         "failed to unlock lockfile for rpc_port={:?}",
@@ -182,7 +182,7 @@ impl SandboxServer {
             })?;
         }
         if let Some(net_port_lock) = self.net_port_lock.take() {
-            net_port_lock.unlock().map_err(|e| {
+            <std::fs::File as FileExt>::unlock(&net_port_lock).map_err(|e| {
                 ErrorKind::Io.full(
                     format!("failed to unlock lockfile for net_port={:?}", self.net_port),
                     e,
