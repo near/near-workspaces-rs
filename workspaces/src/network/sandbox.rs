@@ -52,8 +52,8 @@ impl Sandbox {
         }
     }
 
-    pub(crate) async fn from_builder_with_version<'a>(
-        build: NetworkBuilder<'a, Self>,
+    pub(crate) async fn from_builder_with_version(
+        build: NetworkBuilder<'_, Self>,
         version: &str,
     ) -> Result<Self> {
         // Check the conditions of the provided rpc_url and validator_key

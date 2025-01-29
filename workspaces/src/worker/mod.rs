@@ -54,7 +54,7 @@ pub fn sandbox<'a>() -> NetworkBuilder<'a, Sandbox> {
 }
 
 /// Spin up a new sandbox instance, and grab a [`Worker`] that interacts with it.
-pub async fn sandbox_with_version<'a>(version: &str) -> Result<Worker<Sandbox>> {
+pub async fn sandbox_with_version(version: &str) -> Result<Worker<Sandbox>> {
     let network_builder = NetworkBuilder::new("sandbox");
     let network = Sandbox::from_builder_with_version(network_builder, version).await?;
     Ok(Worker::new(network))
