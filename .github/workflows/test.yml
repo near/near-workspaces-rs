@@ -76,7 +76,7 @@ jobs:
         profile: minimal
         toolchain: ${{ matrix.toolchain }}
         default: true
-    - uses: Swatinem/rust-cache@v1
+    - uses: Swatinem/rust-cache@v2
     - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
     - name: Check with stable features

@@ -300,7 +300,7 @@ impl ProcessQuery for ViewState {
             block_reference,
             request: QueryRequest::ViewState {
                 account_id: self.account_id,
-                prefix: StoreKey::from(self.prefix.map(Vec::from).unwrap_or_default()),
+                prefix: StoreKey::from(self.prefix.unwrap_or_default()),
                 include_proof: false,
             },
         })
