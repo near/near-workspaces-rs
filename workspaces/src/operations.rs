@@ -272,7 +272,6 @@ impl Transaction {
         self.transact_raw()
             .await
             .map(ExecutionFinalResult::from_view)
-            .map_err(crate::error::Error::from)
     }
 
     /// Send the transaction to the network to be processed. This will be done asynchronously
@@ -369,8 +368,7 @@ impl CallTransaction {
                 self.function.deposit,
             )
             .await
-            .map(ExecutionFinalResult::from_view)
-            .map_err(crate::error::Error::from)?;
+            .map(ExecutionFinalResult::from_view)?;
 
         for callback in self.worker.tx_callbacks.iter() {
             callback(txn.total_gas_burnt)?;

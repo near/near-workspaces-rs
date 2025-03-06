@@ -176,7 +176,6 @@ where
             .transfer_near(signer, receiver_id, amount_yocto)
             .await
             .map(ExecutionFinalResult::from_view)
-            .map_err(crate::error::Error::from)
     }
 
     /// Deletes an account from the network. The beneficiary will receive the balance
@@ -191,7 +190,6 @@ where
             .delete_account(signer, account_id, beneficiary_id)
             .await
             .map(ExecutionFinalResult::from_view)
-            .map_err(crate::error::Error::from)
     }
 
     /// Returns the status of the network.
