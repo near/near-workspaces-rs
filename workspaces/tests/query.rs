@@ -1,4 +1,3 @@
-#![allow(clippy::literal_string_with_formatting_args)]
 use near_workspaces::types::NearToken;
 use near_workspaces::{network::Sandbox, Contract, Worker};
 
