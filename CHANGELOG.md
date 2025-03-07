@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.17.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.17.0...near-workspaces-v0.17.1) - 2025-03-07
+
+### Other
+
+- remove clippy::nursery ([#406](https://github.com/near/near-workspaces-rs/pull/406))
+- cache @v1 -> @v2; + clippy 1.85 ([#403](https://github.com/near/near-workspaces-rs/pull/403))
+
 ## [0.17.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.16.0...near-workspaces-v0.17.0) - 2024-12-26
 
 ### Added
