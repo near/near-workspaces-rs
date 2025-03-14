@@ -55,7 +55,7 @@ async fn test_transfer_near() -> anyhow::Result<()> {
     // transfer 500_000_000 token from alice to bob
     let _ = alice.transfer_near(bob.id(), SENT_AMOUNT).await?;
 
-    // Assert the the tokens have been transferred.
+    // Assert the tokens have been transferred.
     assert_eq!(
         bob.view_account().await?.balance,
         INITIAL_BALANCE.saturating_add(SENT_AMOUNT),

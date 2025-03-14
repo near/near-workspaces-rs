@@ -307,7 +307,7 @@ impl Worker<Sandbox> {
         Ok(Account::new(signer, self.clone().coerce()))
     }
 
-    /// Import a contract from the the given network, and return us a [`ImportContractTransaction`]
+    /// Import a contract from the given network, and return us a [`ImportContractTransaction`]
     /// which allows to specify further details, such as being able to import contract data and
     /// how far back in time we wanna grab the contract.
     pub fn import_contract<'a>(
