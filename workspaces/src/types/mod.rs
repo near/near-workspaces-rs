@@ -291,17 +291,20 @@ impl InMemorySigner {
     pub fn from_file(path: &Path) -> Result<Self> {
         let signer = near_crypto::InMemorySigner::from_file(path)
             .map_err(|err| ErrorKind::Io.custom(err))?;
-        Ok(Self::from_secret_key(
-            signer.account_id,
-            SecretKey(signer.secret_key),
-        ))
+        let account_id = signer.get_account_id();
+        let secret_key = match signer {
+            near_crypto::Signer::Empty(_) => return Err(ErrorKind::Io.custom("Empty signer")),
+            near_crypto::Signer::InMemory(signer) => signer.secret_key,
+        };
+
+        Ok(Self::from_secret_key(account_id, SecretKey(secret_key)))
     }
 
     pub(crate) fn inner(&self) -> Signer {
-        Signer::InMemory(near_crypto::InMemorySigner::from_secret_key(
+        near_crypto::InMemorySigner::from_secret_key(
             self.account_id.clone(),
             self.secret_key.0.clone(),
-        ))
+        )
     }
 }
 
