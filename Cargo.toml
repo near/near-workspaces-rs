@@ -1,5 +1,2 @@
 [workspace]
 members = ["workspaces", "examples"]
-
-[patch.crates-io]
-near-sandbox-utils = { branch = "nearcore-2.5.0", git = "https://github.com/near/near-sandbox" }
