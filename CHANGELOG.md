@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.18.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.17.0...near-workspaces-v0.18.0) - 2025-03-14
+
+### Other
+
+- [**breaking**] updates near-* dependencies to 0.29 release ([#407](https://github.com/near/near-workspaces-rs/pull/407))
+- remove repetitive words ([#408](https://github.com/near/near-workspaces-rs/pull/408))
+- remove clippy::nursery ([#406](https://github.com/near/near-workspaces-rs/pull/406))
+- cache @v1 -> @v2; + clippy 1.85 ([#403](https://github.com/near/near-workspaces-rs/pull/403))
+
 ## [0.17.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.16.0...near-workspaces-v0.17.0) - 2024-12-26
 
 ### Added
