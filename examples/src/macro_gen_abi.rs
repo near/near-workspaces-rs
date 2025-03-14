@@ -1,5 +1,5 @@
 // This example shows how to use the `near_abi_client` Macro Based API.
-// We are generating client code using the schema for the ABI and and `workspaces-rs` to call into the contract.
+// We are generating client code using the schema for the ABI and `workspaces-rs` to call into the contract.
 // More information about usage can be found here: <https://github.com/near/near-abi-client-rs/blob/main/README.md>
 //
 // A good scenario for usage might be when you are interacting with a contract or multiple contracts at an automated level
