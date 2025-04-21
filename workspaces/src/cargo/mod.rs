@@ -30,10 +30,9 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
     };
 
     let compile_artifact =
-        cargo_near_build::build(cargo_opts).map_err(|e| ErrorKind::Io.custom(e))?;
+        cargo_near_build::build_with_cli(cargo_opts).map_err(|e| ErrorKind::Io.custom(e))?;
 
     let file = compile_artifact
-        .path
         .canonicalize()
         .map_err(|e| ErrorKind::Io.custom(e))?;
     tokio::fs::read(file)
