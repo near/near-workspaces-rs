@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.19.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.18.0...near-workspaces-v0.19.0) - 2025-05-05
+
+### Added
+
+- [**breaking**] build with external `cargo-near` binary CLI in `near_workspaces::compile_project` ([#411](https://github.com/near/near-workspaces-rs/pull/411))
+
 ## [0.18.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.17.0...near-workspaces-v0.18.0) - 2025-03-14
 
 ### Other
