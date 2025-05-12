@@ -2,7 +2,6 @@ use std::fmt;
 use std::path::Path;
 
 use near_primitives::types::StorageUsage;
-use near_primitives::version::PROTOCOL_VERSION;
 use near_primitives::views::AccountView;
 
 use crate::error::ErrorKind;
@@ -419,10 +418,10 @@ impl AccountDetails {
         near_primitives::account::Account::new(
             self.balance.as_yoctonear(),
             self.locked.as_yoctonear(),
-            0,
-            near_primitives::hash::CryptoHash(self.code_hash.0),
+            near_primitives::account::AccountContract::Local(near_primitives::hash::CryptoHash(
+                self.code_hash.0,
+            )),
             self.storage_usage,
-            PROTOCOL_VERSION,
         )
     }
 }
