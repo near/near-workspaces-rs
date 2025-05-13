@@ -137,7 +137,7 @@ async fn test_patch_full() -> anyhow::Result<()> {
             AccountDetailsPatch::default()
                 .balance(NearToken::from_near(100))
                 .locked(status_msg_acc.locked)
-                .code_hash(status_msg_acc.code_hash)
+                .contract_state(status_msg_acc.contract_state)
                 .storage_usage(status_msg_acc.storage_usage),
         )
         .access_key(sk.public_key(), AccessKey::full_access())
@@ -179,8 +179,8 @@ async fn test_patch_code_hash() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    let code_hash = worker.view_account(bob.id()).await?.code_hash;
-    assert_eq!(status_msg_acc.code_hash, code_hash);
+    let contract_state = worker.view_account(bob.id()).await?.contract_state;
+    assert_eq!(status_msg_acc.contract_state, contract_state);
 
     Ok(())
 }
