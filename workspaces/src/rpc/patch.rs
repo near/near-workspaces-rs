@@ -162,7 +162,7 @@ pub struct PatchTransaction {
     records: Vec<StateRecord>,
     worker: Worker<Sandbox>,
     account_updates: Vec<AccountUpdate>,
-    contract_state: Option<ContractState>,
+    contract_state_update: Option<ContractState>,
 }
 
 impl PatchTransaction {
@@ -172,7 +172,7 @@ impl PatchTransaction {
             records: vec![],
             worker: worker.clone(),
             account_updates: vec![],
-            contract_state: None,
+            contract_state_update: None,
         }
     }
 
@@ -235,7 +235,8 @@ impl PatchTransaction {
     /// Note that if a patch for [`Self::account`] or [`Self::account_from_current`] is specified, the code hash
     /// in those will be overwritten with the code hash of the code we specify here.
     pub fn code(mut self, wasm_bytes: &[u8]) -> Self {
-        self.contract_state = Some(ContractState::LocalHash(CryptoHash::hash_bytes(wasm_bytes)));
+        self.contract_state_update =
+            Some(ContractState::LocalHash(CryptoHash::hash_bytes(wasm_bytes)));
         self.records.push(StateRecord::Contract {
             account_id: self.account_id.clone(),
             code: wasm_bytes.to_vec(),
@@ -295,16 +296,16 @@ impl PatchTransaction {
             }
 
             // Update the code hash if the user supplied a code patch.
-            if let Some(contract_state) = self.contract_state.take() {
-                account.contract_state = Some(contract_state);
+            if let Some(contract_state_update) = self.contract_state_update.take() {
+                account.contract_state = Some(contract_state_update);
             }
 
             Some(account)
-        } else if let Some(contract_state) = self.contract_state {
+        } else if let Some(contract_state_update) = self.contract_state_update {
             // No account patch, but we have a code patch. We need to fetch the current account
             // to reflect the code hash change.
             let mut account = self.worker.view_account(&self.account_id).await?;
-            account.contract_state = contract_state;
+            account.contract_state = contract_state_update;
             Some(account.into())
         } else {
             None
