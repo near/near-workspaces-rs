@@ -118,7 +118,7 @@ impl SandboxServer {
         // Suppress logs for the sandbox binary by default:
         suppress_sandbox_logs_if_required();
 
-        let home_dir = init_home_dir_with_version(version).await?.into_path();
+        let home_dir = init_home_dir_with_version(version).await?.keep();
         // Configure `$home_dir/config.json` to our liking. Sandbox requires extra settings
         // for the best user experience, and being able to offer patching large state payloads.
         crate::network::config::set_sandbox_configs(&home_dir)?;

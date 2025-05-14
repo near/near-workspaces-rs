@@ -5,7 +5,7 @@ use near_token::NearToken;
 
 use crate::error::SandboxErrorCode;
 use crate::network::{Sandbox, DEV_ACCOUNT_SEED};
-use crate::types::account::AccountDetails;
+use crate::types::account::{AccountDetails, ContractState};
 use crate::types::{BlockHeight, KeyType, PublicKey, SecretKey};
 use crate::{AccessKey, AccountDetailsPatch, Result};
 use crate::{AccountId, Contract, CryptoHash, InMemorySigner, Network, Worker};
@@ -113,7 +113,7 @@ impl<'a> ImportContractTransaction<'a> {
             .block_reference(block_ref.clone())
             .await?;
 
-        let code_hash = account_view.code_hash;
+        let contract_state = account_view.contract_state.clone();
         if let Some(initial_balance) = self.initial_balance {
             account_view.balance = initial_balance;
         }
@@ -122,7 +122,7 @@ impl<'a> ImportContractTransaction<'a> {
             .account(account_view.into())
             .access_key(pk, AccessKey::full_access());
 
-        if code_hash != CryptoHash::default() {
+        if contract_state != ContractState::None {
             let code = self
                 .from_network
                 .view_code(from_account_id)
@@ -162,7 +162,7 @@ pub struct PatchTransaction {
     records: Vec<StateRecord>,
     worker: Worker<Sandbox>,
     account_updates: Vec<AccountUpdate>,
-    code_hash_update: Option<CryptoHash>,
+    contract_state_update: Option<ContractState>,
 }
 
 impl PatchTransaction {
@@ -172,7 +172,7 @@ impl PatchTransaction {
             records: vec![],
             worker: worker.clone(),
             account_updates: vec![],
-            code_hash_update: None,
+            contract_state_update: None,
         }
     }
 
@@ -235,7 +235,8 @@ impl PatchTransaction {
     /// Note that if a patch for [`Self::account`] or [`Self::account_from_current`] is specified, the code hash
     /// in those will be overwritten with the code hash of the code we specify here.
     pub fn code(mut self, wasm_bytes: &[u8]) -> Self {
-        self.code_hash_update = Some(CryptoHash::hash_bytes(wasm_bytes));
+        self.contract_state_update =
+            Some(ContractState::LocalHash(CryptoHash::hash_bytes(wasm_bytes)));
         self.records.push(StateRecord::Contract {
             account_id: self.account_id.clone(),
             code: wasm_bytes.to_vec(),
@@ -295,16 +296,16 @@ impl PatchTransaction {
             }
 
             // Update the code hash if the user supplied a code patch.
-            if let Some(code_hash) = self.code_hash_update.take() {
-                account.code_hash = Some(code_hash);
+            if let Some(contract_state_update) = self.contract_state_update.take() {
+                account.contract_state = Some(contract_state_update);
             }
 
             Some(account)
-        } else if let Some(code_hash) = self.code_hash_update {
+        } else if let Some(contract_state_update) = self.contract_state_update {
             // No account patch, but we have a code patch. We need to fetch the current account
             // to reflect the code hash change.
             let mut account = self.worker.view_account(&self.account_id).await?;
-            account.code_hash = code_hash;
+            account.contract_state = contract_state_update;
             Some(account.into())
         } else {
             None

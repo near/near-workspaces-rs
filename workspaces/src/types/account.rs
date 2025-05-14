@@ -2,7 +2,6 @@ use std::fmt;
 use std::path::Path;
 
 use near_primitives::types::StorageUsage;
-use near_primitives::version::PROTOCOL_VERSION;
 use near_primitives::views::AccountView;
 
 use crate::error::ErrorKind;
@@ -334,9 +333,9 @@ impl Contract {
 pub struct AccountDetailsPatch {
     pub balance: Option<NearToken>,
     pub locked: Option<NearToken>,
-    pub code_hash: Option<CryptoHash>,
     pub storage_usage: Option<StorageUsage>,
     pub(crate) storage_paid_at: Option<BlockHeight>,
+    pub contract_state: Option<ContractState>,
 }
 
 impl AccountDetailsPatch {
@@ -347,8 +346,8 @@ impl AccountDetailsPatch {
         if let Some(locked) = acc.locked {
             self.locked = Some(locked);
         }
-        if let Some(code_hash) = acc.code_hash {
-            self.code_hash = Some(code_hash);
+        if let Some(contract_state) = acc.contract_state {
+            self.contract_state = Some(contract_state);
         }
         if let Some(storage) = acc.storage_usage {
             self.storage_usage = Some(storage);
@@ -368,8 +367,15 @@ impl AccountDetailsPatch {
         self
     }
 
-    pub fn code_hash(mut self, code_hash: CryptoHash) -> Self {
-        self.code_hash = Some(code_hash);
+    #[deprecated(
+        note = "Use `contract_state` method with `ContractState::LocalHash` instead. This method will be removed in a future version."
+    )]
+    pub fn code_hash(self, code_hash: CryptoHash) -> Self {
+        self.contract_state(ContractState::LocalHash(code_hash))
+    }
+
+    pub fn contract_state(mut self, contract_state: ContractState) -> Self {
+        self.contract_state = Some(contract_state);
         self
     }
 
@@ -384,9 +390,54 @@ impl From<AccountDetails> for AccountDetailsPatch {
         Self {
             balance: Some(account.balance),
             locked: Some(account.locked),
-            code_hash: Some(account.code_hash),
+            contract_state: Some(account.contract_state),
             storage_usage: Some(account.storage_usage),
             storage_paid_at: Some(account.storage_paid_at),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum ContractState {
+    GlobalHash(CryptoHash),
+    GlobalAccountId(AccountId),
+    LocalHash(CryptoHash),
+    #[default]
+    None,
+}
+
+impl ContractState {
+    pub fn from_account_view(account_view: &AccountView) -> Self {
+        match (
+            account_view.code_hash,
+            &account_view.global_contract_account_id,
+            account_view.global_contract_hash,
+        ) {
+            (_, Some(account_id), _) => Self::GlobalAccountId(account_id.clone()),
+            (_, _, Some(hash)) => Self::GlobalHash(hash.into()),
+            (hash, _, _) if hash == near_primitives::hash::CryptoHash::default() => Self::None,
+            (hash, _, _) => Self::LocalHash(hash.into()),
+        }
+    }
+}
+
+impl From<ContractState> for near_primitives::account::AccountContract {
+    fn from(value: ContractState) -> Self {
+        match value {
+            ContractState::GlobalAccountId(acc) => {
+                near_primitives::account::AccountContract::GlobalByAccount(acc)
+            }
+            ContractState::GlobalHash(hash) => near_primitives::account::AccountContract::Global(
+                near_primitives::hash::CryptoHash(hash.0),
+            ),
+            ContractState::LocalHash(hash) => {
+                near_primitives::account::AccountContract::from_local_code_hash(
+                    near_primitives::hash::CryptoHash(hash.0),
+                )
+            }
+            ContractState::None => near_primitives::account::AccountContract::from_local_code_hash(
+                near_primitives::hash::CryptoHash::default(),
+            ),
         }
     }
 }
@@ -398,10 +449,10 @@ impl From<AccountDetails> for AccountDetailsPatch {
 pub struct AccountDetails {
     pub balance: NearToken,
     pub locked: NearToken,
-    pub code_hash: CryptoHash,
     pub storage_usage: StorageUsage,
     // Deprecated value. Mainly used to be able to convert back into an AccountView
     pub(crate) storage_paid_at: BlockHeight,
+    pub contract_state: ContractState,
 }
 
 impl AccountDetails {
@@ -409,9 +460,9 @@ impl AccountDetails {
         Self {
             balance: NearToken::from_near(0),
             locked: NearToken::from_near(0),
-            code_hash: CryptoHash::default(),
             storage_usage: 0,
             storage_paid_at: 0,
+            contract_state: Default::default(),
         }
     }
 
@@ -419,10 +470,8 @@ impl AccountDetails {
         near_primitives::account::Account::new(
             self.balance.as_yoctonear(),
             self.locked.as_yoctonear(),
-            0,
-            near_primitives::hash::CryptoHash(self.code_hash.0),
+            self.contract_state.into(),
             self.storage_usage,
-            PROTOCOL_VERSION,
         )
     }
 }
@@ -436,9 +485,9 @@ impl Default for AccountDetails {
 impl From<AccountView> for AccountDetails {
     fn from(account: AccountView) -> Self {
         Self {
+            contract_state: ContractState::from_account_view(&account),
             balance: NearToken::from_yoctonear(account.amount),
             locked: NearToken::from_yoctonear(account.locked),
-            code_hash: CryptoHash(account.code_hash.0),
             storage_usage: account.storage_usage,
             storage_paid_at: account.storage_paid_at,
         }
@@ -450,7 +499,7 @@ impl From<AccountDetailsPatch> for AccountDetails {
         Self {
             balance: value.balance.unwrap_or_default(),
             locked: value.locked.unwrap_or_default(),
-            code_hash: value.code_hash.unwrap_or_default(),
+            contract_state: value.contract_state.unwrap_or_default(),
             storage_usage: value.storage_usage.unwrap_or_default(),
             storage_paid_at: value.storage_paid_at.unwrap_or_default(),
         }
