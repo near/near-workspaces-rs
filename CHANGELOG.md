@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.20.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.20.0...near-workspaces-v0.20.1) - 2025-05-15
+
+### Added
+
+- use long random account id or account id prefix as secret key seed ([#416](https://github.com/near/near-workspaces-rs/pull/416))
+
 ## [0.20.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.19.0...near-workspaces-v0.20.0) - 2025-05-14
 
 ### Other
