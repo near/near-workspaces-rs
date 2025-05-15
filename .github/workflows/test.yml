@@ -49,7 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, macos-latest]
-        toolchain: [stable]
+        toolchain: [1.86.0]
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -81,7 +81,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.MY_GITHUB_TOKEN }}
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.86.0
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         env:
