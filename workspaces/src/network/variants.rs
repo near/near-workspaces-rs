@@ -82,7 +82,7 @@ pub trait TopLevelAccountCreator {
 impl<T> Worker<T> {
     pub fn generate_dev_account_credentials(&self) -> (AccountId, SecretKey) {
         let id = crate::rpc::tool::random_account_id();
-        let sk = SecretKey::from_seed(KeyType::ED25519, DEV_ACCOUNT_SEED);
+        let sk = SecretKey::from_seed(KeyType::ED25519, id.as_str());
         (id, sk)
     }
 }
