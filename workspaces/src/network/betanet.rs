@@ -19,7 +19,6 @@ pub const RPC_URL: &str = "https://rpc.betanet.near.org";
 /// archival endpoint similar to that of mainnet.
 ///
 /// [`workspaces::betanet`]: crate::betanet
-/// [`workspaces::betanet_archival`]: crate::betanet_archival
 /// [`Worker`]: crate::Worker
 pub struct Betanet {
     client: Client,
