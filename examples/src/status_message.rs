@@ -15,7 +15,7 @@ async fn main() -> anyhow::Result<()> {
         }))
         .transact()
         .await?;
-    println!("set_status: {:?}", outcome);
+    println!("set_status: {outcome:?}");
 
     let result: String = contract
         .view("get_status")
@@ -25,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
         .await?
         .json()?;
 
-    println!("status: {:?}", result);
+    println!("status: {result:?}");
 
     Ok(())
 }

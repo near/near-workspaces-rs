@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
         .deposit(NearToken::from_near(1))
         .transact()
         .await?;
-    println!("-- outcome: {:#?}\n", outcome);
+    println!("-- outcome: {outcome:#?}\n");
 
     // Let's create an agent that will eventually execute the above task and get rewards
     // for executing it:
@@ -110,7 +110,7 @@ pub async fn run_scheduled_tasks(
         .deposit(NearToken::from_yoctonear(2260000000000000000000u128))
         .transact()
         .await?;
-    println!("Registering agent outcome: {:#?}\n", outcome);
+    println!("Registering agent outcome: {outcome:#?}\n");
 
     // Check the right agent was registered correctly:
     let registered_agent = contract
@@ -120,7 +120,7 @@ pub async fn run_scheduled_tasks(
         .await?
         .json::<Option<Agent>>()?
         .unwrap();
-    println!("Registered agent details: {:#?}", registered_agent);
+    println!("Registered agent details: {outcome:#?}");
     assert_eq!(registered_agent.status, AgentStatus::Active);
     assert_eq!(&registered_agent.payable_account_id, agent.id());
 
@@ -160,7 +160,7 @@ pub async fn run_scheduled_tasks(
         .await?
         .json::<Option<Agent>>()?
         .unwrap();
-    println!("Agent details after completing task: {:#?}", agent_details);
+    println!("Agent details after completing task: {agent_details:#?}");
     assert_eq!(
         agent_details.balance,
         NearToken::from_yoctonear(3860000000000000000000u128)
@@ -183,7 +183,7 @@ pub async fn run_scheduled_tasks(
         .await?
         .json::<Option<Agent>>()?
         .unwrap();
-    println!("Agent details after withdrawing task: {:#?}", agent_details);
+    println!("Agent details after withdrawing task: {agent_details:#?}");
     assert_eq!(
         agent_details.balance,
         NearToken::from_yoctonear(2260000000000000000000u128)

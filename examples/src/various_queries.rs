@@ -78,7 +78,7 @@ async fn main() -> anyhow::Result<()> {
         }))
         .await?
         .json()?;
-    println!("Bob's status message: '{}'", msg);
+    println!("Bob's status message: '{msg}'");
 
     // But since we have a reference point to before bob overrode his message, we can view the message
     // from then as well, by giving the reference into the view function call:
@@ -90,7 +90,7 @@ async fn main() -> anyhow::Result<()> {
         .block_hash(*block.hash())
         .await?
         .json()?;
-    println!("Bob's older status message: '{}'", msg);
+    println!("Bob's older status message: '{msg}'");
 
     Ok(())
 }

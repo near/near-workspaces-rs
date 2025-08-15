@@ -37,7 +37,7 @@ async fn test_parallel() -> anyhow::Result<()> {
         .view()
         .await?
         .json::<String>()?;
-    println!("Final set message: {:?}", final_set_msg);
+    println!("Final set message: {final_set_msg:?}");
 
     Ok(())
 }

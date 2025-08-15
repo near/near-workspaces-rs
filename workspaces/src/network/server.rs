@@ -22,7 +22,7 @@ use tokio::net::TcpListener;
 const DEFAULT_RPC_HOST: &str = "127.0.0.1";
 
 fn rpc_socket(port: u16) -> String {
-    format!("{DEFAULT_RPC_HOST}:{}", port)
+    format!("{DEFAULT_RPC_HOST}:{port}")
 }
 
 /// Request an unused port from the OS.
@@ -46,9 +46,9 @@ pub async fn pick_unused_port() -> Result<u16> {
 async fn acquire_unused_port() -> Result<(u16, File)> {
     loop {
         let port = pick_unused_port().await?;
-        let lockpath = std::env::temp_dir().join(format!("near-sandbox-port{}.lock", port));
+        let lockpath = std::env::temp_dir().join(format!("near-sandbox-port{port}.lock"));
         let lockfile = File::create(lockpath).map_err(|err| {
-            ErrorKind::Io.full(format!("failed to create lockfile for port {}", port), err)
+            ErrorKind::Io.full(format!("failed to create lockfile for port {port}"), err)
         })?;
         if lockfile.try_lock_exclusive().is_ok() {
             break Ok((port, lockfile));

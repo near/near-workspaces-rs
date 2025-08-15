@@ -112,7 +112,7 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
     let rpc_port = pick_unused_port().await?;
     let net_port = pick_unused_port().await?;
     let mut home_dir = std::env::temp_dir();
-    home_dir.push(format!("test-sandbox-{}", rpc_port));
+    home_dir.push(format!("test-sandbox-{rpc_port}"));
 
     // initialize chain data with supplied home dir
     let output = near_sandbox_utils::init(&home_dir)?
@@ -126,7 +126,7 @@ async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
 
     // connect to local sandbox node
     let worker = near_workspaces::sandbox()
-        .rpc_addr(&format!("http://localhost:{}", rpc_port))
+        .rpc_addr(&format!("http://localhost:{rpc_port}"))
         .validator_key(ValidatorKey::HomeDir(home_dir))
         .await?;
     deploy_and_assert(worker).await?;

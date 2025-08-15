@@ -324,7 +324,7 @@ impl Client {
             Ok(secs) => secs.parse::<usize>().map_err(|err| {
                 Error::full(
                     ErrorKind::DataConversion,
-                    format!("Failed to parse provided NEAR_RPC_TIMEOUT_SECS={}", secs),
+                    format!("Failed to parse provided NEAR_RPC_TIMEOUT_SECS={secs}"),
                     err,
                 )
             })?,

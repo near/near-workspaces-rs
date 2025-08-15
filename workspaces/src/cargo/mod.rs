@@ -8,8 +8,7 @@ use crate::error::ErrorKind;
 pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
     let project_path = std::fs::canonicalize(project_path).map_err(|e| match e.kind() {
         std::io::ErrorKind::NotFound => ErrorKind::Io.message(format!(
-            "Incorrect file supplied to compile_project('{}')",
-            project_path
+            "Incorrect file supplied to compile_project('{project_path}')"
         )),
         _ => ErrorKind::Io.custom(e),
     })?;
