@@ -15,10 +15,7 @@ async fn main() -> anyhow::Result<()> {
         .await?;
 
     let outcome = status.await;
-    println!(
-        "Async transaction result from setting hello world: {:#?}",
-        outcome
-    );
+    println!("Async transaction result from setting hello world: {outcome:#?}");
 
     Ok(())
 }

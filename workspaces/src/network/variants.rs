@@ -40,7 +40,7 @@ pub trait RootAccountSubaccountCreator {
             );
         }
         let root_id = self.root_account_id()?;
-        AccountId::from_str(format!("{}.{}", subaccount_prefix, root_id).as_str())
+        AccountId::from_str(format!("{subaccount_prefix}.{root_id}").as_str())
             .map_err(|e| ErrorKind::DataConversion.custom(e))
     }
 

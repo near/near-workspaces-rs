@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    println!("new_default_meta outcome: {:#?}", outcome);
+    println!("new_default_meta outcome: {outcome:#?}");
 
     let deposit = NearToken::from_yoctonear(10000000000000000000000);
     let outcome = contract
@@ -35,11 +35,11 @@ async fn main() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    println!("nft_mint outcome: {:#?}", outcome);
+    println!("nft_mint outcome: {outcome:#?}");
 
     let result: serde_json::Value = worker.view(contract.id(), "nft_metadata").await?.json()?;
 
-    println!("--------------\n{}", result);
+    println!("--------------\n{result}");
     println!("Dev Account ID: {}", contract.id());
 
     Ok(())

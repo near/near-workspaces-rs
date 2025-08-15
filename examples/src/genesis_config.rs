@@ -82,6 +82,6 @@ async fn main() -> anyhow::Result<()> {
     //     },
     //     use_production_config: false,
     // }
-    println!("GenesisConfig {:#?}", genesis_config);
+    println!("GenesisConfig {genesis_config:#?}");
     Ok(())
 }

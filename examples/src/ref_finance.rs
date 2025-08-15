@@ -262,7 +262,7 @@ async fn main() -> anyhow::Result<()> {
         }))
         .await?
         .json()?;
-    println!("Current FT deposit: {}", ft_deposit);
+    println!("Current FT deposit: {ft_deposit}");
     assert_eq!(ft_deposit, NearToken::from_near(100));
 
     let wnear_deposit: NearToken = worker
@@ -274,7 +274,7 @@ async fn main() -> anyhow::Result<()> {
         .await?
         .json()?;
 
-    println!("Current WNear deposit: {}", wnear_deposit);
+    println!("Current WNear deposit: {wnear_deposit}");
     assert_eq!(wnear_deposit, NearToken::from_near(100));
 
     ///////////////////////////////////////////////////////////////////////////
@@ -292,10 +292,7 @@ async fn main() -> anyhow::Result<()> {
         .await?
         .json()?;
 
-    println!(
-        "Expect return for trading in 1 FT token for WNear: {}",
-        expected_return
-    );
+    println!("Expect return for trading in 1 FT token for WNear: {expected_return}");
     assert_eq!(expected_return, "1662497915624478906119726");
 
     let actual_out = owner
@@ -315,12 +312,9 @@ async fn main() -> anyhow::Result<()> {
         .await?;
     let gas_burnt = actual_out.total_gas_burnt;
     let actual_out: String = actual_out.json()?;
-    println!(
-        "Actual return for trading in 1 FT token for WNear: {}",
-        actual_out
-    );
+    println!("Actual return for trading in 1 FT token for WNear: {actual_out}");
     assert_eq!(actual_out, expected_return);
-    println!("Gas burnt from swapping: {}", gas_burnt);
+    println!("Gas burnt from swapping: {gas_burnt}");
 
     ///////////////////////////////////////////////////////////////////////////
     // Stage 5: See that our swap tokens reflect in our deposits
@@ -334,7 +328,7 @@ async fn main() -> anyhow::Result<()> {
         }))
         .await?
         .json()?;
-    println!("New FT deposit after swap: {}", ft_deposit);
+    println!("New FT deposit after swap: {ft_deposit}");
     assert_eq!(ft_deposit, NearToken::from_near(99));
 
     let wnear_deposit: String = ref_finance
@@ -345,7 +339,7 @@ async fn main() -> anyhow::Result<()> {
         }))
         .await?
         .json()?;
-    println!("New WNear deposit after swap: {}", wnear_deposit);
+    println!("New WNear deposit after swap: {wnear_deposit}");
 
     Ok(())
 }
