@@ -34,12 +34,12 @@ near-gas = { version = "0.3", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.3", features = ["serde"] }
 near-sdk = { version = "5.7", optional = true }
 near-account-id = "1.0.0"
-near-crypto = "0.30"
-near-primitives = "0.30"
-near-jsonrpc-primitives = "0.30"
-near-jsonrpc-client = { version = "0.17", features = ["sandbox"] }
+near-crypto = "0.31"
+near-primitives = "0.31"
+near-jsonrpc-primitives = "0.31"
+near-jsonrpc-client = { version = "0.18", features = ["sandbox"] }
 near-sandbox-utils = "0.15"
-near-chain-configs = { version = "0.30", optional = true }
+near-chain-configs = { version = "0.31", optional = true }
 
 [build-dependencies]
 near-sandbox-utils = "0.15"
@@ -50,7 +50,7 @@ libc = "0.2"
 [dev-dependencies]
 anyhow = "1.0"
 futures = "0.3"
-near-sdk = "5.9"
+near-sdk = { version = "5.16", features = ["unit-testing"] }
 test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
