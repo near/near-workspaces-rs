@@ -58,7 +58,7 @@ async fn acquire_unused_port() -> Result<(u16, File)> {
 
 #[allow(dead_code)]
 async fn init_home_dir() -> Result<TempDir> {
-    init_home_dir_with_version(sandbox::DEFAULT_NEAR_SANDBOX_VERSION).await
+    init_home_dir_with_version("2.8.0").await
 }
 
 async fn init_home_dir_with_version(version: &str) -> Result<TempDir> {
@@ -111,7 +111,7 @@ impl SandboxServer {
     /// Run a new SandboxServer, spawning the sandbox node in the process.
     #[allow(dead_code)]
     pub(crate) async fn run_new() -> Result<Self> {
-        Self::run_new_with_version(sandbox::DEFAULT_NEAR_SANDBOX_VERSION).await
+        Self::run_new_with_version("2.8.0").await
     }
 
     pub(crate) async fn run_new_with_version(version: &str) -> Result<Self> {

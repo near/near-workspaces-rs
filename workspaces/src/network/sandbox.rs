@@ -119,7 +119,7 @@ impl std::fmt::Debug for Sandbox {
 #[async_trait]
 impl FromNetworkBuilder for Sandbox {
     async fn from_builder<'a>(build: NetworkBuilder<'a, Self>) -> Result<Self> {
-        Self::from_builder_with_version(build, sandbox::DEFAULT_NEAR_SANDBOX_VERSION).await
+        Self::from_builder_with_version(build, "2.8.0").await
     }
 }
 
