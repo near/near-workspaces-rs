@@ -167,7 +167,7 @@ impl Client {
                 args,
                 method_name,
                 gas,
-                deposit: deposit.as_yoctonear(),
+                deposit,
             }
             .into(),
         )
@@ -208,7 +208,7 @@ impl Client {
             signer,
             receiver_id,
             TransferAction {
-                deposit: amount_yocto.as_yoctonear(),
+                deposit: NearToken::from_yoctonear(amount_yocto.as_yoctonear()),
             }
             .into(),
         )
@@ -236,10 +236,7 @@ impl Client {
                     },
                 }
                 .into(),
-                TransferAction {
-                    deposit: amount.as_yoctonear(),
-                }
-                .into(),
+                TransferAction { deposit: amount }.into(),
             ],
         )
         .await
@@ -267,10 +264,7 @@ impl Client {
                     },
                 }
                 .into(),
-                TransferAction {
-                    deposit: amount.as_yoctonear(),
-                }
-                .into(),
+                TransferAction { deposit: amount }.into(),
                 DeployContractAction { code }.into(),
             ],
         )

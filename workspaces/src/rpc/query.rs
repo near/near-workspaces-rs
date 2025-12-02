@@ -399,7 +399,7 @@ impl ProcessQuery for GasPrice {
     }
 
     fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
-        Ok(NearToken::from_yoctonear(resp.gas_price))
+        Ok(resp.gas_price)
     }
 }
 

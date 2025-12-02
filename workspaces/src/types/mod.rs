@@ -493,7 +493,7 @@ impl From<AccessKey> for near_primitives::account::AccessKey {
                 AccessKeyPermission::FunctionCall(function_call_permission) => {
                     near_primitives::account::AccessKeyPermission::FunctionCall(
                         near_primitives::account::FunctionCallPermission {
-                            allowance: function_call_permission.allowance.map(|a| a.as_yoctonear()),
+                            allowance: function_call_permission.allowance,
                             receiver_id: function_call_permission.receiver_id,
                             method_names: function_call_permission.method_names,
                         },
@@ -517,7 +517,7 @@ impl From<near_primitives::views::AccessKeyView> for AccessKey {
                     receiver_id,
                     method_names,
                 } => AccessKeyPermission::FunctionCall(FunctionCallPermission {
-                    allowance: allowance.map(NearToken::from_yoctonear),
+                    allowance,
                     receiver_id,
                     method_names,
                 }),

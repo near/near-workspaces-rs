@@ -168,8 +168,8 @@ impl Transaction {
             actions.push(Action::FunctionCall(Box::new(FunctionCallAction {
                 method_name: function.name.to_string(),
                 args,
-                deposit: function.deposit.as_yoctonear(),
-                gas: function.gas.as_gas(),
+                deposit: function.deposit,
+                gas: near_primitives::gas::Gas::from_gas(function.gas.as_gas()),
             })));
         }
 
@@ -220,7 +220,7 @@ impl Transaction {
         if let Ok(actions) = &mut self.actions {
             actions.push(
                 StakeAction {
-                    stake: stake.as_yoctonear(),
+                    stake,
                     public_key: pk.0,
                 }
                 .into(),
@@ -232,12 +232,7 @@ impl Transaction {
     /// Transfer `deposit` amount from `signer`'s account into `receiver_id`'s account.
     pub fn transfer(mut self, deposit: NearToken) -> Self {
         if let Ok(actions) = &mut self.actions {
-            actions.push(
-                TransferAction {
-                    deposit: deposit.as_yoctonear(),
-                }
-                .into(),
-            );
+            actions.push(TransferAction { deposit }.into());
         }
         self
     }
@@ -252,11 +247,11 @@ impl Transaction {
         .await?;
 
         if !self.worker.tx_callbacks.is_empty() {
-            let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt
+            let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt.as_gas()
                 + view
                     .receipts_outcome
                     .iter()
-                    .map(|t| t.outcome.gas_burnt)
+                    .map(|t| t.outcome.gas_burnt.as_gas())
                     .sum::<u64>();
 
             for callback in self.worker.tx_callbacks {
@@ -364,7 +359,7 @@ impl CallTransaction {
                 &self.contract_id,
                 self.function.name.to_string(),
                 self.function.args?,
-                self.function.gas.as_gas(),
+                near_primitives::gas::Gas::from_gas(self.function.gas.as_gas()),
                 self.function.deposit,
             )
             .await
@@ -391,8 +386,8 @@ impl CallTransaction {
             vec![FunctionCallAction {
                 args: self.function.args?,
                 method_name: self.function.name,
-                gas: self.function.gas.as_gas(),
-                deposit: self.function.deposit.as_yoctonear(),
+                gas: near_primitives::gas::Gas::from_gas(self.function.gas.as_gas()),
+                deposit: self.function.deposit,
             }
             .into()],
         )
