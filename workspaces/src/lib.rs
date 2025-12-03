@@ -27,7 +27,6 @@ pub mod types;
 /// of it and example code. No public near_abi APIs are baked into workspace-rs yet.
 pub use near_abi_client;
 
-pub use network::pick_unused_port;
 pub use network::variants::{DevNetwork, Network};
 pub use result::Result;
 pub use types::account::{Account, AccountDetailsPatch, Contract, ContractState};

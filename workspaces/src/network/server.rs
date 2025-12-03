@@ -1,7 +1,6 @@
-use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
 
-use crate::error::{ErrorKind, SandboxErrorCode};
+use crate::error::SandboxErrorCode;
 use crate::result::Result;
 use crate::types::SecretKey;
 
@@ -11,23 +10,6 @@ use reqwest::Url;
 use tracing::info;
 
 use near_sandbox as sandbox;
-use tokio::net::TcpListener;
-
-/// Request an unused port from the OS.
-pub async fn pick_unused_port() -> Result<u16> {
-    // Port 0 means the OS gives us an unused port
-    // Important to use localhost as using 0.0.0.0 leads to users getting brief firewall popups to
-    // allow inbound connections on MacOS.
-    let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0);
-    let listener = TcpListener::bind(addr)
-        .await
-        .map_err(|err| ErrorKind::Io.full("failed to bind to random port", err))?;
-    let port = listener
-        .local_addr()
-        .map_err(|err| ErrorKind::Io.full("failed to get local address for random port", err))?
-        .port();
-    Ok(port)
-}
 
 #[derive(Debug, Clone)]
 #[non_exhaustive]
@@ -67,10 +49,9 @@ impl SandboxServer {
         suppress_sandbox_logs_if_required();
 
         let sandbox_config = near_sandbox::SandboxConfig {
-            additional_accounts: vec![sandbox::GenesisAccount {
-                account_id: "registrar".parse().unwrap(),
-                ..Default::default()
-            }],
+            additional_accounts: vec![sandbox::GenesisAccount::default_with_name(
+                "registrar".parse().unwrap(),
+            )],
             ..Default::default()
         };
 
