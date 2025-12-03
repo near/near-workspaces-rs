@@ -202,15 +202,12 @@ impl Client {
         &self,
         signer: &InMemorySigner,
         receiver_id: &AccountId,
-        amount_yocto: NearToken,
+        amount: NearToken,
     ) -> Result<FinalExecutionOutcomeView> {
         self.send_tx_and_retry(
             signer,
             receiver_id,
-            TransferAction {
-                deposit: NearToken::from_yoctonear(amount_yocto.as_yoctonear()),
-            }
-            .into(),
+            TransferAction { deposit: amount }.into(),
         )
         .await
     }
