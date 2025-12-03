@@ -1,6 +1,5 @@
 # Build files
 **/target
-**/gen
 Cargo.lock
 
 #include all target folders
