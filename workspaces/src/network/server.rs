@@ -66,11 +66,13 @@ impl SandboxServer {
         // Suppress logs for the sandbox binary by default:
         suppress_sandbox_logs_if_required();
 
-        let mut sandbox_config = sandbox::SandboxConfig::default();
-        sandbox_config.additional_accounts = vec![sandbox::GenesisAccount {
-            account_id: "registrar".parse().unwrap(),
+        let sandbox_config = near_sandbox::SandboxConfig {
+            additional_accounts: vec![sandbox::GenesisAccount {
+                account_id: "registrar".parse().unwrap(),
+                ..Default::default()
+            }],
             ..Default::default()
-        }];
+        };
 
         let sandbox_instance =
             sandbox::Sandbox::start_sandbox_with_config_and_version(sandbox_config, version)
@@ -104,7 +106,7 @@ impl SandboxServer {
 
 impl Drop for SandboxServer {
     fn drop(&mut self) {
-        if let Some(_) = self.sandbox_instance {
+        if self.sandbox_instance.is_some() {
             info!(
                 target: "workspaces",
                 "Cleaning up sandbox"

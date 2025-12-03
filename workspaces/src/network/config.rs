@@ -58,6 +58,7 @@ where
 }
 
 /// Set extra configs for the sandbox defined by workspaces.
+#[allow(dead_code)]
 pub(crate) fn set_sandbox_configs(home_dir: impl AsRef<Path>) -> Result<()> {
     overwrite(
         home_dir,
