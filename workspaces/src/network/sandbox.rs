@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use near_jsonrpc_client::methods::sandbox_fast_forward::RpcSandboxFastForwardRequest;
 use near_jsonrpc_client::methods::sandbox_patch_state::RpcSandboxPatchStateRequest;
 use near_primitives::state_record::StateRecord;
-use near_sandbox_utils as sandbox;
+use near_sandbox as sandbox;
 
 use super::builder::{FromNetworkBuilder, NetworkBuilder};
 use super::server::ValidatorKey;
@@ -57,7 +57,7 @@ impl Sandbox {
         version: &str,
     ) -> Result<Self> {
         // Check the conditions of the provided rpc_url and validator_key
-        let mut server = match (build.rpc_addr, build.validator_key) {
+        let server = match (build.rpc_addr, build.validator_key) {
             // Connect to a provided sandbox:
             (Some(rpc_url), Some(validator_key)) => SandboxServer::new(rpc_url, validator_key)?,
 
@@ -79,12 +79,6 @@ impl Sandbox {
 
         let client = Client::new(&server.rpc_addr(), build.api_key)?;
         client.wait_for_rpc().await?;
-
-        // Server locks some ports on startup due to potential port collision, so we need
-        // to unlock the lockfiles after RPC is ready. Not necessarily needed here since
-        // they get unlocked anyways on the server's drop, but it is nice to clean up the
-        // lockfiles as soon as possible.
-        server.unlock_lockfiles()?;
 
         let root_id = InMemorySigner::try_from(server.validator_key.clone())?.account_id;
 
@@ -110,7 +104,6 @@ impl std::fmt::Debug for Sandbox {
             .field("root_id", &self.info.root_id)
             .field("rpc_url", &self.info.rpc_url)
             .field("rpc_port", &self.server.rpc_port())
-            .field("net_port", &self.server.net_port())
             .field("version", &self.version)
             .finish()
     }

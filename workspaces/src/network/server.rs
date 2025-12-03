@@ -1,4 +1,3 @@
-use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
 
@@ -6,24 +5,13 @@ use crate::error::{ErrorKind, SandboxErrorCode};
 use crate::result::Result;
 use crate::types::SecretKey;
 
-use fs2::FileExt;
-
 use near_account_id::AccountId;
 use reqwest::Url;
-use tempfile::TempDir;
-use tokio::process::Child;
 
 use tracing::info;
 
-use near_sandbox_utils as sandbox;
+use near_sandbox as sandbox;
 use tokio::net::TcpListener;
-
-// Must be an IP address as `neard` expects socket address for network address.
-const DEFAULT_RPC_HOST: &str = "127.0.0.1";
-
-fn rpc_socket(port: u16) -> String {
-    format!("{DEFAULT_RPC_HOST}:{port}")
-}
 
 /// Request an unused port from the OS.
 pub async fn pick_unused_port() -> Result<u16> {
@@ -41,40 +29,6 @@ pub async fn pick_unused_port() -> Result<u16> {
     Ok(port)
 }
 
-/// Acquire an unused port and lock it for the duration until the sandbox server has
-/// been started.
-async fn acquire_unused_port() -> Result<(u16, File)> {
-    loop {
-        let port = pick_unused_port().await?;
-        let lockpath = std::env::temp_dir().join(format!("near-sandbox-port{port}.lock"));
-        let lockfile = File::create(lockpath).map_err(|err| {
-            ErrorKind::Io.full(format!("failed to create lockfile for port {port}"), err)
-        })?;
-        if lockfile.try_lock_exclusive().is_ok() {
-            break Ok((port, lockfile));
-        }
-    }
-}
-
-#[allow(dead_code)]
-async fn init_home_dir() -> Result<TempDir> {
-    init_home_dir_with_version(sandbox::DEFAULT_NEAR_SANDBOX_VERSION).await
-}
-
-async fn init_home_dir_with_version(version: &str) -> Result<TempDir> {
-    let home_dir = tempfile::tempdir().map_err(|e| ErrorKind::Io.custom(e))?;
-
-    let output = sandbox::init_with_version(&home_dir, version)
-        .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?
-        .wait_with_output()
-        .await
-        .map_err(|e| SandboxErrorCode::InitFailure.custom(e))?;
-
-    info!(target: "workspaces", "sandbox init: {:?}", output);
-
-    Ok(home_dir)
-}
-
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum ValidatorKey {
@@ -85,10 +39,7 @@ pub enum ValidatorKey {
 pub struct SandboxServer {
     pub(crate) validator_key: ValidatorKey,
     rpc_addr: Url,
-    net_port: Option<u16>,
-    rpc_port_lock: Option<File>,
-    net_port_lock: Option<File>,
-    process: Option<Child>,
+    sandbox_instance: Option<near_sandbox::Sandbox>,
 }
 
 impl SandboxServer {
@@ -101,10 +52,7 @@ impl SandboxServer {
         Ok(Self {
             validator_key,
             rpc_addr,
-            net_port: None,
-            rpc_port_lock: None,
-            net_port_lock: None,
-            process: None,
+            sandbox_instance: None,
         })
     }
 
@@ -118,87 +66,35 @@ impl SandboxServer {
         // Suppress logs for the sandbox binary by default:
         suppress_sandbox_logs_if_required();
 
-        let home_dir = init_home_dir_with_version(version).await?.keep();
-        // Configure `$home_dir/config.json` to our liking. Sandbox requires extra settings
-        // for the best user experience, and being able to offer patching large state payloads.
-        crate::network::config::set_sandbox_configs(&home_dir)?;
-        // Configure `$home_dir/genesis.json` to our liking.
-        crate::network::config::set_sandbox_genesis(&home_dir)?;
+        let mut sandbox_config = sandbox::SandboxConfig::default();
+        sandbox_config.additional_accounts = vec![sandbox::GenesisAccount {
+            account_id: "registrar".parse().unwrap(),
+            ..Default::default()
+        }];
 
-        // Try running the server with the follow provided rpc_ports and net_ports
-        let (rpc_port, rpc_port_lock) = acquire_unused_port().await?;
-        let (net_port, net_port_lock) = acquire_unused_port().await?;
-        // It's important that the address doesn't have a scheme, since the sandbox expects
-        // a valid socket address.
-        let rpc_addr = rpc_socket(rpc_port);
-        let net_addr = rpc_socket(net_port);
+        let sandbox_instance =
+            sandbox::Sandbox::start_sandbox_with_config_and_version(sandbox_config, version)
+                .await
+                .map_err(|e| SandboxErrorCode::RunFailure.custom(e))?;
 
-        info!(target: "workspaces", "Starting up sandbox at localhost:{}", rpc_port);
+        info!(target: "workspaces", "Started up sandbox at {}", sandbox_instance.rpc_addr);
 
-        let options = &[
-            "--home",
-            home_dir
-                .as_os_str()
-                .to_str()
-                .expect("home_dir is valid utf8"),
-            "run",
-            "--rpc-addr",
-            &rpc_addr,
-            "--network-addr",
-            &net_addr,
-        ];
-
-        let child = sandbox::run_with_options_with_version(options, version)
-            .map_err(|e| SandboxErrorCode::RunFailure.custom(e))?;
-
-        info!(target: "workspaces", "Started up sandbox at localhost:{} with pid={:?}", rpc_port, child.id());
-
-        let rpc_addr: Url = format!("http://{rpc_addr}")
+        let rpc_addr: Url = sandbox_instance
+            .rpc_addr
             .parse()
             .expect("static scheme and host name with variable u16 port numbers form valid urls");
 
+        let dir = sandbox_instance.home_dir.path().to_path_buf();
+
         Ok(Self {
-            validator_key: ValidatorKey::HomeDir(home_dir),
+            validator_key: ValidatorKey::HomeDir(dir),
             rpc_addr,
-            net_port: Some(net_port),
-            rpc_port_lock: Some(rpc_port_lock),
-            net_port_lock: Some(net_port_lock),
-            process: Some(child),
+            sandbox_instance: Some(sandbox_instance),
         })
-    }
-
-    /// Unlock port lockfiles that were used to avoid port contention when starting up
-    /// the sandbox node.
-    pub(crate) fn unlock_lockfiles(&mut self) -> Result<()> {
-        if let Some(rpc_port_lock) = self.rpc_port_lock.take() {
-            <std::fs::File as FileExt>::unlock(&rpc_port_lock).map_err(|e| {
-                ErrorKind::Io.full(
-                    format!(
-                        "failed to unlock lockfile for rpc_port={:?}",
-                        self.rpc_port()
-                    ),
-                    e,
-                )
-            })?;
-        }
-        if let Some(net_port_lock) = self.net_port_lock.take() {
-            <std::fs::File as FileExt>::unlock(&net_port_lock).map_err(|e| {
-                ErrorKind::Io.full(
-                    format!("failed to unlock lockfile for net_port={:?}", self.net_port),
-                    e,
-                )
-            })?;
-        }
-
-        Ok(())
     }
 
     pub fn rpc_port(&self) -> Option<u16> {
         self.rpc_addr.port()
-    }
-
-    pub fn net_port(&self) -> Option<u16> {
-        self.net_port
     }
 
     pub fn rpc_addr(&self) -> String {
@@ -208,15 +104,11 @@ impl SandboxServer {
 
 impl Drop for SandboxServer {
     fn drop(&mut self) {
-        if let Some(mut child) = self.process.take() {
+        if let Some(_) = self.sandbox_instance {
             info!(
                 target: "workspaces",
-                "Cleaning up sandbox: pid={:?}",
-                child.id()
+                "Cleaning up sandbox"
             );
-
-            child.start_kill().expect("failed to kill sandbox");
-            let _ = child.try_wait();
         }
     }
 }
