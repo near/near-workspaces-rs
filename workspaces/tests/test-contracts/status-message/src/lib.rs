@@ -1,15 +1,14 @@
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{env, log, near_bindgen, AccountId};
+use near_sdk::{env, log, near, near_bindgen, AccountId};
 use std::collections::HashMap;
 
-#[near_bindgen]
-#[derive(Default, BorshDeserialize, BorshSerialize)]
-#[borsh(crate = "near_sdk::borsh")]
+#[near(contract_state)]
+#[derive(Default)]
 pub struct StatusMessage {
     records: HashMap<AccountId, String>,
 }
 
-#[near_bindgen]
+#[near]
 impl StatusMessage {
     #[payable]
     pub fn set_status(&mut self, message: String) {

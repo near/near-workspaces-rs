@@ -177,11 +177,11 @@ impl fmt::Debug for ExecutionFinalResult {
 
 impl ExecutionFinalResult {
     pub(crate) fn from_view(view: FinalExecutionOutcomeView) -> Self {
-        let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt
+        let total_gas_burnt = view.transaction_outcome.outcome.gas_burnt.as_gas()
             + view
                 .receipts_outcome
                 .iter()
-                .map(|t| t.outcome.gas_burnt)
+                .map(|t| t.outcome.gas_burnt.as_gas())
                 .sum::<u64>();
 
         let transaction = view.transaction_outcome.into();
@@ -539,8 +539,8 @@ impl From<ExecutionOutcomeWithIdView> for ExecutionOutcome {
                 .into_iter()
                 .map(|c| CryptoHash(c.0))
                 .collect(),
-            gas_burnt: NearGas::from_gas(view.outcome.gas_burnt),
-            tokens_burnt: NearToken::from_yoctonear(view.outcome.tokens_burnt),
+            gas_burnt: NearGas::from_gas(view.outcome.gas_burnt.as_gas()),
+            tokens_burnt: view.outcome.tokens_burnt,
             executor_id: view.outcome.executor_id,
             status: view.outcome.status,
         }

@@ -6,12 +6,12 @@ permissions:
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: '-D warnings'
+  RUSTFLAGS: "-D warnings"
   CARGO_INCREMENTAL: 0
   RUST_BACKTRACE: short
 
@@ -20,17 +20,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Run clippy
-      run: cargo clippy --all-targets -- -D clippy::all
+      - uses: actions/checkout@v4
+      - name: Run clippy
+        run: cargo clippy --all-targets -- -D clippy::all
 
   cargo-fmt:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Run cargo fmt
-      run: cargo fmt --check
+      - uses: actions/checkout@v4
+      - name: Run cargo fmt
+        run: cargo fmt --check
 
   # there're sometimes warnings, which signal, that the generated doc
   # won't look as expected, when rendered, and sometimes errors, which will prevent doc from being
@@ -39,9 +39,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: run cargo doc
-      run: RUSTDOCFLAGS="-D warnings" cargo doc
+      - uses: actions/checkout@v4
+      - name: "Install pinned 1.86.0 Rust toolchain for to workaround https://github.com/rust-lang/rust/issues/148431"
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.86.0
+          default: true
+          profile: minimal
+      - name: run cargo doc
+        run: RUSTDOCFLAGS="-D warnings" cargo +1.86.0 doc
 
   test:
     needs: cargo-fmt
@@ -53,31 +59,31 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-    - uses: actions/checkout@v2
-    - name: "${{ matrix.toolchain }}"
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.toolchain }}
-        default: true
+      - uses: actions/checkout@v2
+      - name: "${{ matrix.toolchain }}"
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          default: true
 
-    - name: "Install pinned 1.86.0 Rust toolchain for compiling contracts for tests with live node"
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: 1.86.0
-        default: false
-        profile: minimal
-        target: wasm32-unknown-unknown
+      - name: "Install pinned 1.86.0 Rust toolchain for compiling contracts for tests with live node"
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.86.0
+          default: false
+          profile: minimal
+          target: wasm32-unknown-unknown
 
-    - name: Install cargo-near CLI (dependency for examples' build)
-      run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.15.0/cargo-near-installer.sh | sh
-    - uses: Swatinem/rust-cache@v2
-    - name: Add wasm32 target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Check with stable features
-      run: cargo check
-    - name: Run tests with unstable features
-      run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --features unstable
+      - name: Install cargo-near CLI (dependency for examples' build)
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.15.0/cargo-near-installer.sh | sh
+      - uses: Swatinem/rust-cache@v2
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Check with stable features
+        run: cargo check
+      - name: Run tests with unstable features
+        run: NEAR_RPC_TIMEOUT_SECS=100 cargo test --features unstable
 
   release-plz:
     runs-on: ubuntu-latest

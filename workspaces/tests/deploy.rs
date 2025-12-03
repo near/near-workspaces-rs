@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use test_log::test;
 
 use near_workspaces::network::ValidatorKey;
-use near_workspaces::{pick_unused_port, DevNetwork, Worker};
+use near_workspaces::{DevNetwork, Worker};
 
 const NFT_WASM_FILEPATH: &str = "../examples/res/non_fungible_token.wasm";
 const EXPECTED_NFT_METADATA: &str = r#"{
@@ -109,28 +109,15 @@ async fn test_dev_create_account_testnet() -> anyhow::Result<()> {
 
 #[test(tokio::test)]
 async fn test_manually_spawned_deploy() -> anyhow::Result<()> {
-    let rpc_port = pick_unused_port().await?;
-    let net_port = pick_unused_port().await?;
-    let mut home_dir = std::env::temp_dir();
-    home_dir.push(format!("test-sandbox-{rpc_port}"));
-
-    // initialize chain data with supplied home dir
-    let output = near_sandbox_utils::init(&home_dir)?
-        .wait_with_output()
-        .await
-        .unwrap();
-    tracing::info!(target: "workspaces-test", "sandbox-init: {:?}", output);
-    near_workspaces::network::set_sandbox_genesis(&home_dir)?;
-
-    let mut child = near_sandbox_utils::run(&home_dir, rpc_port, net_port)?;
+    let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+    let home_dir = sandbox.home_dir.path().to_path_buf();
 
     // connect to local sandbox node
     let worker = near_workspaces::sandbox()
-        .rpc_addr(&format!("http://localhost:{rpc_port}"))
+        .rpc_addr(&sandbox.rpc_addr)
         .validator_key(ValidatorKey::HomeDir(home_dir))
         .await?;
     deploy_and_assert(worker).await?;
 
-    child.kill().await?;
     Ok(())
 }

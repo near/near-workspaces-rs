@@ -468,8 +468,8 @@ impl AccountDetails {
 
     pub(crate) fn into_near_account(self) -> near_primitives::account::Account {
         near_primitives::account::Account::new(
-            self.balance.as_yoctonear(),
-            self.locked.as_yoctonear(),
+            self.balance,
+            self.locked,
             self.contract_state.into(),
             self.storage_usage,
         )
@@ -486,8 +486,8 @@ impl From<AccountView> for AccountDetails {
     fn from(account: AccountView) -> Self {
         Self {
             contract_state: ContractState::from_account_view(&account),
-            balance: NearToken::from_yoctonear(account.amount),
-            locked: NearToken::from_yoctonear(account.locked),
+            balance: account.amount,
+            locked: account.locked,
             storage_usage: account.storage_usage,
             storage_paid_at: account.storage_paid_at,
         }
