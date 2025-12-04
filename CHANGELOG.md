@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.21.0...near-workspaces-v0.22.0) - 2025-12-04
+
+### Other
+
+- [**breaking**] Removed `pick_unused_port` as we migrated to use near-sandbox-rs ([#432](https://github.com/near/near-workspaces-rs/pull/432))
+- update near-* dependencies to 0.34 release ([#431](https://github.com/near/near-workspaces-rs/pull/431))
+
 ## [0.21.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.20.1...near-workspaces-v0.21.0) - 2025-08-15
 
 ### Other
