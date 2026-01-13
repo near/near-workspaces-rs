@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.22.0...near-workspaces-v0.22.1) - 2026-01-13
+
+### Other
+
+- update cargo-near-build to fix builds with rust v1.86.0 ([#435](https://github.com/near/near-workspaces-rs/pull/435))
+
 ## [0.22.0](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.21.0...near-workspaces-v0.22.0) - 2025-12-04
 
 ### Other
