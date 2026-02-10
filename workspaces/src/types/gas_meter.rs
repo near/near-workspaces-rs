@@ -2,8 +2,8 @@ use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::{Arc, Mutex};
 
 use super::Gas;
-use crate::result::Result;
 use crate::Worker;
+use crate::result::Result;
 
 /// A hook that is called on every transaction that is sent to the network.
 /// This is useful for debugging purposes, or for tracking the amount of gas

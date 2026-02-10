@@ -1,5 +1,5 @@
 use near_workspaces::types::NearToken;
-use near_workspaces::{network::Sandbox, Contract, Worker};
+use near_workspaces::{Contract, Worker, network::Sandbox};
 
 async fn init() -> anyhow::Result<(Worker<Sandbox>, Contract)> {
     let worker = near_workspaces::sandbox().await?;
@@ -41,7 +41,9 @@ async fn test_invalid_query() -> anyhow::Result<()> {
         .into_result();
     let error =
         result.expect_err("expected error while passing deposit to `status_msg.set_status`");
-    assert!(format!("{error:?}").contains("Smart contract panicked: Method doesn't accept deposit"));
+    assert!(
+        format!("{error:?}").contains("Smart contract panicked: Method doesn't accept deposit")
+    );
 
     Ok(())
 }

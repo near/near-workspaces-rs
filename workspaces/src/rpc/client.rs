@@ -6,12 +6,12 @@ use std::time::Duration;
 use crate::types::NearToken;
 use near_gas::NearGas;
 use tokio::sync::RwLock;
-use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
+use tokio_retry::strategy::{ExponentialBackoff, jitter};
 
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::tx::{RpcTransactionError, RpcTransactionResponse};
-use near_jsonrpc_client::{methods, JsonRpcClient, MethodCallResult};
+use near_jsonrpc_client::{JsonRpcClient, MethodCallResult, methods};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::account::{AccessKey, AccessKeyPermission};
 use near_primitives::errors::InvalidTxError;
@@ -35,7 +35,7 @@ use {
     },
     near_primitives::{
         types::MaybeBlockId,
-        views::{validator_stake_view::ValidatorStakeView, ReceiptView, StateChangesRequestView},
+        views::{ReceiptView, StateChangesRequestView, validator_stake_view::ValidatorStakeView},
     },
 };
 

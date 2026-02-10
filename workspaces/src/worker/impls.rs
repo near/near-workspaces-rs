@@ -26,8 +26,8 @@ use {
     near_primitives::{
         types::{BlockReference, MaybeBlockId},
         views::{
-            validator_stake_view::ValidatorStakeView, ReceiptView, StateChangesRequestView,
-            TxExecutionStatus,
+            ReceiptView, StateChangesRequestView, TxExecutionStatus,
+            validator_stake_view::ValidatorStakeView,
         },
     },
 };

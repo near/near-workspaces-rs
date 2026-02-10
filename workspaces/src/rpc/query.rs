@@ -48,7 +48,7 @@ use crate::error::RpcErrorCode;
 use crate::operations::Function;
 use crate::result::ViewResultDetails;
 use crate::rpc::client::Client;
-use crate::rpc::{tool, BoxFuture};
+use crate::rpc::{BoxFuture, tool};
 use crate::types::account::AccountDetails;
 use crate::types::{AccessKey, AccessKeyInfo, BlockHeight, Finality, PublicKey, ShardId};
 use crate::{Block, Chunk, CryptoHash, Result};
@@ -391,7 +391,7 @@ impl ProcessQuery for GasPrice {
             BlockReference::SyncCheckpoint(point) => {
                 return Err(RpcErrorCode::QueryFailure.message(format!(
                     "Cannot supply sync checkpoint to gas price: {point:?}. Potential API bug?"
-                )))
+                )));
             }
         };
 

@@ -4,8 +4,8 @@ use near_primitives::borsh::{BorshDeserialize, BorshSerialize};
 use near_workspaces::{AccountId, Contract, DevNetwork, Worker};
 use serde_json::json;
 use tracing::info;
-use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::filter::LevelFilter;
 
 const STATUS_MSG_WASM_FILEPATH: &str = "./examples/res/status_message.wasm";
 

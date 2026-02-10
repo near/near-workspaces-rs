@@ -4,7 +4,7 @@ use near_primitives::types::{BlockId, BlockReference};
 use near_token::NearToken;
 
 use crate::error::SandboxErrorCode;
-use crate::network::{Sandbox, DEV_ACCOUNT_SEED};
+use crate::network::{DEV_ACCOUNT_SEED, Sandbox};
 use crate::types::account::{AccountDetails, ContractState};
 use crate::types::{BlockHeight, KeyType, PublicKey, SecretKey};
 use crate::{AccessKey, AccountDetailsPatch, Result};
