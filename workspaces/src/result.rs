@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 
 use near_account_id::AccountId;
 use near_gas::NearGas;

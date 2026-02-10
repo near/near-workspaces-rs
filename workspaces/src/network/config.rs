@@ -17,8 +17,8 @@ use std::str::FromStr;
 
 use serde_json::Value;
 
-use crate::error::ErrorKind;
 use crate::Result;
+use crate::error::ErrorKind;
 
 /// Overwrite the $home_dir/config.json file over a set of entries. `value` will be used per (key, value) pair
 /// where value can also be another dict. This recursively sets all entry in `value` dict to the config

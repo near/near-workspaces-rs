@@ -11,7 +11,7 @@ use near_workspaces::types::NearToken;
 use near_workspaces::{Account, AccountId, Contract, Worker};
 use serde::Deserialize;
 use serde_json::json;
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 
 const MANAGER_CONTRACT: &[u8] = include_bytes!("../res/manager.wasm");
 const COUNTER_CONTRACT: &[u8] = include_bytes!("../res/counter.wasm");

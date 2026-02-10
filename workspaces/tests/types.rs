@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use near_primitives::borsh::{self, BorshDeserialize};
 
-use near_workspaces::types::{KeyType, PublicKey, SecretKey};
 use near_workspaces::AccountId;
+use near_workspaces::types::{KeyType, PublicKey, SecretKey};
 
 fn default_workspaces_pubkey() -> anyhow::Result<PublicKey> {
     let data = bs58::decode("279Zpep9MBBg4nKsVmTQE7NbXZkWdxti6HS1yzhp8qnc1ExS7gU").into_vec()?;

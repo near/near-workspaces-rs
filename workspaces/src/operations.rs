@@ -3,8 +3,8 @@
 use crate::error::{ErrorKind, RpcErrorCode};
 use crate::result::{Execution, ExecutionFinalResult, Result, ViewResultDetails};
 use crate::rpc::client::{
-    send_batch_tx_and_retry, send_batch_tx_async_and_retry, DEFAULT_CALL_DEPOSIT,
-    DEFAULT_CALL_FN_GAS,
+    DEFAULT_CALL_DEPOSIT, DEFAULT_CALL_FN_GAS, send_batch_tx_and_retry,
+    send_batch_tx_async_and_retry,
 };
 use crate::rpc::query::{Query, ViewFunction};
 use crate::types::{
@@ -383,13 +383,15 @@ impl CallTransaction {
             self.worker,
             &self.signer,
             &self.contract_id,
-            vec![FunctionCallAction {
-                args: self.function.args?,
-                method_name: self.function.name,
-                gas: near_primitives::gas::Gas::from_gas(self.function.gas.as_gas()),
-                deposit: self.function.deposit,
-            }
-            .into()],
+            vec![
+                FunctionCallAction {
+                    args: self.function.args?,
+                    method_name: self.function.name,
+                    gas: near_primitives::gas::Gas::from_gas(self.function.gas.as_gas()),
+                    deposit: self.function.deposit,
+                }
+                .into(),
+            ],
         )
         .await
     }

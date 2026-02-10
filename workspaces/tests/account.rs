@@ -83,12 +83,13 @@ async fn test_delete_account() -> anyhow::Result<()> {
 
     assert!(res.is_err());
 
-    assert!(res
-        .unwrap_err()
-        .into_inner()
-        .unwrap()
-        .to_string()
-        .contains(&format!("{} does not exist while viewing", alice.id())),);
+    assert!(
+        res.unwrap_err()
+            .into_inner()
+            .unwrap()
+            .to_string()
+            .contains(&format!("{} does not exist while viewing", alice.id())),
+    );
 
     // All sandbox accounts start with a balance of 100 NEAR tokens.
     // On account deletion, alice's balance is debited to bob as beneficiary.
