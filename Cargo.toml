@@ -1,2 +1,7 @@
 [workspace]
+resolver = "3"
 members = ["workspaces", "examples"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.86"

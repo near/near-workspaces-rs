@@ -108,7 +108,11 @@ fn suppress_sandbox_logs_if_required() {
         }
     }
 
+    // NOTE: (vsavchyn-dev), 2024 edition requires it be inside an unsafe block.
+    //
     // non-exhaustive list of targets to suppress, since choosing a default LogLevel
     // does nothing in this case, since nearcore seems to be overriding it somehow:
-    std::env::set_var("NEAR_SANDBOX_LOG", "near=error,stats=error,network=error");
+    unsafe {
+        std::env::set_var("NEAR_SANDBOX_LOG", "near=error,stats=error,network=error");
+    }
 }

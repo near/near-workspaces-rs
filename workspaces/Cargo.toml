@@ -1,7 +1,8 @@
 [package]
 name = "near-workspaces"
 version = "0.22.1"
-edition = "2018"
+edition.workspace = true
+rust-version.workspace = true
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/near/near-workspaces-rs"
