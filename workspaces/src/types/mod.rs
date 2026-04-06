@@ -524,6 +524,10 @@ impl From<near_primitives::views::AccessKeyView> for AccessKey {
                 near_primitives::views::AccessKeyPermissionView::FullAccess => {
                     AccessKeyPermission::FullAccess
                 }
+                near_primitives::views::AccessKeyPermissionView::GasKeyFunctionCall { .. }
+                | near_primitives::views::AccessKeyPermissionView::GasKeyFullAccess { .. } => {
+                    unimplemented!()
+                }
             },
         }
     }
