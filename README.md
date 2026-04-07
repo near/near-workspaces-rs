@@ -105,7 +105,7 @@ Afterwards, let's mint an NFT via `nft_mint`. This showcases some extra argument
         }))
         .deposit(deposit)
         // nft_mint might consume more than default gas, so supply our own gas value:
-        .gas(NearGas::from_tgas(300))
+        .gas(NearGas::from_tgas(1_000))
         .transact()
         .await?;
 
