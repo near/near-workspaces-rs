@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.2](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.22.1...near-workspaces-v0.22.2) - 2026-04-07
+
+### Added
+
+- update max gas limit to 1 PGas ([#441](https://github.com/near/near-workspaces-rs/pull/441))
+
+### Other
+
+- update near-* crates to 0.35 ([#442](https://github.com/near/near-workspaces-rs/pull/442))
+- update to Rust edition 2024 ([#439](https://github.com/near/near-workspaces-rs/pull/439))
+
 ## [0.22.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.22.0...near-workspaces-v0.22.1) - 2026-01-13
 
 ### Other
