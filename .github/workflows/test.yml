@@ -67,10 +67,10 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           default: true
 
-      - name: "Install pinned 1.93.0 Rust toolchain for compiling contracts for tests with live node"
+      - name: "Install pinned 1.86.0 Rust toolchain for compiling contracts for tests with live node"
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.93.0
+          toolchain: 1.86.0
           default: false
           profile: minimal
           target: wasm32-unknown-unknown
