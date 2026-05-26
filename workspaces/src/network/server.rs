@@ -102,10 +102,10 @@ impl Drop for SandboxServer {
 /// will be forward into RUST_LOG environment variable as to not conflict
 /// with similar named log targets.
 fn suppress_sandbox_logs_if_required() {
-    if let Ok(val) = std::env::var("NEAR_ENABLE_SANDBOX_LOG") {
-        if val != "0" {
-            return;
-        }
+    if let Ok(val) = std::env::var("NEAR_ENABLE_SANDBOX_LOG")
+        && val != "0"
+    {
+        return;
     }
 
     // NOTE: (vsavchyn-dev), 2024 edition requires it be inside an unsafe block.
