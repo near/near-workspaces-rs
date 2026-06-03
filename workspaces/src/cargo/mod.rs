@@ -25,6 +25,10 @@ pub async fn compile_project(project_path: &str) -> crate::Result<Vec<u8>> {
                 ))
             })?,
         ),
+        // Allow compiling contracts on toolchains newer than what the contract's
+        // Cargo.toml declares — unblocks SDK 2.12 example tests, where the
+        // contract's rust-version may lag behind the host toolchain.
+        skip_rust_version_check: true,
         ..Default::default()
     };
 

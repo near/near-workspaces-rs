@@ -21,6 +21,7 @@ async fn test_dev_deploy_project() -> anyhow::Result<()> {
                 .join("Cargo.toml"),
             )
             .override_toolchain("1.86.0")
+            .skip_rust_version_check(true)
             .build();
         let compile_artifact = near_build::build_with_cli(build_opts)
             .map_err(|e| Error::custom(ErrorKind::Other, e))?;
