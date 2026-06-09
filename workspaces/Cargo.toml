@@ -18,7 +18,7 @@ cargo-near-build = { version = "0.11.2", optional = true }
 chrono = "0.4.19"
 fs2 = "0.4"
 rand = "0.8.4"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.13", features = ["json"], default-features = false }
 sha2 = "0.10"
 serde = "1.0"
 serde_json = "1.0"
@@ -56,11 +56,13 @@ test-log = { version = "0.2.8", default-features = false, features = ["trace"] }
 tracing-subscriber = { version = "0.3.5", features = ["env-filter"] }
 
 [features]
-default = ["install"]
+default = ["install", "rustls"]
 install = []                          # Install the sandbox binary during compile time
 interop_sdk = ["near-sdk"]
 unstable = ["dep:cargo-near-build"]
 experimental = ["near-chain-configs"]
+rustls = ["reqwest/rustls"]
+native-tls = ["reqwest/native-tls"]
 
 [package.metadata.docs.rs]
 all-features = true
