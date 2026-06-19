@@ -323,7 +323,7 @@ impl Client {
 
         let retry_strategy =
             std::iter::repeat_with(|| Duration::from_millis(500)).take(2 * timeout_secs);
-        Retry::spawn(retry_strategy, || async { self.status().await })
+        Retry::start(retry_strategy, || async { self.status().await })
             .await
             .map_err(|e| {
                 Error::full(
@@ -516,7 +516,7 @@ where
     //   5, 25, 125, 625 ms
     let retry_strategy = ExponentialBackoff::from_millis(5).map(jitter).take(4);
 
-    Retry::spawn(retry_strategy, task).await
+    Retry::start(retry_strategy, task).await
 }
 
 pub(crate) async fn send_tx(
