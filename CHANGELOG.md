@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.3](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.22.2...near-workspaces-v0.22.3) - 2026-06-22
+
+### Added
+
+- expose rustls and update reqwest ([#446](https://github.com/near/near-workspaces-rs/pull/446))
+
+### Fixed
+
+- rename tokio function to resolve warning ([#447](https://github.com/near/near-workspaces-rs/pull/447))
+
 ## [0.22.2](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.22.1...near-workspaces-v0.22.2) - 2026-04-07
 
 ### Added
