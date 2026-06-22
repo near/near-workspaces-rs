@@ -71,6 +71,9 @@ impl KeyType {
         match key_type {
             near_crypto::KeyType::ED25519 => Self::ED25519,
             near_crypto::KeyType::SECP256K1 => Self::SECP256K1,
+            // near-workspaces does not model nearcore 2.13's post-quantum
+            // ML-DSA-65 keys; they cannot be produced by this crate's APIs.
+            near_crypto::KeyType::MLDSA65 => panic!("ML-DSA-65 keys are not supported"),
         }
     }
 
@@ -441,8 +444,15 @@ pub struct AccessKeyInfo {
 
 impl From<near_primitives::views::AccessKeyInfoView> for AccessKeyInfo {
     fn from(view: near_primitives::views::AccessKeyInfoView) -> Self {
+        // Since nearcore 2.13 the view holds a `PublicKeyHandle`; `full_pubkey`
+        // recovers the underlying key for ED25519/SECP256K1 and yields `None`
+        // only for post-quantum ML-DSA-65 keys, which this crate does not model.
+        let public_key = view
+            .public_key
+            .full_pubkey()
+            .expect("ML-DSA-65 keys are not supported");
         Self {
-            public_key: PublicKey(view.public_key),
+            public_key: PublicKey(public_key),
             access_key: view.access_key.into(),
         }
     }

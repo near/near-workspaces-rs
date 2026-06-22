@@ -35,12 +35,17 @@ near-gas = { version = "0.3", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.3", features = ["serde"] }
 near-sdk = { version = "5.26", optional = true }
 near-account-id = "2.0.0"
-near-crypto = "0.36.0"
-near-primitives = "0.36.0"
-near-jsonrpc-primitives = "0.36.0"
-near-jsonrpc-client = { version = "0.21.1", features = ["sandbox"] }
+# DRAFT: nearcore 2.13 (protocol v85) is not on crates.io yet. Pin the
+# nearcore-versioned crates to the same 2.13-release rev that the sibling
+# near-jsonrpc-client 2.13 draft pins, so all nearcore types unify (cargo
+# only unifies identical git sources; a bare branch pin would clash with
+# jsonrpc-client's rev pin and duplicate near-primitives).
+near-crypto = { git = "https://github.com/near/nearcore", rev = "46483c8d45579dd89faa3bd47317d4c563bcde10" }
+near-primitives = { git = "https://github.com/near/nearcore", rev = "46483c8d45579dd89faa3bd47317d4c563bcde10" }
+near-jsonrpc-primitives = { git = "https://github.com/near/nearcore", rev = "46483c8d45579dd89faa3bd47317d4c563bcde10" }
+near-jsonrpc-client = { git = "https://github.com/near/near-jsonrpc-client-rs", rev = "5f5d150d47315745945fba7672bf8c90c5bf7f95", features = ["sandbox"] }
 near-sandbox = "0.3.9"
-near-chain-configs = { version = "0.36.0", optional = true }
+near-chain-configs = { git = "https://github.com/near/nearcore", rev = "46483c8d45579dd89faa3bd47317d4c563bcde10", optional = true }
 
 [build-dependencies]
 near-sandbox = "0.3.9"

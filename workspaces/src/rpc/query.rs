@@ -301,6 +301,8 @@ impl ProcessQuery for ViewState {
             request: QueryRequest::ViewState {
                 account_id: self.account_id,
                 prefix: StoreKey::from(self.prefix.unwrap_or_default()),
+                after_key: None,
+                limit: None,
                 include_proof: false,
             },
         })
