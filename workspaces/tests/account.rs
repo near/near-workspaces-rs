@@ -102,6 +102,14 @@ async fn test_mldsa65_access_key_on_chain() -> anyhow::Result<()> {
         "expected balance below 9 NEAR after the transfer, got {remaining}"
     );
 
+    // The account's only access key is ML-DSA-65, whose full public key cannot
+    // be recovered from the on-trie hash. Listing keys must return an error
+    // gracefully rather than panicking.
+    assert!(
+        sub.view_access_keys().await.is_err(),
+        "listing a hash-only ML-DSA-65 access key should error, not panic"
+    );
+
     Ok(())
 }
 

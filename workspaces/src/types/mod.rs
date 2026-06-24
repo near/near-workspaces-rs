@@ -450,22 +450,27 @@ pub struct AccessKeyInfo {
     pub access_key: AccessKey,
 }
 
-impl From<near_primitives::views::AccessKeyInfoView> for AccessKeyInfo {
-    fn from(view: near_primitives::views::AccessKeyInfoView) -> Self {
+impl TryFrom<near_primitives::views::AccessKeyInfoView> for AccessKeyInfo {
+    type Error = crate::error::Error;
+
+    fn try_from(
+        view: near_primitives::views::AccessKeyInfoView,
+    ) -> std::result::Result<Self, Self::Error> {
         // Since nearcore 2.13 the view holds a `PublicKeyHandle`; `full_pubkey`
         // recovers the underlying key for ED25519/SECP256K1 and yields `None`
         // for post-quantum ML-DSA-65 keys, whose full 1952-byte pubkey is not
         // recoverable from the 32-byte on-trie hash the handle carries. Such
         // access keys can be created and signed with, but cannot be listed via
-        // this view.
-        let public_key = view
-            .public_key
-            .full_pubkey()
-            .expect("ML-DSA-65 access keys cannot be recovered from their on-trie hash");
-        Self {
+        // this view, so we return an error rather than panicking.
+        let public_key = view.public_key.full_pubkey().ok_or_else(|| {
+            ErrorKind::DataConversion.custom(
+                "ML-DSA-65 access key cannot be listed: its full public key is not recoverable from the on-trie hash",
+            )
+        })?;
+        Ok(Self {
             public_key: PublicKey(public_key),
             access_key: view.access_key.into(),
-        }
+        })
     }
 }
 

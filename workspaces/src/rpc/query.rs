@@ -371,9 +371,11 @@ impl ProcessQuery for ViewAccessKeyList {
 
     fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
         match resp.kind {
-            QueryResponseKind::AccessKeyList(keylist) => {
-                Ok(keylist.keys.into_iter().map(Into::into).collect())
-            }
+            QueryResponseKind::AccessKeyList(keylist) => keylist
+                .keys
+                .into_iter()
+                .map(AccessKeyInfo::try_from)
+                .collect(),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying access keys")),
         }
     }
