@@ -57,6 +57,9 @@ fn from_base58(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sy
 pub enum KeyType {
     ED25519 = 0,
     SECP256K1 = 1,
+    /// FIPS 204 ML-DSA-65, the post-quantum signature scheme stabilized in
+    /// nearcore 2.13 (protocol v85).
+    MLDSA65 = 2,
 }
 
 impl KeyType {
@@ -64,6 +67,7 @@ impl KeyType {
         match self {
             Self::ED25519 => near_crypto::KeyType::ED25519,
             Self::SECP256K1 => near_crypto::KeyType::SECP256K1,
+            Self::MLDSA65 => near_crypto::KeyType::MLDSA65,
         }
     }
 
@@ -71,9 +75,7 @@ impl KeyType {
         match key_type {
             near_crypto::KeyType::ED25519 => Self::ED25519,
             near_crypto::KeyType::SECP256K1 => Self::SECP256K1,
-            // near-workspaces does not model nearcore 2.13's post-quantum
-            // ML-DSA-65 keys; they cannot be produced by this crate's APIs.
-            near_crypto::KeyType::MLDSA65 => panic!("ML-DSA-65 keys are not supported"),
+            near_crypto::KeyType::MLDSA65 => Self::MLDSA65,
         }
     }
 
@@ -82,6 +84,10 @@ impl KeyType {
         match self {
             Self::ED25519 => 32,
             Self::SECP256K1 => 64,
+            // `near_crypto::ML_DSA_65_PUBLIC_KEY_LENGTH`; the full ML-DSA-65
+            // public key. (The constant isn't re-exported, so it's hardcoded
+            // here just like the ED25519/SECP256K1 lengths above.)
+            Self::MLDSA65 => 1952,
         }
     }
 }
@@ -110,6 +116,7 @@ impl TryFrom<u8> for KeyType {
         match value {
             0 => Ok(Self::ED25519),
             1 => Ok(Self::SECP256K1),
+            2 => Ok(Self::MLDSA65),
             unknown_key_type => Err(ErrorKind::DataConversion
                 .custom(format!("Unknown key type provided: {unknown_key_type}"))),
         }
@@ -162,8 +169,9 @@ impl PublicKey {
     }
 
     /// Get the number of bytes this key uses. This will differ depending on the [`KeyType`]. i.e. for
-    /// ED25519 keys, this will return 32 + 1, while for SECP256K1 keys, this will return 64 + 1. The +1
-    /// is used to store the key type, and will appear at the start of the serialized key.
+    /// ED25519 keys, this will return 32 + 1, while for SECP256K1 keys, this will return 64 + 1, and for
+    /// ML-DSA-65 keys, this will return 1952 + 1. The +1 is used to store the key type, and will appear
+    /// at the start of the serialized key.
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -446,11 +454,14 @@ impl From<near_primitives::views::AccessKeyInfoView> for AccessKeyInfo {
     fn from(view: near_primitives::views::AccessKeyInfoView) -> Self {
         // Since nearcore 2.13 the view holds a `PublicKeyHandle`; `full_pubkey`
         // recovers the underlying key for ED25519/SECP256K1 and yields `None`
-        // only for post-quantum ML-DSA-65 keys, which this crate does not model.
+        // for post-quantum ML-DSA-65 keys, whose full 1952-byte pubkey is not
+        // recoverable from the 32-byte on-trie hash the handle carries. Such
+        // access keys can be created and signed with, but cannot be listed via
+        // this view.
         let public_key = view
             .public_key
             .full_pubkey()
-            .expect("ML-DSA-65 keys are not supported");
+            .expect("ML-DSA-65 access keys cannot be recovered from their on-trie hash");
         Self {
             public_key: PublicKey(public_key),
             access_key: view.access_key.into(),

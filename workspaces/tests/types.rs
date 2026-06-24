@@ -41,6 +41,40 @@ fn test_keypair_secp256k1() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_keypair_mldsa65() -> anyhow::Result<()> {
+    // ML-DSA-65 keygen and string round-tripping, without a sandbox.
+    for sk in [
+        SecretKey::from_random(KeyType::MLDSA65),
+        SecretKey::from_seed(KeyType::MLDSA65, "test"),
+    ] {
+        assert!(matches!(sk.key_type(), KeyType::MLDSA65));
+
+        let pk = sk.public_key();
+        assert!(matches!(pk.key_type(), KeyType::MLDSA65));
+        // Full ML-DSA-65 public key is 1952 bytes of key data (1953 with the
+        // leading key-type byte).
+        assert_eq!(pk.key_data().len(), 1952);
+        assert_eq!(pk.len(), 1953);
+        assert_eq!(KeyType::MLDSA65.data_len(), 1952);
+
+        // Both keys round-trip through their `ml-dsa-65:`-prefixed string form.
+        let pk_str = pk.to_string();
+        assert!(pk_str.starts_with("ml-dsa-65:"), "got {pk_str}");
+        assert_eq!(PublicKey::from_str(&pk_str)?, pk);
+
+        let sk_str = sk.to_string();
+        assert!(sk_str.starts_with("ml-dsa-65:"), "got {sk_str}");
+        assert_eq!(SecretKey::from_str(&sk_str)?, sk);
+    }
+
+    // The numeric and string discriminants both resolve to ML-DSA-65.
+    assert!(matches!(KeyType::try_from(2u8)?, KeyType::MLDSA65));
+    assert!(matches!(KeyType::from_str("ml-dsa-65")?, KeyType::MLDSA65));
+
+    Ok(())
+}
+
+#[test]
 fn test_pubkey_serialization() -> anyhow::Result<()> {
     for key_type in [KeyType::ED25519, KeyType::SECP256K1] {
         let sk = SecretKey::from_seed(key_type, "test");

@@ -1,5 +1,6 @@
 #![recursion_limit = "256"]
 use near_token::NearToken;
+use near_workspaces::types::{KeyType, SecretKey};
 use serde_json::{Map, Value};
 use test_log::test;
 
@@ -63,6 +64,43 @@ async fn test_transfer_near() -> anyhow::Result<()> {
 
     // We can only assert that the balance is less than the initial balance - sent amount because of the gas fees.
     assert!(alice.view_account().await?.balance <= INITIAL_BALANCE.saturating_sub(SENT_AMOUNT));
+
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn test_mldsa65_access_key_on_chain() -> anyhow::Result<()> {
+    // ML-DSA-65 (FIPS 204) access keys were stabilized in nearcore 2.13 /
+    // protocol v85. The default near-sandbox is v84 and lacks the scheme, so
+    // pin a v85 sandbox (published for linux-x86_64 + darwin) to exercise it.
+    let worker = near_workspaces::sandbox_with_version("2.13.0-rc.1").await?;
+    let root = worker.root_account()?;
+
+    // Fund a fresh subaccount whose full-access key is post-quantum.
+    let sk = SecretKey::from_random(KeyType::MLDSA65);
+    let sub = root
+        .create_subaccount("pqkey")
+        .keys(sk.clone())
+        .initial_balance(NearToken::from_near(10))
+        .transact()
+        .await?
+        .into_result()?;
+
+    // The on-chain account is keyed with ML-DSA-65.
+    assert!(matches!(sub.secret_key().key_type(), KeyType::MLDSA65));
+
+    // Signing a real transfer forces the sandbox to verify an ML-DSA-65
+    // signature; this is the actual proof the scheme works end-to-end.
+    sub.transfer_near(root.id(), NearToken::from_near(1))
+        .await?
+        .into_result()?;
+
+    // After sending 1 NEAR (plus gas) the subaccount must hold under 9 NEAR.
+    let remaining = sub.view_account().await?.balance;
+    assert!(
+        remaining < NearToken::from_near(9),
+        "expected balance below 9 NEAR after the transfer, got {remaining}"
+    );
 
     Ok(())
 }
