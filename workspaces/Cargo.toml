@@ -35,14 +35,14 @@ near-gas = { version = "0.3", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.3", features = ["serde"] }
 near-sdk = { version = "5.26", optional = true }
 near-account-id = "2.0.0"
-# DRAFT: published 2.13 RC 0.37.0-rc.1; bump to 0.37.0 (drop pre-release)
+# DRAFT: published 2.13 RC 0.37.0-rc.2; bump to 0.37.0 (drop pre-release)
 # once 2.13 ships stable.
-near-crypto = "0.37.0-rc.1"
-near-primitives = "0.37.0-rc.1"
-near-jsonrpc-primitives = "0.37.0-rc.1"
-near-jsonrpc-client = { git = "https://github.com/near/near-jsonrpc-client-rs", rev = "b1ea63913de39768f4c40affaaf958e79704710d", features = ["sandbox"] }
+near-crypto = "0.37.0-rc.2"
+near-primitives = "0.37.0-rc.2"
+near-jsonrpc-primitives = "0.37.0-rc.2"
+near-jsonrpc-client = { git = "https://github.com/near/near-jsonrpc-client-rs", rev = "4196c34db5c5e6acfc563d62ab16c68b7c666d7e", features = ["sandbox"] }
 near-sandbox = "0.3.9"
-near-chain-configs = { version = "0.37.0-rc.1", optional = true }
+near-chain-configs = { version = "0.37.0-rc.2", optional = true }
 
 [build-dependencies]
 near-sandbox = "0.3.9"

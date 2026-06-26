@@ -84,10 +84,7 @@ impl KeyType {
         match self {
             Self::ED25519 => 32,
             Self::SECP256K1 => 64,
-            // `near_crypto::ML_DSA_65_PUBLIC_KEY_LENGTH`; the full ML-DSA-65
-            // public key. (The constant isn't re-exported, so it's hardcoded
-            // here just like the ED25519/SECP256K1 lengths above.)
-            Self::MLDSA65 => 1952,
+            Self::MLDSA65 => near_crypto::ML_DSA_65_PUBLIC_KEY_LENGTH,
         }
     }
 }
