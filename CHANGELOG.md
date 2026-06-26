@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.4](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.22.3...near-workspaces-v0.22.4) - 2026-06-26
+
+### Fixed
+
+- require near-jsonrpc-client 0.21.1 to keep near-primitives on 0.36 ([#450](https://github.com/near/near-workspaces-rs/pull/450))
+
 ## [0.22.3](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.22.2...near-workspaces-v0.22.3) - 2026-06-22
 
 ### Added
