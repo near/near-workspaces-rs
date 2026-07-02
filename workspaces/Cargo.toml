@@ -40,7 +40,7 @@ near-account-id = "2.0.0"
 near-crypto = "0.37.0-rc.2"
 near-primitives = "0.37.0-rc.2"
 near-jsonrpc-primitives = "0.37.0-rc.2"
-near-jsonrpc-client = { git = "https://github.com/near/near-jsonrpc-client-rs", rev = "4196c34db5c5e6acfc563d62ab16c68b7c666d7e", features = ["sandbox"] }
+near-jsonrpc-client = { version = "=0.22.0-rc.1", features = ["sandbox"] }
 near-sandbox = "0.3.9"
 near-chain-configs = { version = "0.37.0-rc.2", optional = true }
 
