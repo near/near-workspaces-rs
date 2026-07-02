@@ -199,7 +199,8 @@ impl PatchTransaction {
     pub fn access_key(mut self, pk: PublicKey, ak: AccessKey) -> Self {
         self.records.push(StateRecord::AccessKey {
             account_id: self.account_id.clone(),
-            public_key: pk.into(),
+            // since nearcore 2.13 this field is a `PublicKeyHandle`
+            public_key: pk.0.into(),
             access_key: ak.into(),
         });
         self
@@ -222,7 +223,8 @@ impl PatchTransaction {
                 .into_iter()
                 .map(|(pk, ak)| StateRecord::AccessKey {
                     account_id: account_id.clone(),
-                    public_key: pk.into(),
+                    // since nearcore 2.13 this field is a `PublicKeyHandle`
+                    public_key: pk.0.into(),
                     access_key: ak.into(),
                 }),
         );
