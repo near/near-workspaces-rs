@@ -81,7 +81,7 @@ pub(crate) async fn url_create_account(
             if value == b"false" {
                 return Err(ErrorKind::Other.message(format!(
                     "The new account <{}> could not be created successfully.",
-                    &account_id
+                    account_id
                 )));
             }
         }
