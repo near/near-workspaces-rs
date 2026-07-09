@@ -1,6 +1,6 @@
 [package]
 name = "near-workspaces"
-version = "0.23.0-rc.1"
+version = "0.23.0"
 edition.workspace = true
 rust-version.workspace = true
 license = "MIT OR Apache-2.0"
@@ -35,17 +35,16 @@ near-gas = { version = "0.3", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.3", features = ["serde"] }
 near-sdk = { version = "5.26", optional = true }
 near-account-id = "2.0.0"
-# DRAFT: published 2.13 RC 0.37.0-rc.2; bump to 0.37.0 (drop pre-release)
-# once 2.13 ships stable.
-near-crypto = "=0.37.0-rc.2"
-near-primitives = "=0.37.0-rc.2"
-near-jsonrpc-primitives = "=0.37.0-rc.2"
-near-jsonrpc-client = { version = "=0.22.0-rc.1", features = ["sandbox"] }
-near-sandbox = "0.3.9"
-near-chain-configs = { version = "=0.37.0-rc.2", optional = true }
+# nearcore 2.13.0 stable.
+near-crypto = "0.37.0"
+near-primitives = "0.37.0"
+near-jsonrpc-primitives = "0.37.0"
+near-jsonrpc-client = { version = "0.22.0", features = ["sandbox"] }
+near-sandbox = "0.3.12"
+near-chain-configs = { version = "0.37.0", optional = true }
 
 [build-dependencies]
-near-sandbox = "0.3.9"
+near-sandbox = "0.3.12"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
