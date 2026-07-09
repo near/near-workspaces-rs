@@ -73,7 +73,7 @@ async fn test_mldsa65_access_key_on_chain() -> anyhow::Result<()> {
     // ML-DSA-65 (FIPS 204) access keys were stabilized in nearcore 2.13 /
     // protocol v85. The default near-sandbox is v84 and lacks the scheme, so
     // pin a v85 sandbox (published for linux-x86_64 + darwin) to exercise it.
-    let worker = near_workspaces::sandbox_with_version("2.13.0-rc.1").await?;
+    let worker = near_workspaces::sandbox_with_version("2.13.0").await?;
     let root = worker.root_account()?;
 
     // Fund a fresh subaccount whose full-access key is post-quantum.
