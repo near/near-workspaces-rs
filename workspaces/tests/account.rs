@@ -71,10 +71,9 @@ async fn test_transfer_near() -> anyhow::Result<()> {
 #[test(tokio::test)]
 async fn test_mldsa65_access_key_on_chain() -> anyhow::Result<()> {
     // ML-DSA-65 (FIPS 204) access keys were stabilized in nearcore 2.13
-    // (protocol v86). Pin the 2.13.0 sandbox explicitly (published for
-    // linux-x86_64 + darwin) so this test always exercises a binary that
-    // has the scheme.
-    let worker = near_workspaces::sandbox_with_version("2.13.0").await?;
+    // (protocol v86). The default sandbox() now resolves to the stable
+    // 2.13.0 binary, which has the scheme.
+    let worker = near_workspaces::sandbox().await?;
     let root = worker.root_account()?;
 
     // Fund a fresh subaccount whose full-access key is post-quantum.
