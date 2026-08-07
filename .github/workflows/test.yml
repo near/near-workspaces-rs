@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run clippy
         run: cargo clippy --all-targets -- -D clippy::all
 
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run cargo fmt
         run: cargo fmt --check
 
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: "Install pinned 1.93.0 Rust toolchain for to workaround https://github.com/rust-lang/rust/issues/148431"
         uses: actions-rs/toolchain@v1
         with:
@@ -59,7 +59,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: "${{ matrix.toolchain }}"
         uses: actions-rs/toolchain@v1
         with:
@@ -91,7 +91,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.NEARPROTOCOL_CI_PR_ACCESS }}
