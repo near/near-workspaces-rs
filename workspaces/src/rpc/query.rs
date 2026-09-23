@@ -365,6 +365,8 @@ impl ProcessQuery for ViewAccessKeyList {
             block_reference,
             request: QueryRequest::ViewAccessKeyList {
                 account_id: self.account_id,
+                after_key: None,
+                limit: None,
             },
         })
     }
