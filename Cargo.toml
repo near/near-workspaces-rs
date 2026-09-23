@@ -4,4 +4,4 @@ members = ["workspaces", "examples"]
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.93"
+rust-version = "1.95"
