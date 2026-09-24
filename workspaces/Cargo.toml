@@ -33,7 +33,7 @@ url = { version = "2.2.2", features = ["serde"] }
 near-abi-client = "0.1.1"
 near-gas = { version = "0.3", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.3", features = ["serde"] }
-near-sdk = { version = "5.26", optional = true }
+near-sdk = { version = "5.26", optional = true, features = ["non-contract-usage"] }
 near-account-id = "3"
 # nearcore 2.14.0-rc.2.
 near-crypto = "=0.38.0-rc.2"
