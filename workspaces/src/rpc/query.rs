@@ -34,8 +34,10 @@
 
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
+use std::num::NonZeroU32;
 
 use near_account_id::AccountId;
+use near_crypto::PublicKeyHandle;
 use near_jsonrpc_client::methods::query::RpcQueryResponse;
 use near_jsonrpc_client::methods::{self, RpcMethod};
 use near_jsonrpc_primitives::types::chunks::ChunkReference;
@@ -120,16 +122,8 @@ where
     type IntoFuture = BoxFuture<'a, Self::Output>;
 
     fn into_future(self) -> Self::IntoFuture {
-        Box::pin(async move {
-            let block_reference = self.block_ref.unwrap_or_else(BlockReference::latest);
-            let resp = self
-                .client
-                .query(self.method.into_request(block_reference)?)
-                .await
-                .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
-
-            T::from_response(resp)
-        })
+        let block_reference = self.block_ref.unwrap_or_else(BlockReference::latest);
+        self.method.execute(self.client, block_reference)
     }
 }
 
@@ -154,6 +148,30 @@ pub trait ProcessQuery {
     /// Convert the response from the RPC request to a type of our choosing, mainly to conform
     /// to workspaces related types from the near-primitives or json types from the network.
     fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output>;
+
+    /// Perform the RPC request(s) for this query and convert the response. Queries whose
+    /// results are paginated override this to follow the pagination cursor.
+    #[doc(hidden)]
+    fn execute<'a>(
+        self,
+        client: &'a Client,
+        block_ref: BlockReference,
+    ) -> BoxFuture<'a, Result<Self::Output>>
+    where
+        Self: Sized + Send + 'static,
+        Self::Method: Debug + Send + Sync,
+        <Self::Method as RpcMethod>::Response: Debug + Send + Sync,
+        <Self::Method as RpcMethod>::Error: Debug + Display + Send + Sync,
+    {
+        Box::pin(async move {
+            let resp = client
+                .query(self.into_request(block_ref)?)
+                .await
+                .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+
+            Self::from_response(resp)
+        })
+    }
 }
 
 pub struct ViewFunction {
@@ -356,17 +374,35 @@ impl ProcessQuery for ViewAccessKey {
     }
 }
 
+/// Page size for `view_access_key_list`. Matches nearcore's default server-side cap,
+/// which clamps larger values anyway.
+const ACCESS_KEY_LIST_PAGE_LIMIT: NonZeroU32 = NonZeroU32::new(100).unwrap();
+
+impl ViewAccessKeyList {
+    fn page_request(
+        &self,
+        block_reference: BlockReference,
+        after_key: Option<PublicKeyHandle>,
+    ) -> methods::query::RpcQueryRequest {
+        methods::query::RpcQueryRequest {
+            block_reference,
+            request: QueryRequest::ViewAccessKeyList {
+                account_id: self.account_id.clone(),
+                after_key,
+                // Always set: with neither `after_key` nor `limit` the node treats the
+                // request as a legacy unpaginated listing and fails above its cap.
+                limit: Some(ACCESS_KEY_LIST_PAGE_LIMIT),
+            },
+        }
+    }
+}
+
 impl ProcessQuery for ViewAccessKeyList {
     type Method = methods::query::RpcQueryRequest;
     type Output = Vec<AccessKeyInfo>;
 
     fn into_request(self, block_reference: BlockReference) -> Result<Self::Method> {
-        Ok(Self::Method {
-            block_reference,
-            request: QueryRequest::ViewAccessKeyList {
-                account_id: self.account_id,
-            },
-        })
+        Ok(self.page_request(block_reference, None))
     }
 
     fn from_response(resp: <Self::Method as RpcMethod>::Response) -> Result<Self::Output> {
@@ -378,6 +414,42 @@ impl ProcessQuery for ViewAccessKeyList {
                 .collect(),
             _ => Err(RpcErrorCode::QueryReturnedInvalidData.message("while querying access keys")),
         }
+    }
+
+    fn execute<'a>(
+        self,
+        client: &'a Client,
+        block_ref: BlockReference,
+    ) -> BoxFuture<'a, Result<Self::Output>>
+    where
+        Self: Sized + Send + 'static,
+    {
+        Box::pin(async move {
+            let mut block_reference = block_ref;
+            let mut after_key = None;
+            let mut keys = Vec::new();
+            loop {
+                let resp = client
+                    .query(self.page_request(block_reference, after_key))
+                    .await
+                    .map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
+                // Read every page at the block of the first one, so that the listing is
+                // a consistent snapshot.
+                block_reference = BlockId::Hash(resp.block_hash).into();
+
+                let QueryResponseKind::AccessKeyList(keylist) = resp.kind else {
+                    return Err(RpcErrorCode::QueryReturnedInvalidData
+                        .message("while querying access keys"));
+                };
+                for key in keylist.keys {
+                    keys.push(AccessKeyInfo::try_from(key)?);
+                }
+                match keylist.last_key {
+                    Some(last_key) => after_key = Some(last_key),
+                    None => return Ok(keys),
+                }
+            }
+        })
     }
 }
 

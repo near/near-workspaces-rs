@@ -1,6 +1,6 @@
 #![recursion_limit = "256"]
 use near_token::NearToken;
-use near_workspaces::types::{KeyType, SecretKey};
+use near_workspaces::types::{AccessKey, KeyType, SecretKey};
 use serde_json::{Map, Value};
 use test_log::test;
 
@@ -109,6 +109,28 @@ async fn test_mldsa65_access_key_on_chain() -> anyhow::Result<()> {
         sub.view_access_keys().await.is_err(),
         "listing a hash-only ML-DSA-65 access key should error, not panic"
     );
+
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn test_view_access_keys_paginated() -> anyhow::Result<()> {
+    let worker = near_workspaces::sandbox().await?;
+    let account = worker.dev_create_account().await?;
+
+    // More keys than the node returns per page, split across two transactions
+    // to stay under the per-receipt action limit.
+    for _ in 0..2 {
+        let mut tx = account.batch(account.id());
+        for _ in 0..75 {
+            let pk = SecretKey::from_random(KeyType::ED25519).public_key();
+            tx = tx.add_key(pk, AccessKey::full_access());
+        }
+        tx.transact().await?.into_result()?;
+    }
+
+    let keys = account.view_access_keys().await?;
+    assert_eq!(keys.len(), 151);
 
     Ok(())
 }

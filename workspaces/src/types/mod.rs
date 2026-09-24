@@ -453,17 +453,21 @@ impl TryFrom<near_primitives::views::AccessKeyInfoView> for AccessKeyInfo {
     fn try_from(
         view: near_primitives::views::AccessKeyInfoView,
     ) -> std::result::Result<Self, Self::Error> {
-        // Since nearcore 2.13 the view holds a `PublicKeyHandle`; `full_pubkey`
-        // recovers the underlying key for ED25519/SECP256K1 and yields `None`
-        // for post-quantum ML-DSA-65 keys, whose full 1952-byte pubkey is not
-        // recoverable from the 32-byte on-trie hash the handle carries. Such
-        // access keys can be created and signed with, but cannot be listed via
-        // this view, so we return an error rather than panicking.
-        let public_key = view.public_key.full_pubkey().ok_or_else(|| {
-            ErrorKind::DataConversion.custom(
-                "ML-DSA-65 access key cannot be listed: its full public key is not recoverable from the on-trie hash",
-            )
-        })?;
+        // Since nearcore 2.13 the view holds a `PublicKeyHandle`. ED25519 and
+        // SECP256K1 handles carry the full key, while a post-quantum ML-DSA-65
+        // handle only carries the 32-byte on-trie hash, from which the full
+        // 1952-byte pubkey is not recoverable. Such access keys can be created
+        // and signed with, but cannot be listed via this view, so we return an
+        // error rather than panicking.
+        let public_key = match view.public_key {
+            near_crypto::PublicKeyHandle::ED25519(key) => near_crypto::PublicKey::ED25519(key),
+            near_crypto::PublicKeyHandle::SECP256K1(key) => near_crypto::PublicKey::SECP256K1(key),
+            near_crypto::PublicKeyHandle::MlDsa65(_) => {
+                return Err(ErrorKind::DataConversion.custom(
+                    "ML-DSA-65 access key cannot be listed: its full public key is not recoverable from the on-trie hash",
+                ));
+            }
+        };
         Ok(Self {
             public_key: PublicKey(public_key),
             access_key: view.access_key.into(),

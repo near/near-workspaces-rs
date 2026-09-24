@@ -408,6 +408,9 @@ impl Client {
         Ok(resp)
     }
 
+    // `EXPERIMENTAL_tx_status` is deprecated in favor of `tx_status`, but nodes
+    // older than 2.14 only serve the former, while every node still accepts it.
+    #[allow(deprecated)]
     pub(crate) async fn tx_status(
         &self,
         transaction_info: TransactionInfo,

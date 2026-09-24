@@ -17,6 +17,7 @@ use near_account_id::ParseAccountError;
 use near_gas::NearGas;
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::tx::RpcTransactionError;
+use near_jsonrpc_primitives::types::transactions::TimeoutErrorCause;
 use near_primitives::borsh;
 use near_primitives::transaction::{
     Action, AddKeyAction, CreateAccountAction, DeleteAccountAction, DeleteKeyAction,
@@ -525,6 +526,14 @@ impl TransactionStatus {
             Err(err) => match err {
                 JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
                     RpcTransactionError::UnknownTransaction { .. },
+                )) => return Ok(Poll::Pending),
+                // Since nearcore 2.14 a transaction that is not yet observed or still below the
+                // requested finality surfaces as a timeout instead of `UnknownTransaction`.
+                JsonRpcError::ServerError(JsonRpcServerError::HandlerError(
+                    RpcTransactionError::TimeoutError(
+                        None
+                        | Some(TimeoutErrorCause::NotObserved | TimeoutErrorCause::Pending { .. }),
+                    ),
                 )) => return Ok(Poll::Pending),
                 other => return Err(RpcErrorCode::BroadcastTxFailure.custom(other)),
             },
