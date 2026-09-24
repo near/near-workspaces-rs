@@ -6,3 +6,6 @@ changelog_update = false
 name = "near-workspaces"
 changelog_update = true
 changelog_path = "./CHANGELOG.md"
+# cargo-semver-checks builds with all features, and the published 0.23.0
+# baseline no longer compiles that way (near-sdk's host-build compile_error).
+semver_check = false
