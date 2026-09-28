@@ -6,3 +6,7 @@ changelog_update = false
 name = "near-workspaces"
 changelog_update = true
 changelog_path = "./CHANGELOG.md"
+# TODO: remove once 0.23.1 is published
+# cargo-semver-checks builds with all features, and the published 0.23.0
+# baseline no longer compiles that way (near-sdk's host-build compile_error).
+semver_check = false
