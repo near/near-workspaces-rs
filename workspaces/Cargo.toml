@@ -1,6 +1,6 @@
 [package]
 name = "near-workspaces"
-version = "0.23.0"
+version = "0.23.1"
 edition.workspace = true
 rust-version.workspace = true
 license = "MIT OR Apache-2.0"
