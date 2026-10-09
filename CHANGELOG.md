@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.23.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.23.0...near-workspaces-v0.23.1) - 2026-10-09
+## [0.24.0-rc.1](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.23.0...near-workspaces-v0.24.0-rc.1) - 2026-10-09
 
 ### Added
 
