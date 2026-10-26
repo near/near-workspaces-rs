@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0-rc.3](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.24.0-rc.2...near-workspaces-v0.24.0-rc.3) - 2026-10-26
+
+### Other
+
+- update nearcore types to 2.14-rc.6 ([#462](https://github.com/near/near-workspaces-rs/pull/462))
+
 ## [0.24.0-rc.2](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.24.0-rc.1...near-workspaces-v0.24.0-rc.2) - 2026-10-19
 
 ### Other
