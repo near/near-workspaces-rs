@@ -35,16 +35,16 @@ near-gas = { version = "0.3", features = ["serde", "borsh", "schemars"] }
 near-token = { version = "0.3", features = ["serde"] }
 near-sdk = { version = "5.26", optional = true, features = ["unit-testing"] }
 near-account-id = "3"
-# nearcore 2.14.0-rc.6.
-near-crypto = "=0.38.0-rc.6"
-near-primitives = "=0.38.0-rc.6"
-near-jsonrpc-primitives = "=0.38.0-rc.6"
-near-jsonrpc-client = { version = "=0.23.0-rc.4", features = ["sandbox"] }
-near-sandbox = "0.4.0-rc.1"
-near-chain-configs = { version = "=0.38.0-rc.6", optional = true }
+# nearcore 2.14.0
+near-crypto = "0.38.0"
+near-primitives = "0.38.0"
+near-jsonrpc-primitives = "0.38.0"
+near-jsonrpc-client = { version = "0.23.0", features = ["sandbox"] }
+near-sandbox = "0.4.0"
+near-chain-configs = { version = "0.38.0", optional = true }
 
 [build-dependencies]
-near-sandbox = "0.4.0-rc.1"
+near-sandbox = "0.4.0"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
