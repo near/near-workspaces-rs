@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0-rc.4](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.24.0-rc.3...near-workspaces-v0.24.0-rc.4) - 2026-10-26
+
+### Other
+
+- *(deps)* bump nearcore crates to 0.38 (2.14 stable) ([#464](https://github.com/near/near-workspaces-rs/pull/464))
+
 ## [0.24.0-rc.3](https://github.com/near/near-workspaces-rs/compare/near-workspaces-v0.24.0-rc.2...near-workspaces-v0.24.0-rc.3) - 2026-10-26
 
 ### Other
