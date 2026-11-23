@@ -433,6 +433,9 @@ async fn build_contract(manifest_dir: &str) -> anyhow::Result<Vec<u8>> {
         let artifact = cargo_near_build::build_with_cli(cargo_near_build::BuildOpts {
             no_locked: true,
             manifest_path: Some(manifest_path),
+            // As `compile_project` did: without it, a contract on near-sdk 5.27 or older
+            // fails to build with rustc newer than 1.86, though the sandbox runs that wasm
+            skip_rust_version_check: true,
             ..Default::default()
         })
         .map_err(|e| anyhow::anyhow!("cargo near build: {e:?}"))?;
